@@ -240,9 +240,13 @@ static void handle_struct(char *f, off_t *i, off_t s)
     t.a[t.s-1].s.s = (f+*i)-t.a[t.s-1].s.b;
   }
 
-  for (int j = 0; without_end_s[j]; j++)
-    if (strlen(without_end_s[j]) == t.n.s && strncmp(t.n.b,without_end_s[j],t.n.s) == 0)
-      goto FREE;
+  for (int j = 0; without_end_s[j]; j++) {
+    if (strlen(without_end_s[j]) == t.n.s && strncmp(t.n.b,without_end_s[j],t.n.s) == 0) {
+      (*i)++;
+      t.m.s = f+*i-t.m.b;
+      goto END;
+    }
+  }
 
   _Bool script = 0;
   for (int j = 0; script_s[j]; j++) {
@@ -296,7 +300,6 @@ static void handle_struct(char *f, off_t *i, off_t s)
     write(1,"\n",1);
   }
 
-  FREE: ;
   free(t.a);
 }
 
@@ -347,6 +350,9 @@ void handle_file(const char *f)
       fprintf(stderr,"%s: -R not specified: omitting directory '%s'\n",argv0,f);
     return;
   }
+
+  file = malloc(st.st_size);
+  read(fd,file,st.st_size);
 
   file = mmap(NULL,st.st_size,PROT_READ|PROT_WRITE,MAP_PRIVATE,fd,0);
 
@@ -405,12 +411,12 @@ int main(int argc, char **argv)
       g++;
       continue;
     }
-    
+
     handle_file(__argv[i]);
     g++;
   }
 
-  if (g == 1 || settings&F_LIST)
+  if (settings&F_LIST ? g == 0 : g == 1)
     handle_file(NULL);
 
   return 0;
