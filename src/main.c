@@ -242,8 +242,7 @@ static void handle_struct(char *f, off_t *i, off_t s)
 
   for (int j = 0; without_end_s[j]; j++) {
     if (strlen(without_end_s[j]) == t.n.s && strncmp(t.n.b,without_end_s[j],t.n.s) == 0) {
-      (*i)++;
-      t.m.s = f+*i-t.m.b;
+      t.m.s = f+*i-t.m.b+1;
       goto END;
     }
   }
