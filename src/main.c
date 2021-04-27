@@ -284,20 +284,21 @@ static void handle_struct(char *f, off_t *i, off_t s)
   END: ;
 
   if (settings&F_LIST) {
-    write(1,t.n.b,t.n.s);
+    fwrite(t.n.b,t.n.s,1,stdout);
     for (size_t j = 0; j < t.s; j++) {
-      write(1," ",1);
-      write(1,t.a[j].f.b,t.a[j].f.s);
-      write(1,"=\"",2);
-      write(1,t.a[j].s.b,t.a[j].s.s);
+      fputc(' ',stdout);
+      fwrite(t.a[j].f.b,t.a[j].f.s,1,stdout);
+      fputs("=\"",stdout);
+      fwrite(t.a[j].s.b,t.a[j].s.s,1,stdout);
     }
     printf("\" - %ld\n",t.m.s);
-    fflush(stdout);
   }
   else if ((settings&F_REVERSE) == 0 ? ismatching(&t) : !ismatching(&t)) {
-    write(1,t.m.b,t.m.s);
-    write(1,"\n",1);
+    fwrite(t.m.b,t.m.s,1,stdout);
+    fputc('\n',stdout);
   }
+
+  fflush(stdout);
 
   free(t.a);
 }
@@ -319,10 +320,13 @@ void handle_file(const char *f)
   char *file;
 
   if (f == NULL) {
-    ssize_t readbytes, size = 1<<15;
-    file = malloc(size);
-    while ((readbytes = read(0,file,1<<15)) > 0)
-      file = realloc(file,size+=readbytes);
+    file = NULL;
+    ssize_t readbytes=0,size=0;
+    do {
+      size += readbytes;
+      file = realloc(file,size+(1<<15));
+      readbytes = read(0,file+size,1<<15);
+    } while (readbytes > 0);
     analyze(file,size);
     free(file);
     return;
@@ -350,14 +354,15 @@ void handle_file(const char *f)
     return;
   }
 
-  file = malloc(st.st_size);
-  read(fd,file,st.st_size);
-
   file = mmap(NULL,st.st_size,PROT_READ|PROT_WRITE,MAP_PRIVATE,fd,0);
+  if (file == NULL)
+    warn("%s",f);
+  else
+  {
+    analyze(file,st.st_size);
+    munmap(file,st.st_size);
+  }
 
-  analyze(file,st.st_size);
-
-  munmap(file,st.st_size);
   close(fd);
 }
 
