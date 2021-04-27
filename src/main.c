@@ -19,11 +19,14 @@
 #include "main.h"
 #include "arg.h"
 
+#define BUFF_INC_VALUE (1<<15)
+
 char *argv0, *pattern = NULL;
 
 unsigned int settings = 0;
 int regexflags = REG_NEWLINE;
 int nftwflags = FTW_ACTIONRETVAL;
+FILE* outfile;
 
 char *without_end_s[] = {
   "area","base","br","col","embed","hr",
@@ -50,12 +53,13 @@ static void usage()
   die("Usage: %s [OPTION]... PATTERN [FILE]...\n"\
       "Search for PATTERN in each html FILE.\n"\
       "Example: %s -i 'a +href=\".*\\.org\"' index.html\n\n"\
-      "  -i\tignore case distinctions in patterns and data\n"\
-      "  -v\tselect non-matching blocks\n"\
-      "  -l\tlist structure of file\n"\
-      "  -E\tuse extended regular expressions\n"\
-      "  -H\tdo not follow symlinks\n"\
-      "  -R\trecursive\n\n"\
+      "  -i\t\tignore case distinctions in patterns and data\n"\
+      "  -v\t\tselect non-matching blocks\n"\
+      "  -l\t\tlist structure of file\n"\
+      "  -o [FILE]\tchange output to a [FILE] instead of stdout\n"\
+      "  -E\t\tuse extended regular expressions\n"\
+      "  -H\t\tdo not follow symlinks\n"\
+      "  -R\t\tread all files under directory, recursively\n\n"\
       "When you don't specify FILE, FILE will become stdin\n",argv0,argv0,argv0);
 }
 
@@ -284,21 +288,21 @@ static void handle_struct(char *f, off_t *i, off_t s)
   END: ;
 
   if (settings&F_LIST) {
-    fwrite(t.n.b,t.n.s,1,stdout);
+    fwrite(t.n.b,t.n.s,1,outfile);
     for (size_t j = 0; j < t.s; j++) {
-      fputc(' ',stdout);
-      fwrite(t.a[j].f.b,t.a[j].f.s,1,stdout);
-      fputs("=\"",stdout);
-      fwrite(t.a[j].s.b,t.a[j].s.s,1,stdout);
+      fputc(' ',outfile);
+      fwrite(t.a[j].f.b,t.a[j].f.s,1,outfile);
+      fputs("=\"",outfile);
+      fwrite(t.a[j].s.b,t.a[j].s.s,1,outfile);
     }
     printf("\" - %ld\n",t.m.s);
   }
   else if ((settings&F_REVERSE) == 0 ? ismatching(&t) : !ismatching(&t)) {
-    fwrite(t.m.b,t.m.s,1,stdout);
-    fputc('\n',stdout);
+    fwrite(t.m.b,t.m.s,1,outfile);
+    fputc('\n',outfile);
   }
 
-  fflush(stdout);
+  fflush(outfile);
 
   free(t.a);
 }
@@ -313,6 +317,20 @@ static void analyze(char *f, off_t s)
 
 int nftw_func(const char *fpath, const struct stat *sb, int typeflag, struct FTW *ftwbuf);
 
+void pipe_to_str(int fd, char **file, size_t *size)
+{
+  *file = NULL;
+  register size_t readbytes = 0;
+  *size = 0;
+
+  do {
+    *size += readbytes;
+    *file = realloc(*file,*size+BUFF_INC_VALUE);
+    readbytes = read(fd,*file+*size,BUFF_INC_VALUE);
+  } while (readbytes > 0);
+  *file = realloc(*file,*size);
+}
+
 void handle_file(const char *f)
 {
   int fd;
@@ -320,13 +338,8 @@ void handle_file(const char *f)
   char *file;
 
   if (f == NULL) {
-    file = NULL;
-    ssize_t readbytes=0,size=0;
-    do {
-      size += readbytes;
-      file = realloc(file,size+(1<<15));
-      readbytes = read(0,file+size,1<<15);
-    } while (readbytes > 0);
+    size_t size;
+    pipe_to_str(0,&file,&size);
     analyze(file,size);
     free(file);
     return;
@@ -380,6 +393,7 @@ int main(int argc, char **argv)
   if (argc < 2)
     usage();
   char **__argv = argv;
+  outfile = stdout;
 
   ARGBEGIN {
     case 'v':
@@ -394,6 +408,22 @@ int main(int argc, char **argv)
     case 'i':
       regexflags |= REG_ICASE;
       break;
+    case 'o':
+    {
+      char *fname = NULL;
+      if (argv[0][i_+1])
+      {
+        fname = argv[0]+i_+1;
+        brk_= 1;
+      }
+      else
+      {
+        argc--;
+        fname = *(++argv);
+      }
+      outfile = fopen(fname,"w");
+    }
+    break;
     case 'H':
       nftwflags |= FTW_PHYS;
       break;
@@ -409,7 +439,11 @@ int main(int argc, char **argv)
 
   for (int i = 1; __argv[i]; i++) {
     if (__argv[i][0] == '-')
+    {
+      if (__argv[i][1] == 'o')
+        i++;
       continue;
+    }
     if (!(settings&F_LIST) && g == 0) {
       pattern = __argv[i];
       g++;
@@ -422,6 +456,8 @@ int main(int argc, char **argv)
 
   if (settings&F_LIST ? g == 0 : g == 1)
     handle_file(NULL);
+
+  fclose(outfile);
 
   return 0;
 }
