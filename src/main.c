@@ -1,6 +1,6 @@
 /*
     hgrep - simple html searching tool
-    Copyright (C) 2020 TUVIMEN <suchora.dominik7@gmail.com>
+    Copyright (C) 2020-2021 TUVIMEN <suchora.dominik7@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -20,8 +20,10 @@
 #include "arg.h"
 
 #define BUFF_INC_VALUE (1<<15)
+#define PATTERN_SIZE (1<<9)
+#define PATTERN_SIZE_INC 16
 
-char *argv0, *pattern = NULL;
+char *argv0, *patterns = NULL;
 
 unsigned int settings = 0;
 int regexflags = REG_NEWLINE;
@@ -52,7 +54,7 @@ static void usage()
 {
   die("Usage: %s [OPTION]... PATTERN [FILE]...\n"\
       "Search for PATTERN in each html FILE.\n"\
-      "Example: %s -i 'a +href=\".*\\.org\"' index.html\n\n"\
+      "Example: %s -i 'div +id; a +href=\".*\\.org\"' index.html\n\n"\
       "  -i\t\tignore case distinctions in patterns and data\n"\
       "  -v\t\tselect non-matching blocks\n"\
       "  -l\t\tlist structure of file\n"\
@@ -63,7 +65,7 @@ static void usage()
       "When you don't specify FILE, FILE will become stdin\n",argv0,argv0,argv0);
 }
 
-static void handle_comment(char *f, off_t *i, off_t s)
+static void handle_comment(char *f, size_t *i, size_t s)
 {
   (*i)++;
   if (f[*i] == '-' && f[*i+1] == '-') {
@@ -76,11 +78,11 @@ static void handle_comment(char *f, off_t *i, off_t s)
       (*i)++;
 }
 
-static _Bool ismatching(struct html_s *t)
+static _Bool ismatching(struct html_s *t, char *pattern)
 {
   size_t size, j;
   regex_t regex[2];
-  static char temp[NAME_MAX];
+  static char temp[PATTERN_SIZE];
 
   for (int i = 0; pattern[i]; i++) {
     size = 0;
@@ -192,7 +194,7 @@ static _Bool ismatching(struct html_s *t)
   return 1;
 }
 
-static void handle_struct(char *f, off_t *i, off_t s)
+static void handle_struct(char *f, size_t *i, size_t s, char *pattern)
 {
   struct html_s t;
   memset(&t,0,sizeof(struct html_s));
@@ -279,7 +281,7 @@ static void handle_struct(char *f, off_t *i, off_t s)
           continue;
         }
         else
-          handle_struct(f,i,s);
+          handle_struct(f,i,s,pattern);
       }
     }
     (*i)++;
@@ -289,17 +291,24 @@ static void handle_struct(char *f, off_t *i, off_t s)
 
   if (settings&F_LIST) {
     fwrite(t.n.b,t.n.s,1,outfile);
+    _Bool par = 0;
     for (size_t j = 0; j < t.s; j++) {
+      par = 1;
       fputc(' ',outfile);
       fwrite(t.a[j].f.b,t.a[j].f.s,1,outfile);
       fputs("=\"",outfile);
       fwrite(t.a[j].s.b,t.a[j].s.s,1,outfile);
     }
-    printf("\" - %ld\n",t.m.s);
+    if (par)
+      fputc('"',outfile);
+    fprintf(outfile," - %lu\n",t.m.s);
   }
-  else if ((settings&F_REVERSE) == 0 ? ismatching(&t) : !ismatching(&t)) {
-    fwrite(t.m.b,t.m.s,1,outfile);
-    fputc('\n',outfile);
+  else
+  {
+    if ((settings&F_REVERSE) == 0 ? ismatching(&t,pattern) : !ismatching(&t,pattern)) {
+      fwrite(t.m.b,t.m.s,1,outfile);
+      fputc('\n',outfile);
+    }
   }
 
   fflush(outfile);
@@ -307,17 +316,88 @@ static void handle_struct(char *f, off_t *i, off_t s)
   free(t.a);
 }
 
-static void analyze(char *f, off_t s)
+static void split_patterns(char ***pattern, size_t *size)
 {
-  for (off_t i = 0; i < s; i++) {
-    if (f[i] == '<')
-      handle_struct(f,&i,s);
+  *pattern = NULL;
+  *size = 0;
+  size_t lsize = 0, len = strlen(patterns);
+  if (len < 1)
+    return;
+  register size_t t;
+  for (size_t i = 0, j; i < len; i++) {
+    j = i;
+    if (lsize == *size) {
+      lsize += PATTERN_SIZE_INC;
+      *pattern = realloc(*pattern,lsize<<3);
+    }
+    while (i < len) {
+      if (patterns[i] == ';') {
+        if (i != 0 && patterns[i-1] == '\\') {
+          for (size_t g = i; g < len; g++)
+            patterns[g-1] = patterns[g];
+          len--;
+          i++;
+        }
+        else
+          break;
+      }
+      i++;
+    }
+
+    t = (i-j)+1;
+    (*pattern)[*size] = malloc(t);
+    memcpy((*pattern)[*size],patterns+j,i-j);
+    (*pattern)[*size][t-1] = 0;
+    (*size)++;
   }
+  *pattern = realloc(*pattern,*size<<3);
+}
+
+static void analyze(char *f, size_t s)
+{
+  if (f == NULL || s == 0)
+    return;
+  char **pattern = NULL;
+  size_t size = 0;
+  if (patterns != 0)
+    split_patterns(&pattern,&size);
+  if (size == 0) {
+    for (size_t i = 0; i < s; i++)
+      if (f[i] == '<')
+        handle_struct(f,&i,s,patterns);
+  }
+  else {
+    FILE *t1 = outfile;
+    char **ptr = malloc(size<<3);
+    size_t *fsize = malloc(size<<3);
+    
+    for (size_t i = 0, j; i < size; i++) {
+      outfile = (size == 1 || i == size-1) ? t1 : open_memstream(&ptr[i],&fsize[i]);
+
+      for (j = 0; j < s; j++) {
+        if (f[j] == '<')
+          handle_struct(f,&j,s,pattern[i]);
+      }
+
+      if (size != 1 && i == size-1)
+      {
+        free(f);
+        fclose(outfile);
+      }
+
+      f = ptr[i];
+      s = fsize[i];
+    }
+    free(ptr);
+    free(fsize);
+    fflush(outfile);
+  }
+  free(pattern);
 }
 
 int nftw_func(const char *fpath, const struct stat *sb, int typeflag, struct FTW *ftwbuf);
 
-void pipe_to_str(int fd, char **file, size_t *size)
+static void pipe_to_str(int fd, char **file, size_t *size)
 {
   *file = NULL;
   register size_t readbytes = 0;
@@ -445,7 +525,7 @@ int main(int argc, char **argv)
       continue;
     }
     if (!(settings&F_LIST) && g == 0) {
-      pattern = __argv[i];
+      patterns = __argv[i];
       g++;
       continue;
     }
