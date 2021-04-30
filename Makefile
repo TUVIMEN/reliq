@@ -1,7 +1,7 @@
 SHELL	=	/bin/bash
 CC	=	gcc -std=c11
 LINK	=
-CFLAGS	=	-O2 -mavx2 -pipe -march=native -Wall -Wextra
+CFLAGS	=	-mavx2 -O2 -march=native -Wall -Wextra
 TARGET	=	hgrep
 
 OBJECTS = $(patsubst %.c, %.o, $(wildcard src/*.c))

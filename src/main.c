@@ -312,7 +312,7 @@ static void handle_struct(char *f, size_t *i, size_t s, char *pattern)
   }
 
   fflush(outfile);
-
+  
   free(t.a);
 }
 
@@ -353,7 +353,7 @@ static void split_patterns(char ***pattern, size_t *size)
   *pattern = realloc(*pattern,*size<<3);
 }
 
-static void analyze(char *f, size_t s)
+static void analyze(char *f, size_t s, _Bool inpipe)
 {
   if (f == NULL || s == 0)
     return;
@@ -372,21 +372,23 @@ static void analyze(char *f, size_t s)
     size_t *fsize = malloc(size<<3);
     
     for (size_t i = 0, j; i < size; i++) {
-      outfile = (size == 1 || i == size-1) ? t1 : open_memstream(&ptr[i],&fsize[i]);
+      outfile = (i == size-1) ? t1 : open_memstream(&ptr[i],&fsize[i]);
 
       for (j = 0; j < s; j++) {
         if (f[j] == '<')
           handle_struct(f,&j,s,pattern[i]);
       }
 
-      if (size != 1 && i == size-1)
-      {
+      if (!inpipe && i == 0)
+        munmap(f,s);
+      else
         free(f);
+      if (i != size-1)
         fclose(outfile);
-      }
 
       f = ptr[i];
       s = fsize[i];
+      free(pattern[i]);
     }
     free(ptr);
     free(fsize);
@@ -420,8 +422,7 @@ void handle_file(const char *f)
   if (f == NULL) {
     size_t size;
     pipe_to_str(0,&file,&size);
-    analyze(file,size);
-    free(file);
+    analyze(file,size,1);
     return;
   }
 
@@ -451,10 +452,7 @@ void handle_file(const char *f)
   if (file == NULL)
     warn("%s",f);
   else
-  {
-    analyze(file,st.st_size);
-    munmap(file,st.st_size);
-  }
+    analyze(file,st.st_size,0);
 
   close(fd);
 }
