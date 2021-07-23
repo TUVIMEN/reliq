@@ -26,7 +26,8 @@
 #define while_is(w,x,y,z) while ((y) < (z) && (w)((x)[(y)])) {(y)++;} \
   if ((y) >= (z)) return
 
-char *argv0, *patterns = NULL;
+char *argv0;
+flexarr *patterns = NULL;
 
 unsigned int settings = 0;
 int regexflags = REG_NEWLINE;
@@ -56,7 +57,7 @@ static void die(const char *s, ...)
 static void usage()
 {
   die("Usage: %s [OPTION]... PATTERNS [FILE]...\n"\
-      "Search for PATTERN in each html FILE.\n"\
+      "Search for PATTERNS in each html FILE.\n"\
       "Example: %s -i 'div +id; a +href=\".*\\.org\"' index.html\n\n"\
       "Options:\n"\
       "  -i\t\tignore case distinctions in patterns and data\n"\
@@ -121,8 +122,6 @@ static _Bool ismatching(struct html_s *t, struct pat *p, const ushort lvl)
   for (size_t i = 0; i < p->args->size; i++) {
     _Bool found = 0;
     for (size_t j = 0; j < t->a->size; j++) {
-      //if (args[i].n ? !av[j].s.s : av[j].s.s)
-        //continue;
       if (!matchxy(args[i].px,args[i].py,j,t->a->size-1))
         continue;
 
@@ -424,7 +423,7 @@ static void parse_pattern(char *pattern, size_t size, struct pat *p)
         i += 2;
         t = i;
         while (i < size && i < 509 && pattern[i] != '"') {
-          if (patterns[i] == '\\')
+          if (pattern[i] == '\\')
   	    delchar(pattern,i,&size);
           i++;
         }
@@ -443,32 +442,32 @@ static void parse_pattern(char *pattern, size_t size, struct pat *p)
   }
 }
 
-static void split_patterns(flexarr **pattern)
+static flexarr *split_patterns(char *src, size_t s)
 {
-  *pattern = flexarr_init(sizeof(struct pat),PATTERN_SIZE_INC);
-  size_t len = strlen(patterns);
-  if (len == 0)
-    return;
-  for (size_t i = 0, j; i < len; i++) {
+  if (s == 0)
+    return NULL;
+  flexarr *ret = flexarr_init(sizeof(struct pat),PATTERN_SIZE_INC);
+  for (size_t i = 0, j; i < s; i++) {
     j = i;
 
-    while (i < len) {
-      if (patterns[i] == '\\' && patterns[i] == ';')
-	delchar(patterns,i,&len);
-      if (patterns[i] == ';')
+    while (i < s) {
+      if (src[i] == '\\' && src[i] == ';')
+	delchar(src,i,&s);
+      if (src[i] == ';')
         break;
       i++;
     }
 
-    parse_pattern(patterns+j,i-j,(struct pat*)flexarr_inc(*pattern));
-    while (i < len && patterns[i] == ';')
+    parse_pattern(src+j,i-j,(struct pat*)flexarr_inc(ret));
+    while (i < s && src[i] == ';')
       i++;
     i--;
   }
-  flexarr_clearb(*pattern);
+  flexarr_clearb(ret);
+  return ret;
 }
 
-void go_through(char *f, struct pat *p, const size_t s)
+static void go_through(char *f, struct pat *p, const size_t s)
 {
   for (size_t i = 0; i < s; i++) {
     if (f[i] == '<')
@@ -477,51 +476,55 @@ void go_through(char *f, struct pat *p, const size_t s)
   fflush(outfile); 
 }
 
+static void pattern_free(flexarr *f)
+{
+  if (f == NULL)
+      return;
+  for (size_t i = 0; i < f->size; i++) {
+    struct pat *flv = &((struct pat*)f->v)[i];
+    regfree(&flv->r);
+    for (size_t j = 0; j < flv->args->size; j++) {
+      regfree(&((struct pel*)flv->args->v)[j].r[0]);
+      if (((struct pel*)flv->args->v)[j].flags&2)
+        regfree(&((struct pel*)flv->args->v)[j].r[1]);
+    }
+    flexarr_free(flv->args);
+  }
+  flexarr_free(f);
+}
+
 static void analyze(char *f, size_t s, _Bool inpipe)
 {
   if (f == NULL || s == 0)
     return;
-  flexarr *fl;
-  size_t size = 0;
-  if (patterns != NULL) {
-    split_patterns(&fl);
-    size = fl->size;
-  }
-  if (size == 0)
+  if (patterns == NULL) {
     go_through(f,NULL,s);
-  else {
-    FILE *t1 = outfile;
-    char **ptr = malloc(size<<3);
-    size_t *fsize = malloc(size<<3);
-    
-    for (size_t i = 0; i < size; i++) {
-      outfile = (i == size-1) ? t1 : open_memstream(&ptr[i],&fsize[i]);
-
-      struct pat *flv = &((struct pat*)fl->v)[i];
-      go_through(f,flv,s);
-
-      if (!inpipe && i == 0)
-        munmap(f,s);
-      else
-        free(f);
-      if (i != size-1)
-        fclose(outfile);
-
-      f = ptr[i];
-      s = fsize[i];
-      regfree(&flv->r);
-      for (size_t j = 0; j < flv->args->size; j++) {
-        regfree(&((struct pel*)flv->args->v)[j].r[0]);
-        if (((struct pel*)flv->args->v)[j].flags&2)
-          regfree(&((struct pel*)flv->args->v)[j].r[1]);
-      }
-      flexarr_free(flv->args);
-    }
-    free(ptr);
-    free(fsize);
-    fflush(outfile);
-    flexarr_free(fl);
+    return;
   }
+
+  FILE *t = outfile;
+  char **ptr = malloc(patterns->size<<3);
+  size_t *fsize = malloc(patterns->size<<3);
+  
+  for (size_t i = 0; i < patterns->size; i++) {
+    outfile = (i == patterns->size-1) ? t : open_memstream(&ptr[i],&fsize[i]);
+
+    struct pat *flv = &((struct pat*)patterns->v)[i];
+    go_through(f,flv,s);
+
+    if (!inpipe && i == 0)
+      munmap(f,s);
+    else
+      free(f);
+    if (i != patterns->size-1)
+      fclose(outfile);
+
+    f = ptr[i];
+    s = fsize[i];
+  }
+  free(ptr);
+  free(fsize);
+  fflush(outfile);
 }
 
 int nftw_func(const char *fpath, const struct stat *sb, int typeflag, struct FTW *ftwbuf);
@@ -634,29 +637,30 @@ int main(int argc, char **argv)
       if (fd == -1)
           err(1,"%s\n",fname);
       size_t s;
-      pipe_to_str(fd,&patterns,&s);
-      patterns[s] = 0;
+      char *p;
+      pipe_to_str(fd,&p,&s);
       close(fd);
+      patterns = split_patterns(p,s);
+      free(p);
     }
     break;
     case 'H': nftwflags &= ~FTW_PHYS; break;
     case 'r': settings |= F_RECURSIVE; break;
     case 'R': settings |= F_RECURSIVE; nftwflags &= ~FTW_PHYS; break;
-    case 'V': die("v1.0\n"); break;
+    case 'V': die("v1.1\n"); break;
     case 'h': default:
       usage();
   } ARGEND;
   
   int g = 0;
   for (int i = 1; __argv[i]; i++) {
-    if (__argv[i][0] == '-')
-    {
+    if (__argv[i][0] == '-') {
       if (__argv[i][1] == 'o' || __argv[i][1] == 'f')
         i++;
       continue;
     }
     if (!(settings&F_LIST) && g == 0 && patterns == NULL) {
-      patterns = __argv[i];
+      patterns = split_patterns(__argv[i],strlen(__argv[i]));
       continue;
     }
 
@@ -666,10 +670,8 @@ int main(int argc, char **argv)
 
   if (g == 0)
     handle_file(NULL);
-
   fclose(outfile);
-
-  fclose(outfile);
+  pattern_free(patterns);
 
   return 0;
 }

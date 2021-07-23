@@ -83,7 +83,7 @@ Each pattern should be separated by semicolon. Tags and attributes are separated
 .SS TAG
 At the begining each pattern should contain regex of html tag.
 .SS ATTRIBUTES
-Before each attribute should be either '+' or '-', where '-' means not-matching of such attribute and '+' matching. As next is regex of attribute. To specify it's value it should be followed by '=' and double qoute in which should be regex of value. Leaving attribute without specifying the value of it means that maching of it's value will be skipped.
+Before each attribute should be either '+' or '-', where '-' means not-matching of such attribute and '+' matching. As next is regex of attribute. To specify it's value it should be followed by '=' and double quote in which should be regex of value. Leaving attribute without specifying the value of it means that maching of it's value will be skipped.
 .SS "ADDITIONAL OPTIONS"
 To specify additional options for tag before semicolon should be '/' followed by square brackets. First pair of brackets specifies attribute count, second pair specifies position
 .PP
@@ -96,10 +96,9 @@ Character \'$' is aliased to the last value.
 Specifying two values separated by '-' means range for matching value. Leaving  the values empty means that that value will become zero or the last depending on the order.
 
 .SH EXAMPLE
-Following example outputs all tags 'a' with attrbute 'href' of value ending with '.org' from result of matching tags 'div' with attribute 'id' and without attribute 'class' from file 'index.html'
+Following example outputs all tags 'a' with attrbute 'href' at position 0 of value ending with '.org' from result of matching tags 'div' with attribute 'id' and without attribute 'class' from file 'index.html'
 .br
-hgrep 'div +id -class; a +href=".*\.org"' index.html
-
+hgrep 'div +id -class; a +[0]href=".*\.org"' index.html
 
 .SH "EXIT STATUS"
 On success exit status is 0. On error 1.
