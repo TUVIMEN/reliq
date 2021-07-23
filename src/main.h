@@ -34,13 +34,18 @@
 #include <stdarg.h>
 #include <sys/mman.h>
 #include <linux/limits.h>
+#include <limits.h>
 #include <regex.h>
 #include <ftw.h>
 #include <err.h>
+#include "flexarr.h"
 
 #define F_REVERSE 0x1
 #define F_LIST 0x2
 #define F_RECURSIVE 0x4
+
+typedef unsigned char uchar;
+typedef unsigned short ushort;
 
 typedef struct {
   char *b;
@@ -55,8 +60,23 @@ typedef struct {
 struct html_s {
   vv m;
   vv n;
-  cc *a;
-  size_t s;
+  flexarr *a;
+};
+
+struct pel {
+  uchar flags;
+  ushort px;
+  ushort py;
+  regex_t r[2];
+};
+
+struct pat {
+  ushort px;
+  ushort py;
+  ushort ax;
+  ushort ay;
+  regex_t r;
+  flexarr *args;
 };
 
 #endif

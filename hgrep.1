@@ -1,0 +1,108 @@
+.TH HGREP 1 hgrep\-1.1
+
+.SH NAME
+hgrep - simple html searching tool
+
+.SH SYNOPSIS
+.B hgrep
+.RI [ OPTION .\|.\|.]\&
+.I PATTERNS
+.RI [ FILE .\|.\|.]\&
+.br
+
+.SH DESCRIPTION
+.B hgrep
+searches for
+.I PATTERNS
+in each
+.IR FILE .
+Typically 
+.I PATTERNS
+should be quoted when hgrep is used in shell command.
+.PP
+When
+.I FILE
+isn't specified,
+.I FILE
+will become standard input.
+
+.SH OPTIONS
+.SS "Generic Program Information"
+.TP
+.B \-h
+Output a usage message and exit.
+.TP
+.BR \-V
+Output the version number of
+.B hgrep
+and exit.
+.SS "Pattern Syntax"
+.TP
+.BR \-E
+Use extended regular expressions.
+.SS "Matching Control"
+.TP
+.BI \-f " FILE"
+Obtain pattern from
+.IR FILE.
+The empty file contains zero patterns, and therefore matches nothing.
+.TP
+.BR \-i
+Ignore case distinctions in patterns and input data,
+so that characters that differ only in case
+match each other.
+.TP
+.BR \-v
+Invert the sense of matching, to select non-matching lines.
+.SS "General Output Control"
+.TP
+.BI \-o " FILE"
+Change output to a
+.IR FILE
+instead of stdout.
+.SS "File and Directory Selection"
+.TP
+.BR \-r
+Read all files under each directory, recursively.
+.TP
+.BR \-H
+Follow symbolic links.
+.TP
+.BR \-R
+Read all files under each directory, recursively.
+Follow all symbolic links, unlike
+.BR \-r .
+.SS "Other Options"
+.TP
+.B \-l
+List structure of
+.IR FILE .
+
+.SH PATTERNS
+Each pattern should be separated by semicolon. Tags and attributes are separated by whitespace characters. Pattern will be matched on results of the matching of previous pattern.
+.SS TAG
+At the begining each pattern should contain regex of html tag.
+.SS ATTRIBUTES
+Before each attribute should be either '+' or '-', where '-' means not-matching of such attribute and '+' matching. As next is regex of attribute. To specify it's value it should be followed by '=' and double qoute in which should be regex of value. Leaving attribute without specifying the value of it means that maching of it's value will be skipped.
+.SS "ADDITIONAL OPTIONS"
+To specify additional options for tag before semicolon should be '/' followed by square brackets. First pair of brackets specifies attribute count, second pair specifies position
+.PP
+To specify additional options for attributes before it's regex should be pair of square brackets specifying it's position (starting from zero).
+.SS "SQUARE BRACKETS"
+Specifying one value in them means that matching value needs to be the same as in the brackets.
+.PP
+Character \'$' is aliased to the last value.
+.PP
+Specifying two values separated by '-' means range for matching value. Leaving  the values empty means that that value will become zero or the last depending on the order.
+
+.SH EXAMPLE
+Following example outputs all tags 'a' with attrbute 'href' of value ending with '.org' from result of matching tags 'div' with attribute 'id' and without attribute 'class' from file 'index.html'
+.br
+hgrep 'div +id -class; a +href=".*\.org"' index.html
+
+
+.SH "EXIT STATUS"
+On success exit status is 0. On error 1.
+
+.SH AUTHOR
+TUVIMEN <suchora.dominik7@gmail.com>
