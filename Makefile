@@ -1,7 +1,7 @@
 SHELL	=	/bin/bash
 CC	=	gcc -std=c11
 LINK	=
-CFLAGS	=	-mavx2 -O2 -march=native -Wall -Wextra
+CFLAGS	=	-O2 -march=native -Wall -Wextra
 TARGET	=	hgrep
 
 MANDIR  =       /usr/share/man/man1

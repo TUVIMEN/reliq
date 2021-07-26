@@ -50,17 +50,17 @@ typedef unsigned short ushort;
 typedef struct {
   char *b;
   size_t s;
-} vv;
+} str;
 
 typedef struct {
-  vv f;
-  vv s;
-} cc;
+  str f;
+  str s;
+} str_pair;
 
 struct html_s {
-  vv m;
-  vv n;
-  flexarr *a;
+  str all;
+  str tag;
+  flexarr *attrib;
 };
 
 struct pel {
@@ -76,7 +76,7 @@ struct pat {
   ushort ax;
   ushort ay;
   regex_t r;
-  flexarr *args;
+  flexarr *attrib;
 };
 
 #endif
