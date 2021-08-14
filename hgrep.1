@@ -1,4 +1,4 @@
-.TH HGREP 1 hgrep\-1.1
+.TH HGREP 1 hgrep\-1.1.1
 
 .SH NAME
 hgrep - simple html searching tool
@@ -98,10 +98,10 @@ Specifying two values separated by '-' means range for matching value. Leaving  
 .SH EXAMPLE
 Following example outputs all tags 'a' with attrbute 'href' at position 0 of value ending with '.org' from result of matching tags 'div' with attribute 'id' and without attribute 'class' from file 'index.html'
 .br
-hgrep 'div +id -class; a +[0]href=".*\.org"' index.html
+hgrep 'div +id -class; a +[0]href=".*\\.org"' index.html
 
 .SH "EXIT STATUS"
-On success exit status is 0. On error 1.
+On success hgrep returns 0. On error 1.
 
 .SH AUTHOR
 TUVIMEN <suchora.dominik7@gmail.com>

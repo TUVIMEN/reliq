@@ -26,6 +26,7 @@
 
 #define while_is(w,x,y,z) while ((y) < (z) && (w)((x)[(y)])) {(y)++;} \
   if ((y) >= (z)) return
+#define toggleflag(x,y,z) (x) ? ((y) |= (z)) : ((y) &= ~(z))
 
 char *argv0;
 flexarr *patterns = NULL;
@@ -35,27 +36,32 @@ int regexflags = REG_NEWLINE|REG_NOSUB;
 int nftwflags = FTW_ACTIONRETVAL|FTW_PHYS;
 FILE* outfile;
 
-char *without_end_s[] = {
+char *without_end_s[] = { //tags that doesn't end with </tag>
   "area","base","br","col","embed","hr",
   "img","input","link","meta","param",
   "source","track","wbr","command",
   "keygen","menuitem",NULL
 };
 
-char *script_s[] = {
+char *script_s[] = { //tags which insides should be ommited
   "script","style",NULL
 };
 
-static void die(const char *s, ...)
+static int nftw_func(const char *fpath, const struct stat *sb, int typeflag, struct FTW *ftwbuf);
+
+static void
+die(const char *s, ...)
 {
   va_list ap;
   va_start(ap,s);
   vfprintf(stderr,s,ap);
   va_end(ap);
+  fputc('\n',stderr);
   exit(1);
 }
 
-static void usage()
+static void
+usage()
 {
   die("Usage: %s [OPTION]... PATTERNS [FILE]...\n"\
       "Search for PATTERNS in each html FILE.\n"\
@@ -72,10 +78,11 @@ static void usage()
       "  -R\t\tlikewise but follow all symlinks\n"\
       "  -h\t\tshow help\n"\
       "  -V\t\tshow version\n\n"\
-      "When FILE isn't specified, FILE will become standard input.\n",argv0,argv0,argv0);
+      "When FILE isn't specified, FILE will become standard input.",argv0,argv0,argv0);
 }
 
-static void handle_comment(char *f, size_t *i, size_t s)
+static void
+handle_comment(char *f, size_t *i, size_t s)
 {
   (*i)++;
   if (f[*i] == '-' && f[*i+1] == '-') {
@@ -84,11 +91,14 @@ static void handle_comment(char *f, size_t *i, size_t s)
       (*i)++;
     *i += 3;
   }
-  else while (*i < s && f[*i] != '>')
+  else {
+    while (*i < s && f[*i] != '>')
       (*i)++;
+  }
 }
 
-static _Bool matchxy(ushort x, ushort y, const ushort z, const size_t last)
+static uchar
+matchxy(ushort x, ushort y, const ushort z, const size_t last)
 {
   if (x == USHRT_MAX)
       x = last;
@@ -103,14 +113,16 @@ static _Bool matchxy(ushort x, ushort y, const ushort z, const size_t last)
   return 0;
 }
 
-static _Bool ismatching(const struct html_s *t, const struct pat *p, const ushort lvl)
+static uchar
+ismatching(const struct html_s *t, const struct pat *p, const ushort lvl)
 {
   flexarr *a = t->attrib;
   str_pair *av = (str_pair*)a->v;
   const struct pel *attrib = (struct pel*)p->attrib->v;
 
-  if (!matchxy(p->px,p->py,lvl,-1) || !matchxy(p->ax,p->ay,p->attrib->size,t->attrib->size))
-      return 0;
+  if (!matchxy(p->px,p->py,lvl,-1)
+    || !matchxy(p->ax,p->ay,p->attrib->size,t->attrib->size))
+    return 0;
 
   regmatch_t pmatch;
 
@@ -120,7 +132,7 @@ static _Bool ismatching(const struct html_s *t, const struct pat *p, const ushor
     return 0;
 
   for (size_t i = 0; i < p->attrib->size; i++) {
-    _Bool found = 0;
+    uchar found = 0;
     for (size_t j = 0; j < t->attrib->size; j++) {
       if (!matchxy(attrib[i].px,attrib[i].py,j,t->attrib->size-1))
         continue;
@@ -145,7 +157,8 @@ static _Bool ismatching(const struct html_s *t, const struct pat *p, const ushor
   return 1;
 }
 
-static void print_struct(const struct html_s *t, const struct pat *p, const ushort lvl)
+static void
+print_struct(const struct html_s *t, const struct pat *p, const ushort lvl)
 {
   if (settings&F_LIST) {
     fwrite(t->tag.b,t->tag.s,1,outfile);
@@ -166,7 +179,8 @@ static void print_struct(const struct html_s *t, const struct pat *p, const usho
   }
 }
 
-static void handle_struct(char *f, size_t *i, const size_t s, const struct pat *p, const ushort lvl)
+static void
+handle_struct(char *f, size_t *i, const size_t s, const struct pat *p, const ushort lvl)
 {
   struct html_s t;
   memset(&t,0,sizeof(struct html_s));
@@ -219,15 +233,17 @@ static void handle_struct(char *f, size_t *i, const size_t s, const struct pat *
   }
 
   for (int j = 0; without_end_s[j]; j++) {
-    if (strlen(without_end_s[j]) == t.tag.s && strncmp(t.tag.b,without_end_s[j],t.tag.s) == 0) {
+    if (strlen(without_end_s[j]) == t.tag.s
+      && strncmp(t.tag.b,without_end_s[j],t.tag.s) == 0) {
       t.all.s = f+*i-t.all.b+1;
       goto END;
     }
   }
 
-  _Bool script = 0;
+  uchar script = 0;
   for (int j = 0; script_s[j]; j++) {
-    if (strlen(script_s[j]) == t.tag.s && strncmp(t.tag.b,script_s[j],t.tag.s) == 0) {
+    if (strlen(script_s[j]) == t.tag.s
+      && strncmp(t.tag.b,script_s[j],t.tag.s) == 0) {
       script = 1;
       break;
     }
@@ -245,15 +261,15 @@ static void handle_struct(char *f, size_t *i, const size_t s, const struct pat *
           t.all.s = (f+*i+1)-t.all.b;
           goto END;
         }
-      }
-      else if (!script) {
+      } else if (!script) {
         if (f[*i+1] == '!') {
           (*i)++;
           handle_comment(f,i,s);
           continue;
         }
-        else
+        else {
           handle_struct(f,i,s,p,lvl+1);
+        }
       }
     }
     (*i)++;
@@ -261,84 +277,81 @@ static void handle_struct(char *f, size_t *i, const size_t s, const struct pat *
 
   END: ;
   print_struct(&t,p,lvl);
-  
   flexarr_free(t.attrib);
 }
 
-static char *delchar(char *src, const size_t pos, size_t *size)
+static char *
+delchar(char *src, const size_t pos, size_t *size)
 {
   size_t s = *size-1;
-  for (size_t g = pos; g < s; g++)
-    src[g] = src[g+1];
+  for (size_t i = pos; i < s; i++)
+    src[i] = src[i+1];
   src[s] = 0;
   *size = s;
   return src;
 }
 
-static void handle_sbrackets(const char *src, size_t *pos, const size_t size, ushort *x, ushort *y)
+int handle_number(const char *src, size_t *pos, const size_t size)
+{
+  size_t t = *pos, s;
+  int ret = atoi(src+t);
+  while_is(isdigit,src,*pos,size) -1;
+  s = *pos-t;
+  if (s == 0)
+    return -1;
+  return ret;
+}
+
+static void
+handle_sbrackets(const char *src, size_t *pos, const size_t size, ushort *x, ushort *y)
 {
   *x = 0;
   *y = 0;
-  char tmp[BRACKETS_SIZE];
-  size_t t1,t2;
+  int r;
+
   (*pos)++;
   while_is(isspace,src,*pos,size);
   if (src[*pos] == '-')
-    goto L1;
+    goto NEXT_VALUE;
   if (src[*pos] == '$') {
     *x = -1;
     (*pos)++;
-    goto L2;
+    goto END;
   }
 
-  t1 = *pos;
-  while_is(isdigit,src,*pos,size);
-  t2 = *pos-t1;
-  if (t2 == 0) {
-    *pos = t1;
-    goto L2;
-  }
-  if (t2 > BRACKETS_SIZE-1)
+  r = handle_number(src,pos,size);
+  if (r == -1)
     return;
-  memcpy(tmp,src+t1,t2);
-  tmp[t2] = 0;
-  *x = atoi(tmp);
+  *x = (ushort)r;
+
   while_is(isspace,src,*pos,size);
 
   if (src[*pos] != '-')
-    goto L2;
+    goto END;
 
-  L1: ;
+  NEXT_VALUE: ;
   (*pos)++;
   while_is(isspace,src,*pos,size);
-  if (src[*pos] == '$') {
+  if (src[*pos] == '$' || src[*pos] == ']') {
     (*pos)++;
     *y = -1;
-    goto L2;
-  } else if (src[*pos] == ']') {
-    *y = -1;
-    goto L2;
+    goto END;
   }
 
-  t1 = *pos;
-  while_is(isdigit,src,*pos,size);
-  t2 = *pos-t1;
-  if (t2 == 0) {
-    *pos = t1;
-    goto L2;
-  }
-  if (t2 > BRACKETS_SIZE)
+  r = handle_number(src,pos,size);
+  if (r == -1)
     return;
-  memcpy(tmp,src+t1,t2);
-  tmp[t2] = 0;
-  *y = atoi(tmp);
+  *y = (ushort)r;
 
-  L2: ;
+  END: ;
   while_is(isspace,src,*pos,size);
-  (*pos)++;
+  if (src[*pos] == ']')
+    (*pos)++;
+  while_is(isspace,src,*pos,size);
 }
 
-static void parse_pattern(char *pattern, size_t size, struct pat *p)
+static void
+parse_pattern(char *pattern, size_t size, struct pat *p)
 {
   struct pel *pe;
   p->attrib = flexarr_init(sizeof(struct pel),PATTERN_SIZE_INC);
@@ -367,14 +380,10 @@ static void parse_pattern(char *pattern, size_t size, struct pat *p)
     if (pattern[i] == '/') {
       i++;
       while_is(isspace,pattern,pos,size);
-      if (pattern[i] == '[') {
+      if (pattern[i] == '[')
         handle_sbrackets(pattern,&i,size,&p->ax,&p->ay);
-        while_is(isspace,pattern,i,size);
-      }
-      if (pattern[i] == '[') {
+      if (pattern[i] == '[')
         handle_sbrackets(pattern,&i,size,&p->px,&p->py);
-        while_is(isspace,pattern,i,size);
-      }
       return;
     }
     if (pattern[i] == '+' || pattern[i] == '-') {
@@ -382,22 +391,17 @@ static void parse_pattern(char *pattern, size_t size, struct pat *p)
       ushort x=0,y=-1;
       i++;
       while_is(isspace,pattern,i,size);
-      if (pattern[i] == '[') {
+      if (pattern[i] == '[')
         handle_sbrackets(pattern,&i,size,&x,&y);
-        while_is(isspace,pattern,i,size);
-      }
       t = i;
       while (i < size && i < PATTERN_SIZE-2 && !isspace(pattern[i]) && pattern[i] != '=')
-          i++;
+        i++;
       memcpy(tmp+1,pattern+t,i-t);
       tmp[i+1-t] = '$';
       tmp[i+2-t] = 0;
       pe = (struct pel*)flexarr_inc(p->attrib);
       pe->flags = 0;
-      if (tf == '+')
-          pe->flags |= 1;
-      else
-          pe->flags &= ~1;
+      toggleflag(tf == '+',pe->flags,1);
 
       if (regcomp(&pe->r[0],tmp,regexflags) != 0) {
         regfree(&pe->r[0]);
@@ -429,7 +433,8 @@ static void parse_pattern(char *pattern, size_t size, struct pat *p)
   }
 }
 
-static flexarr *split_patterns(char *src, size_t s)
+static flexarr *
+split_patterns(char *src, size_t s)
 {
   if (s == 0)
     return NULL;
@@ -454,7 +459,8 @@ static flexarr *split_patterns(char *src, size_t s)
   return ret;
 }
 
-static void go_through(char *f, struct pat *p, const size_t s)
+static void
+go_through(char *f, struct pat *p, const size_t s)
 {
   for (size_t i = 0; i < s; i++) {
     if (f[i] == '<')
@@ -463,7 +469,8 @@ static void go_through(char *f, struct pat *p, const size_t s)
   fflush(outfile); 
 }
 
-static void pattern_free(flexarr *f)
+static void
+pattern_free(flexarr *f)
 {
   if (f == NULL)
       return;
@@ -480,7 +487,8 @@ static void pattern_free(flexarr *f)
   flexarr_free(f);
 }
 
-static void analyze(char *f, size_t s, _Bool inpipe)
+static void
+analyze(char *f, size_t s, uchar inpipe)
 {
   if (f == NULL || s == 0)
     return;
@@ -514,9 +522,8 @@ static void analyze(char *f, size_t s, _Bool inpipe)
   fflush(outfile);
 }
 
-int nftw_func(const char *fpath, const struct stat *sb, int typeflag, struct FTW *ftwbuf);
-
-static void pipe_to_str(int fd, char **file, size_t *size)
+static void
+pipe_to_str(int fd, char **file, size_t *size)
 {
   *file = NULL;
   register size_t readbytes = 0;
@@ -530,7 +537,8 @@ static void pipe_to_str(int fd, char **file, size_t *size)
   *file = realloc(*file,*size);
 }
 
-void handle_file(const char *f)
+void
+handle_file(const char *f)
 {
   int fd;
   struct stat st;
@@ -559,22 +567,23 @@ void handle_file(const char *f)
     if (settings&F_RECURSIVE) {
       if (nftw(f,nftw_func,16,nftwflags) == -1)
         warn("%s",f);
-    }
-    else 
+    } else
       fprintf(stderr,"%s: -R not specified: omitting directory '%s'\n",argv0,f);
     return;
   }
 
   file = mmap(NULL,st.st_size,PROT_READ|PROT_WRITE,MAP_PRIVATE,fd,0);
-  if (file == NULL)
+  if (file == NULL) {
     warn("%s",f);
-  else
+    close(fd);
+  } else {
+    close(fd);
     analyze(file,st.st_size,0);
-
-  close(fd);
+  }
 }
 
-int nftw_func(const char *fpath, const struct stat *sb, int typeflag, struct FTW *ftwbuf)
+int
+nftw_func(const char *fpath, const struct stat *sb, int typeflag, struct FTW *ftwbuf)
 {
   if (typeflag == FTW_F || typeflag == FTW_SL)
     handle_file(fpath);
@@ -582,7 +591,8 @@ int nftw_func(const char *fpath, const struct stat *sb, int typeflag, struct FTW
   return FTW_CONTINUE;
 }
 
-int main(int argc, char **argv)
+int
+main(int argc, char **argv)
 {
   argv0 = argv[0];
   if (argc < 2)
@@ -634,7 +644,7 @@ int main(int argc, char **argv)
     case 'H': nftwflags &= ~FTW_PHYS; break;
     case 'r': settings |= F_RECURSIVE; break;
     case 'R': settings |= F_RECURSIVE; nftwflags &= ~FTW_PHYS; break;
-    case 'V': die("v1.1\n"); break;
+    case 'V': die("v1.1.1"); break;
     case 'h': default:
       usage();
   } ARGEND;
