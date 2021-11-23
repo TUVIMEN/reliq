@@ -34,7 +34,7 @@ dist: clean
 	rm -rf ${TARGET}-${VERSION}
 
 clean:
-	rm -f ${TARGET} ${OBJ} ${TARGET}-${VERSION}.tar.gz
+	rm -f ${TARGET} ${OBJ} ${TARGET}-${VERSION}.tar.xz
 
 install: all
 	mkdir -p ${BINDIR}
