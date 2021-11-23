@@ -90,8 +90,7 @@ handle_comment(char *f, size_t *i, size_t s)
     while (s-*i > 2 && strncmp(f+*i,"-->",3) != 0)
       (*i)++;
     *i += 3;
-  }
-  else {
+  } else {
     while (*i < s && f[*i] != '>')
       (*i)++;
   }
@@ -172,8 +171,7 @@ print_struct(const struct html_s *t, const struct pat *p, const ushort lvl)
       fputc('"',outfile);
     }
     fprintf(outfile," - %lu\n",t->all.s);
-  }
-  else if (p && (settings&F_REVERSE) == 0 ? ismatching(t,p,lvl) : !ismatching(t,p,lvl)) {
+  } else if (p && (settings&F_REVERSE) == 0 ? ismatching(t,p,lvl) : !ismatching(t,p,lvl)) {
     fwrite(t->all.b,t->all.s,1,outfile);
     fputc('\n',outfile);
   }
@@ -266,8 +264,7 @@ handle_struct(char *f, size_t *i, const size_t s, const struct pat *p, const ush
           (*i)++;
           handle_comment(f,i,s);
           continue;
-        }
-        else {
+        } else {
           handle_struct(f,i,s,p,lvl+1);
         }
       }
@@ -387,9 +384,8 @@ parse_pattern(char *pattern, size_t size, struct pat *p)
       return;
     }
     if (pattern[i] == '+' || pattern[i] == '-') {
-      uchar tf = pattern[i]; 
+      uchar tf = pattern[i++]; 
       ushort x=0,y=-1;
-      i++;
       while_is(isspace,pattern,i,size);
       if (pattern[i] == '[')
         handle_sbrackets(pattern,&i,size,&x,&y);
@@ -443,7 +439,7 @@ split_patterns(char *src, size_t s)
     j = i;
 
     while (i < s) {
-      if (src[i] == '\\' && src[i] == ';')
+      if (src[i] == '\\' && src[i+1] == ';')
 	delchar(src,i,&s);
       if (src[i] == ';')
         break;
@@ -610,8 +606,7 @@ main(int argc, char **argv)
       if (argv[0][i_+1]) {
         fname = argv[0]+i_+1;
         brk_= 1;
-      }
-      else {
+      } else {
         argc--;
         fname = *(++argv);
       }
@@ -625,8 +620,7 @@ main(int argc, char **argv)
       if (argv[0][i_+1]) {
         fname = argv[0]+i_+1;
         brk_= 1;
-      }
-      else {
+      } else {
         argc--;
         fname = *(++argv);
       }
@@ -644,7 +638,7 @@ main(int argc, char **argv)
     case 'H': nftwflags &= ~FTW_PHYS; break;
     case 'r': settings |= F_RECURSIVE; break;
     case 'R': settings |= F_RECURSIVE; nftwflags &= ~FTW_PHYS; break;
-    case 'V': die("v1.1.1"); break;
+    case 'V': die(VERSION); break;
     case 'h': default:
       usage();
   } ARGEND;

@@ -1,4 +1,4 @@
-.TH HGREP 1 hgrep\-1.1.1
+.TH HGREP 1 hgrep\-VERSION
 
 .SH NAME
 hgrep - simple html searching tool
@@ -85,7 +85,7 @@ At the begining each pattern should contain regex of html tag.
 .SS ATTRIBUTES
 Before each attribute should be either '+' or '-', where '-' means not-matching of such attribute and '+' matching. As next is regex of attribute. To specify it's value it should be followed by '=' and double quote in which should be regex of value. Leaving attribute without specifying the value of it means that maching of it's value will be skipped.
 .SS "ADDITIONAL OPTIONS"
-To specify additional options for tag before semicolon should be '/' followed by square brackets. First pair of brackets specifies attribute count, second pair specifies position
+To specify additional options for tag before semicolon should be '/' followed by square brackets. First pair of brackets specifies attribute count, second pair specifies position.
 .PP
 To specify additional options for attributes before it's regex should be pair of square brackets specifying it's position (starting from zero).
 .SS "SQUARE BRACKETS"
@@ -93,7 +93,7 @@ Specifying one value in them means that matching value needs to be the same as i
 .PP
 Character \'$' is aliased to the last value.
 .PP
-Specifying two values separated by '-' means range for matching value. Leaving  the values empty means that that value will become zero or the last depending on the order.
+Specifying two values separated by '-' means range for matching value. Leaving  the values empty means that value will become zero or the last depending on the order.
 
 .SH EXAMPLE
 Following example outputs all tags 'a' with attrbute 'href' at position 0 of value ending with '.org' from result of matching tags 'div' with attribute 'id' and without attribute 'class' from file 'index.html'
