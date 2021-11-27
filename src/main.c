@@ -603,30 +603,34 @@ main(int argc, char **argv)
     case 'i': regexflags |= REG_ICASE; break;
     case 'o': {
       char *fname;
+      brk_= 1;
       if (argv[0][i_+1]) {
         fname = argv[0]+i_+1;
-        brk_= 1;
       } else {
+        if (argc == 1)
+            die("%s: option requires an argument -- o",argv0);
         argc--;
         fname = *(++argv);
       }
       outfile = fopen(fname,"w");
       if (outfile == NULL)
-          err(1,"%s\n",fname);
+        err(1,"%s",fname);
     }
     break;
     case 'f': {
       char *fname;
+      brk_= 1;
       if (argv[0][i_+1]) {
         fname = argv[0]+i_+1;
-        brk_= 1;
       } else {
+        if (argc == 1)
+            die("%s: option requires an argument -- f",argv0);
         argc--;
         fname = *(++argv);
       }
       int fd = open(fname,O_RDONLY);
       if (fd == -1)
-          err(1,"%s\n",fname);
+          err(1,"%s",fname);
       size_t s;
       char *p;
       pipe_to_str(fd,&p,&s);
@@ -643,11 +647,17 @@ main(int argc, char **argv)
       usage();
   } ARGEND;
   
-  int g = 0;
-  for (int i = 1; __argv[i]; i++) {
+  int g = 0,j,i;
+  for (i = 1; __argv[i]; i++) {
     if (__argv[i][0] == '-') {
-      if (__argv[i][1] == 'o' || __argv[i][1] == 'f')
-        i++;
+      j = 1;
+      while (__argv[i][j]) {
+        if ((__argv[i][j] == 'o' || __argv[i][j] == 'f') && !__argv[i][j+1]) {
+          i++;
+          break;
+        }
+        j++;
+      }
       continue;
     }
     if (!(settings&F_LIST) && g == 0 && patterns == NULL) {
