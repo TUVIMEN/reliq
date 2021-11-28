@@ -19,17 +19,14 @@
 #include "main.h"
 #include "arg.h"
 
-#define BUFF_INC_VALUE (1<<15)
-#define PATTERN_SIZE (1<<9)
-#define PATTERN_SIZE_INC 16
-#define BRACKETS_SIZE (1<<4)
-
 #define while_is(w,x,y,z) while ((y) < (z) && (w)((x)[(y)])) {(y)++;} \
-  if ((y) >= (z)) return
+  if ((y) > (z)) return
 #define toggleflag(x,y,z) (x) ? ((y) |= (z)) : ((y) &= ~(z))
 
 char *argv0;
 flexarr *patterns = NULL;
+char *fpattern = NULL;
+char last_pattern = 0;
 
 unsigned int settings = 0;
 int regexflags = REG_NEWLINE|REG_NOSUB;
@@ -156,6 +153,108 @@ ismatching(const struct html_s *t, const struct pat *p, const ushort lvl)
   return 1;
 }
 
+static char *
+delchar(char *src, const size_t pos, size_t *size)
+{
+  size_t s = *size-1;
+  for (size_t i = pos; i < s; i++)
+    src[i] = src[i+1];
+  src[s] = 0;
+  *size = s;
+  return src;
+}
+
+int handle_number(const char *src, size_t *pos, const size_t size)
+{
+  size_t t = *pos, s;
+  int ret = atoi(src+t);
+  while_is(isdigit,src,*pos,size) -1;
+  s = *pos-t;
+  if (s == 0)
+    return -1;
+  return ret;
+}
+
+static char
+special_character(const char c)
+{
+  char r;
+  switch (c) {
+    case '0': r = '\0'; break;
+    case 'a': r = '\a'; break;
+    case 'b': r = '\b'; break;
+    case 't': r = '\t'; break;
+    case 'n': r = '\n'; break;
+    case 'v': r = '\v'; break;
+    case 'f': r = '\f'; break;
+    case 'r': r = '\r'; break;
+    default: r = c;
+  }
+  return r;
+}
+
+static void
+handle_printf(const struct html_s *t, const ushort lvl)
+{
+  size_t i = 0, s = strlen(fpattern);
+  while (i < s) {
+    if (fpattern[i] == '\\') {
+      fputc(special_character(fpattern[++i]),outfile);
+      i++;
+      continue;
+    }
+    if (fpattern[i] == '%') {
+      if (++i >= s)
+        break;
+      char cont[PATTERN_SIZE];
+      size_t contl = 0;
+      int num = -1;
+      if (isdigit(fpattern[i])) {
+        num = handle_number(fpattern,&i,s);
+      } else if (fpattern[i] == '(') {
+        for (i++; i < s && fpattern[i] != ')' && contl < PATTERN_SIZE-1; i++) {
+          if (fpattern[i] == '\\') {
+            if (i >= s)
+              break;
+            cont[contl++] = fpattern[i++];
+            continue;
+          }
+          cont[contl++] = fpattern[i];
+        }
+        cont[contl] = 0;
+        if (fpattern[i] == ')')
+          i++;
+      }
+
+      switch (fpattern[i++]) {
+        case '%': fputc('%',outfile); break;
+        case 'A': fwrite(t->all.b,t->all.s,1,outfile); break;
+        case 't': fwrite(t->tag.b,t->tag.s,1,outfile); break;
+        case 'i': fwrite(t->insides.b,t->insides.s,1,outfile); break;
+        case 'l': fprintf(outfile,"%u",lvl); break;
+        case 'a': {
+          flexarr *a = t->attrib;
+          str_pair *av = (str_pair*)a->v;
+          if (num != -1) {
+            if ((size_t)num < a->size)
+              fwrite(av[num].s.b,av[num].s.s,1,outfile);
+          } else if (contl != 0) {
+            for (size_t i = 0; i < a->size; i++)
+              if (av[i].f.s == contl && memcmp(av[i].f.b,cont,contl) == 0)
+                fwrite(av[i].s.b,av[i].s.s,1,outfile);
+          } else for (size_t i = 0; i < a->size; i++) {
+            fwrite(av[i].s.b,av[i].s.s,1,outfile);
+            fputc('"',outfile);
+          }
+        }
+        break;
+      }
+      continue;
+    }
+    fputc(fpattern[i++],outfile);
+  }
+}
+
 static void
 print_struct(const struct html_s *t, const struct pat *p, const ushort lvl)
 {
@@ -172,8 +271,12 @@ print_struct(const struct html_s *t, const struct pat *p, const ushort lvl)
     }
     fprintf(outfile," - %lu\n",t->all.s);
   } else if (p && (settings&F_REVERSE) == 0 ? ismatching(t,p,lvl) : !ismatching(t,p,lvl)) {
-    fwrite(t->all.b,t->all.s,1,outfile);
-    fputc('\n',outfile);
+    if (last_pattern && fpattern) {
+        handle_printf(t,lvl);
+    } else {
+      fwrite(t->all.b,t->all.s,1,outfile);
+      fputc('\n',outfile);
+    }
   }
 }
 
@@ -248,11 +351,13 @@ handle_struct(char *f, size_t *i, const size_t s, const struct pat *p, const ush
   }
 
   (*i)++;
-
+  t.insides.b = f+*i;
+  t.insides.s = *i;
   while (*i < s) {
     if (f[*i] == '<') {
       if (f[*i+1] == '/') {
         if (strncmp(t.tag.b,f+*i+2,t.tag.s) == 0) {
+          t.insides.s = *i-t.insides.s;
           *i += 2+t.tag.s;
           while (*i < s && f[*i] != '>')
             (*i)++;
@@ -275,28 +380,6 @@ handle_struct(char *f, size_t *i, const size_t s, const struct pat *p, const ush
   END: ;
   print_struct(&t,p,lvl);
   flexarr_free(t.attrib);
-}
-
-static char *
-delchar(char *src, const size_t pos, size_t *size)
-{
-  size_t s = *size-1;
-  for (size_t i = pos; i < s; i++)
-    src[i] = src[i+1];
-  src[s] = 0;
-  *size = s;
-  return src;
-}
-
-int handle_number(const char *src, size_t *pos, const size_t size)
-{
-  size_t t = *pos, s;
-  int ret = atoi(src+t);
-  while_is(isdigit,src,*pos,size) -1;
-  s = *pos-t;
-  if (s == 0)
-    return -1;
-  return ret;
 }
 
 static void
@@ -498,7 +581,12 @@ analyze(char *f, size_t s, uchar inpipe)
   size_t *fsize = malloc(patterns->size<<3);
   
   for (size_t i = 0; i < patterns->size; i++) {
-    outfile = (i == patterns->size-1) ? t : open_memstream(&ptr[i],&fsize[i]);
+    if (i == patterns->size-1) {
+      outfile = t;
+      last_pattern = 1;
+    } else {
+      outfile = open_memstream(&ptr[i],&fsize[i]);
+    }
 
     struct pat *flv = &((struct pat*)patterns->v)[i];
     go_through(f,flv,s);
@@ -608,13 +696,21 @@ main(int argc, char **argv)
         fname = argv[0]+i_+1;
       } else {
         if (argc == 1)
-            die("%s: option requires an argument -- o",argv0);
+            die("%s: option requires an argument -- 'o'",argv0);
         argc--;
         fname = *(++argv);
       }
       outfile = fopen(fname,"w");
       if (outfile == NULL)
         err(1,"%s",fname);
+    }
+    break;
+    case 'p': if (strcmp(argv[0]+i_,"printf") == 0) {
+      if (argc == 1)
+        die("%s: option requires an argument -- 'printf'",argv0);
+      brk_ = 1;
+      argc--;
+      fpattern = *(++argv);
     }
     break;
     case 'f': {
@@ -624,13 +720,13 @@ main(int argc, char **argv)
         fname = argv[0]+i_+1;
       } else {
         if (argc == 1)
-            die("%s: option requires an argument -- f",argv0);
+          die("%s: option requires an argument -- 'f'",argv0);
         argc--;
         fname = *(++argv);
       }
       int fd = open(fname,O_RDONLY);
       if (fd == -1)
-          err(1,"%s",fname);
+        err(1,"%s",fname);
       size_t s;
       char *p;
       pipe_to_str(fd,&p,&s);
@@ -643,16 +739,22 @@ main(int argc, char **argv)
     case 'r': settings |= F_RECURSIVE; break;
     case 'R': settings |= F_RECURSIVE; nftwflags &= ~FTW_PHYS; break;
     case 'V': die(VERSION); break;
-    case 'h': default:
+    case 'h':
       usage();
+      break;
+    default:
+      die("%s: invalid option -- '%c'",argv0,argc_);
   } ARGEND;
   
-  int g = 0,j,i;
-  for (i = 1; __argv[i]; i++) {
+  int g = 0,j,i,brk_;
+  for (i = 1;  __argv[i]; i++) {
     if (__argv[i][0] == '-') {
       j = 1;
-      while (__argv[i][j]) {
-        if ((__argv[i][j] == 'o' || __argv[i][j] == 'f') && !__argv[i][j+1]) {
+      brk_ = 0;
+      while (__argv[i][j] && !brk_) {
+        if (__argv[i][j] == 'o' || __argv[i][j] == 'f')
+          brk_ = 1;
+        if ((brk_ && !__argv[i][j+1]) || strcmp(__argv[i]+j,"printf") == 0) {
           i++;
           break;
         }

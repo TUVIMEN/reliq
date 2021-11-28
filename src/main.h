@@ -44,6 +44,11 @@
 #define F_LIST 0x2
 #define F_RECURSIVE 0x4
 
+#define BUFF_INC_VALUE (1<<15)
+#define PATTERN_SIZE (1<<9)
+#define PATTERN_SIZE_INC 16
+#define BRACKETS_SIZE (1<<4)
+
 typedef unsigned char uchar;
 typedef unsigned short ushort;
 
@@ -60,6 +65,7 @@ typedef struct {
 struct html_s {
   str all;
   str tag;
+  str insides;
   flexarr *attrib;
 };
 
