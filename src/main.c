@@ -64,17 +64,18 @@ usage()
       "Search for PATTERNS in each html FILE.\n"\
       "Example: %s -i 'div +id; a +href=\".*\\.org\"' index.html\n\n"\
       "Options:\n"\
-      "  -i\t\tignore case distinctions in patterns and data\n"\
-      "  -v\t\tselect non-matching blocks\n"\
-      "  -l\t\tlist structure of FILE\n"\
-      "  -o FILE\tchange output to a FILE instead of stdout\n"\
-      "  -f FILE\tobtain PATTERNS from FILE\n"\
-      "  -E\t\tuse extended regular expressions\n"\
-      "  -H\t\tfollow symlinks\n"\
-      "  -r\t\tread all files under each directory, recursively\n"\
-      "  -R\t\tlikewise but follow all symlinks\n"\
-      "  -h\t\tshow help\n"\
-      "  -V\t\tshow version\n\n"\
+      "  -i\t\t\tignore case distinctions in patterns and data\n"\
+      "  -v\t\t\tselect non-matching blocks\n"\
+      "  -l\t\t\tlist structure of FILE\n"\
+      "  -o FILE\t\tchange output to a FILE instead of stdout\n"\
+      "  -f FILE\t\tobtain PATTERNS from FILE\n"\
+      "  -printf FORMAT\tprint output according to FORMAT\n"\
+      "  -E\t\t\tuse extended regular expressions\n"\
+      "  -H\t\t\tfollow symlinks\n"\
+      "  -r\t\t\tread all files under each directory, recursively\n"\
+      "  -R\t\t\tlikewise but follow all symlinks\n"\
+      "  -h\t\t\tshow help\n"\
+      "  -V\t\t\tshow version\n\n"\
       "When FILE isn't specified, FILE will become standard input.",argv0,argv0,argv0);
 }
 

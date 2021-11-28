@@ -60,6 +60,49 @@ Invert the sense of matching, to select non-matching lines.
 Change output to a
 .IR FILE
 instead of stdout.
+.TP
+.BI \-printf " FORMAT"
+Print output according to
+.IR FORMAT ,
+interpreting '\e' escapes and `%' directives.  Field widths and precisions can be specified as with the
+.BR printf (3)
+C  function. The escapes and directives are:
+.RS
+.IP \ea
+Alarm bell.
+.IP \eb
+Backspace.
+.IP \ef
+Form feed.
+.IP \en
+Newline.
+.IP \er
+Carriage return.
+.IP \et
+Horizontal tab.
+.IP \ev
+Vertical tab.
+.IP \e0
+ASCII NUL.
+.IP \e\e
+A literal backslash (`\e').
+.IP %%
+A literal percent sign.
+.IP %A
+Whole tag.
+.IP %t
+Tag's name.
+.IP %i
+Tag's insides.
+.IP %l
+Tag's level.
+.IP %a
+Values of tag's attributes separated with '"'
+.IP %\fIk\fPa
+Value of tag's attribute, where \fIk\fP is it's position counted from zero.
+.IP %(\fIk\fP)a
+Value of tag's attribute, where \fIk\fP is it's name.
+
 .SS "File and Directory Selection"
 .TP
 .BR \-r
