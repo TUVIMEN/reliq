@@ -312,7 +312,8 @@ handle_struct(char *f, size_t *i, const size_t s, const struct pat *p, const ush
     
     ac = (str_pair*)flexarr_inc(a);
     ac->f.b = f+*i;
-    while_is(isalpha,f,*i,s);
+    while (f[*i] && !isspace(f[*i]) && f[*i] != '=')
+        (*i)++;
     ac->f.s = (f+*i)-ac->f.b;
     if (f[*i] != '=') {
       a->size--;
