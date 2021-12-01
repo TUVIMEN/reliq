@@ -507,9 +507,9 @@ parse_pattern(char *pattern, size_t size, struct pat *p)
           return;
         }
         pe->flags |= 2;
+        i++;
       } else
         pe->flags &= ~2;
-      i++;
     }
   }
 }
@@ -629,6 +629,7 @@ handle_file(const char *f)
   int fd;
   struct stat st;
   char *file;
+  last_pattern = 0;
 
   if (f == NULL) {
     size_t size;
@@ -751,16 +752,13 @@ main(int argc, char **argv)
   int g = 0,j,i,brk_;
   for (i = 1;  __argv[i]; i++) {
     if (__argv[i][0] == '-') {
-      j = 1;
-      brk_ = 0;
-      while (__argv[i][j] && !brk_) {
+      for (j = 1, brk_ = 0; __argv[i][j] && !brk_; j++) {
         if (__argv[i][j] == 'o' || __argv[i][j] == 'f')
           brk_ = 1;
         if ((brk_ && !__argv[i][j+1]) || strcmp(__argv[i]+j,"printf") == 0) {
           i++;
           break;
         }
-        j++;
       }
       continue;
     }
