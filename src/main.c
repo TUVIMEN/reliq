@@ -302,13 +302,17 @@ handle_struct(char *f, size_t *i, const size_t s, const struct pat *p, const ush
     (*i)++;
   t.tag.s = (f+*i)-t.tag.b;
 
-  for (; *i < s && f[*i] != '>'; (*i)++) {
+  for (; *i < s && f[*i] != '>';) {
     if (f[*i] == '/')
       return;
     
     while_is(isspace,f,*i,s);
-    if (!isalpha(f[*i]))
+    if (!isalpha(f[*i])) {
+      if (f[*i]== '>')
+          break;
+      (*i)++;
       continue;
+    }
     
     ac = (str_pair*)flexarr_inc(a);
     ac->f.b = f+*i;
@@ -318,16 +322,13 @@ handle_struct(char *f, size_t *i, const size_t s, const struct pat *p, const ush
     if (f[*i] != '=') {
       ac->s.b = NULL;
       ac->s.s = 0;
-      if (f[*i] == '>') {
-        (*i)--;
-        break;
-      }
       continue;
     }
     (*i)++;
     while_is(isspace,f,*i,s);
     if (f[*i] != '"' && f[*i] != '\'') {
       a->size--;
+      (*i)++;
       continue;
     }
     char ctc = '\'';
@@ -338,6 +339,7 @@ handle_struct(char *f, size_t *i, const size_t s, const struct pat *p, const ush
     while (*i < s && f[*i] != ctc)
       (*i)++;
     ac->s.s = (f+*i)-ac->s.b;
+    (*i)++;
   }
 
   for (int j = 0; without_end_s[j]; j++) {
