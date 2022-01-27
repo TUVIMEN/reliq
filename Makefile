@@ -4,8 +4,8 @@ CFLAGS = -O3 -march=native -Wall -Wextra -DVERSION=\"${VERSION}\"
 LDFLAGS =
 TARGET = hgrep
 
-PREFIX = /usr
-MANPREFIX = ${PREFIX}/share/man
+PREFIX ?= /usr
+MANPREFIX ?= ${PREFIX}/share/man
 BINDIR = ${DESTDIR}${PREFIX}/bin
 MANDIR = $(DESTDIR)${MANPREFIX}/man1
 
