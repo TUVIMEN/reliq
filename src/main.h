@@ -30,7 +30,6 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <string.h>
-#include <ctype.h>
 #include <stdarg.h>
 #include <sys/mman.h>
 #include <linux/limits.h>
@@ -51,6 +50,11 @@
 
 typedef unsigned char uchar;
 typedef unsigned short ushort;
+
+typedef struct {
+    char *b;
+    uchar s;
+} str8;
 
 typedef struct {
   char *b;

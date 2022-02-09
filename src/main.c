@@ -18,10 +18,11 @@
 
 #include "main.h"
 #include "arg.h"
+#include "ctype.h"
 
-#define while_is(w,x,y,z) while ((y) < (z) && (w)((x)[(y)])) {(y)++;} \
-  if ((y) > (z)) return
+#define while_is(w,x,y,z) while ((y) < (z) && w((x)[(y)])) {(y)++;}
 #define toggleflag(x,y,z) (x) ? ((y) |= (z)) : ((y) &= ~(z))
+#define LENGHT(x) (sizeof(x)/(sizeof(*x)))
 
 char *argv0;
 flexarr *patterns = NULL;
@@ -33,15 +34,15 @@ int regexflags = REG_NEWLINE|REG_NOSUB;
 int nftwflags = FTW_ACTIONRETVAL|FTW_PHYS;
 FILE* outfile;
 
-char *without_end_s[] = { //tags that doesn't end with </tag>
-  "area","base","br","col","embed","hr",
-  "img","input","link","meta","param",
-  "source","track","wbr","command",
-  "keygen","menuitem",NULL
+str8 without_end_s[] = { //tags that doesn't end with </tag>
+  {"area",4},{"base",4},{"br",2},{"col",3},{"embed",5},{"hr",2},
+  {"img",3},{"input",5},{"link",4},{"meta",4},{"param",5},
+  {"source",6},{"track",5},{"wbr",3},{"command",7},
+  {"keygen",6},{"menuitem",8}
 };
 
-char *script_s[] = { //tags which insides should be ommited
-  "script","style",NULL
+str8 script_s[] = { //tags which insides should be ommited
+  {"script",6},{"style",5}
 };
 
 static int nftw_func(const char *fpath, const struct stat *sb, int typeflag, struct FTW *ftwbuf);
@@ -85,7 +86,7 @@ handle_comment(char *f, size_t *i, size_t s)
   (*i)++;
   if (f[*i] == '-' && f[*i+1] == '-') {
     *i += 2;
-    while (s-*i > 2 && strncmp(f+*i,"-->",3) != 0)
+    while (s-*i > 2 && memcmp(f+*i,"-->",3) != 0)
       (*i)++;
     *i += 3;
   } else {
@@ -169,7 +170,7 @@ int handle_number(const char *src, size_t *pos, const size_t size)
 {
   size_t t = *pos, s;
   int ret = atoi(src+t);
-  while_is(isdigit,src,*pos,size) -1;
+  while_is(isdigit,src,*pos,size);
   s = *pos-t;
   if (s == 0)
     return -1;
@@ -316,7 +317,7 @@ handle_struct(char *f, size_t *i, const size_t s, const struct pat *p, const ush
     
     ac = (str_pair*)flexarr_inc(a);
     ac->f.b = f+*i;
-    while (f[*i] && (isalnum(f[*i]) || f[*i] == '-'))
+    while (*i < s && (isalnum(f[*i]) || f[*i] == '-'))
         (*i)++;
     ac->f.s = (f+*i)-ac->f.b;
     if (f[*i] != '=') {
@@ -342,18 +343,18 @@ handle_struct(char *f, size_t *i, const size_t s, const struct pat *p, const ush
     (*i)++;
   }
 
-  for (int j = 0; without_end_s[j]; j++) {
-    if (strlen(without_end_s[j]) == t.tag.s
-      && strncmp(t.tag.b,without_end_s[j],t.tag.s) == 0) {
+  for (uint j = 0; j < (uint)LENGHT(without_end_s); j++) {
+    if ((size_t)without_end_s[j].s == t.tag.s
+      && memcmp(t.tag.b,without_end_s[j].b,t.tag.s) == 0) {
       t.all.s = f+*i-t.all.b+1;
       goto END;
     }
   }
 
   uchar script = 0;
-  for (int j = 0; script_s[j]; j++) {
-    if (strlen(script_s[j]) == t.tag.s
-      && strncmp(t.tag.b,script_s[j],t.tag.s) == 0) {
+  for (uint j = 0; j < (uint)LENGHT(script_s); j++) {
+    if ((size_t)script_s[j].s == t.tag.s
+      && memcmp(t.tag.b,script_s[j].b,t.tag.s) == 0) {
       script = 1;
       break;
     }
@@ -365,7 +366,7 @@ handle_struct(char *f, size_t *i, const size_t s, const struct pat *p, const ush
   while (*i < s) {
     if (f[*i] == '<') {
       if (f[*i+1] == '/') {
-        if (strncmp(t.tag.b,f+*i+2,t.tag.s) == 0) {
+        if (memcmp(t.tag.b,f+*i+2,t.tag.s) == 0) {
           t.insides.s = *i-t.insides.s;
           *i += 2+t.tag.s;
           while (*i < s && f[*i] != '>')
