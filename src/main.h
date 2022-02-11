@@ -39,17 +39,26 @@
 #include <err.h>
 #include "flexarr.h"
 
-#define F_REVERSE 0x1
+#define F_INVERT 0x8
 #define F_LIST 0x2
 #define F_RECURSIVE 0x4
 
+#define A_INVERT 0x1
+#define A_VAL_MATTERS 0x2
+
+#define P_INVERT 0x1
+#define P_MATCH_INSIDES 0x2
+#define P_INVERT_INSIDES 0x4
+
 #define BUFF_INC_VALUE (1<<15)
 #define PATTERN_SIZE (1<<9)
-#define PATTERN_SIZE_INC 16
-#define BRACKETS_SIZE (1<<4)
+#define PATTERN_SIZE_INC 8
+#define BRACKETS_SIZE (1<<6)
 
 typedef unsigned char uchar;
 typedef unsigned short ushort;
+typedef unsigned int uint;
+typedef unsigned long int ulong;
 
 typedef struct {
     char *b;
@@ -74,19 +83,24 @@ struct html_s {
 };
 
 struct pel {
-  uchar flags;
-  ushort px;
-  ushort py;
   regex_t r[2];
+  uint px; //position
+  uint py;
+  uchar flags;
 };
 
 struct pat {
-  ushort px;
-  ushort py;
-  ushort ax;
-  ushort ay;
   regex_t r;
+  regex_t in;
   flexarr *attrib;
+  uint px; //position
+  uint py;
+  uint ax; //atribute
+  uint ay;
+  uint sx; //size
+  uint sy;
+  ushort attribcount;
+  uchar flags;
 };
 
 #endif

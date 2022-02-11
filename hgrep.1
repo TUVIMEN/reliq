@@ -99,9 +99,9 @@ Tag's level.
 .IP %a
 Values of tag's attributes separated with '"'
 .IP %\fIk\fPa
-Value of tag's attribute, where \fIk\fP is it's position counted from zero.
+Value of tag's attribute, where \fIk\fP is its position counted from zero.
 .IP %(\fIk\fP)a
-Value of tag's attribute, where \fIk\fP is it's name.
+Value of tag's attribute, where \fIk\fP is its name.
 
 .SS "File and Directory Selection"
 .TP
@@ -124,13 +124,13 @@ List structure of
 .SH PATTERNS
 Each pattern should be separated by semicolon. Tags and attributes are separated by whitespace characters. Pattern will be matched on results of the matching of previous pattern.
 .SS TAG
-At the begining each pattern should contain regex of html tag.
+At the begining each pattern should contain regex of html tag. If the first character is '!' then matching will be inverted.
 .SS ATTRIBUTES
-Before each attribute should be either '+' or '-', where '-' means not-matching of such attribute and '+' matching. As next is regex of attribute. To specify it's value it should be followed by '=' and double quote in which should be regex of value. Leaving attribute without specifying the value of it means that maching of it's value will be skipped.
+Before each attribute should be either '+' or '-', where '-' means not-matching of such attribute and '+' matching. As next is regex of attribute. To specify its value it should be followed by '=' and double quote in which should be regex of value. Leaving attribute without specifying the value of it means that maching of its value will be skipped.
 .SS "ADDITIONAL OPTIONS"
-To specify additional options for tag before semicolon should be '/' followed by square brackets. First pair of brackets specifies attribute count, second pair specifies position.
+The syntax of additional options is '/[ATTRIBUTE COUNT][LEVEL][INSIDES SIZE]/INSIDES REGEX/' and they should be placed before semicolon. Delimiter can be '/', '#', ',', but it needs to be consistent. If before second delimiter '!' character is met, then its matching will be inverted.
 .PP
-To specify additional options for attributes before it's regex should be pair of square brackets specifying it's position (starting from zero).
+To specify additional options for attributes before its regex should be pair of square brackets specifying its position (starting from zero).
 .SS "SQUARE BRACKETS"
 Specifying one value in them means that matching value needs to be the same as in the brackets.
 .PP
@@ -138,13 +138,38 @@ Character \'$' is aliased to the last value.
 .PP
 Specifying two values separated by '-' means range for matching value. Leaving  the values empty means that value will become zero or the last depending on the order.
 
-.SH EXAMPLE
-Following example outputs all tags 'a' with attrbute 'href' at position 0 of value ending with '.org' from result of matching tags 'div' with attribute 'id' and without attribute 'class' from file 'index.html'
-.br
-hgrep 'div +id -class; a +[0]href=".*\\.org"' index.html
+.SH EXAMPLES
+Get tags 'a' with attribute 'href' at position 0 of value ending with '.org' from result of matching tags 'div' with attribute 'id' and without attribute 'class' from file 'index.html'.
+.nf
+\&
+.in +4m
+.B $ hgrep 'div +id \-class; a +[0]href=".*\\\\.org"' index.html
+.in
+\&
+Get tags which does not have any tags inside them from file 'index.html'.
+.nf
+\&
+.in +4m
+.B $ hgrep '.* /!/</' index.html
+.in
+\&
+Get empty tags from file 'index.html'.
+.nf
+\&
+.in +4m
+.B $ hgrep '.* /[\-][\-][0]' index.html
+.in
+\&
+Get hyperlinks from level greater or equal to 6 from file 'index.html'.
+.nf
+\&
+.in +4m
+.B $ hgrep 'a +href /[\-][6\-]' \-printf '%(href)a\\\\n' index.html
+.in
+\&
 
 .SH "EXIT STATUS"
-On success hgrep returns 0. On error 1.
+On success hgrep returns 0, on error 1.
 
 .SH AUTHOR
 TUVIMEN <suchora.dominik7@gmail.com>

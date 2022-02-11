@@ -21,7 +21,6 @@
 #include "ctype.h"
 
 #define while_is(w,x,y,z) while ((y) < (z) && w((x)[(y)])) {(y)++;}
-#define toggleflag(x,y,z) (x) ? ((y) |= (z)) : ((y) &= ~(z))
 #define LENGHT(x) (sizeof(x)/(sizeof(*x)))
 
 char *argv0;
@@ -96,11 +95,11 @@ handle_comment(char *f, size_t *i, size_t s)
 }
 
 static uchar
-matchxy(ushort x, ushort y, const ushort z, const size_t last)
+matchxy(uint x, uint y, const uint z, const size_t last)
 {
-  if (x == USHRT_MAX)
+  if (x == UINT_MAX)
       x = last;
-  if (y == USHRT_MAX)
+  if (y == UINT_MAX)
       y = last;
   if (y == 0) {
     if (z == x)
@@ -117,17 +116,18 @@ ismatching(const struct html_s *t, const struct pat *p, const ushort lvl)
   flexarr *a = t->attrib;
   str_pair *av = (str_pair*)a->v;
   const struct pel *attrib = (struct pel*)p->attrib->v;
+  uchar rev = ((p->flags&P_INVERT) == P_INVERT);
+  regmatch_t pmatch;
 
   if (!matchxy(p->px,p->py,lvl,-1)
-    || !matchxy(p->ax,p->ay,p->attrib->size,t->attrib->size))
-    return 0;
-
-  regmatch_t pmatch;
+    || !matchxy(p->ax,p->ay,p->attribcount,t->attrib->size)
+    || !matchxy(p->sx,p->sy,t->insides.s,-1))
+    return 0^rev;
 
   pmatch.rm_so = 0;
   pmatch.rm_eo = (int)t->tag.s;
   if (regexec(&p->r,t->tag.b,1,&pmatch,REG_STARTEND) != 0)
-    return 0;
+    return 0^rev;
 
   for (size_t i = 0; i < p->attrib->size; i++) {
     uchar found = 0;
@@ -139,7 +139,7 @@ ismatching(const struct html_s *t, const struct pat *p, const ushort lvl)
       if (regexec(&attrib[i].r[0],av[j].f.b,1,&pmatch,REG_STARTEND) != 0)
         continue;
 
-      if (attrib[i].flags&2) {
+      if (attrib[i].flags&A_VAL_MATTERS) {
         pmatch.rm_eo = (int)av[j].s.s;
         if (regexec(&attrib[i].r[1],av[j].s.b,1,&pmatch,REG_STARTEND) != 0)
           continue;
@@ -148,11 +148,18 @@ ismatching(const struct html_s *t, const struct pat *p, const ushort lvl)
       found = 1;
     }
 
-    if ((attrib[i].flags&1) ? !found : found)
-      return 0;
+    if (((attrib[i].flags&A_INVERT)==A_INVERT)^found)
+      return 0^rev;
   }
 
-  return 1;
+  if (p->flags&P_MATCH_INSIDES) {
+    pmatch.rm_so = 0;
+    pmatch.rm_eo = (int)t->insides.s;
+    if ((regexec(&p->in,t->insides.b,1,&pmatch,REG_STARTEND) != 0)^((p->flags&P_INVERT_INSIDES)==P_INVERT_INSIDES))
+      return 0^rev;
+  }
+
+  return 1^rev;
 }
 
 static char *
@@ -272,7 +279,7 @@ print_struct(const struct html_s *t, const struct pat *p, const ushort lvl)
       fputc('"',outfile);
     }
     fprintf(outfile," - %lu\n",t->all.s);
-  } else if (p && (settings&F_REVERSE) == 0 ? ismatching(t,p,lvl) : !ismatching(t,p,lvl)) {
+  } else if (p && (((settings&F_INVERT)==F_INVERT)^ismatching(t,p,lvl))) {
     if (last_pattern && fpattern) {
         handle_printf(t,lvl);
     } else {
@@ -327,20 +334,25 @@ handle_struct(char *f, size_t *i, const size_t s, const struct pat *p, const ush
     }
     (*i)++;
     while_is(isspace,f,*i,s);
-    if (f[*i] != '"' && f[*i] != '\'') {
+    if (f[*i] == '>') {
       a->size--;
       (*i)++;
       continue;
     }
-    char ctc = '\'';
-    if (f[*i] == '"')
-        ctc = '"';
-    (*i)++;
-    ac->s.b = f+*i;
-    while (*i < s && f[*i] != ctc)
-      (*i)++;
-    ac->s.s = (f+*i)-ac->s.b;
-    (*i)++;
+    if (f[*i] == '\'' || f[*i] == '"') {
+      char delim = f[(*i)++];
+      ac->s.b = f+*i;
+      while (*i < s && f[*i] != delim)
+        (*i)++;
+      ac->s.s = (f+*i)-ac->s.b;
+      if (f[*i] == delim)
+        (*i)++;
+    } else {
+      ac->s.b = f+*i;
+      while (*i < s && !isspace(f[*i]) && f[*i] != '>')
+        (*i)++;
+       ac->s.s = (f+*i)-ac->s.b;
+    }
   }
 
   for (uint j = 0; j < (uint)LENGHT(without_end_s); j++) {
@@ -393,7 +405,7 @@ handle_struct(char *f, size_t *i, const size_t s, const struct pat *p, const ush
 }
 
 static void
-handle_sbrackets(const char *src, size_t *pos, const size_t size, ushort *x, ushort *y)
+handle_sbrackets(const char *src, size_t *pos, const size_t size, uint *x, uint *y)
 {
   *x = 0;
   *y = 0;
@@ -412,7 +424,7 @@ handle_sbrackets(const char *src, size_t *pos, const size_t size, ushort *x, ush
   r = handle_number(src,pos,size);
   if (r == -1)
     return;
-  *x = (ushort)r;
+  *x = (uint)r;
 
   while_is(isspace,src,*pos,size);
 
@@ -431,7 +443,7 @@ handle_sbrackets(const char *src, size_t *pos, const size_t size, ushort *x, ush
   r = handle_number(src,pos,size);
   if (r == -1)
     return;
-  *y = (ushort)r;
+  *y = (uint)r;
 
   END: ;
   while_is(isspace,src,*pos,size);
@@ -445,15 +457,22 @@ parse_pattern(char *pattern, size_t size, struct pat *p)
 {
   struct pel *pe;
   p->attrib = flexarr_init(sizeof(struct pel),PATTERN_SIZE_INC);
+  p->attribcount = 0;
   p->py = -1;
   p->px = 0;
   p->ay = -1;
   p->ax = 0;
+  p->sy = -1;
+  p->sx = 0;
   char tmp[PATTERN_SIZE];
   tmp[0] = '^';
 
   size_t pos = 0,t;
   while_is(isspace,pattern,pos,size);
+  if (pattern[pos] == '!') {
+      p->flags |= P_INVERT;
+      pos++;
+  }
   t = pos;
   while (pos < size && pos-t < PATTERN_SIZE-2 && !isspace(pattern[pos]))
     pos++;
@@ -467,18 +486,48 @@ parse_pattern(char *pattern, size_t size, struct pat *p)
 
   for (size_t i = pos; i < size; i++) {
     while_is(isspace,pattern,pos,size);
-    if (pattern[i] == '/') {
-      i++;
-      while_is(isspace,pattern,pos,size);
-      if (pattern[i] == '[')
+    if (pattern[i] == '/' || pattern[i] == '#' || pattern[i] == ',') {
+      char delim = pattern[i++];
+      while_is(isspace,pattern,i,size);
+      if (pattern[i] == '[') {
         handle_sbrackets(pattern,&i,size,&p->ax,&p->ay);
-      if (pattern[i] == '[')
+        while_is(isspace,pattern,i,size);
+      }
+      if (pattern[i] == '[') {
         handle_sbrackets(pattern,&i,size,&p->px,&p->py);
+        while_is(isspace,pattern,i,size);
+      }
+      if (pattern[i] == '[') {
+        handle_sbrackets(pattern,&i,size,&p->sx,&p->sy);
+        while_is(isspace,pattern,i,size);
+      }
+      if (i < size && pattern[i] == '!') {
+        p->flags |= P_INVERT_INSIDES;
+        i++;
+        while_is(isspace,pattern,i,size);
+      }
+      if (pattern[i] == delim) {
+        i++;
+        p->flags |= P_MATCH_INSIDES;
+        size_t j = 0;
+        for (; i < size && j < PATTERN_SIZE; i++) {
+          if (pattern[i] == '\\' && i+1 < size && pattern[i+1] == delim)
+            i++;
+          if (pattern[i] == delim)
+            break;
+          tmp[j++] = pattern[i];
+        }
+        tmp[j] = 0;
+        if (regcomp(&p->in,tmp,regexflags) != 0) {
+          regfree(&p->in);
+          return;
+        }
+      }
       return;
     }
     if (pattern[i] == '+' || pattern[i] == '-') {
       uchar tf = pattern[i++]; 
-      ushort x=0,y=-1;
+      uint x=0,y=-1;
       while_is(isspace,pattern,i,size);
       if (pattern[i] == '[')
         handle_sbrackets(pattern,&i,size,&x,&y);
@@ -490,7 +539,12 @@ parse_pattern(char *pattern, size_t size, struct pat *p)
       tmp[i+2-t] = 0;
       pe = (struct pel*)flexarr_inc(p->attrib);
       pe->flags = 0;
-      toggleflag(tf == '+',pe->flags,1);
+      if (tf == '+') {
+        p->attribcount++;
+        pe->flags |= A_INVERT;
+      } else {
+        pe->flags &= ~A_INVERT;
+      }
 
       if (regcomp(&pe->r[0],tmp,regexflags) != 0) {
         regfree(&pe->r[0]);
@@ -514,10 +568,10 @@ parse_pattern(char *pattern, size_t size, struct pat *p)
           regfree(&pe->r[1]);
           return;
         }
-        pe->flags |= 2;
+        pe->flags |= A_VAL_MATTERS;
         i++;
       } else
-        pe->flags &= ~2;
+        pe->flags &= ~A_VAL_MATTERS;
     }
   }
 }
@@ -568,7 +622,7 @@ pattern_free(flexarr *f)
     regfree(&flv->r);
     for (size_t j = 0; j < flv->attrib->size; j++) {
       regfree(&((struct pel*)flv->attrib->v)[j].r[0]);
-      if (((struct pel*)flv->attrib->v)[j].flags&2)
+      if (((struct pel*)flv->attrib->v)[j].flags&A_VAL_MATTERS)
         regfree(&((struct pel*)flv->attrib->v)[j].r[1]);
     }
     flexarr_free(flv->attrib);
@@ -696,7 +750,7 @@ main(int argc, char **argv)
   outfile = stdout;
 
   ARGBEGIN {
-    case 'v': settings |= F_REVERSE; break;
+    case 'v': settings |= F_INVERT; break;
     case 'l': settings |= F_LIST; break;
     case 'E': regexflags |= REG_EXTENDED; break;
     case 'i': regexflags |= REG_ICASE; break;
