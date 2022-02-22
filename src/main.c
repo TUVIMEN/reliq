@@ -31,6 +31,7 @@ char last_pattern = 0;
 unsigned int settings = 0;
 int regexflags = REG_NEWLINE|REG_NOSUB;
 int nftwflags = FTW_ACTIONRETVAL|FTW_PHYS;
+char *reference;
 FILE* outfile;
 
 str8 without_end_s[] = { //tags that doesn't end with </tag>
@@ -202,6 +203,21 @@ special_character(const char c)
   return r;
 }
 
+static
+void
+print_attribs(const struct html_s *t)
+{
+  flexarr *a = t->attrib;
+  str_pair *av = (str_pair*)a->v;
+  for (size_t j = 0; j < a->size; j++) {
+    fputc(' ',outfile);
+    fwrite(av[j].f.b,av[j].f.s,1,outfile);
+    fputs("=\"",outfile);
+    fwrite(av[j].s.b,av[j].s.s,1,outfile);
+    fputc('"',outfile);
+  }
+}
+
 static void
 handle_printf(const struct html_s *t, const ushort lvl)
 {
@@ -241,6 +257,9 @@ handle_printf(const struct html_s *t, const ushort lvl)
         case 't': fwrite(t->tag.b,t->tag.s,1,outfile); break;
         case 'i': fwrite(t->insides.b,t->insides.s,1,outfile); break;
         case 'l': fprintf(outfile,"%u",lvl); break;
+        case 's': fprintf(outfile,"%lu",t->all.s); break;
+        case 'p': fprintf(outfile,"%lu",t->all.b-reference); break;
+        case 'I': print_attribs(t); break;
         case 'a': {
           flexarr *a = t->attrib;
           str_pair *av = (str_pair*)a->v;
@@ -269,16 +288,8 @@ print_struct(const struct html_s *t, const struct pat *p, const ushort lvl)
 {
   if (settings&F_LIST) {
     fwrite(t->tag.b,t->tag.s,1,outfile);
-    flexarr *a = t->attrib;
-    str_pair *av = (str_pair*)a->v;
-    for (size_t j = 0; j < a->size; j++) {
-      fputc(' ',outfile);
-      fwrite(av[j].f.b,av[j].f.s,1,outfile);
-      fputs("=\"",outfile);
-      fwrite(av[j].s.b,av[j].s.s,1,outfile);
-      fputc('"',outfile);
-    }
-    fprintf(outfile," - %lu\n",t->all.s);
+    print_attribs(t);
+    fprintf(outfile," - %lu/%lu\n",t->all.s,t->all.b-reference);
   } else if (p && (((settings&F_INVERT)==F_INVERT)^ismatching(t,p,lvl))) {
     if (last_pattern && fpattern) {
         handle_printf(t,lvl);
@@ -647,6 +658,7 @@ analyze(char *f, size_t s, uchar inpipe)
   if (f == NULL || s == 0)
     return;
   if (patterns == NULL) {
+    reference = f;
     go_through(f,NULL,s);
     return;
   }
@@ -664,6 +676,7 @@ analyze(char *f, size_t s, uchar inpipe)
     }
 
     struct pat *flv = &((struct pat*)patterns->v)[i];
+    reference = f;
     go_through(f,flv,s);
 
     if (!inpipe && i == 0)
