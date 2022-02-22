@@ -27,6 +27,9 @@ hgrep: ${OBJ}
 %.o: %.c
 	${CC} ${CFLAGS} -c $< -o $@
 
+test:
+	@./test.sh test.csv
+
 dist: clean
 	mkdir -p ${TARGET}-${VERSION}
 	cp -r LICENSE Makefile README.md src hgrep.1 ${TARGET}-${VERSION}
