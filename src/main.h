@@ -99,7 +99,6 @@ struct pat {
   uint ay;
   uint sx; //size
   uint sy;
-  ushort attribcount;
   uchar flags;
 };
 

@@ -120,7 +120,7 @@ ismatching(const struct html_s *t, const struct pat *p, const ushort lvl)
   regmatch_t pmatch;
 
   if (!matchxy(p->px,p->py,lvl,-1)
-    || !matchxy(p->ax,p->ay,p->attribcount,t->attrib->size)
+    || !matchxy(p->ax,p->ay,t->attrib->size,-1)
     || !matchxy(p->sx,p->sy,t->insides.s,-1))
     return 0^rev;
 
@@ -434,9 +434,19 @@ handle_sbrackets(const char *src, size_t *pos, const size_t size, uint *x, uint 
   NEXT_VALUE: ;
   (*pos)++;
   while_is(isspace,src,*pos,size);
-  if (src[*pos] == '$' || src[*pos] == ']') {
+  if (src[*pos] == ']') {
     (*pos)++;
     *y = -1;
+    goto END;
+  }
+  if (src[*pos] == '$') {
+    (*pos)++;
+    *y = -1;
+    while_is(isspace,src,*pos,size);
+    while (src[*pos] != ']' && *pos < size)
+        (*pos)++;
+    if (src[*pos] == ']' && *pos < size)
+        (*pos)++;
     goto END;
   }
 
@@ -447,17 +457,14 @@ handle_sbrackets(const char *src, size_t *pos, const size_t size, uint *x, uint 
 
   END: ;
   while_is(isspace,src,*pos,size);
-  if (src[*pos] == ']')
-    (*pos)++;
-  while_is(isspace,src,*pos,size);
 }
 
 static void
 parse_pattern(char *pattern, size_t size, struct pat *p)
 {
   struct pel *pe;
+  ushort attribcount = 0;
   p->attrib = flexarr_init(sizeof(struct pel),PATTERN_SIZE_INC);
-  p->attribcount = 0;
   p->py = -1;
   p->px = 0;
   p->ay = -1;
@@ -523,6 +530,8 @@ parse_pattern(char *pattern, size_t size, struct pat *p)
           return;
         }
       }
+      if (p->ax < attribcount)
+        p->ax = attribcount;
       return;
     }
     if (pattern[i] == '+' || pattern[i] == '-') {
@@ -540,7 +549,7 @@ parse_pattern(char *pattern, size_t size, struct pat *p)
       pe = (struct pel*)flexarr_inc(p->attrib);
       pe->flags = 0;
       if (tf == '+') {
-        p->attribcount++;
+        attribcount++;
         pe->flags |= A_INVERT;
       } else {
         pe->flags &= ~A_INVERT;
@@ -574,6 +583,8 @@ parse_pattern(char *pattern, size_t size, struct pat *p)
         pe->flags &= ~A_VAL_MATTERS;
     }
   }
+  if (p->ax < attribcount)
+    p->ax = attribcount;
 }
 
 static flexarr *
