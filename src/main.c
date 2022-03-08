@@ -317,13 +317,17 @@ handle_struct(char *f, size_t *i, const size_t s, const struct pat *p, const ush
     return;
   }
   t.tag.b = f+*i;
-  while (*i < s && !isspace(f[*i]) && f[*i] != '>')
+  while (*i < s && (isalnum(f[*i]) || f[*i] == '-'))
     (*i)++;
   t.tag.s = (f+*i)-t.tag.b;
 
   for (; *i < s && f[*i] != '>';) {
-    if (f[*i] == '/')
-      return;
+    if (f[*i] == '/') {
+      char *r = memchr(f+*i,'>',s-*i);
+      if (r != NULL)
+        t.all.s = r-t.all.b+1;
+      goto END;
+    }
     
     while_is(isspace,f,*i,s);
     if (!isalpha(f[*i])) {
