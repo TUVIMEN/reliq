@@ -4,6 +4,12 @@ CFLAGS = -O3 -march=native -Wall -Wextra -DVERSION=\"${VERSION}\"
 LDFLAGS =
 TARGET = hgrep
 
+O_PHPTAGS := 1 # support for <?php ?>
+
+ifeq ($(strip ${O_PHPTAGS}),1)
+	CFLAGS += -DPHPTAGS
+endif
+
 PREFIX ?= /usr
 MANPREFIX ?= ${PREFIX}/share/man
 BINDIR = ${DESTDIR}${PREFIX}/bin
@@ -27,8 +33,9 @@ hgrep: ${OBJ}
 %.o: %.c
 	${CC} ${CFLAGS} -c $< -o $@
 
-test:
-	@./test.sh test.csv
+test: clean all
+	@./test.sh test.csv test.html
+	@[ ${O_PHPTAGS} -eq 1 ] && ./test.sh test-php.csv test.php || true
 
 dist: clean
 	mkdir -p ${TARGET}-${VERSION}

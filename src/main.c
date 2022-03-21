@@ -115,13 +115,20 @@ static uchar
 ismatching(const struct html_s *t, const struct pat *p, const ushort lvl)
 {
   flexarr *a = t->attrib;
-  str_pair *av = (str_pair*)a->v;
+  str_pair *av;
   const struct pel *attrib = (struct pel*)p->attrib->v;
   uchar rev = ((p->flags&P_INVERT) == P_INVERT);
   regmatch_t pmatch;
 
   if (!matchxy(p->px,p->py,lvl,-1)
-    || !matchxy(p->ax,p->ay,t->attrib->size,-1)
+    ||
+  #ifdef PHPTAGS
+     (a &&
+  #endif
+     !matchxy(p->ax,p->ay,t->attrib->size,-1)
+  #ifdef PHPTAGS
+     )
+  #endif
     || !matchxy(p->sx,p->sy,t->insides.s,-1))
     return 0^rev;
 
@@ -130,6 +137,10 @@ ismatching(const struct html_s *t, const struct pat *p, const ushort lvl)
   if (regexec(&p->r,t->tag.b,1,&pmatch,REG_STARTEND) != 0)
     return 0^rev;
 
+  #ifdef PHPTAGS
+  if (a) {
+  #endif
+  av = (str_pair*)a->v;
   for (size_t i = 0; i < p->attrib->size; i++) {
     uchar found = 0;
     for (size_t j = 0; j < t->attrib->size; j++) {
@@ -152,6 +163,9 @@ ismatching(const struct html_s *t, const struct pat *p, const ushort lvl)
     if (((attrib[i].flags&A_INVERT)==A_INVERT)^found)
       return 0^rev;
   }
+  #ifdef PHPTAGS
+  }
+  #endif
 
   if (p->flags&P_MATCH_INSIDES) {
     pmatch.rm_so = 0;
@@ -207,6 +221,10 @@ static
 void
 print_attribs(const struct html_s *t)
 {
+  #ifdef PHPTAGS
+  if (!t->attrib)
+    return;
+  #endif
   flexarr *a = t->attrib;
   str_pair *av = (str_pair*)a->v;
   for (size_t j = 0; j < a->size; j++) {
@@ -305,8 +323,7 @@ handle_struct(char *f, size_t *i, const size_t s, const struct pat *p, const ush
 {
   struct html_s t;
   memset(&t,0,sizeof(struct html_s));
-  t.attrib = flexarr_init(sizeof(str_pair),PATTERN_SIZE_INC);
-  flexarr *a = t.attrib;
+  flexarr *a;
   str_pair *ac;
 
   t.all.b = f+*i;
@@ -316,6 +333,64 @@ handle_struct(char *f, size_t *i, const size_t s, const struct pat *p, const ush
     handle_comment(f,i,s);
     return;
   }
+
+  #ifdef PHPTAGS
+  if (f[*i] == '?') {
+    (*i)++;
+    while_is(isspace,f,*i,s);
+    t.tag.b = f+*i;
+    while (*i < s && (isalnum(f[*i]) || f[*i] == '-'))
+      (*i)++;
+    t.tag.s = (f+*i)-t.tag.b;
+    char *ending;
+    for (; *i < s; (*i)++) {
+      if (f[*i] == '\\') {
+        *i += 2;
+        continue;
+      }
+      if (f[*i] == '?' && f[*i+1] == '>')
+        break;
+      if (f[*i] == '"') {
+        (*i)++;
+        size_t n,jumpv;
+        while (1) {
+          ending = memchr(f+*i,'"',s-*i);
+          if (!ending) {
+            *i = s;
+            return;
+          }
+          jumpv = ending-f-*i;
+          if (!jumpv) {
+            (*i)++;
+            break;
+          }
+          *i = ending-f;
+          n = 1;
+          while (jumpv && f[*i-n] == '\\')
+            n++;
+          if ((n-1)&1)
+            continue;
+          break;
+        }
+      } else if (f[*i] == '\'') {
+        (*i)++;
+        ending = memchr(f+*i,'\'',s-*i);
+        if (ending) {
+          *i = ending-f;
+        } else {
+          *i = s;
+          return;
+        }
+      }
+    }
+    *i += 2;
+    t.all.s = (f+*i)-t.all.b;
+    goto END;
+  }
+  #endif
+
+  a = t.attrib = flexarr_init(sizeof(str_pair),PATTERN_SIZE_INC);
+
   t.tag.b = f+*i;
   while (*i < s && (isalnum(f[*i]) || f[*i] == '-'))
     (*i)++;
@@ -416,7 +491,10 @@ handle_struct(char *f, size_t *i, const size_t s, const struct pat *p, const ush
 
   END: ;
   print_struct(&t,p,lvl);
-  flexarr_free(t.attrib);
+  #ifdef PHPTAGS
+  if (t.attrib)
+  #endif
+    flexarr_free(t.attrib);
 }
 
 static void
