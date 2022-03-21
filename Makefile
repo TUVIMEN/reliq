@@ -4,7 +4,7 @@ CFLAGS = -O3 -march=native -Wall -Wextra -DVERSION=\"${VERSION}\"
 LDFLAGS =
 TARGET = hgrep
 
-O_PHPTAGS := 1 # support for <?php ?>
+O_PHPTAGS := 0 # support for <?php ?>
 
 ifeq ($(strip ${O_PHPTAGS}),1)
 	CFLAGS += -DPHPTAGS

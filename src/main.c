@@ -35,8 +35,8 @@ char *reference;
 FILE* outfile;
 
 str8 without_end_s[] = { //tags that doesn't end with </tag>
-  {"area",4},{"base",4},{"br",2},{"col",3},{"embed",5},{"hr",2},
-  {"img",3},{"input",5},{"link",4},{"meta",4},{"param",5},
+  {"br",2},{"hr",2},{"img",3},{"input",5},{"col",3},{"embed",5},
+  {"area",4},{"base",4},{"link",4},{"meta",4},{"param",5},
   {"source",6},{"track",5},{"wbr",3},{"command",7},
   {"keygen",6},{"menuitem",8}
 };
@@ -348,8 +348,10 @@ handle_struct(char *f, size_t *i, const size_t s, const struct pat *p, const ush
         *i += 2;
         continue;
       }
-      if (f[*i] == '?' && f[*i+1] == '>')
+      if (f[*i] == '?' && f[*i+1] == '>') {
+        (*i)++;
         break;
+      }
       if (f[*i] == '"') {
         (*i)++;
         size_t n,jumpv;
@@ -383,8 +385,7 @@ handle_struct(char *f, size_t *i, const size_t s, const struct pat *p, const ush
         }
       }
     }
-    *i += 2;
-    t.all.s = (f+*i)-t.all.b;
+    t.all.s = (f+*i)-t.all.b+1;
     goto END;
   }
   #endif
@@ -397,6 +398,7 @@ handle_struct(char *f, size_t *i, const size_t s, const struct pat *p, const ush
   t.tag.s = (f+*i)-t.tag.b;
 
   for (; *i < s && f[*i] != '>';) {
+    while_is(isspace,f,*i,s);
     if (f[*i] == '/') {
       char *r = memchr(f+*i,'>',s-*i);
       if (r != NULL)
@@ -404,7 +406,6 @@ handle_struct(char *f, size_t *i, const size_t s, const struct pat *p, const ush
       goto END;
     }
     
-    while_is(isspace,f,*i,s);
     if (!isalpha(f[*i])) {
       if (f[*i]== '>')
           break;
