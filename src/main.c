@@ -34,7 +34,7 @@ int nftwflags = FTW_ACTIONRETVAL|FTW_PHYS;
 char *reference;
 FILE* outfile;
 
-str8 without_end_s[] = { //tags that doesn't end with </tag>
+str8 selfclosing_s[] = { //tags that doesn't end with </tag>
   {"br",2},{"hr",2},{"img",3},{"input",5},{"col",3},{"embed",5},
   {"area",4},{"base",4},{"link",4},{"meta",4},{"param",5},
   {"source",6},{"track",5},{"wbr",3},{"command",7},
@@ -44,6 +44,14 @@ str8 without_end_s[] = { //tags that doesn't end with </tag>
 str8 script_s[] = { //tags which insides should be ommited
   {"script",6},{"style",5}
 };
+
+#ifdef AUTOCLOSING
+str8 autoclosing_s[] = { //tags that doesn't need to be closed
+  {"p",1},{"tr",2},{"td",2},{"th",2},{"tbody",5},{"tfoot",5},
+  {"thead",5},{"rt",2},{"rp",2},{"caption",7},
+  {"colgroup",8},{"option",6},{"optgroup",8}
+};
+#endif
 
 static int nftw_func(const char *fpath, const struct stat *sb, int typeflag, struct FTW *ftwbuf);
 
@@ -319,12 +327,112 @@ print_struct(const struct html_s *t, const struct pat *p, const ushort lvl)
 }
 
 static void
+handle_name(char *f, size_t *i, const size_t s, str *tag)
+{
+    tag->b = f+*i;
+    while (*i < s && (isalnum(f[*i]) || f[*i] == '-'))
+      (*i)++;
+    tag->s = (f+*i)-tag->b;
+}
+
+#ifdef PHPTAGS
+static void
+handle_phptag(char *f, size_t *i, const size_t s, struct html_s *t)
+{
+  (*i)++;
+  while_is(isspace,f,*i,s);
+  handle_name(f,i,s,&t->tag);
+
+  char *ending;
+  for (; *i < s; (*i)++) {
+    if (f[*i] == '\\') {
+      *i += 2;
+      continue;
+    }
+    if (f[*i] == '?' && f[*i+1] == '>') {
+      (*i)++;
+      break;
+    }
+    if (f[*i] == '"') {
+      (*i)++;
+      size_t n,jumpv;
+      while (1) {
+        ending = memchr(f+*i,'"',s-*i);
+        if (!ending) {
+          *i = s;
+          return;
+        }
+        jumpv = ending-f-*i;
+        if (!jumpv) {
+          (*i)++;
+          break;
+        }
+        *i = ending-f;
+        n = 1;
+        while (jumpv && f[*i-n] == '\\')
+          n++;
+        if ((n-1)&1)
+          continue;
+        break;
+      }
+    } else if (f[*i] == '\'') {
+      (*i)++;
+      ending = memchr(f+*i,'\'',s-*i);
+      if (ending) {
+        *i = ending-f;
+      } else {
+        *i = s;
+        return;
+      }
+    }
+  }
+  t->all.s = (f+*i)-t->all.b+1;
+}
+#endif
+
+static void
+handle_attrib(char *f, size_t *i, const size_t s, flexarr *attribs)
+{
+  str_pair *ac = (str_pair*)flexarr_inc(attribs);
+  handle_name(f,i,s,&ac->f);
+  if (f[*i] != '=') {
+    ac->s.b = NULL;
+    ac->s.s = 0;
+    return;
+  }
+  (*i)++;
+  while_is(isspace,f,*i,s);
+  if (f[*i] == '>') {
+    attribs->size--;
+    (*i)++;
+    return;
+  }
+  if (f[*i] == '\'' || f[*i] == '"') {
+    char delim = f[(*i)++];
+    ac->s.b = f+*i;
+    char *ending = memchr(f+*i,delim,s-*i);
+    if (!ending) {
+      *i = s;
+      return;
+    }
+    *i = ending-f;
+    ac->s.s = (f+*i)-ac->s.b;
+    if (f[*i] == delim)
+      (*i)++;
+  } else {
+    ac->s.b = f+*i;
+    while (*i < s && !isspace(f[*i]) && f[*i] != '>')
+      (*i)++;
+     ac->s.s = (f+*i)-ac->s.b;
+  }
+}
+
+static void
 handle_struct(char *f, size_t *i, const size_t s, const struct pat *p, const ushort lvl)
 {
   struct html_s t;
   memset(&t,0,sizeof(struct html_s));
   flexarr *a;
-  str_pair *ac;
 
   t.all.b = f+*i;
   (*i)++;
@@ -336,67 +444,14 @@ handle_struct(char *f, size_t *i, const size_t s, const struct pat *p, const ush
 
   #ifdef PHPTAGS
   if (f[*i] == '?') {
-    (*i)++;
-    while_is(isspace,f,*i,s);
-    t.tag.b = f+*i;
-    while (*i < s && (isalnum(f[*i]) || f[*i] == '-'))
-      (*i)++;
-    t.tag.s = (f+*i)-t.tag.b;
-    char *ending;
-    for (; *i < s; (*i)++) {
-      if (f[*i] == '\\') {
-        *i += 2;
-        continue;
-      }
-      if (f[*i] == '?' && f[*i+1] == '>') {
-        (*i)++;
-        break;
-      }
-      if (f[*i] == '"') {
-        (*i)++;
-        size_t n,jumpv;
-        while (1) {
-          ending = memchr(f+*i,'"',s-*i);
-          if (!ending) {
-            *i = s;
-            return;
-          }
-          jumpv = ending-f-*i;
-          if (!jumpv) {
-            (*i)++;
-            break;
-          }
-          *i = ending-f;
-          n = 1;
-          while (jumpv && f[*i-n] == '\\')
-            n++;
-          if ((n-1)&1)
-            continue;
-          break;
-        }
-      } else if (f[*i] == '\'') {
-        (*i)++;
-        ending = memchr(f+*i,'\'',s-*i);
-        if (ending) {
-          *i = ending-f;
-        } else {
-          *i = s;
-          return;
-        }
-      }
-    }
-    t.all.s = (f+*i)-t.all.b+1;
+    handle_phptag(f,i,s,&t);
     goto END;
   }
   #endif
 
   a = t.attrib = flexarr_init(sizeof(str_pair),PATTERN_SIZE_INC);
 
-  t.tag.b = f+*i;
-  while (*i < s && (isalnum(f[*i]) || f[*i] == '-'))
-    (*i)++;
-  t.tag.s = (f+*i)-t.tag.b;
-
+  handle_name(f,i,s,&t.tag);
   for (; *i < s && f[*i] != '>';) {
     while_is(isspace,f,*i,s);
     if (f[*i] == '/') {
@@ -407,61 +462,37 @@ handle_struct(char *f, size_t *i, const size_t s, const struct pat *p, const ush
     }
     
     if (!isalpha(f[*i])) {
-      if (f[*i]== '>')
+      if (f[*i] == '>')
           break;
       (*i)++;
       continue;
     }
     
-    ac = (str_pair*)flexarr_inc(a);
-    ac->f.b = f+*i;
-    while (*i < s && (isalnum(f[*i]) || f[*i] == '-'))
-        (*i)++;
-    ac->f.s = (f+*i)-ac->f.b;
-    if (f[*i] != '=') {
-      ac->s.b = NULL;
-      ac->s.s = 0;
-      continue;
-    }
-    (*i)++;
-    while_is(isspace,f,*i,s);
-    if (f[*i] == '>') {
-      a->size--;
-      (*i)++;
-      continue;
-    }
-    if (f[*i] == '\'' || f[*i] == '"') {
-      char delim = f[(*i)++];
-      ac->s.b = f+*i;
-      while (*i < s && f[*i] != delim)
-        (*i)++;
-      ac->s.s = (f+*i)-ac->s.b;
-      if (f[*i] == delim)
-        (*i)++;
-    } else {
-      ac->s.b = f+*i;
-      while (*i < s && !isspace(f[*i]) && f[*i] != '>')
-        (*i)++;
-       ac->s.s = (f+*i)-ac->s.b;
-    }
+    handle_attrib(f,i,s,a);
   }
 
-  for (uint j = 0; j < (uint)LENGHT(without_end_s); j++) {
-    if ((size_t)without_end_s[j].s == t.tag.s
-      && memcmp(t.tag.b,without_end_s[j].b,t.tag.s) == 0) {
-      t.all.s = f+*i-t.all.b+1;
-      goto END;
-    }
+  #define strcomp(x,y) (x.s == y.s && memcmp(y.b,x.b,y.s) == 0)
+  #define search_array(x,y) for (uint _j = 0; _j < (uint)LENGHT(x); _j++) \
+    if (strcomp(x[_j],y))
+  
+  search_array(selfclosing_s,t.tag) {
+    t.all.s = f+*i-t.all.b+1;
+    goto END;
   }
 
   uchar script = 0;
-  for (uint j = 0; j < (uint)LENGHT(script_s); j++) {
-    if ((size_t)script_s[j].s == t.tag.s
-      && memcmp(t.tag.b,script_s[j].b,t.tag.s) == 0) {
-      script = 1;
-      break;
-    }
+  search_array(script_s,t.tag) {
+    script = 1;
+    break;
   }
+  
+  #ifdef AUTOCLOSING
+  uchar autoclosing = 0;
+  search_array(autoclosing_s,t.tag) {
+    autoclosing = 1;
+    break;
+  }
+  #endif
 
   (*i)++;
   t.insides.b = f+*i;
@@ -472,8 +503,12 @@ handle_struct(char *f, size_t *i, const size_t s, const struct pat *p, const ush
         if (memcmp(t.tag.b,f+*i+2,t.tag.s) == 0) {
           t.insides.s = *i-t.insides.s;
           *i += 2+t.tag.s;
-          while (*i < s && f[*i] != '>')
-            (*i)++;
+          char *ending = memchr(f+*i,'>',s-*i);
+          if (!ending) {
+            *i = s;
+            return;
+          }
+          *i = ending-f;
           t.all.s = (f+*i+1)-t.all.b;
           goto END;
         }
@@ -483,6 +518,20 @@ handle_struct(char *f, size_t *i, const size_t s, const struct pat *p, const ush
           handle_comment(f,i,s);
           continue;
         } else {
+          #ifdef AUTOCLOSING
+          if (autoclosing) {
+            size_t ti = *i;
+            str name;
+
+            ti++;
+            while_is(isspace,f,ti,s);
+            handle_name(f,&ti,s,&name);
+
+            if (strcomp(t.tag,name)) {
+              goto END;
+            }
+          }
+          #endif
           handle_struct(f,i,s,p,lvl+1);
         }
       }
@@ -491,6 +540,13 @@ handle_struct(char *f, size_t *i, const size_t s, const struct pat *p, const ush
   }
 
   END: ;
+
+  if (*i >= s) {
+    t.all.s = s-(t.all.b-f)-1;
+  } else if (!t.all.s) {
+    t.all.s = f+*i-t.all.b;
+  }
+
   print_struct(&t,p,lvl);
   #ifdef PHPTAGS
   if (t.attrib)
@@ -711,7 +767,7 @@ static void
 go_through(char *f, struct pat *p, const size_t s)
 {
   for (size_t i = 0; i < s; i++) {
-    if (f[i] == '<')
+    while (f[i] == '<' && i < s)
       handle_struct(f,&i,s,p,0);
   }
   fflush(outfile); 

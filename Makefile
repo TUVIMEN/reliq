@@ -5,9 +5,13 @@ LDFLAGS =
 TARGET = hgrep
 
 O_PHPTAGS := 0 # support for <?php ?>
+O_AUTOCLOSING := 1 # support for autoclosing tags
 
 ifeq ($(strip ${O_PHPTAGS}),1)
 	CFLAGS += -DPHPTAGS
+endif
+ifeq ($(strip ${O_AUTOCLOSING}),1)
+	CFLAGS += -DAUTOCLOSING
 endif
 
 PREFIX ?= /usr
