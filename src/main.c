@@ -39,9 +39,8 @@
 #include "hgrep.h"
 
 #define F_RECURSIVE 0x1
-#define F_INVERT 0x2
-#define F_EXTENDED 0x4
-#define F_ICASE 0x8
+#define F_EXTENDED 0x2
+#define F_ICASE 0x4
 
 #define BUFF_INC_VALUE (1<<15)
 
@@ -85,7 +84,6 @@ usage()
       "Example: %s -i 'div +id; a +href=\".*\\.org\"' index.html\n\n"\
       "Options:\n"\
       "  -i\t\t\tignore case distinctions in patterns and data\n"\
-      "  -v\t\t\tselect non-matching blocks\n"\
       "  -l\t\t\tlist structure of FILE\n"\
       "  -o FILE\t\tchange output to a FILE instead of stdout\n"\
       "  -f FILE\t\tobtain PATTERNS from FILE\n"\
@@ -140,8 +138,6 @@ uchar
 settings_to_hgrep(const uint settings)
 {
     uchar ret = 0;
-    if (settings&F_INVERT)
-        ret |= HGREP_INVERT;
     if (settings&F_EXTENDED)
         ret |= HGREP_EREGEX;
     if (settings&F_ICASE)
@@ -270,11 +266,11 @@ main(int argc, char **argv)
   int opt;
   outfile = stdout;
 
-  while ((opt = getopt(argc,argv,"vEio:f:HrRVh")) != -1) {
+  while ((opt = getopt(argc,argv,"Eilo:f:HrRVh")) != -1) {
     switch (opt) {
-      case 'v': settings |= F_INVERT; break;
       case 'E': settings |= F_EXTENDED; break;
       case 'i': settings |= F_ICASE; break;
+      case 'l': patterns = split_patterns("@p\"%t%I - %s/%p\n\"",17); break;
       case 'o': {
         outfile = fopen(optarg,"w");
         if (outfile == NULL)
@@ -304,7 +300,7 @@ main(int argc, char **argv)
 
   hflags = settings_to_hgrep(settings);
 
-  if (optind < argc) {
+  if (!patterns && optind < argc) {
     patterns = split_patterns(argv[optind],strlen(argv[optind]));
     optind++;
   }

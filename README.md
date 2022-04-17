@@ -14,12 +14,12 @@ Get tags 'a' with attribute 'href' at position 0 of value ending with '.org' fro
 
 Get tags which does not have any tags inside them from file 'index.html'.
 
-    $ hgrep '.* /!/</' index.html
+    $ hgrep '.* %M"<"' index.html
 
 Get empty tags from file 'index.html'.
 
-    $ hgrep '.* /[-][-][0]' index.html
+    $ hgrep '.* %s[0]' index.html
 
 Get hyperlinks from level greater or equal to 6 from file 'index.html'.
 
-    $ hgrep 'a +href /[-][6-]' -printf '%(href)a\n' index.html
+    $ hgrep 'a +href %l[6-] %p"%(href)a\n"' index.html

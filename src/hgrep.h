@@ -42,6 +42,7 @@ typedef struct {
   unsigned int ay;
   unsigned int sx; //size
   unsigned int sy;
+  char *format;
   unsigned char flags;
 } hgrep_pattern;
 
