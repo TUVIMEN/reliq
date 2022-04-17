@@ -32,6 +32,7 @@ void *flexarr_inc(flexarr *f);
 void *flexarr_dec(flexarr *f);
 void *flexarr_set(flexarr *f, const size_t s);
 void *flexarr_clearb(flexarr *f);
+void flexarr_conv(flexarr *f, void **v, size_t *s);
 void flexarr_free(flexarr *f);
 
 #endif

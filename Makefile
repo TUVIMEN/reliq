@@ -2,10 +2,11 @@ VERSION = 1.3
 CC = gcc -std=c99
 CFLAGS = -O3 -march=native -Wall -Wextra -DVERSION=\"${VERSION}\"
 LDFLAGS =
-TARGET = hgrep
+TARGET := hgrep
 
 O_PHPTAGS := 0 # support for <?php ?>
 O_AUTOCLOSING := 1 # support for autoclosing tags
+O_LIB := 0 # compile libhgrep
 
 ifeq ($(strip ${O_PHPTAGS}),1)
 	CFLAGS += -DPHPTAGS
@@ -18,17 +19,34 @@ PREFIX ?= /usr
 MANPREFIX ?= ${PREFIX}/share/man
 BINDIR = ${DESTDIR}${PREFIX}/bin
 MANDIR = $(DESTDIR)${MANPREFIX}/man1
+LD_LIBRARY_PATH ?= ${PREFIX}/lib
+INCLUDE_PATH ?= ${PREFIX}/include
 
-SRC = src/main.c src/flexarr.c
+SRC = src/main.c src/flexarr.c src/hgrep.c src/ctype.c
+LIB_SRC = src/flexarr.c src/hgrep.c src/ctype.c
+ifeq ($(strip ${O_LIB}),1)
+	SRC = ${LIB_SRC}
+	LDFLAGS = -shared
+	CFLAGS += -fPIC
+endif
+
 OBJ = ${SRC:.c=.o}
 
 all: options hgrep
 
 options:
+	@echo ${SRC}
 	@echo ${TARGET} build options:
 	@echo "CFLAGS   = ${CFLAGS}"
 	@echo "LDFLAGS  = ${LDFLAGS}"
 	@echo "CC       = ${CC}"
+
+lib:
+	@make O_LIB=1 TARGET=lib${TARGET}.so
+
+lib-install:
+	install -m755 lib${TARGET}.so ${LD_LIBRARY_PATH}
+	install -m644 src/hgrep.h ${INCLUDE_PATH}
 
 hgrep: ${OBJ}
 	${CC} ${CFLAGS} ${LDFLAGS} $^ -o ${TARGET}
@@ -52,8 +70,7 @@ clean:
 
 install: all
 	mkdir -p ${BINDIR}
-	cp -f ${TARGET} ${BINDIR}
-	chmod 755 ${BINDIR}/${TARGET}
+	install -m755 ${TARGET} ${BINDIR}
 	mkdir -p ${MANDIR}
 	sed "s/VERSION/${VERSION}/g" ${TARGET}.1 | bzip2 -9 > ${MANDIR}/${TARGET}.1.bz2
 	chmod 644 ${MANDIR}/${TARGET}.1.bz2

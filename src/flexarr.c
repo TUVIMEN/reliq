@@ -18,6 +18,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+
 #include "flexarr.h"
 
 flexarr *
@@ -63,10 +64,21 @@ flexarr_set(flexarr *f, const size_t s)
 void *
 flexarr_clearb(flexarr *f)
 {
+  if (f->size == f->asize)
+      return NULL;
   void *v = realloc(f->v,f->size*f->nmemb);
   if (v == NULL)
     return NULL;
   return f->v = v;
+}
+
+void
+flexarr_conv(flexarr *f, void **v, size_t *s)
+{
+  flexarr_clearb(f);
+  *v = f->v;
+  *s = f->size;
+  free(f);
 }
 
 void
