@@ -87,7 +87,6 @@ usage()
       "  -l\t\t\tlist structure of FILE\n"\
       "  -o FILE\t\tchange output to a FILE instead of stdout\n"\
       "  -f FILE\t\tobtain PATTERNS from FILE\n"\
-      "  -printf FORMAT\tprint output according to FORMAT\n"\
       "  -E\t\t\tuse extended regular expressions\n"\
       "  -H\t\t\tfollow symlinks\n"\
       "  -r\t\t\tread all files under each directory, recursively\n"\
