@@ -58,6 +58,7 @@ flexarr_set(flexarr *f, const size_t s)
   void *v = realloc(f->v,s*f->nmemb);
   if (v == NULL)
     return NULL;
+  f->asize = s;
   return f->v = v;
 }
 

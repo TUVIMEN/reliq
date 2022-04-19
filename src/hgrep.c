@@ -13,6 +13,8 @@ typedef unsigned long int ulong;
 #include "flexarr.h"
 #include "ctype.h"
 
+#define HGREP_SAVE 0x8
+
 #define A_INVERT 0x1
 #define A_VAL_MATTERS 0x2
 
@@ -21,23 +23,24 @@ typedef unsigned long int ulong;
 #define BRACKETS_SIZE (1<<6)
 
 #define P_INVERT 0x1
-#define P_INVERT_TAG 0x2
-#define P_MATCH_INSIDES 0x4
-#define P_INVERT_INSIDES 0x8
-#define P_EMPTY 0x10
-#define P_PRINTF 0x20
+#define P_MATCH_INSIDES 0x2
+#define P_INVERT_INSIDES 0x4
+#define P_EMPTY 0x8
+#define P_PRINTF 0x10
 
 #define F_SBRACKET 0x1
 #define F_STRING 0x2
 #define F_ATTRIBUTES 0x4
 #define F_LEVEL 0x8
-#define F_SIZE 0x10
-#define F_PRINTF 0x20
-#define F_MATCH_INSIDES 0x40
+#define F_CHILD_COUNT 0x10
+#define F_SIZE 0x20
+#define F_PRINTF 0x40
+#define F_MATCH_INSIDES 0x80
 
 #define ATTRIB_INC (1<<3)
 #define HGREP_NODES_INC (1<<3)
 
+#define toggleflag(x,y,z) (y) = (x) ? (y)|(z) : (y)&~(z)
 #define while_is(w,x,y,z) while ((y) < (z) && w((x)[(y)])) {(y)++;}
 #define LENGHT(x) (sizeof(x)/(sizeof(*x)))
 
@@ -48,26 +51,28 @@ typedef struct {
 
 typedef struct {
     str8 name;
+    ushort flags;
     uchar flagstoset;
-    uchar flags;
 } hgrep_function;
 
 const hgrep_function functions[] = {
-    {{"p",1},P_PRINTF,F_STRING|F_PRINTF},
-    {{"m",1},P_MATCH_INSIDES,F_STRING|F_MATCH_INSIDES},
-    {{"M",1},P_MATCH_INSIDES|P_INVERT_INSIDES,F_STRING|F_MATCH_INSIDES},
-    {{"v",1},P_INVERT,0},
-    {{"a",1},0,F_SBRACKET|F_ATTRIBUTES},
-    {{"l",1},0,F_SBRACKET|F_LEVEL},
-    {{"s",1},0,F_SBRACKET|F_SIZE},
+    {{"p",1},F_STRING|F_PRINTF,P_PRINTF},
+    {{"m",1},F_STRING|F_MATCH_INSIDES,P_MATCH_INSIDES},
+    {{"M",1},F_STRING|F_MATCH_INSIDES,P_MATCH_INSIDES|P_INVERT_INSIDES},
+    {{"v",1},0,P_INVERT},
+    {{"a",1},F_SBRACKET|F_ATTRIBUTES,0},
+    {{"l",1},F_SBRACKET|F_LEVEL,0},
+    {{"s",1},F_SBRACKET|F_SIZE,0},
+    {{"c",1},F_SBRACKET|F_CHILD_COUNT,0},
 
-    {{"printf",6},P_PRINTF,F_STRING|F_PRINTF},
-    {{"match_insides",13},P_MATCH_INSIDES,F_STRING|F_MATCH_INSIDES},
-    {{"rev_match_insides",17},P_MATCH_INSIDES|P_INVERT_INSIDES,F_STRING|F_MATCH_INSIDES},
-    {{"invert",6},P_INVERT,0},
-    {{"attributes",10},0,F_SBRACKET|F_ATTRIBUTES},
-    {{"level",5},0,F_SBRACKET|F_LEVEL},
-    {{"size",4},0,F_SBRACKET|F_SIZE},
+    {{"printf",6},F_STRING|F_PRINTF,P_PRINTF},
+    {{"match_insides",13},F_STRING|F_MATCH_INSIDES,P_MATCH_INSIDES},
+    {{"rev_match_insides",17},F_STRING|F_MATCH_INSIDES,P_MATCH_INSIDES|P_INVERT_INSIDES},
+    {{"invert",6},0,P_INVERT},
+    {{"attributes",10},F_SBRACKET|F_ATTRIBUTES,0},
+    {{"level",5},F_SBRACKET|F_LEVEL,0},
+    {{"size",4},F_SBRACKET|F_SIZE,0},
+    {{"child_count",11},F_SBRACKET|F_CHILD_COUNT,0},
 };
 
 const str8 selfclosing_s[] = { //tags that doesn't end with </tag>
@@ -245,14 +250,16 @@ handle_phptag(char *f, size_t *i, const size_t s, hgrep_node *hgn)
 #endif
 
 int
-hgrep_match(const hgrep_node *hgn, const hgrep_pattern *p, const ushort lvl)
+hgrep_match(const hgrep_node *hgn, const hgrep_pattern *p)
 {
+  if (p->flags&P_EMPTY)
+      return 1;
   const hgrep_str_pair *a = hgn->attrib;
   const struct hgrep_pattrib *attrib = p->attrib;
-  uchar rev = ((p->flags&P_INVERT_TAG) == P_INVERT_TAG);
+  uchar rev = ((p->flags&P_INVERT) == P_INVERT);
   regmatch_t pmatch;
 
-  if (!matchxy(p->px,p->py,lvl,-1)
+  if (!matchxy(p->px,p->py,hgn->lvl,-1)
     ||
   #ifdef PHPTAGS
      (a &&
@@ -261,6 +268,7 @@ hgrep_match(const hgrep_node *hgn, const hgrep_pattern *p, const ushort lvl)
   #ifdef PHPTAGS
      )
   #endif
+    || !matchxy(p->cx,p->cy,hgn->child_count,-1)
     || !matchxy(p->sx,p->sy,hgn->insides.s,-1))
     return 0^rev;
 
@@ -271,7 +279,7 @@ hgrep_match(const hgrep_node *hgn, const hgrep_pattern *p, const ushort lvl)
 
   for (size_t i = 0; i < p->attribl; i++) {
     uchar found = 0;
-    for (size_t j = 0; j < hgn->attribl; j++) {
+    for (ushort j = 0; j < hgn->attribl; j++) {
       if (!matchxy(attrib[i].px,attrib[i].py,j,hgn->attribl-1))
         continue;
 
@@ -302,12 +310,14 @@ hgrep_match(const hgrep_node *hgn, const hgrep_pattern *p, const ushort lvl)
   return 1^rev;
 }
 
-static void
+static uint
 handle_struct(char *f, size_t *i, const size_t s, const ushort lvl, flexarr *nodes, hgrep *hg)
 {
+  uint ret = 1;
   hgrep_node *hgn = flexarr_inc(nodes);
-  int index = nodes->size-1;
   memset(hgn,0,sizeof(hgrep_node));
+  hgn->lvl = lvl;
+  size_t index = nodes->size-1;
   flexarr *a = (flexarr*)hg->attrib_buffer;
   size_t attrib_start = a->size;
 
@@ -316,9 +326,8 @@ handle_struct(char *f, size_t *i, const size_t s, const ushort lvl, flexarr *nod
   while_is(isspace,f,*i,s);
   if (f[*i] == '!') {
     handle_comment(f,i,s);
-    if (!(hg->flags&HGREP_SAVE))
-        flexarr_dec(nodes);
-    return;
+    flexarr_dec(nodes);
+    return 0;
   }
 
   #ifdef PHPTAGS
@@ -385,7 +394,7 @@ handle_struct(char *f, size_t *i, const size_t s, const ushort lvl, flexarr *nod
           if (!ending) {
             *i = s;
             flexarr_dec(nodes);
-            return;
+            return 0;
           }
           *i = ending-f;
           hgn->all.s = (f+*i+1)-hgn->all.b;
@@ -411,7 +420,7 @@ handle_struct(char *f, size_t *i, const size_t s, const ushort lvl, flexarr *nod
             }
           }
           #endif
-          handle_struct(f,i,s,lvl+1,nodes,hg);
+          ret += handle_struct(f,i,s,lvl+1,nodes,hg);
           hgn = &((hgrep_node*)nodes->v)[index];
         }
       }
@@ -427,22 +436,26 @@ handle_struct(char *f, size_t *i, const size_t s, const ushort lvl, flexarr *nod
     hgn->all.s = f+*i-hgn->all.b;
   }
 
+  size_t size = a->size-attrib_start;
+  hgn->attribl = size;
+  hgn->child_count = ret-1;
   if (hg->flags&HGREP_SAVE) {
-    size_t size = a->size-attrib_start;
-    hgn->attrib = memcpy(malloc(size*a->nmemb),a->v+(attrib_start*a->nmemb),size*a->nmemb);
-    hgn->attribl = size;
+    hgn->attrib = size ?
+        memcpy(malloc(size*a->nmemb),a->v+(attrib_start*a->nmemb),size*a->nmemb)
+        : NULL;
   } else {
     hgn->attrib = a->v+(attrib_start*a->nmemb);
-    hgn->attribl = a->size-attrib_start;
-    if (hg->pattern && (hg->pattern->flags&P_EMPTY || (((hg->pattern->flags&P_INVERT)==P_INVERT)^hgrep_match(hgn,hg->pattern,lvl)))) {
-      if (hg->pattern->format)
-        hgrep_printf(hg->output,hg->pattern->format,hgn,lvl,hg->data);
+    hgrep_pattern *pattern = hg->pattern;
+    if (pattern && hgrep_match(hgn,pattern)) {
+      if (pattern->format.b)
+        hgrep_printf(hg->output,pattern->format.b,pattern->format.s,hgn,hg->data);
       else
         hgrep_print(hg->output,hgn);
     }
     flexarr_dec(nodes);
   }
   a->size = attrib_start;
+  return ret;
 }
 
 static char
@@ -467,7 +480,9 @@ static void
 print_attribs(FILE *outfile, const hgrep_node *hgn)
 {
   hgrep_str_pair *a = hgn->attrib;
-  for (size_t j = 0; j < hgn->attribl; j++) {
+  if (!a)
+    return;
+  for (ushort j = 0; j < hgn->attribl; j++) {
     fputc(' ',outfile);
     fwrite(a[j].f.b,a[j].f.s,1,outfile);
     fputs("=\"",outfile);
@@ -477,44 +492,39 @@ print_attribs(FILE *outfile, const hgrep_node *hgn)
 }
 
 void
-hgrep_printf(FILE *outfile, const char *format, const hgrep_node *hgn, const ushort lvl, const char *reference)
+hgrep_printf(FILE *outfile, const char *format, const size_t formatl, const hgrep_node *hgn, const char *reference)
 {
-  size_t i = 0, s = strlen(format);
-  while (i < s) {
+  size_t i = 0;
+  size_t cont=0,contl=0;
+  int num = -1;
+  while (i < formatl) {
     if (format[i] == '\\') {
       fputc(special_character(format[++i]),outfile);
       i++;
       continue;
     }
     if (format[i] == '%') {
-      if (++i >= s)
+      if (++i >= formatl)
         break;
-      char cont[PATTERN_SIZE];
-      size_t contl = 0;
-      int num = -1;
       if (isdigit(format[i])) {
-        num = handle_number(format,&i,s);
+        num = handle_number(format,&i,formatl);
       } else if (format[i] == '(') {
-        for (i++; i < s && format[i] != ')' && contl < PATTERN_SIZE-1; i++) {
-          if (format[i] == '\\') {
-            if (i >= s)
-              break;
-            cont[contl++] = format[i++];
-            continue;
-          }
-          cont[contl++] = format[i];
-        }
-        cont[contl] = 0;
-        if (format[i] == ')')
-          i++;
+        cont = ++i;
+        char *t = memchr(format+i,')',formatl-i);
+        if (!t)
+          return;
+        contl = t-(format+i);
+        i = t-format+1;
       }
+      if (i >= formatl)
+          return;
 
       switch (format[i++]) {
         case '%': fputc('%',outfile); break;
         case 'A': fwrite(hgn->all.b,hgn->all.s,1,outfile); break;
         case 't': fwrite(hgn->tag.b,hgn->tag.s,1,outfile); break;
         case 'i': fwrite(hgn->insides.b,hgn->insides.s,1,outfile); break;
-        case 'l': fprintf(outfile,"%u",lvl); break;
+        case 'l': fprintf(outfile,"%u",hgn->lvl); break;
         case 's': fprintf(outfile,"%lu",hgn->all.s); break;
         case 'p': fprintf(outfile,"%lu",hgn->all.b-reference); break;
         case 'I': print_attribs(outfile,hgn); break;
@@ -525,7 +535,7 @@ hgrep_printf(FILE *outfile, const char *format, const hgrep_node *hgn, const ush
               fwrite(a[num].s.b,a[num].s.s,1,outfile);
           } else if (contl != 0) {
             for (size_t i = 0; i < hgn->attribl; i++)
-              if (a[i].f.s == contl && memcmp(a[i].f.b,cont,contl) == 0)
+              if (a[i].f.s == contl && memcmp(a[i].f.b,format+cont,contl) == 0)
                 fwrite(a[i].s.b,a[i].s.s,1,outfile);
           } else for (size_t i = 0; i < hgn->attribl; i++) {
             fwrite(a[i].s.b,a[i].s.s,1,outfile);
@@ -655,19 +665,18 @@ handle_function(hgrep_pattern *p, char *func, size_t *pos, size_t *size, const i
     p->sx = x;
     p->sy = y;
   } else if (*pos-t) {
+      size_t s = *pos-t-1;
       if (functions[i].flags&F_PRINTF) {
-        p->format = memcpy(malloc(*pos-t+1),func+t,*pos-t-1);
-        p->format[*pos-t-1] = 0;
+        p->format.b = memcpy(malloc(s),func+t,s);
+        p->format.s = s;
       } else if (functions[i].flags&F_MATCH_INSIDES) {
         char *tmp = func+t;
-        x = tmp[*pos-t-1];
-        tmp[*pos-t-1] = 0;
-        if (regcomp(&p->in,tmp,regexflags) != 0) {
-          tmp[*pos-t-1] = x;
-          regfree(&p->in);
+        x = tmp[s];
+        tmp[s] = 0;
+        int r = regcomp(&p->in,tmp,regexflags);
+        tmp[s] = x;
+        if (r)
           return;
-        }
-        tmp[*pos-t-1] = x;
       }
   }
 
@@ -684,7 +693,7 @@ hgrep_pcomp(char *pattern, size_t size, hgrep_pattern *p, const uchar flags)
       regexflags |= REG_ICASE;
   if (flags&HGREP_EREGEX)
       regexflags |= REG_EXTENDED;
-  p->format = NULL;
+  p->format.b = NULL;
   ushort attribcount = 0;
   p->py = -1;
   p->px = 0;
@@ -692,6 +701,8 @@ hgrep_pcomp(char *pattern, size_t size, hgrep_pattern *p, const uchar flags)
   p->ax = 0;
   p->sy = -1;
   p->sx = 0;
+  p->cy = -1;
+  p->cx = 0;
   char tmp[PATTERN_SIZE];
   tmp[0] = '^';
 
@@ -714,10 +725,8 @@ hgrep_pcomp(char *pattern, size_t size, hgrep_pattern *p, const uchar flags)
   memcpy(tmp+1,pattern+t,pos-t);
   tmp[pos+1-t] = '$';
   tmp[pos+2-t] = 0;
-  if (regcomp(&p->r,tmp,regexflags) != 0) {
-    regfree(&p->r);
+  if (regcomp(&p->r,tmp,regexflags))
     return;
-  }
 
   flexarr *attrib = flexarr_init(sizeof(struct hgrep_pattrib),PATTRIB_INC);
   for (size_t i = pos; i < size;) {
@@ -748,11 +757,8 @@ hgrep_pcomp(char *pattern, size_t size, hgrep_pattern *p, const uchar flags)
         pa->flags &= ~A_INVERT;
       }
 
-      if (regcomp(&pa->r[0],tmp,regexflags) != 0) {
-        flexarr_conv(attrib,(void**)&p->attrib,&p->attribl);
-        regfree(&pa->r[0]);
-        return;
-      }
+      if (regcomp(&pa->r[0],tmp,regexflags))
+        goto CONV;
       pa->px = x;
       pa->py = y;
 
@@ -767,11 +773,8 @@ hgrep_pcomp(char *pattern, size_t size, hgrep_pattern *p, const uchar flags)
         memcpy(tmp+1,pattern+t,i-t);
         tmp[i+1-t] = '$';
         tmp[i+2-t] = 0;
-        if (regcomp(&pa->r[1],tmp,regexflags) != 0) {
-          flexarr_conv(attrib,(void**)&p->attrib,&p->attribl);
-          regfree(&pa->r[1]);
-          return;
-        }
+        if (regcomp(&pa->r[1],tmp,regexflags))
+          goto CONV;
         pa->flags |= A_VAL_MATTERS;
         i++;
       } else
@@ -781,7 +784,11 @@ hgrep_pcomp(char *pattern, size_t size, hgrep_pattern *p, const uchar flags)
   }
   if (p->ax < attribcount)
     p->ax = attribcount;
-  flexarr_conv(attrib,(void**)&p->attrib,&p->attribl);
+  CONV: ;
+  size_t attribl;
+  flexarr_conv(attrib,(void**)&p->attrib,&attribl);
+  p->attribl = attribl;
+  return;
 }
 
 void
@@ -797,8 +804,8 @@ hgrep_pfree(hgrep_pattern *p)
     if (p->attrib[j].flags&A_VAL_MATTERS)
       regfree(&p->attrib[j].r[1]);
   }
-  if (p->format)
-    free(p->format);
+  if (p->format.b)
+    free(p->format.b);
   free(p->attrib);
 }
 
@@ -820,8 +827,9 @@ hgrep_init(hgrep *hg, char *ptr, const size_t size, FILE *output, hgrep_pattern 
   t.size = size;
   t.pattern = pattern;
   t.flags = flags;
+  toggleflag(hg,t.flags,HGREP_SAVE);
   if (output == NULL)
-      output = stdout;
+    output = stdout;
   t.output = output;
   flexarr *nodes = flexarr_init(sizeof(hgrep_node),HGREP_NODES_INC);
   t.attrib_buffer = (void*)flexarr_init(sizeof(hgrep_str_pair),ATTRIB_INC);
@@ -829,7 +837,7 @@ hgrep_init(hgrep *hg, char *ptr, const size_t size, FILE *output, hgrep_pattern 
     while (ptr[i] == '<' && i < size)
       handle_struct(ptr,&i,size,0,nodes,&t);
   }
-  if (flags&HGREP_SAVE) {
+  if (t.flags&HGREP_SAVE) {
     flexarr_conv(nodes,(void**)&t.nodes,&t.nodesl);
   } else {
     flexarr_free(nodes);

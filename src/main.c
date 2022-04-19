@@ -41,6 +41,7 @@
 #define F_RECURSIVE 0x1
 #define F_EXTENDED 0x2
 #define F_ICASE 0x4
+#define F_FAST 0x8
 
 #define BUFF_INC_VALUE (1<<15)
 
@@ -56,7 +57,6 @@ typedef unsigned long int ulong;
 
 char *argv0;
 flexarr *patterns = NULL;
-char last_pattern = 0;
 
 uint settings = 0;
 uchar hflags = 0;
@@ -92,6 +92,7 @@ usage()
       "  -H\t\t\tfollow symlinks\n"\
       "  -r\t\t\tread all files under each directory, recursively\n"\
       "  -R\t\t\tlikewise but follow all symlinks\n"\
+      "  -F\t\t\tenter fast and low memory consumption mode\n"\
       "  -h\t\t\tshow help\n"\
       "  -V\t\t\tshow version\n\n"\
       "When FILE isn't specified, FILE will become standard input.",argv0,argv0,argv0);
@@ -150,40 +151,87 @@ analyze(char *f, size_t s, uchar inpipe)
 {
   if (f == NULL || s == 0)
     return;
-  uchar hflags = settings_to_hgrep(settings);
-  if (patterns == NULL) {
-    hgrep_init(NULL,f,s,outfile,NULL,hflags);
-    return;
-  }
 
-  FILE *t = outfile;
-  char **ptr = malloc(patterns->size<<3);
-  size_t *fsize = malloc(patterns->size<<3);
-  
-  for (size_t i = 0; i < patterns->size; i++) {
-    if (i == patterns->size-1) {
-      outfile = t;
-      last_pattern = 1;
-    } else {
-      outfile = open_memstream(&ptr[i],&fsize[i]);
+  if (settings&F_FAST) {
+    FILE *t = outfile;
+    char **ptr = malloc(patterns->size<<3);
+    size_t *fsize = malloc(patterns->size<<3);
+    
+    for (size_t i = 0; i < patterns->size; i++) {
+      if (i == patterns->size-1) {
+        outfile = t;
+      } else {
+        outfile = open_memstream(&ptr[i],&fsize[i]);
+      }
+    
+      hgrep_pattern *flv = &((hgrep_pattern*)patterns->v)[i];
+      hgrep_init(NULL,f,s,outfile,flv,hflags);
+      fflush(outfile);
+    
+      if (!inpipe && i == 0)
+        munmap(f,s);
+      else
+        free(f);
+      if (i != patterns->size-1)
+        fclose(outfile);
+    
+      f = ptr[i];
+      s = fsize[i];
     }
-
-    hgrep_pattern *flv = &((hgrep_pattern*)patterns->v)[i];
-    hgrep_init(NULL,f,s,outfile,flv,hflags);
-    fflush(outfile);
-
-    if (!inpipe && i == 0)
-      munmap(f,s);
-    else
-      free(f);
-    if (i != patterns->size-1)
-      fclose(outfile);
-
-    f = ptr[i];
-    s = fsize[i];
+    free(ptr);
+    free(fsize);
+  } else {
+    hgrep hg;
+    hgrep_pattern *flv = ((hgrep_pattern*)patterns->v);
+    hgrep_init(&hg,f,s,NULL,NULL,hflags);
+    flexarr *passed1=flexarr_init(sizeof(size_t),1024),
+      *passed2=flexarr_init(sizeof(size_t),1024);
+    for (size_t j = 0; j < hg.nodesl; j++) {
+      if (hgrep_match(&hg.nodes[j],flv)) {
+        if (patterns->size == 1) {
+          if (flv->format.b)
+            hgrep_printf(outfile,flv->format.b,flv->format.s,&hg.nodes[j],f);
+          else
+           hgrep_print(outfile,&hg.nodes[j]);
+        } else {
+          *(size_t*)flexarr_inc(passed1) = j;
+        }
+      }
+    }
+    size_t *ps,n;
+    ushort lvl;
+    for (size_t i = 1; i < patterns->size; i++) {
+      flv = &((hgrep_pattern*)patterns->v)[i];
+      ps = (size_t*)passed1->v;
+      for (size_t j = 0; j < passed1->size; j++) {
+        lvl = hg.nodes[ps[j]].lvl;
+        for (size_t h = 0; h <= hg.nodes[ps[j]].child_count; h++) {
+          n = ps[j]+h;
+          hg.nodes[n].lvl -= lvl;
+          if (hgrep_match(&hg.nodes[n],flv)) {
+            if (patterns->size-1 == i) {
+              if (flv->format.b)
+                hgrep_printf(outfile,flv->format.b,flv->format.s,&hg.nodes[n],f);
+              else
+               hgrep_print(outfile,&hg.nodes[n]);
+            } else {
+              *(size_t*)flexarr_inc(passed2) = n;
+            }
+          }
+          hg.nodes[n].lvl += lvl;
+        }
+      }
+      if (!passed2->size)
+          break;
+      passed1->size = 0;
+      flexarr *tmp = passed1;
+      passed1 = passed2;
+      passed2 = tmp;
+    }
+    flexarr_free(passed1);
+    flexarr_free(passed2);
+    hgrep_free(&hg);
   }
-  free(ptr);
-  free(fsize);
 }
 
 static void
@@ -207,7 +255,6 @@ handle_file(const char *f)
   int fd;
   struct stat st;
   char *file;
-  last_pattern = 0;
 
   if (f == NULL) {
     size_t size;
@@ -266,7 +313,7 @@ main(int argc, char **argv)
   int opt;
   outfile = stdout;
 
-  while ((opt = getopt(argc,argv,"Eilo:f:HrRVh")) != -1) {
+  while ((opt = getopt(argc,argv,"Eilo:f:HrRFVh")) != -1) {
     switch (opt) {
       case 'E': settings |= F_EXTENDED; break;
       case 'i': settings |= F_ICASE; break;
@@ -292,6 +339,7 @@ main(int argc, char **argv)
       case 'H': nftwflags &= ~FTW_PHYS; break;
       case 'r': settings |= F_RECURSIVE; break;
       case 'R': settings |= F_RECURSIVE; nftwflags &= ~FTW_PHYS; break;
+      case 'F': settings |= F_FAST; break;
       case 'V': die(VERSION); break;
       case 'h': usage(); break;
       default: exit(1);

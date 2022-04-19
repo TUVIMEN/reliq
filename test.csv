@@ -1,8 +1,11 @@
-b814e8dac6d0802230ef112835e61ab7,-l
+4bcfd069098302021da50daf57cd673c,-l
+b814e8dac6d0802230ef112835e61ab7,-Fl
 17158581e565d3ff26d8fff21c7122d2,'div @a[0]'
 34471ba5fc01464327ea947b9a115444,'.* @s[1-] @M"<"'
 6a27c756601357c02c0683eb9e2ab9fb,'div +style=""'
-6a10d06870323dbb74f94805de3823b9,'div +class'
+6a10d06870323dbb74f94805de3823b9,-F 'div +class'
 069ddfa27c12b7128dec70e41565b380,'div +class -id'
 54dc722427834dbb5c4cfbbf5bf87e24,'div @l[3]'
 a79a015676c0134475ae0c8087939ee2,'!html; !body; !div +class="index"; ul'
+aa0c6c875231df45bb41b42b5fca6b27,-F 'div +class @p"%(class)a\\\\n"'
+aafd2ba9e2c5c1e1bfc246b8ff64a1a5,'div @l[3]; p @l[1]'
