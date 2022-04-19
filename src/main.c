@@ -34,8 +34,13 @@
 #include <ftw.h>
 #include <err.h>
 
-#include "flexarr.h"
+#ifdef LINKED
+#include <ctype.h>
+#else
 #include "ctype.h"
+#endif
+
+#include "flexarr.h"
 #include "hgrep.h"
 
 #define F_RECURSIVE 0x1

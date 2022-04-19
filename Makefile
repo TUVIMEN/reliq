@@ -7,6 +7,7 @@ TARGET := hgrep
 O_PHPTAGS := 0 # support for <?php ?>
 O_AUTOCLOSING := 1 # support for autoclosing tags
 O_LIB := 0 # compile libhgrep
+O_LINKED := 0 # link hgrep to libhgrep
 
 ifeq ($(strip ${O_PHPTAGS}),1)
 	CFLAGS += -DPHPTAGS
@@ -30,6 +31,12 @@ ifeq ($(strip ${O_LIB}),1)
 	CFLAGS += -fPIC
 endif
 
+ifeq ($(strip ${O_LINKED}),1)
+	CFLAGS += -DLINKED
+	SRC = src/flexarr.c src/main.c
+	LDFLAGS = -lhgrep
+endif
+
 OBJ = ${SRC:.c=.o}
 
 all: options hgrep
@@ -40,6 +47,9 @@ options:
 	@echo "CFLAGS   = ${CFLAGS}"
 	@echo "LDFLAGS  = ${LDFLAGS}"
 	@echo "CC       = ${CC}"
+
+linked: clean lib lib-install
+	@make O_LINKED=1
 
 lib:
 	@make O_LIB=1 TARGET=lib${TARGET}.so
@@ -66,7 +76,7 @@ dist: clean
 	rm -rf ${TARGET}-${VERSION}
 
 clean:
-	rm -f ${TARGET} ${OBJ} ${TARGET}-${VERSION}.tar.xz
+	rm -f ${TARGET} lib${TARGET}.so ${OBJ} ${TARGET}-${VERSION}.tar.xz
 
 install: all
 	mkdir -p ${BINDIR}
