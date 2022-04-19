@@ -50,10 +50,17 @@ typedef unsigned short ushort;
 typedef unsigned int uint;
 typedef unsigned long int ulong;
 
-#define PATTERN_SIZE_INC 8
+#define PATTERN_SIZE_INC (1<<5)
+#define PASSED_INC (1<<10)
 
 #define while_is(w,x,y,z) while ((y) < (z) && w((x)[(y)])) {(y)++;}
 #define LENGHT(x) (sizeof(x)/(sizeof(*x)))
+
+typedef struct {
+  hgrep_pattern p;
+  uchar posx;
+  uchar posy;
+} auxiliary_pattern;
 
 char *argv0;
 flexarr *patterns = NULL;
@@ -97,37 +104,52 @@ usage()
       "When FILE isn't specified, FILE will become standard input.",argv0,argv0,argv0);
 }
 
-static char *
-delchar(char *src, const size_t pos, size_t *size)
-{
-  size_t s = *size-1;
-  for (size_t i = pos; i < s; i++)
-    src[i] = src[i+1];
-  src[s] = 0;
-  *size = s;
-  return src;
-}
-
 static flexarr *
 split_patterns(char *src, size_t s)
 {
   if (s == 0)
     return NULL;
-  flexarr *ret = flexarr_init(sizeof(hgrep_pattern),PATTERN_SIZE_INC);
+  flexarr *ret = flexarr_init(sizeof(auxiliary_pattern),PATTERN_SIZE_INC);
+  uchar posx=0,posy=0;
+  auxiliary_pattern *apattern;
   for (size_t i = 0, j; i < s; i++) {
     j = i;
+    apattern = (auxiliary_pattern*)flexarr_inc(ret);
+    apattern->posx = posx;
+    apattern->posy = posy;
 
     while (i < s) {
-      if (src[i] == '\\' && src[i+1] == ';')
-	    delchar(src,i,&s);
-      if (src[i] == ';')
+      if (src[i] == '"') {
+        i++;
+        while (i < s && src[i] != '"') {
+          if (src[i] == '\\')
+            i++;
+          i++;
+        }
+        if (src[i] == '"')
+          i++;
+      }
+      if (src[i] == ',') {
+        posy = 0;
+        posx++;
         break;
+      }
+      if (src[i] == ';' || src[i] == '|') {
+        posy++;
+        break;
+      }
       i++;
     }
+    hgrep_pcomp(src+j,i-j,&apattern->p,0);
 
-    hgrep_pcomp(src+j,i-j,(hgrep_pattern*)flexarr_inc(ret),0);
-    while (i < s && src[i] == ';')
-      i++;
+    if (src[i] == ';' || src[i] == '|') {
+      while (i < s && (src[i] == ';' || src[i] == '|'))
+        i++;
+    } else if (src[i] == ',') {
+      while (i < s && src[i] == ',')
+        i++;
+    }
+    while_is(isspace,src,i,s);
     i--;
   }
   flexarr_clearb(ret);
@@ -146,12 +168,81 @@ settings_to_hgrep(const uint settings)
 }
 
 static void
+handle_row(hgrep *hg, flexarr *patterns, size_t *pos, flexarr *buf[2])
+{
+  auxiliary_pattern *fl = (auxiliary_pattern*)patterns->v;
+  hgrep_pattern *flv = &fl[*pos].p;
+  char lastinrow = 0;
+  if (patterns->size-1 <= *pos || fl[*pos].posx != fl[(*pos)+1].posx)
+    lastinrow = 1;
+  for (size_t j = 0; j < hg->nodesl; j++) {
+    if (hgrep_match(&hg->nodes[j],flv)) {
+      if (lastinrow) {
+        if (flv->format.b)
+          hgrep_printf(outfile,flv->format.b,flv->format.s,&hg->nodes[j],hg->data);
+        else
+         hgrep_print(outfile,&hg->nodes[j]);
+      } else {
+        *(size_t*)flexarr_inc(buf[0]) = j;
+      }
+    }
+  }
+  if (lastinrow)
+    goto END;
+  size_t *ps,n;
+  ushort lvl;
+  for ((*pos)++; *pos < patterns->size; (*pos)++) {
+    flv = &fl[*pos].p;
+    ps = (size_t*)buf[0]->v;
+    if (patterns->size-1 <= *pos || fl[*pos].posx != fl[*pos+1].posx)
+      lastinrow = 1;
+    else
+      lastinrow = 0;
+    for (size_t j = 0; j < buf[0]->size; j++) {
+      lvl = hg->nodes[ps[j]].lvl;
+      for (size_t h = 0; h <= hg->nodes[ps[j]].child_count; h++) {
+        n = ps[j]+h;
+        hg->nodes[n].lvl -= lvl;
+        if (hgrep_match(&hg->nodes[n],flv)) {
+          if (lastinrow) {
+            if (flv->format.b)
+              hgrep_printf(outfile,flv->format.b,flv->format.s,&hg->nodes[n],hg->data);
+            else
+             hgrep_print(outfile,&hg->nodes[n]);
+          } else {
+            *(size_t*)flexarr_inc(buf[1]) = n;
+          }
+        }
+        hg->nodes[n].lvl += lvl;
+      }
+    }
+    if (lastinrow) {
+      break;
+    }
+    if (!buf[1]->size)
+      break;
+    buf[0]->size = 0;
+    flexarr *tmp = buf[0];
+    buf[0] = buf[1];
+    buf[1] = tmp;
+  }
+  END: ;
+  buf[0]->size = 0;
+  buf[1]->size = 0;
+  if (*pos > patterns->size)
+    *pos = patterns->size;
+}
+
+static void
 analyze(char *f, size_t s, uchar inpipe)
 {
   if (f == NULL || s == 0)
     return;
 
   if (settings&F_FAST) {
+    for (size_t i = 0; i < patterns->size; i++)
+      if (((auxiliary_pattern*)patterns->v)[i].posx)
+        exit(1);
     FILE *t = outfile;
     char **ptr = malloc(patterns->size<<3);
     size_t *fsize = malloc(patterns->size<<3);
@@ -162,8 +253,9 @@ analyze(char *f, size_t s, uchar inpipe)
       } else {
         outfile = open_memstream(&ptr[i],&fsize[i]);
       }
-    
-      hgrep_pattern *flv = &((hgrep_pattern*)patterns->v)[i];
+      
+      auxiliary_pattern *fl = &((auxiliary_pattern*)patterns->v)[i];
+      hgrep_pattern *flv = &fl->p;
       hgrep_init(NULL,f,s,outfile,flv,hflags);
       fflush(outfile);
     
@@ -181,52 +273,12 @@ analyze(char *f, size_t s, uchar inpipe)
     free(fsize);
   } else {
     hgrep hg;
-    hgrep_pattern *flv = ((hgrep_pattern*)patterns->v);
     hgrep_init(&hg,f,s,NULL,NULL,hflags);
-    flexarr *passed1=flexarr_init(sizeof(size_t),1024),
-      *passed2=flexarr_init(sizeof(size_t),1024);
-    for (size_t j = 0; j < hg.nodesl; j++) {
-      if (hgrep_match(&hg.nodes[j],flv)) {
-        if (patterns->size == 1) {
-          if (flv->format.b)
-            hgrep_printf(outfile,flv->format.b,flv->format.s,&hg.nodes[j],f);
-          else
-           hgrep_print(outfile,&hg.nodes[j]);
-        } else {
-          *(size_t*)flexarr_inc(passed1) = j;
-        }
-      }
-    }
-    size_t *ps,n;
-    ushort lvl;
-    for (size_t i = 1; i < patterns->size; i++) {
-      flv = &((hgrep_pattern*)patterns->v)[i];
-      ps = (size_t*)passed1->v;
-      for (size_t j = 0; j < passed1->size; j++) {
-        lvl = hg.nodes[ps[j]].lvl;
-        for (size_t h = 0; h <= hg.nodes[ps[j]].child_count; h++) {
-          n = ps[j]+h;
-          hg.nodes[n].lvl -= lvl;
-          if (hgrep_match(&hg.nodes[n],flv)) {
-            if (patterns->size-1 == i) {
-              if (flv->format.b)
-                hgrep_printf(outfile,flv->format.b,flv->format.s,&hg.nodes[n],f);
-              else
-               hgrep_print(outfile,&hg.nodes[n]);
-            } else {
-              *(size_t*)flexarr_inc(passed2) = n;
-            }
-          }
-          hg.nodes[n].lvl += lvl;
-        }
-      }
-      if (!passed2->size)
-          break;
-      passed1->size = 0;
-      flexarr *tmp = passed1;
-      passed1 = passed2;
-      passed2 = tmp;
-    }
+    flexarr *passed1=flexarr_init(sizeof(size_t),PASSED_INC),
+      *passed2=flexarr_init(sizeof(size_t),PASSED_INC);
+    for (size_t i = 0; i < patterns->size; i++)
+      handle_row(&hg,patterns,&i,(flexarr*[]){passed1,passed2});
+
     flexarr_free(passed1);
     flexarr_free(passed2);
     hgrep_free(&hg);
@@ -359,7 +411,7 @@ main(int argc, char **argv)
     handle_file(NULL);
   fclose(outfile);
   for (size_t n = 0; n < patterns->size; n++)
-    hgrep_pfree(&((hgrep_pattern*)patterns->v)[n]);
+    hgrep_pfree(&((auxiliary_pattern*)patterns->v)[n].p);
   flexarr_free(patterns);
 
   return 0;
