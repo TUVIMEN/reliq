@@ -1,4 +1,4 @@
-VERSION = 1.4
+VERSION = 1.5
 CC = gcc -std=c99
 CFLAGS = -O3 -march=native -Wall -Wextra -DVERSION=\"${VERSION}\"
 LDFLAGS =
@@ -48,13 +48,13 @@ options:
 	@echo "LDFLAGS  = ${LDFLAGS}"
 	@echo "CC       = ${CC}"
 
-linked: clean lib lib-install
+linked: lib lib-install
 	@make O_LINKED=1
 
-lib:
+lib: clean
 	@make O_LIB=1 TARGET=lib${TARGET}.so
 
-lib-install:
+lib-install: lib
 	install -m755 lib${TARGET}.so ${LD_LIBRARY_PATH}
 	install -m644 src/hgrep.h ${INCLUDE_PATH}
 

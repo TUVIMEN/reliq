@@ -32,14 +32,19 @@ will become standard input.
 .B \-h
 Output a usage message and exit.
 .TP
-.BR \-V
+.BR \-v
 Output the version number of
 .B hgrep
 and exit.
+
 .SS "Pattern Syntax"
 .TP
 .BR \-E
 Use extended regular expressions.
+.TP
+.BR \-F
+Enter fast and low memory consumption mode, in which use of multiple output patterns is forbidden.
+
 .SS "Matching Control"
 .TP
 .BI \-f " FILE"
@@ -51,22 +56,79 @@ The empty file contains zero patterns, and therefore matches nothing.
 Ignore case distinctions in patterns and input data,
 so that characters that differ only in case
 match each other.
-.TP
-.BR \-v
-Invert the sense of matching, to select non-matching lines.
+
 .SS "General Output Control"
 .TP
 .BI \-o " FILE"
 Change output to a
 .IR FILE
 instead of stdout.
+
+.SS "File and Directory Selection"
 .TP
-.BI \-printf " FORMAT"
+.BR \-r
+Read all files under each directory, recursively.
+.TP
+.BR \-H
+Follow symbolic links.
+.TP
+.BR \-R
+Read all files under each directory, recursively.
+Follow all symbolic links, unlike
+.BR \-r .
+.SS "Other Options"
+.TP
+.B \-l
+List structure of
+.IR FILE .
+
+.SH PATTERNS
+Each group of patterns should be separated by colon.
+Output of pattern can be processed by another if they are separated by semicolon, or by vertical line.
+
+.SH HGREP PATTERN
+.SS TAG
+At the begining each pattern should contain regex of html tag. If the first character is exclamation point then matching will be inverted.
+.SS ATTRIBUTES
+Before each attribute regex should be '+' or '-', where '-' means not-matching of such attribute and '+' matching. To specify its value it should be followed by '=' and double quote in which should be regex of value. Leaving attribute without specifying the value of it means that maching of its value will be skipped.
+.SS FUNCTIONS
+Before each function should be '@' sign. Some functions can also take arguments in square brackets or double quotes, which should be specified after the name of function.
+.SS "SQUARE BRACKETS"
+Specifying one value in them means that matching value needs to be the same as in the brackets.
+.PP
+Character \'$' is aliased to the last value.
+.PP
+Specifying two values separated by '-' means range for matching value. Leaving the values empty means that value will become zero or the last depending on the order.
+
+.SH HGREP PATTERN FUNCTIONS
+.BR m ",  " match_insides " " \fI"PATTERN"\fR
+Get tags with insides that match
+.IR PATTERN .
+.TP
+.BR M ",  " rev_match_insides " " \fI"PATTERN"\fR
+Get tags with insides that does not match
+.IR PATTERN .
+.TP
+.BR a ",  " attributes " " \fI[RANGE]\fR
+Get tags with attributes that are within the
+.IR RANGE .
+.TP
+.BR l ",  " level " " \fI[RANGE]\fR
+Get tags that are on level within the
+.IR RANGE .
+.TP
+.BR s ",  " size " " \fI[RANGE]\fR
+Get tags with size of insides that is within the
+.IR RANGE .
+.TP
+.BR c ",  " child_count " " \fI[RANGE]\fR
+Get tags with number of children that is within the
+.IR RANGE .
+.TP
+.BR p ",  " printf " " \fI"FORMAT"\fR
 Print output according to
 .IR FORMAT ,
-interpreting '\e' escapes and `%' directives.  Field widths and precisions can be specified as with the
-.BR printf (3)
-C  function. The escapes and directives are:
+interpreting '\e' escapes and `%' directives. The escapes and directives are:
 .RS
 .IP \ea
 Alarm bell.
@@ -109,43 +171,8 @@ Value of tag's attribute, where \fIk\fP is its position counted from zero.
 .IP %(\fIk\fP)a
 Value of tag's attribute, where \fIk\fP is its name.
 
-.SS "File and Directory Selection"
-.TP
-.BR \-r
-Read all files under each directory, recursively.
-.TP
-.BR \-H
-Follow symbolic links.
-.TP
-.BR \-R
-Read all files under each directory, recursively.
-Follow all symbolic links, unlike
-.BR \-r .
-.SS "Other Options"
-.TP
-.B \-l
-List structure of
-.IR FILE .
-
-.SH PATTERNS
-Each pattern should be separated by semicolon. Tags and attributes are separated by whitespace characters. Pattern will be matched on results of the matching of previous pattern.
-.SS TAG
-At the begining each pattern should contain regex of html tag. If the first character is '!' then matching will be inverted.
-.SS ATTRIBUTES
-Before each attribute should be either '+' or '-', where '-' means not-matching of such attribute and '+' matching. As next is regex of attribute. To specify its value it should be followed by '=' and double quote in which should be regex of value. Leaving attribute without specifying the value of it means that maching of its value will be skipped.
-.SS "ADDITIONAL OPTIONS"
-The syntax of additional options is '/[ATTRIBUTE COUNT][LEVEL][INSIDES SIZE]/INSIDES REGEX/' and they should be placed before semicolon. Delimiter can be '/', '#', ',', but it needs to be consistent. If before second delimiter '!' character is met, then its matching will be inverted.
-.PP
-To specify additional options for attributes before its regex should be pair of square brackets specifying its position (starting from zero).
-.SS "SQUARE BRACKETS"
-Specifying one value in them means that matching value needs to be the same as in the brackets.
-.PP
-Character \'$' is aliased to the last value.
-.PP
-Specifying two values separated by '-' means range for matching value. Leaving  the values empty means that value will become zero or the last depending on the order.
-
 .SH EXAMPLES
-Get tags 'a' with attribute 'href' at position 0 of value ending with '.org' from result of matching tags 'div' with attribute 'id' and without attribute 'class' from file 'index.html'.
+Get tags 'a' with attribute 'href' at position 0 of value ending with '.org', from result of matching tags 'div' with attribute 'id', and without attribute 'class', from file 'index.html'.
 .nf
 \&
 .in +4m
@@ -156,26 +183,30 @@ Get tags which does not have any tags inside them from file 'index.html'.
 .nf
 \&
 .in +4m
-.B $ hgrep '.* /!/</' index.html
+.B $ hgrep '.* @M"<"' index.html
 .in
 \&
 Get empty tags from file 'index.html'.
 .nf
 \&
 .in +4m
-.B $ hgrep '.* /[\-][\-][0]' index.html
+.B $ hgrep '.* @s[0]' index.html
 .in
 \&
 Get hyperlinks from level greater or equal to 6 from file 'index.html'.
 .nf
 \&
 .in +4m
-.B $ hgrep 'a +href /[\-][6\-]' \-printf '%(href)a\\\\n' index.html
+.B $ hgrep 'a +href @l[6\-] @p"%(href)a\\\\n"' index.html
 .in
 \&
-
-.SH "EXIT STATUS"
-On success hgrep returns 0, on error 1.
+Get all urls from 'a' and 'img' tags
+.nf
+\&
+.in +4m
+.B $ hgrep 'img +src @p"%(src)a\\\\n", a +href @p"%(href)a\\\\n"'
+.in
+\&
 
 .SH AUTHOR
 TUVIMEN <suchora.dominik7@gmail.com>

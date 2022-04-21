@@ -43,8 +43,7 @@ typedef unsigned long int ulong;
 #define P_INVERT 0x1
 #define P_MATCH_INSIDES 0x2
 #define P_INVERT_INSIDES 0x4
-#define P_EMPTY 0x8
-#define P_PRINTF 0x10
+#define P_PRINTF 0x8
 
 #define F_SBRACKET 0x1
 #define F_STRING 0x2
@@ -268,8 +267,6 @@ handle_phptag(char *f, size_t *i, const size_t s, hgrep_node *hgn)
 int
 hgrep_match(const hgrep_node *hgn, const hgrep_pattern *p)
 {
-  if (p->flags&P_EMPTY)
-      return 1;
   const hgrep_str_pair *a = hgn->attrib;
   const struct hgrep_pattrib *attrib = p->attrib;
   uchar rev = ((p->flags&P_INVERT) == P_INVERT);
@@ -735,7 +732,6 @@ hgrep_pcomp(char *pattern, size_t size, hgrep_pattern *p, const uchar flags)
     for (size_t i = pos; i < size && !isalnum(pattern[i]); i++)
         if (pattern[pos] == '@')
           handle_function(p,pattern,&i,&size,regexflags);
-    p->flags |= P_EMPTY;
     return;
   }
   memcpy(tmp+1,pattern+t,pos-t);

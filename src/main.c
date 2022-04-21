@@ -390,9 +390,9 @@ main(int argc, char **argv)
   int g = optind;
   for (; g < argc; g++)
     handle_file(argv[g]);
-
   if (g-optind == 0)
     handle_file(NULL);
+
   fclose(outfile);
   for (size_t n = 0; n < patterns->size; n++)
     hgrep_pfree(&((auxiliary_pattern*)patterns->v)[n].p);
