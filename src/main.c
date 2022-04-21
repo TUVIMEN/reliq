@@ -105,7 +105,7 @@ usage()
       "  -R\t\t\tlikewise but follow all symlinks\n"\
       "  -F\t\t\tenter fast and low memory consumption mode\n"\
       "  -h\t\t\tshow help\n"\
-      "  -V\t\t\tshow version\n\n"\
+      "  -v\t\t\tshow version\n\n"\
       "When FILE isn't specified, FILE will become standard input.",argv0,argv0,argv0);
 }
 
@@ -147,13 +147,8 @@ split_patterns(char *src, size_t s)
     }
     hgrep_pcomp(src+j,i-j,&apattern->p,0);
 
-    if (src[i] == ';' || src[i] == '|') {
-      while (i < s && (src[i] == ';' || src[i] == '|'))
-        i++;
-    } else if (src[i] == ',') {
-      while (i < s && src[i] == ',')
-        i++;
-    }
+    if (src[i] == ';' || src[i] == '|' || src[i] == ',')
+      i++;
     while_is(isspace,src,i,s);
     i--;
   }
@@ -161,48 +156,31 @@ split_patterns(char *src, size_t s)
   return ret;
 }
 
-uchar
-settings_to_hgrep(const uint settings)
-{
-    uchar ret = 0;
-    if (settings&F_EXTENDED)
-        ret |= HGREP_EREGEX;
-    if (settings&F_ICASE)
-        ret |= F_ICASE;
-    return ret;
-}
-
 static void
 handle_row(hgrep *hg, flexarr *patterns, size_t *pos, flexarr *buf[2])
 {
   auxiliary_pattern *fl = (auxiliary_pattern*)patterns->v;
   hgrep_pattern *flv = &fl[*pos].p;
-  char lastinrow = 0;
-  if (patterns->size-1 <= *pos || fl[*pos].posx != fl[(*pos)+1].posx)
-    lastinrow = 1;
+  char lastinrow = (*pos == patterns->size-1 || fl[*pos].posx != fl[(*pos)+1].posx);
   for (size_t j = 0; j < hg->nodesl; j++) {
     if (hgrep_match(&hg->nodes[j],flv)) {
       if (lastinrow) {
-        if (flv->format.b)
+        if (flv->format.b) {
           hgrep_printf(outfile,flv->format.b,flv->format.s,&hg->nodes[j],hg->data);
-        else
-         hgrep_print(outfile,&hg->nodes[j]);
+        } else {
+          hgrep_print(outfile,&hg->nodes[j]);
+        }
       } else {
         *(size_t*)flexarr_inc(buf[0]) = j;
       }
     }
   }
-  if (lastinrow)
-    goto END;
   size_t *ps,n;
   ushort lvl;
   for ((*pos)++; *pos < patterns->size; (*pos)++) {
     flv = &fl[*pos].p;
     ps = (size_t*)buf[0]->v;
-    if (patterns->size-1 <= *pos || fl[*pos].posx != fl[*pos+1].posx)
-      lastinrow = 1;
-    else
-      lastinrow = 0;
+    lastinrow = (*pos == patterns->size-1 || fl[*pos].posx != fl[*pos+1].posx);
     for (size_t j = 0; j < buf[0]->size; j++) {
       lvl = hg->nodes[ps[j]].lvl;
       for (size_t h = 0; h <= hg->nodes[ps[j]].child_count; h++) {
@@ -210,19 +188,17 @@ handle_row(hgrep *hg, flexarr *patterns, size_t *pos, flexarr *buf[2])
         hg->nodes[n].lvl -= lvl;
         if (hgrep_match(&hg->nodes[n],flv)) {
           if (lastinrow) {
-            if (flv->format.b)
+            if (flv->format.b) {
               hgrep_printf(outfile,flv->format.b,flv->format.s,&hg->nodes[n],hg->data);
-            else
-             hgrep_print(outfile,&hg->nodes[n]);
+            } else {
+              hgrep_print(outfile,&hg->nodes[n]);
+            }
           } else {
             *(size_t*)flexarr_inc(buf[1]) = n;
           }
         }
         hg->nodes[n].lvl += lvl;
       }
-    }
-    if (lastinrow) {
-      break;
     }
     if (!buf[1]->size)
       break;
@@ -231,7 +207,6 @@ handle_row(hgrep *hg, flexarr *patterns, size_t *pos, flexarr *buf[2])
     buf[0] = buf[1];
     buf[1] = tmp;
   }
-  END: ;
   buf[0]->size = 0;
   buf[1]->size = 0;
   if (*pos > patterns->size)
@@ -264,10 +239,11 @@ analyze(char *f, size_t s, uchar inpipe)
       hgrep_init(NULL,f,s,outfile,flv,hflags);
       fflush(outfile);
     
-      if (!inpipe && i == 0)
+      if (!inpipe && i == 0) {
         munmap(f,s);
-      else
+      } else {
         free(f);
+      }
       if (i != patterns->size-1)
         fclose(outfile);
     
@@ -369,7 +345,7 @@ main(int argc, char **argv)
   int opt;
   outfile = stdout;
 
-  while ((opt = getopt(argc,argv,"Eilo:f:HrRFVh")) != -1) {
+  while ((opt = getopt(argc,argv,"Eilo:f:HrRFvh")) != -1) {
     switch (opt) {
       case 'E': settings |= F_EXTENDED; break;
       case 'i': settings |= F_ICASE; break;
@@ -396,13 +372,16 @@ main(int argc, char **argv)
       case 'r': settings |= F_RECURSIVE; break;
       case 'R': settings |= F_RECURSIVE; nftwflags &= ~FTW_PHYS; break;
       case 'F': settings |= F_FAST; break;
-      case 'V': die(VERSION); break;
+      case 'v': die(VERSION); break;
       case 'h': usage(); break;
       default: exit(1);
     }
   }
 
-  hflags = settings_to_hgrep(settings);
+  if (settings&F_EXTENDED)
+      hflags |= HGREP_EREGEX;
+  if (settings&F_ICASE)
+      hflags |= F_ICASE;
 
   if (!patterns && optind < argc) {
     patterns = split_patterns(argv[optind],strlen(argv[optind]));
