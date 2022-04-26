@@ -136,7 +136,7 @@ delchar(char *src, const size_t pos, size_t *size)
   return src;
 }
 
-int handle_number(const char *src, size_t *pos, const size_t size)
+int number_handle(const char *src, size_t *pos, const size_t size)
 {
   size_t t = *pos, s;
   int ret = atoi(src+t);
@@ -148,7 +148,7 @@ int handle_number(const char *src, size_t *pos, const size_t size)
 }
 
 static void
-handle_comment(char *f, size_t *i, size_t s)
+comment_handle(char *f, size_t *i, size_t s)
 {
   (*i)++;
   if (f[*i] == '-' && f[*i+1] == '-') {
@@ -163,7 +163,7 @@ handle_comment(char *f, size_t *i, size_t s)
 }
 
 static void
-handle_name(char *f, size_t *i, const size_t s, hgrep_str *tag)
+name_handle(char *f, size_t *i, const size_t s, hgrep_str *tag)
 {
     tag->b = f+*i;
     while (*i < s && (isalnum(f[*i]) || f[*i] == '-'))
@@ -172,10 +172,10 @@ handle_name(char *f, size_t *i, const size_t s, hgrep_str *tag)
 }
 
 static void
-handle_attrib(char *f, size_t *i, const size_t s, flexarr *attribs)
+attrib_handle(char *f, size_t *i, const size_t s, flexarr *attribs)
 {
   hgrep_str_pair *ac = (hgrep_str_pair*)flexarr_inc(attribs);
-  handle_name(f,i,s,&ac->f);
+  name_handle(f,i,s,&ac->f);
   while_is(isspace,f,*i,s);
   if (f[*i] != '=') {
     ac->s.b = NULL;
@@ -211,11 +211,11 @@ handle_attrib(char *f, size_t *i, const size_t s, flexarr *attribs)
 
 #ifdef PHPTAGS
 static void
-handle_phptag(char *f, size_t *i, const size_t s, hgrep_node *hgn)
+phptag_handle(char *f, size_t *i, const size_t s, hgrep_node *hgn)
 {
   (*i)++;
   while_is(isspace,f,*i,s);
-  handle_name(f,i,s,&hgn->tag);
+  name_handle(f,i,s,&hgn->tag);
 
   char *ending;
   for (; *i < s; (*i)++) {
@@ -326,7 +326,7 @@ hgrep_match(const hgrep_node *hgn, const hgrep_pattern *p)
 }
 
 static uint
-handle_struct(char *f, size_t *i, const size_t s, const ushort lvl, flexarr *nodes, hgrep *hg)
+struct_handle(char *f, size_t *i, const size_t s, const ushort lvl, flexarr *nodes, hgrep *hg)
 {
   uint ret = 1;
   hgrep_node *hgn = flexarr_inc(nodes);
@@ -340,19 +340,19 @@ handle_struct(char *f, size_t *i, const size_t s, const ushort lvl, flexarr *nod
   (*i)++;
   while_is(isspace,f,*i,s);
   if (f[*i] == '!') {
-    handle_comment(f,i,s);
+    comment_handle(f,i,s);
     flexarr_dec(nodes);
     return 0;
   }
 
   #ifdef PHPTAGS
   if (f[*i] == '?') {
-    handle_phptag(f,i,s,hgn);
+    phptag_handle(f,i,s,hgn);
     goto END;
   }
   #endif
 
-  handle_name(f,i,s,&hgn->tag);
+  name_handle(f,i,s,&hgn->tag);
   for (; *i < s && f[*i] != '>';) {
     while_is(isspace,f,*i,s);
     if (f[*i] == '/') {
@@ -370,7 +370,7 @@ handle_struct(char *f, size_t *i, const size_t s, const ushort lvl, flexarr *nod
     }
     
     while_is(isspace,f,*i,s);
-    handle_attrib(f,i,s,a);
+    attrib_handle(f,i,s,a);
   }
 
   #define strcomp(x,y) (x.s == y.s && memcmp(y.b,x.b,y.s) == 0)
@@ -418,7 +418,7 @@ handle_struct(char *f, size_t *i, const size_t s, const ushort lvl, flexarr *nod
       } else if (!script) {
         if (f[*i+1] == '!') {
           (*i)++;
-          handle_comment(f,i,s);
+          comment_handle(f,i,s);
           continue;
         } else {
           #ifdef AUTOCLOSING
@@ -428,14 +428,13 @@ handle_struct(char *f, size_t *i, const size_t s, const ushort lvl, flexarr *nod
 
             ti++;
             while_is(isspace,f,ti,s);
-            handle_name(f,&ti,s,&name);
+            name_handle(f,&ti,s,&name);
 
-            if (strcomp(hgn->tag,name)) {
+            if (strcomp(hgn->tag,name))
               goto END;
-            }
           }
           #endif
-          ret += handle_struct(f,i,s,lvl+1,nodes,hg);
+          ret += struct_handle(f,i,s,lvl+1,nodes,hg);
           hgn = &((hgrep_node*)nodes->v)[index];
         }
       }
@@ -522,7 +521,7 @@ hgrep_printf(FILE *outfile, const char *format, const size_t formatl, const hgre
       if (++i >= formatl)
         break;
       if (isdigit(format[i])) {
-        num = handle_number(format,&i,formatl);
+        num = number_handle(format,&i,formatl);
       } else if (format[i] == '(') {
         cont = ++i;
         char *t = memchr(format+i,')',formatl-i);
@@ -573,7 +572,7 @@ hgrep_print(FILE *outfile, const hgrep_node *hgn)
 }
 
 static void
-handle_sbrackets(const char *src, size_t *pos, const size_t size, uint *x, uint *y)
+sbrackets_handle(const char *src, size_t *pos, const size_t size, uint *x, uint *y)
 {
   *x = 0;
   *y = 0;
@@ -589,7 +588,7 @@ handle_sbrackets(const char *src, size_t *pos, const size_t size, uint *x, uint 
     goto END;
   }
 
-  r = handle_number(src,pos,size);
+  r = number_handle(src,pos,size);
   if (r == -1)
     return;
   *x = (uint)r;
@@ -618,7 +617,7 @@ handle_sbrackets(const char *src, size_t *pos, const size_t size, uint *x, uint 
     goto END;
   }
 
-  r = handle_number(src,pos,size);
+  r = number_handle(src,pos,size);
   if (r == -1)
     return;
   *y = (uint)r;
@@ -628,7 +627,7 @@ handle_sbrackets(const char *src, size_t *pos, const size_t size, uint *x, uint 
 }
 
 static void
-handle_function(hgrep_pattern *p, char *func, size_t *pos, size_t *size, const int regexflags)
+function_handle(hgrep_pattern *p, char *func, size_t *pos, size_t *size, const int regexflags)
 {
   if (*pos >= *size || !func || func[*pos] != '@')
     return;
@@ -654,7 +653,7 @@ handle_function(hgrep_pattern *p, char *func, size_t *pos, size_t *size, const i
   if (functions[i].flags&F_SBRACKET) {
     if (func[*pos] != '[')
       return;
-    handle_sbrackets(func,pos,*size,&x,&y);
+    sbrackets_handle(func,pos,*size,&x,&y);
   } else if (functions[i].flags&F_STRING) {
     if (func[*pos] != '"')
       return;
@@ -733,7 +732,7 @@ hgrep_pcomp(char *pattern, size_t size, hgrep_pattern *p, const uchar flags)
   if (!(pos-t)) {
     for (size_t i = pos; i < size && !isalnum(pattern[i]); i++)
         if (pattern[pos] == '@')
-          handle_function(p,pattern,&i,&size,regexflags);
+          function_handle(p,pattern,&i,&size,regexflags);
     p->flags |= P_EMPTY;
     return;
   }
@@ -747,7 +746,7 @@ hgrep_pcomp(char *pattern, size_t size, hgrep_pattern *p, const uchar flags)
   for (size_t i = pos; i < size;) {
     while_is(isspace,pattern,i,size);
     if (pattern[i] == '@') {
-      handle_function(p,pattern,&i,&size,regexflags);
+      function_handle(p,pattern,&i,&size,regexflags);
       continue;
     }
 
@@ -756,7 +755,7 @@ hgrep_pcomp(char *pattern, size_t size, hgrep_pattern *p, const uchar flags)
       uint x=0,y=-1;
       while_is(isspace,pattern,i,size);
       if (pattern[i] == '[')
-        handle_sbrackets(pattern,&i,size,&x,&y);
+        sbrackets_handle(pattern,&i,size,&x,&y);
       t = i;
       while (i < size && i < PATTERN_SIZE-2 && !isspace(pattern[i]) && pattern[i] != '=')
         i++;
@@ -850,7 +849,7 @@ hgrep_init(hgrep *hg, char *ptr, const size_t size, FILE *output, hgrep_pattern 
   t.attrib_buffer = (void*)flexarr_init(sizeof(hgrep_str_pair),ATTRIB_INC);
   for (size_t i = 0; i < size; i++) {
     while (ptr[i] == '<' && i < size)
-      handle_struct(ptr,&i,size,0,nodes,&t);
+      struct_handle(ptr,&i,size,0,nodes,&t);
   }
   if (t.flags&HGREP_SAVE) {
     flexarr_conv(nodes,(void**)&t.nodes,&t.nodesl);

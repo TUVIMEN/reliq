@@ -110,7 +110,7 @@ usage()
 }
 
 static flexarr *
-split_patterns(char *src, size_t s)
+patterns_split(char *src, size_t s)
 {
   if (s == 0)
     return NULL;
@@ -157,7 +157,7 @@ split_patterns(char *src, size_t s)
 }
 
 static void
-handle_row(hgrep *hg, flexarr *patterns, size_t *pos, flexarr *buf[2])
+row_handle(hgrep *hg, flexarr *patterns, size_t *pos, flexarr *buf[2])
 {
   auxiliary_pattern *fl = (auxiliary_pattern*)patterns->v;
   hgrep_pattern *flv = &fl[*pos].p;
@@ -214,56 +214,57 @@ handle_row(hgrep *hg, flexarr *patterns, size_t *pos, flexarr *buf[2])
 }
 
 static void
-analyze(char *f, size_t s, uchar inpipe)
+patterns_exec_fast(char *f, size_t s, const uchar inpipe)
+{
+  for (size_t i = 0; i < patterns->size; i++)
+    if (((auxiliary_pattern*)patterns->v)[i].posx)
+      exit(1);
+  FILE *t = outfile;
+  char *ptr;
+  size_t fsize;
+  
+  for (size_t i = 0; i < patterns->size; i++) {
+    outfile = (i == patterns->size-1) ? t : open_memstream(&ptr,&fsize);
+    
+    auxiliary_pattern *fl = &((auxiliary_pattern*)patterns->v)[i];
+    hgrep_pattern *flv = &fl->p;
+    hgrep_init(NULL,f,s,outfile,flv,hflags);
+    fflush(outfile);
+  
+    if (!inpipe && i == 0) {
+      munmap(f,s);
+    } else {
+      free(f);
+    }
+    if (i != patterns->size-1)
+      fclose(outfile);
+  
+    f = ptr;
+    s = fsize;
+  }
+}
+
+static void
+patterns_exec(char *f, size_t s, const uchar inpipe)
 {
   if (f == NULL || s == 0)
     return;
 
   if (settings&F_FAST) {
-    for (size_t i = 0; i < patterns->size; i++)
-      if (((auxiliary_pattern*)patterns->v)[i].posx)
-        exit(1);
-    FILE *t = outfile;
-    char **ptr = malloc(patterns->size<<3);
-    size_t *fsize = malloc(patterns->size<<3);
-    
-    for (size_t i = 0; i < patterns->size; i++) {
-      if (i == patterns->size-1) {
-        outfile = t;
-      } else {
-        outfile = open_memstream(&ptr[i],&fsize[i]);
-      }
-      
-      auxiliary_pattern *fl = &((auxiliary_pattern*)patterns->v)[i];
-      hgrep_pattern *flv = &fl->p;
-      hgrep_init(NULL,f,s,outfile,flv,hflags);
-      fflush(outfile);
-    
-      if (!inpipe && i == 0) {
-        munmap(f,s);
-      } else {
-        free(f);
-      }
-      if (i != patterns->size-1)
-        fclose(outfile);
-    
-      f = ptr[i];
-      s = fsize[i];
-    }
-    free(ptr);
-    free(fsize);
-  } else {
-    hgrep hg;
-    hgrep_init(&hg,f,s,NULL,NULL,hflags);
-    flexarr *passed1=flexarr_init(sizeof(size_t),PASSED_INC),
-      *passed2=flexarr_init(sizeof(size_t),PASSED_INC);
-    for (size_t i = 0; i < patterns->size; i++)
-      handle_row(&hg,patterns,&i,(flexarr*[]){passed1,passed2});
-
-    flexarr_free(passed1);
-    flexarr_free(passed2);
-    hgrep_free(&hg);
+    patterns_exec_fast(f,s,inpipe);
+    return;
   }
+
+  hgrep hg;
+  hgrep_init(&hg,f,s,NULL,NULL,hflags);
+  flexarr *passed1=flexarr_init(sizeof(size_t),PASSED_INC),
+    *passed2=flexarr_init(sizeof(size_t),PASSED_INC);
+  for (size_t i = 0; i < patterns->size; i++)
+    row_handle(&hg,patterns,&i,(flexarr*[]){passed1,passed2});
+
+  flexarr_free(passed1);
+  flexarr_free(passed2);
+  hgrep_free(&hg);
 }
 
 static void
@@ -282,7 +283,7 @@ pipe_to_str(int fd, char **file, size_t *size)
 }
 
 void
-handle_file(const char *f)
+file_handle(const char *f)
 {
   int fd;
   struct stat st;
@@ -291,7 +292,7 @@ handle_file(const char *f)
   if (f == NULL) {
     size_t size;
     pipe_to_str(0,&file,&size);
-    analyze(file,size,1);
+    patterns_exec(file,size,1);
     return;
   }
 
@@ -322,7 +323,7 @@ handle_file(const char *f)
     close(fd);
   } else {
     close(fd);
-    analyze(file,st.st_size,0);
+    patterns_exec(file,st.st_size,0);
   }
 }
 
@@ -330,7 +331,7 @@ int
 nftw_func(const char *fpath, const struct stat *sb, int typeflag, struct FTW *ftwbuf)
 {
   if (typeflag == FTW_F || typeflag == FTW_SL)
-    handle_file(fpath);
+    file_handle(fpath);
 
   return 0;
 }
@@ -349,7 +350,7 @@ main(int argc, char **argv)
     switch (opt) {
       case 'E': settings |= F_EXTENDED; break;
       case 'i': settings |= F_ICASE; break;
-      case 'l': patterns = split_patterns("@p\"%t%I - %s/%p\n\"",17); break;
+      case 'l': patterns = patterns_split("@p\"%t%I - %s/%p\n\"",17); break;
       case 'o': {
         outfile = fopen(optarg,"w");
         if (outfile == NULL)
@@ -364,7 +365,7 @@ main(int argc, char **argv)
         char *p;
         pipe_to_str(fd,&p,&s);
         close(fd);
-        patterns = split_patterns(p,s);
+        patterns = patterns_split(p,s);
         free(p);
         }
         break;
@@ -384,14 +385,14 @@ main(int argc, char **argv)
       hflags |= F_ICASE;
 
   if (!patterns && optind < argc) {
-    patterns = split_patterns(argv[optind],strlen(argv[optind]));
+    patterns = patterns_split(argv[optind],strlen(argv[optind]));
     optind++;
   }
   int g = optind;
   for (; g < argc; g++)
-    handle_file(argv[g]);
+    file_handle(argv[g]);
   if (g-optind == 0)
-    handle_file(NULL);
+    file_handle(NULL);
 
   fclose(outfile);
   for (size_t n = 0; n < patterns->size; n++)
