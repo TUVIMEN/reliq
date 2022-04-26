@@ -43,7 +43,7 @@ typedef unsigned long int ulong;
 #define P_INVERT 0x1
 #define P_MATCH_INSIDES 0x2
 #define P_INVERT_INSIDES 0x4
-#define P_PRINTF 0x8
+#define P_EMPTY 0x8
 
 #define F_SBRACKET 0x1
 #define F_STRING 0x2
@@ -73,7 +73,7 @@ typedef struct {
 } hgrep_function;
 
 const hgrep_function functions[] = {
-    {{"p",1},F_STRING|F_PRINTF,P_PRINTF},
+    {{"p",1},F_STRING|F_PRINTF,0},
     {{"m",1},F_STRING|F_MATCH_INSIDES,P_MATCH_INSIDES},
     {{"M",1},F_STRING|F_MATCH_INSIDES,P_MATCH_INSIDES|P_INVERT_INSIDES},
     {{"a",1},F_SBRACKET|F_ATTRIBUTES,0},
@@ -81,7 +81,7 @@ const hgrep_function functions[] = {
     {{"s",1},F_SBRACKET|F_SIZE,0},
     {{"c",1},F_SBRACKET|F_CHILD_COUNT,0},
 
-    {{"printf",6},F_STRING|F_PRINTF,P_PRINTF},
+    {{"printf",6},F_STRING|F_PRINTF,0},
     {{"match_insides",13},F_STRING|F_MATCH_INSIDES,P_MATCH_INSIDES},
     {{"rev_match_insides",17},F_STRING|F_MATCH_INSIDES,P_MATCH_INSIDES|P_INVERT_INSIDES},
     {{"attributes",10},F_SBRACKET|F_ATTRIBUTES,0},
@@ -267,6 +267,8 @@ handle_phptag(char *f, size_t *i, const size_t s, hgrep_node *hgn)
 int
 hgrep_match(const hgrep_node *hgn, const hgrep_pattern *p)
 {
+  if (p->flags&P_EMPTY)
+    return 1;
   const hgrep_str_pair *a = hgn->attrib;
   const struct hgrep_pattrib *attrib = p->attrib;
   uchar rev = ((p->flags&P_INVERT) == P_INVERT);
@@ -732,6 +734,7 @@ hgrep_pcomp(char *pattern, size_t size, hgrep_pattern *p, const uchar flags)
     for (size_t i = pos; i < size && !isalnum(pattern[i]); i++)
         if (pattern[pos] == '@')
           handle_function(p,pattern,&i,&size,regexflags);
+    p->flags |= P_EMPTY;
     return;
   }
   memcpy(tmp+1,pattern+t,pos-t);

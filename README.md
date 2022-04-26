@@ -13,7 +13,7 @@ hgrep is a simple html parsing tool.
 
 ### Build linked
 
-    make linked    
+    make linked
 
 ## Examples
 Get tags 'a' with attribute 'href' at position 0 of value ending with '.org' from result of matching tags 'div' with attribute 'id' and without attribute 'class' from file 'index.html'.
