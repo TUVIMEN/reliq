@@ -810,17 +810,19 @@ hgrep_pfree(hgrep_pattern *p)
 {
   if (p == NULL)
     return;
-  regfree(&p->r);
-  if (p->flags&P_MATCH_INSIDES)
-    regfree(&p->in);
-  for (size_t j = 0; j < p->attribl; j++) {
-    regfree(&p->attrib[j].r[0]);
-    if (p->attrib[j].flags&A_VAL_MATTERS)
-      regfree(&p->attrib[j].r[1]);
+  if (!(p->flags&P_EMPTY)) {
+    regfree(&p->r);
+    if (p->flags&P_MATCH_INSIDES)
+      regfree(&p->in);
+    for (size_t j = 0; j < p->attribl; j++) {
+      regfree(&p->attrib[j].r[0]);
+      if (p->attrib[j].flags&A_VAL_MATTERS)
+        regfree(&p->attrib[j].r[1]);
+    }
+    free(p->attrib);
   }
   if (p->format.b)
     free(p->format.b);
-  free(p->attrib);
 }
 
 void
