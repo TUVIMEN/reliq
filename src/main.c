@@ -409,7 +409,7 @@ main(int argc, char **argv)
   if (settings&F_EXTENDED)
       hflags |= HGREP_EREGEX;
   if (settings&F_ICASE)
-      hflags |= F_ICASE;
+      hflags |= HGREP_ICASE;
 
   if (!patterns && optind < argc) {
     patterns = patterns_split(argv[optind],NULL,strlen(argv[optind]));
