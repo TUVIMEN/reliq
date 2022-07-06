@@ -64,7 +64,6 @@ typedef unsigned long int ulong;
 typedef struct {
   hgrep_pattern p;
   uchar posx;
-  uchar posy;
 } auxiliary_pattern;
 
 char *argv0;
@@ -120,12 +119,11 @@ patterns_split(char *src, size_t *pos, size_t s)
   flexarr *ret = flexarr_init(sizeof(auxiliary_pattern),PATTERN_SIZE_INC);
   auxiliary_pattern apattern;
   size_t patternl=0;
-  uchar posx=0,posy=0;
+  uchar posx = 0;
   size_t i = *pos;
   for (size_t j; i < s; i++) {
     j = i;
     apattern.posx = posx;
-    apattern.posy = posy;
 
     while (i < s) {
       if (src[i] == '"') {
@@ -139,14 +137,12 @@ patterns_split(char *src, size_t *pos, size_t s)
           i++;
       }
       if (src[i] == ',') {
-        posy = 0;
         posx++;
         patternl = i-j;
         i++;
         break;
       }
       if (src[i] == ';' || src[i] == '|') {
-        posy++;
         patternl = i-j;
         i++;
         break;
@@ -205,41 +201,41 @@ pattern_exec(FILE *outfile, hgrep *hg, auxiliary_pattern *pattern, flexarr *sour
   }
 }
 
-static void
-row_handle(FILE *outfile, hgrep *hg, flexarr *patterns, size_t *pos, flexarr *buf[2])
+static size_t
+columns_handle(hgrep *hg, auxiliary_pattern *patterns)
 {
-  auxiliary_pattern *fl = (auxiliary_pattern*)patterns->v;
-  for (; *pos < patterns->size; (*pos)++) {
-    flexarr *d = (*pos == patterns->size-1 || fl[*pos].posx != fl[*pos+1].posx) ? NULL : buf[1];
-    pattern_exec(outfile,hg,&fl[*pos],buf[0],d);
-    if (d == NULL || !d->size)
-      break;
+  size_t i = 0;
+  flexarr *buf[2];
+  buf[0] = flexarr_init(sizeof(size_t),PASSED_INC);
+  buf[1] = flexarr_init(sizeof(size_t),PASSED_INC);
+
+  for (; i < size; i++) {
+    flexarr *d = (i == size-1 || patterns[i].posy != patterns[i+1].posy) ? NULL : buf[1];
+    pattern_exec(outfile,hg,&patterns[i],buf[0],d);
+    if (d == NULL || !d->size) {
+      buf[0]->size = 0;
+      buf[1]->size = 0;
+      continue;
+    }
+
     buf[0]->size = 0;
     flexarr *tmp = buf[0];
     buf[0] = buf[1];
     buf[1] = tmp;
   }
-  buf[0]->size = 0;
-  buf[1]->size = 0;
+
+  flexarr_free(buf[0]);
+  flexarr_free(buf[1]);
+  return 0;
 }
 
-static void
-columns_handle(hgrep *hg, flexarr *patterns)
-{
-  flexarr *buf1=flexarr_init(sizeof(size_t),PASSED_INC),
-    *buf2=flexarr_init(sizeof(size_t),PASSED_INC);
-  for (size_t i = 0; i < patterns->size; i++)
-    row_handle(outfile,hg,patterns,&i,(flexarr*[]){buf1,buf2});
-  flexarr_free(buf1);
-  flexarr_free(buf2);
-}
 
 static void
 patterns_exec_fast(char *f, size_t s, const uchar inpipe)
 {
   for (size_t i = 0; i < patterns->size; i++)
     if (((auxiliary_pattern*)patterns->v)[i].posx)
-      exit(1);
+      die("unexpected delimiter ',' in fast mode");
   FILE *t = outfile;
   char *ptr;
   size_t fsize;
