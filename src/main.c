@@ -212,10 +212,8 @@ row_handle(FILE *outfile, hgrep *hg, flexarr *patterns, size_t *pos, flexarr *bu
   for (; *pos < patterns->size; (*pos)++) {
     flexarr *d = (*pos == patterns->size-1 || fl[*pos].posx != fl[*pos+1].posx) ? NULL : buf[1];
     pattern_exec(outfile,hg,&fl[*pos],buf[0],d);
-    if (d == NULL || !d->size) {
-      (*pos)++;
+    if (d == NULL || !d->size)
       break;
-    }
     buf[0]->size = 0;
     flexarr *tmp = buf[0];
     buf[0] = buf[1];
@@ -226,7 +224,7 @@ row_handle(FILE *outfile, hgrep *hg, flexarr *patterns, size_t *pos, flexarr *bu
 }
 
 static void
-column_handle(hgrep *hg, flexarr *patterns)
+columns_handle(hgrep *hg, flexarr *patterns)
 {
   flexarr *buf1=flexarr_init(sizeof(size_t),PASSED_INC),
     *buf2=flexarr_init(sizeof(size_t),PASSED_INC);
@@ -280,7 +278,7 @@ patterns_exec(char *f, size_t s, const uchar inpipe)
 
   hgrep hg;
   hgrep_init(&hg,f,s,NULL,NULL,hflags);
-  column_handle(&hg,patterns);
+  columns_handle(&hg,patterns);
 
   hgrep_free(&hg);
 }
