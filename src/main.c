@@ -212,11 +212,13 @@ columns_handle(hgrep *hg, auxiliary_pattern *patterns, const size_t size)
   for (; i < size; i++) {
     flexarr *d = (i == size-1 || patterns[i].posx != patterns[i+1].posx) ? NULL : buf[1];
     pattern_exec(outfile,hg,&patterns[i],buf[0],d);
-    if (d == NULL || !d->size) {
+    if (d == NULL) {
       buf[0]->size = 0;
       buf[1]->size = 0;
       continue;
     }
+    if (!d->size)
+        break;
 
     buf[0]->size = 0;
     flexarr *tmp = buf[0];
