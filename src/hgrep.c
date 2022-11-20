@@ -166,7 +166,7 @@ static void
 name_handle(char *f, size_t *i, const size_t s, hgrep_str *tag)
 {
     tag->b = f+*i;
-    while (*i < s && (isalnum(f[*i]) || f[*i] == '-'))
+    while (*i < s && (isalnum(f[*i]) || f[*i] == '-' || f[*i] == '_'))
       (*i)++;
     tag->s = (f+*i)-tag->b;
 }
