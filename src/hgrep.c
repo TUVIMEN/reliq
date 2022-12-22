@@ -850,7 +850,9 @@ hgrep_init(hgrep *hg, char *ptr, const size_t size, FILE *output, hgrep_pattern 
   flexarr *nodes = flexarr_init(sizeof(hgrep_node),HGREP_NODES_INC);
   t.attrib_buffer = (void*)flexarr_init(sizeof(hgrep_str_pair),ATTRIB_INC);
   for (size_t i = 0; i < size; i++) {
-    while (ptr[i] == '<' && i < size)
+    while (ptr[i] != '<' && i < size)
+        i++;
+    while (i < size && ptr[i] == '<')
       struct_handle(ptr,&i,size,0,nodes,&t);
   }
   if (t.flags&HGREP_SAVE) {
