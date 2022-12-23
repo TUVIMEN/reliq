@@ -217,8 +217,11 @@ columns_handle(hgrep *hg, auxiliary_pattern *patterns, const size_t size)
       buf[1]->size = 0;
       continue;
     }
-    if (!d->size)
-        break;
+    if (!d->size) {
+        while (i < size && patterns[i].posx == patterns[i+1].posx)
+            i++;
+        continue;
+    }
 
     buf[0]->size = 0;
     flexarr *tmp = buf[0];
