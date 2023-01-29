@@ -414,6 +414,8 @@ main(int argc, char **argv)
     patterns = patterns_split(argv[optind],NULL,strlen(argv[optind]));
     optind++;
   }
+  if (!patterns)
+      return -1;
   int g = optind;
   for (; g < argc; g++)
     file_handle(argv[g]);
