@@ -399,12 +399,18 @@ struct_handle(char *f, size_t *i, const size_t s, const ushort lvl, flexarr *nod
   (*i)++;
   hgn->insides.b = f+*i;
   hgn->insides.s = *i;
+  size_t tagend;
   while (*i < s) {
     if (f[*i] == '<') {
-      if (f[*i+1] == '/') {
-        if (memcmp(hgn->tag.b,f+*i+2,hgn->tag.s) == 0) {
-          hgn->insides.s = *i-hgn->insides.s;
-          *i += 2+hgn->tag.s;
+      tagend=*i;
+      (*i)++;
+      while_is(isspace,f,*i,s);
+      if (f[*i] == '/') {
+        (*i)++;
+        while_is(isspace,f,*i,s);
+        if (memcmp(hgn->tag.b,f+*i,hgn->tag.s) == 0) {
+          hgn->insides.s = tagend-hgn->insides.s;
+          *i += hgn->tag.s;
           char *ending = memchr(f+*i,'>',s-*i);
           if (!ending) {
             *i = s;
@@ -416,7 +422,7 @@ struct_handle(char *f, size_t *i, const size_t s, const ushort lvl, flexarr *nod
           goto END;
         }
       } else if (!script) {
-        if (f[*i+1] == '!') {
+        if (f[*i] == '!') {
           (*i)++;
           comment_handle(f,i,s);
           continue;
@@ -434,6 +440,7 @@ struct_handle(char *f, size_t *i, const size_t s, const ushort lvl, flexarr *nod
               goto END;
           }
           #endif
+          *i = tagend;
           ret += struct_handle(f,i,s,lvl+1,nodes,hg);
           hgn = &((hgrep_node*)nodes->v)[index];
         }
