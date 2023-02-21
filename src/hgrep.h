@@ -1,9 +1,6 @@
-#ifndef HGREP_H
-#define HGREP_H
-
 /*
     hgrep - simple html searching tool
-    Copyright (C) 2020-2022 Dominik Stanisław Suchora <suchora.dominik7@gmail.com>
+    Copyright (C) 2020-2023 Dominik Stanisław Suchora <suchora.dominik7@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -18,6 +15,9 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
+
+#ifndef HGREP_H
+#define HGREP_H
 
 #define HGREP_INVERT 0x1
 #define HGREP_EREGEX 0x2
