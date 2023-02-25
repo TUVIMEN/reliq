@@ -44,9 +44,7 @@
 #include "hgrep.h"
 
 #define F_RECURSIVE 0x1
-#define F_EXTENDED 0x2
-#define F_ICASE 0x4
-#define F_FAST 0x8
+#define F_FAST 0x2
 
 #define BUFF_INC_VALUE (1<<15)
 
@@ -108,8 +106,19 @@ usage()
       "When FILE isn't specified, FILE will become standard input.",argv0,argv0,argv0);
 }
 
+static char *
+delchar(char *src, const size_t pos, size_t *size)
+{
+  size_t s = *size-1;
+  for (size_t i = pos; i < s; i++)
+    src[i] = src[i+1];
+  src[s] = 0;
+  *size = s;
+  return src;
+}
+
 static flexarr *
-patterns_split(char *src, size_t *pos, size_t s)
+patterns_split(char *src, size_t *pos, size_t s, const uchar flags)
 {
   if (s == 0)
     return NULL;
@@ -126,23 +135,29 @@ patterns_split(char *src, size_t *pos, size_t s)
     apattern.posx = posx;
 
     while (i < s) {
+      if (src[i] == '\\' && (src[i+1] == ',' || src[i+1] == ';' || src[i+1] == '"')) {
+        delchar(src,i++,&s);
+        patternl = i-j;
+        continue;
+      }
       if (src[i] == '"') {
         i++;
         while (i < s && src[i] != '"') {
-          if (src[i] == '\\')
-            i++;
+          if (src[i] == '\\' && src[i+1] == '"')
+            delchar(src,i,&s);
           i++;
         }
         if (src[i] == '"')
           i++;
       }
+
       if (src[i] == ',') {
         posx++;
         patternl = i-j;
         i++;
         break;
       }
-      if (src[i] == ';' || src[i] == '|') {
+      if (src[i] == ';') {
         patternl = i-j;
         i++;
         break;
@@ -150,7 +165,7 @@ patterns_split(char *src, size_t *pos, size_t s)
       i++;
       patternl = i-j;
     }
-    hgrep_pcomp(src+j,patternl,&apattern.p,0);
+    hgrep_pcomp(src+j,patternl,&apattern.p,flags);
     memcpy(flexarr_inc(ret),&apattern,sizeof(apattern));
 
     while_is(isspace,src,i,s);
@@ -250,7 +265,7 @@ patterns_exec_fast(char *f, size_t s, const uchar inpipe)
 
     auxiliary_pattern *fl = &((auxiliary_pattern*)patterns->v)[i];
     hgrep_pattern *flv = &fl->p;
-    hgrep_init(NULL,f,s,outfile,flv,hflags);
+    hgrep_init(NULL,f,s,outfile,flv);
     fflush(outfile);
 
     if (!inpipe && i == 0) {
@@ -278,7 +293,7 @@ patterns_exec(char *f, size_t s, const uchar inpipe)
   }
 
   hgrep hg;
-  hgrep_init(&hg,f,s,NULL,NULL,hflags);
+  hgrep_init(&hg,f,s,NULL,NULL);
   columns_handle(&hg,patterns->v,patterns->size);
 
   hgrep_free(&hg);
@@ -374,9 +389,9 @@ main(int argc, char **argv)
 
   while ((opt = getopt(argc,argv,"Eilo:f:HrRFvh")) != -1) {
     switch (opt) {
-      case 'E': settings |= F_EXTENDED; break;
-      case 'i': settings |= F_ICASE; break;
-      case 'l': patterns = patterns_split("@p\"%t%I - %s/%p\n\"",NULL,17); break;
+      case 'E': hflags |= HGREP_EREGEX; break;
+      case 'i': hflags |= HGREP_ICASE; break;
+      case 'l': patterns = patterns_split("@p\"%t%I - %s/%p\n\"",NULL,17,hflags); break;
       case 'o': {
         outfile = fopen(optarg,"w");
         if (outfile == NULL)
@@ -391,7 +406,7 @@ main(int argc, char **argv)
         char *p;
         pipe_to_str(fd,&p,&s);
         close(fd);
-        patterns = patterns_split(p,NULL,s);
+        patterns = patterns_split(p,NULL,s,hflags);
         free(p);
         }
         break;
@@ -405,13 +420,8 @@ main(int argc, char **argv)
     }
   }
 
-  if (settings&F_EXTENDED)
-      hflags |= HGREP_EREGEX;
-  if (settings&F_ICASE)
-      hflags |= HGREP_ICASE;
-
   if (!patterns && optind < argc) {
-    patterns = patterns_split(argv[optind],NULL,strlen(argv[optind]));
+    patterns = patterns_split(argv[optind],NULL,strlen(argv[optind]),hflags);
     optind++;
   }
   if (!patterns)

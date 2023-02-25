@@ -19,9 +19,8 @@
 #ifndef HGREP_H
 #define HGREP_H
 
-#define HGREP_INVERT 0x1
-#define HGREP_EREGEX 0x2
-#define HGREP_ICASE 0x4
+#define HGREP_EREGEX 0x1
+#define HGREP_ICASE 0x2
 
 typedef struct {
   char *b;
@@ -78,7 +77,7 @@ typedef struct {
   unsigned char flags;
 } hgrep;
 
-void hgrep_init(hgrep *hg, char *ptr, const size_t size, FILE *output, hgrep_pattern *pattern, const unsigned char flags);
+void hgrep_init(hgrep *hg, char *ptr, const size_t size, FILE *output, hgrep_pattern *pattern);
 void hgrep_pcomp(char *pattern, size_t size, hgrep_pattern *p, const unsigned char flags);
 int hgrep_match(const hgrep_node *hgn, const hgrep_pattern *p);
 void hgrep_printf(FILE *outfile, const char *format, const size_t formatl, const hgrep_node *hgn, const char *reference);

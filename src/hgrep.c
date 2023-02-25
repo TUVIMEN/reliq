@@ -595,9 +595,8 @@ sbrackets_handle(const char *src, size_t *pos, const size_t size, uint *x, uint 
     goto END;
   }
 
-  r = number_handle(src,pos,size);
-  if (r == -1)
-    return;
+  if ((r = number_handle(src,pos,size)) == -1)
+    goto END;
   *x = (uint)r;
 
   while_is(isspace,src,*pos,size);
@@ -609,27 +608,24 @@ sbrackets_handle(const char *src, size_t *pos, const size_t size, uint *x, uint 
   (*pos)++;
   while_is(isspace,src,*pos,size);
   if (src[*pos] == ']') {
-    (*pos)++;
     *y = -1;
     goto END;
   }
   if (src[*pos] == '$') {
     (*pos)++;
     *y = -1;
-    while_is(isspace,src,*pos,size);
-    while (src[*pos] != ']' && *pos < size)
-        (*pos)++;
-    if (src[*pos] == ']' && *pos < size)
-        (*pos)++;
     goto END;
   }
 
-  r = number_handle(src,pos,size);
-  if (r == -1)
-    return;
+  if ((r = number_handle(src,pos,size)) == -1)
+    goto END;
   *y = (uint)r;
 
   END: ;
+  while (src[*pos] != ']' && *pos < size)
+    (*pos)++;
+  if (src[*pos] == ']' && *pos < size)
+    (*pos)++;
   while_is(isspace,src,*pos,size);
 }
 
@@ -708,8 +704,8 @@ void
 hgrep_pcomp(char *pattern, size_t size, hgrep_pattern *p, const uchar flags)
 {
   struct hgrep_pattrib *pa;
-  p->flags = flags;
   int regexflags = REG_NEWLINE|REG_NOSUB;
+  p->flags = 0;
   if (flags&HGREP_ICASE)
       regexflags |= REG_ICASE;
   if (flags&HGREP_EREGEX)
@@ -727,21 +723,26 @@ hgrep_pcomp(char *pattern, size_t size, hgrep_pattern *p, const uchar flags)
   char tmp[PATTERN_SIZE];
   tmp[0] = '^';
 
-  size_t pos = 0,t;
+  size_t pos=0,t;
   while_is(isspace,pattern,pos,size);
-  if (pattern[pos] == '!') {
-      p->flags |= P_INVERT;
-      pos++;
-  }
-  t = pos;
-  while (pos < size && pos-t < PATTERN_SIZE-2 && !isspace(pattern[pos]) && pattern[pos] != '@')
-    pos++;
-  if (!(pos-t)) {
+
+  if (pattern[pos] == '@') {
     for (size_t i = pos; i < size && !isalnum(pattern[i]); i++)
         if (pattern[pos] == '@')
           function_handle(p,pattern,&i,&size,regexflags);
     p->flags |= P_EMPTY;
     return;
+  }
+
+  if (pattern[pos] == '!') {
+      p->flags |= P_INVERT;
+      pos++;
+  }
+  t = pos;
+  while (pos < size && pos-t < PATTERN_SIZE-2 && !isspace(pattern[pos])) {
+    if (pattern[pos] == '\\' && pattern[pos+1] == ' ')
+      delchar(pattern,pos,&size);
+    pos++;
   }
   memcpy(tmp+1,pattern+t,pos-t);
   tmp[pos+1-t] = '$';
@@ -760,15 +761,34 @@ hgrep_pcomp(char *pattern, size_t size, hgrep_pattern *p, const uchar flags)
     if (pattern[i] == '+' || pattern[i] == '-') {
       uchar tf = pattern[i++]; 
       uint x=0,y=-1;
+
       while_is(isspace,pattern,i,size);
+
       if (pattern[i] == '[')
         sbrackets_handle(pattern,&i,size,&x,&y);
-      t = i;
-      while (i < size && i < PATTERN_SIZE-2 && !isspace(pattern[i]) && pattern[i] != '=')
-        i++;
+
+      if (pattern[i] == '"') {
+        t = ++i;
+        while (i < size && i < PATTERN_SIZE-2 && pattern[i] != '"') {
+          if (pattern[i] == '\\' && pattern[i] == '"')
+            delchar(pattern,i,&size);
+          i++;
+        }
+      } else {
+        t = i;
+        while (i < size && i < PATTERN_SIZE-2 && !isspace(pattern[i]) && pattern[i] != '=') {
+          if (pattern[i] == '\\' && (isspace(pattern[i]) || pattern[i] == '='))
+            delchar(pattern,i,&size);
+          i++;
+        }
+      }
+
       memcpy(tmp+1,pattern+t,i-t);
       tmp[i+1-t] = '$';
       tmp[i+2-t] = 0;
+      if (pattern[i] == '"')
+        i++;
+
       pa = (struct hgrep_pattrib*)flexarr_inc(attrib);
       pa->flags = 0;
       if (tf == '+') {
@@ -783,25 +803,40 @@ hgrep_pcomp(char *pattern, size_t size, hgrep_pattern *p, const uchar flags)
       pa->px = x;
       pa->py = y;
 
-      if (pattern[i] == '=' && pattern[i+1] == '"') {
-        i += 2;
-        t = i;
-        while (i < size && i < PATTERN_SIZE-2 && pattern[i] != '"') {
-          if (pattern[i] == '\\' && pattern[i+1] == '"')
-  	        delchar(pattern,i,&size);
-          i++;
+      while_is(isspace,pattern,i,size);
+
+      if (pattern[i] == '=') {
+        i++;
+        while_is(isspace,pattern,i,size);
+
+        if (pattern[i] == '"') {
+          t = ++i;
+          while (i < size && i < PATTERN_SIZE-2 && pattern[i] != '"') {
+            if (pattern[i] == '\\' && pattern[i] == '"')
+              delchar(pattern,i,&size);
+            i++;
+          }
+        } else {
+          t = i;
+          while (i < size && i < PATTERN_SIZE-2 && !isspace(pattern[i])) {
+            if (pattern[i] == '\\' && isspace(pattern[i]))
+              delchar(pattern,i,&size);
+            i++;
+          }
         }
         memcpy(tmp+1,pattern+t,i-t);
         tmp[i+1-t] = '$';
         tmp[i+2-t] = 0;
+        if (pattern[i] == '"')
+          i++;
         if (regcomp(&pa->r[1],tmp,regexflags))
           goto CONV;
         pa->flags |= A_VAL_MATTERS;
-        i++;
       } else
         pa->flags &= ~A_VAL_MATTERS;
     }
-    i++;
+    if (pattern[i] != '+' && pattern[i] != '-' && pattern[i] != '@')
+      i++;
   }
   if (p->ax < attribcount)
     p->ax = attribcount;
@@ -843,13 +878,13 @@ hgrep_free(hgrep *hg)
 }
 
 void
-hgrep_init(hgrep *hg, char *ptr, const size_t size, FILE *output, hgrep_pattern *pattern, const uchar flags)
+hgrep_init(hgrep *hg, char *ptr, const size_t size, FILE *output, hgrep_pattern *pattern)
 {
   hgrep t;
   t.data = ptr;
   t.size = size;
   t.pattern = pattern;
-  t.flags = flags;
+  t.flags = 0;
   toggleflag(hg,t.flags,HGREP_SAVE);
   if (output == NULL)
     output = stdout;
