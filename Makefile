@@ -4,7 +4,7 @@ CFLAGS = -O3 -march=native -Wall -Wextra -DVERSION=\"${VERSION}\"
 LDFLAGS =
 TARGET := hgrep
 
-O_PHPTAGS := 0 # support for <?php ?>
+O_PHPTAGS := 1 # support for <?php ?>
 O_AUTOCLOSING := 1 # support for autoclosing tags
 O_LIB := 0 # compile libhgrep
 O_LINKED := 0 # link hgrep to libhgrep
