@@ -144,7 +144,7 @@ patterns_split(char *src, size_t *pos, size_t s, const uchar flags)
         i++;
         while (i < s && src[i] != '"') {
           if (src[i] == '\\' && src[i+1] == '"')
-            delchar(src,i,&s);
+            i++;
           i++;
         }
         if (src[i] == '"')
