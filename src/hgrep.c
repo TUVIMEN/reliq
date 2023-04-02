@@ -275,14 +275,7 @@ hgrep_match(const hgrep_node *hgn, const hgrep_pattern *p)
   regmatch_t pmatch;
 
   if (!matchxy(p->px,p->py,hgn->lvl,-1)
-    ||
-  #ifdef PHPTAGS
-     (a &&
-  #endif
-     !matchxy(p->ax,p->ay,hgn->attribl,-1)
-  #ifdef PHPTAGS
-     )
-  #endif
+    || !matchxy(p->ax,p->ay,hgn->attribl,-1)
     || !matchxy(p->cx,p->cy,hgn->child_count,-1)
     || !matchxy(p->sx,p->sy,hgn->insides.s,-1))
     return 0^rev;
