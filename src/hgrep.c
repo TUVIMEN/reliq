@@ -103,9 +103,9 @@ const str8 script_s[] = { //tags which insides should be ommited
 
 #ifdef AUTOCLOSING
 const str8 autoclosing_s[] = { //tags that doesn't need to be closed
-  {"p",1},{"tr",2},{"td",2},{"th",2},{"tbody",5},{"tfoot",5},
-  {"thead",5},{"rt",2},{"rp",2},{"caption",7},
-  {"colgroup",8},{"option",6},{"optgroup",8}
+  {"p",1},{"span",4},{"tr",2},{"td",2},{"th",2},{"tbody",5},
+  {"tfoot",5},{"thead",5},{"rt",2},{"rp",2},
+  {"caption",7},{"colgroup",8},{"option",6},{"optgroup",8}
 };
 #endif
 
@@ -425,12 +425,14 @@ struct_handle(char *f, size_t *i, const size_t s, const ushort lvl, flexarr *nod
             size_t ti = *i;
             hgrep_str name;
 
-            ti++;
             while_is(isspace,f,ti,s);
             name_handle(f,&ti,s,&name);
 
-            if (strcomp(hgn->tag,name))
+            if (hgn->tag.s == name.s && memcmp(hgn->tag.b,name.b,name.s) == 0) {
+              (*i)--;
+              hgn->insides.s = *i-hgn->insides.s;
               goto END;
+            }
           }
           #endif
           *i = tagend;
