@@ -391,7 +391,7 @@ main(int argc, char **argv)
     switch (opt) {
       case 'E': hflags |= HGREP_EREGEX; break;
       case 'i': hflags |= HGREP_ICASE; break;
-      case 'l': patterns = patterns_split("@p\"%t%I - %s/%p\n\"",NULL,17,hflags); break;
+      case 'l': patterns = patterns_split("@p\"%t%I - %c/%l/%s/%p\n\"",NULL,23,hflags); break;
       case 'o': {
         outfile = fopen(optarg,"w");
         if (outfile == NULL)

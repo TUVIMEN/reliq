@@ -79,8 +79,10 @@ Follow all symbolic links, unlike
 .SS "Other Options"
 .TP
 .B \-l
-List structure of
-.IR FILE .
+set
+.IR PATTERN
+to '@p\\"%t%I - %c/%l/%s/%p\\n\\"'.
+
 
 .SH PATTERNS
 Each group of patterns should be separated by colon.
@@ -162,6 +164,8 @@ Tag's level.
 Tag's position in current file.
 .IP %s
 Tag's size.
+.IP %c
+Tag's children count.
 .IP %I
 All of the tag's attributes.
 .IP %a

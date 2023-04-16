@@ -575,6 +575,7 @@ hgrep_printf(FILE *outfile, const char *format, const size_t formatl, const hgre
         case 'i': fwrite(hgn->insides.b,hgn->insides.s,1,outfile); break;
         case 'l': fprintf(outfile,"%u",hgn->lvl); break;
         case 's': fprintf(outfile,"%lu",hgn->all.s); break;
+        case 'c': fprintf(outfile,"%u",hgn->child_count); break;
         case 'p': fprintf(outfile,"%lu",hgn->all.b-reference); break;
         case 'I': print_attribs(outfile,hgn); break;
         case 'a': {
@@ -709,6 +710,9 @@ function_handle(hgrep_pattern *p, char *func, size_t *pos, size_t *size, const i
   } else if (functions[i].flags&F_SIZE) {
     p->sx = x;
     p->sy = y;
+  } else if (functions[i].flags&F_CHILD_COUNT) {
+    p->cx = x;
+    p->cy = y;
   } else if (*pos-t) {
       size_t s = *pos-t-1;
       if (functions[i].flags&F_PRINTF) {
