@@ -318,10 +318,10 @@ hgrep_match(const hgrep_node *hgn, const hgrep_pattern *p)
   return 1^rev;
 }
 
-static uint
+static ulong
 struct_handle(char *f, size_t *i, const size_t s, const ushort lvl, flexarr *nodes, hgrep *hg)
 {
-  uint ret = 1;
+  ulong ret = 1;
   hgrep_node *hgn = flexarr_inc(nodes);
   memset(hgn,0,sizeof(hgrep_node));
   hgn->lvl = lvl;
@@ -401,6 +401,7 @@ struct_handle(char *f, size_t *i, const size_t s, const ushort lvl, flexarr *nod
       if (f[*i] == '/') {
         (*i)++;
         while_is(isspace,f,*i,s);
+
         if (memcmp(hgn->tag.b,f+*i,hgn->tag.s) == 0) {
           hgn->insides.s = tagend-hgn->insides.s;
           *i += hgn->tag.s;
@@ -413,6 +414,29 @@ struct_handle(char *f, size_t *i, const size_t s, const ushort lvl, flexarr *nod
           *i = ending-f;
           hgn->all.s = (f+*i+1)-hgn->all.b;
           goto END;
+        }
+
+        if (index > 0) {
+          hgrep_str endname;
+          hgrep_node *nodesv = (hgrep_node*)nodes->v;
+          name_handle(f,i,s,&endname);
+          if (!endname.s) {
+            (*i)++;
+            continue;
+          }
+          for (size_t j = index-1 ;; j--) {
+            if (nodesv[j].lvl >= lvl)
+              continue;
+            if (nodesv[j].tag.s == endname.s && memcmp(nodesv[j].tag.b,endname.b,endname.s) == 0) {
+                *i = tagend;
+                hgn->insides.s = *i-hgn->insides.s;
+                ret = (ret&0xffffffff)+((ulong)(lvl-nodesv[j].lvl-1)<<32);
+                goto END;
+            }
+
+            if (!j || nodesv[j].lvl == 0)
+              break;
+          }
         }
       } else if (!script) {
         if (f[*i] == '!') {
@@ -436,8 +460,17 @@ struct_handle(char *f, size_t *i, const size_t s, const ushort lvl, flexarr *nod
           }
           #endif
           *i = tagend;
-          ret += struct_handle(f,i,s,lvl+1,nodes,hg);
+          ulong rettmp = struct_handle(f,i,s,lvl+1,nodes,hg);
+          ret += rettmp&0xffffffff;
           hgn = &((hgrep_node*)nodes->v)[index];
+          if (rettmp>>32) {
+            (*i)--;
+            hgn->insides.s = *i-hgn->insides.s+1;
+            hgn->all.s = (f+*i+1)-hgn->all.b;
+            ret |= ((rettmp>>32)-1)<<32;
+            goto END;
+          }
+          ret |= rettmp&0xffffffff00000000;
         }
       }
     }
