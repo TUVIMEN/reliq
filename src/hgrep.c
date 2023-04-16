@@ -446,15 +446,15 @@ struct_handle(char *f, size_t *i, const size_t s, const ushort lvl, flexarr *nod
         } else {
           #ifdef AUTOCLOSING
           if (autoclosing) {
-            size_t ti = *i;
             hgrep_str name;
 
-            while_is(isspace,f,ti,s);
-            name_handle(f,&ti,s,&name);
+            while_is(isspace,f,*i,s);
+            name_handle(f,i,s,&name);
 
             if (hgn->tag.s == name.s && memcmp(hgn->tag.b,name.b,name.s) == 0) {
-              (*i)--;
-              hgn->insides.s = *i-hgn->insides.s;
+              *i = tagend-1;
+              hgn->insides.s = *i-hgn->insides.s+1;
+              hgn->all.s = (f+*i+1)-hgn->all.b;
               goto END;
             }
           }
