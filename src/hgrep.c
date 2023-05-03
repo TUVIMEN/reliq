@@ -166,7 +166,7 @@ static void
 name_handle(char *f, size_t *i, const size_t s, hgrep_str *tag)
 {
     tag->b = f+*i;
-    while (*i < s && (isalnum(f[*i]) || f[*i] == '-' || f[*i] == '_'))
+    while (*i < s && (isalnum(f[*i]) || f[*i] == '-' || f[*i] == '_' || f[*i] == ':'))
       (*i)++;
     tag->s = (f+*i)-tag->b;
 }
@@ -216,6 +216,8 @@ phptag_handle(char *f, size_t *i, const size_t s, hgrep_node *hgn)
   (*i)++;
   while_is(isspace,f,*i,s);
   name_handle(f,i,s,&hgn->tag);
+  hgn->insides.b = f+*i;
+  hgn->insides.s = 0;
 
   char *ending;
   for (; *i < s; (*i)++) {
@@ -224,6 +226,7 @@ phptag_handle(char *f, size_t *i, const size_t s, hgrep_node *hgn)
       continue;
     }
     if (f[*i] == '?' && f[*i+1] == '>') {
+      hgn->insides.s = (*i)-1-(hgn->insides.b-f);
       (*i)++;
       break;
     }
