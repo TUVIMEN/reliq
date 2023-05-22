@@ -333,6 +333,7 @@ struct_handle(char *f, size_t *i, const size_t s, const ushort lvl, flexarr *nod
   size_t attrib_start = a->size;
 
   hgn->all.b = f+*i;
+  hgn->all.s = 0;
   (*i)++;
   while_is(isspace,f,*i,s);
   if (f[*i] == '!') {
@@ -427,17 +428,19 @@ struct_handle(char *f, size_t *i, const size_t s, const ushort lvl, flexarr *nod
             (*i)++;
             continue;
           }
-          for (size_t j = index-1 ;; j--) {
-            if (nodesv[j].lvl >= lvl)
+          for (size_t j = index-1;; j--) {
+            if (nodesv[j].all.s || nodesv[j].lvl >= lvl) {
+              if (!j)
+                break;
               continue;
-            if (nodesv[j].tag.s == endname.s && memcmp(nodesv[j].tag.b,endname.b,endname.s) == 0) {
-                *i = tagend;
-                hgn->insides.s = *i-hgn->insides.s;
-                ret = (ret&0xffffffff)+((ulong)(lvl-nodesv[j].lvl-1)<<32);
-                goto END;
             }
-
-            if (!j || nodesv[j].lvl == 0)
+            if (nodesv[j].tag.s == endname.s && memcmp(nodesv[j].tag.b,endname.b,endname.s) == 0) {
+              *i = tagend;
+              hgn->insides.s = *i-hgn->insides.s;
+              ret = (ret&0xffffffff)+((ulong)(lvl-nodesv[j].lvl-1)<<32);
+              goto END;
+            }
+            if (!j || !nodesv[j].lvl)
               break;
           }
         }
