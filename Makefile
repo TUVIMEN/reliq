@@ -1,4 +1,4 @@
-VERSION = 1.6
+VERSION = 1.7
 CC = gcc -std=c99
 CFLAGS = -O3 -march=native -Wall -Wextra -DVERSION=\"${VERSION}\"
 LDFLAGS =
@@ -60,7 +60,7 @@ lib-install: lib
 
 hgrep: ${OBJ}
 	${CC} ${CFLAGS} ${LDFLAGS} $^ -o ${TARGET}
-	strip --discard-all ${TARGET}
+	strip ${TARGET}
 
 %.o: %.c
 	${CC} ${CFLAGS} -c $< -o $@
