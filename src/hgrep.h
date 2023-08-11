@@ -42,7 +42,36 @@ typedef struct {
   unsigned short lvl;
 } hgrep_node;
 
+struct hgrep_range {
+  unsigned int v[3];
+  unsigned char flags;
+};
+
 struct hgrep_pattrib {
+  regex_t r[2];
+  struct hgrep_range *position_r;
+  size_t position_rl;
+  unsigned char flags;
+};
+
+typedef struct {
+  regex_t tag;
+  regex_t insides;
+  hgrep_str format;
+  struct hgrep_pattrib *attrib;
+  size_t attribl;
+  struct hgrep_range *position_r;
+  struct hgrep_range *attribute_r;
+  struct hgrep_range *size_r;
+  struct hgrep_range *child_count_r;
+  size_t position_rl;
+  size_t attribute_rl;
+  size_t size_rl;
+  size_t child_count_rl;
+  unsigned char flags;
+} hgrep_pattern;
+
+/*struct hgrep_pattrib {
   regex_t r[2];
   unsigned int px; //position
   unsigned int py;
@@ -50,8 +79,8 @@ struct hgrep_pattrib {
 };
 
 typedef struct {
-  regex_t r;
-  regex_t in;
+  regex_t tag;
+  regex_t insides;
   hgrep_str format;
   struct hgrep_pattrib *attrib;
   size_t attribl;
@@ -64,7 +93,7 @@ typedef struct {
   unsigned int cx; //child count
   unsigned int cy;
   unsigned char flags;
-} hgrep_pattern;
+} hgrep_pattern;*/
 
 typedef struct {
   char *data;

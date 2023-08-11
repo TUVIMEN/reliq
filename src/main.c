@@ -150,6 +150,13 @@ patterns_split(char *src, size_t *pos, size_t s, const uchar flags)
         if (src[i] == '"')
           i++;
       }
+      if (src[i] == '[') {
+        i++;
+        while (i < s && src[i] != ']')
+          i++;
+        if (src[i] == ']')
+          i++;
+      }
 
       if (src[i] == ',') {
         posx++;

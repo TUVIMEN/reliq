@@ -21,6 +21,7 @@
 #include <string.h>
 #include <regex.h>
 #include <limits.h>
+#include <stdarg.h>
 
 typedef unsigned char uchar;
 typedef unsigned short ushort;
@@ -56,6 +57,7 @@ typedef unsigned long int ulong;
 
 #define ATTRIB_INC (1<<3)
 #define HGREP_NODES_INC (1<<3)
+#define RANGES_INC (1<<5)
 
 #define toggleflag(x,y,z) (y) = (x) ? (y)|(z) : (y)&~(z)
 #define while_is(w,x,y,z) while ((y) < (z) && w((x)[(y)])) {(y)++;}
@@ -109,19 +111,49 @@ const str8 autoclosing_s[] = { //tags that doesn't need to be closed
 };
 #endif
 
-static uchar
-matchxy(uint x, uint y, const uint z, const size_t last)
+static void
+hgrep_error(const int ret, const char *fmt, ...)
 {
-  if (x == UINT_MAX)
-      x = last;
-  if (y == UINT_MAX)
-      y = last;
-  if (y == 0) {
-    if (z == x)
-      return 1;
-  } else if (z <= y && z >= x)
-    return 1;
+  va_list ap;
+  va_start(ap,fmt);
+  vfprintf(stderr,fmt,ap);
+  fputc('\n',stderr);
+  va_end(ap);
+  exit(ret);
+}
 
+static uchar
+ranges_match(const uint matched, const struct hgrep_range *ranges, const size_t rangesl, const size_t last)
+{
+  if (!rangesl)
+    return 1;
+  struct hgrep_range const *r;
+  uint x,y;
+  for (size_t i = 0; i < rangesl; i++) {
+    r = &ranges[i];
+    x = r->v[0];
+    y = r->v[1];
+    if (!(r->flags&8)) {
+      if (r->flags&1) {
+        if ((uint)last < r->v[0])
+          continue;
+        x = last-r->v[0];
+      }
+      if (matched == x)
+        return 1;
+    } else {
+      if (r->flags&1)
+        x = ((uint)last < r->v[0]) ? 0 : last-r->v[0];
+      if (r->flags&2) {
+        if ((uint)last < r->v[1])
+          continue;
+        y = last-r->v[1];
+      }
+      if (matched >= x && matched <= y)
+        if (r->v[2] < 2 || matched%r->v[2] == 0)
+          return 1;
+    }
+  }
   return 0;
 }
 
@@ -277,21 +309,21 @@ hgrep_match(const hgrep_node *hgn, const hgrep_pattern *p)
   uchar rev = ((p->flags&P_INVERT) == P_INVERT);
   regmatch_t pmatch;
 
-  if (!matchxy(p->px,p->py,hgn->lvl,-1)
-    || !matchxy(p->ax,p->ay,hgn->attribl,-1)
-    || !matchxy(p->cx,p->cy,hgn->child_count,-1)
-    || !matchxy(p->sx,p->sy,hgn->insides.s,-1))
+  if (!ranges_match(hgn->lvl,p->position_r,p->position_rl,-1)
+    || !ranges_match(hgn->attribl,p->attribute_r,p->attribute_rl,-1)
+    || !ranges_match(hgn->child_count,p->child_count_r,p->child_count_rl,-1)
+    || !ranges_match(hgn->insides.s,p->size_r,p->size_rl,-1))
     return 0^rev;
 
   pmatch.rm_so = 0;
   pmatch.rm_eo = (int)hgn->tag.s;
-  if (regexec(&p->r,hgn->tag.b,1,&pmatch,REG_STARTEND) != 0)
+  if (regexec(&p->tag,hgn->tag.b,1,&pmatch,REG_STARTEND) != 0)
     return 0^rev;
 
   for (size_t i = 0; i < p->attribl; i++) {
     uchar found = 0;
     for (ushort j = 0; j < hgn->attribl; j++) {
-      if (!matchxy(attrib[i].px,attrib[i].py,j,hgn->attribl-1))
+      if (!ranges_match(j,attrib[i].position_r,attrib[i].position_rl,hgn->attribl-1))
         continue;
 
       pmatch.rm_eo = (int)a[j].f.s;
@@ -314,7 +346,7 @@ hgrep_match(const hgrep_node *hgn, const hgrep_pattern *p)
   if (p->flags&P_MATCH_INSIDES) {
     pmatch.rm_so = 0;
     pmatch.rm_eo = (int)hgn->insides.s;
-    if ((regexec(&p->in,hgn->insides.b,1,&pmatch,REG_STARTEND) != 0)^((p->flags&P_INVERT_INSIDES)==P_INVERT_INSIDES))
+    if ((regexec(&p->insides,hgn->insides.b,1,&pmatch,REG_STARTEND) != 0)^((p->flags&P_INVERT_INSIDES)==P_INVERT_INSIDES))
       return 0^rev;
   }
 
@@ -614,54 +646,73 @@ hgrep_print(FILE *outfile, const hgrep_node *hgn)
 }
 
 static void
-sbrackets_handle(const char *src, size_t *pos, const size_t size, uint *x, uint *y)
+range_handle(const char *src, const size_t size, struct hgrep_range *range)
 {
-  *x = 0;
-  *y = 0;
-  int r;
+  memset(range->v,0,sizeof(struct hgrep_range));
+  size_t pos = 0;
 
+  for (int i = 0; i < 3; i++) {
+    while_is(isspace,src,pos,size);
+    if (i == 1)
+      range->flags |= 8; //is a range
+    if (src[pos] == '-') {
+      pos++;
+      while_is(isspace,src,pos,size);
+      range->flags |= 1<<i; //starts from the end
+      range->flags |= 16; //not empty
+    }
+    if (isdigit(src[pos])) {
+      range->v[i] = number_handle(src,&pos,size);
+      while_is(isspace,src,pos,size);
+      range->flags |= 16; //not empty
+    } else if (i == 1)
+      range->flags |= 1<<i;
+
+    if (pos >= size || src[pos] != ':')
+      break;
+    pos++;
+  }
+}
+
+static void
+ranges_handle(const char *src, size_t *pos, const size_t size, struct hgrep_range **ranges, size_t *rangesl) {
+  if (src[*pos] != '[')
+    return;
   (*pos)++;
-  while_is(isspace,src,*pos,size);
-  if (src[*pos] == '-')
-    goto NEXT_VALUE;
-  if (src[*pos] == '$') {
-    *x = -1;
-    (*pos)++;
-    goto END;
+  size_t end;
+  struct hgrep_range range, *new_ptr;
+  *rangesl = 0;
+  *ranges = NULL;
+  size_t rangesl_buffer = 0;
+
+  while (*pos < size && src[*pos] != ']') {
+    while_is(isspace,src,*pos,size);
+    end = *pos;
+    while (end < size && (isspace(src[end]) || isdigit(src[end]) || src[end] == ':' || src[end] == '-') && src[end] != ',')
+      end++;
+    if (src[end] != ',' && src[end] != ']')
+      hgrep_error(1,"range: char %u(%c): not a number",end,src[end]);
+
+    range_handle(src+(*pos),end-(*pos),&range);
+    if (range.flags&(8|16)) {
+      (*rangesl)++;
+      if (*rangesl > rangesl_buffer)
+        rangesl_buffer += RANGES_INC;
+      if ((new_ptr = realloc(*ranges,rangesl_buffer*sizeof(struct hgrep_range))) == NULL) {
+        if (*rangesl > 0)
+          free(*ranges);
+        *ranges = NULL;
+        *rangesl = 0;
+        return;
+      }
+      *ranges = new_ptr;
+      memcpy(&(*ranges)[*rangesl-1],&range,sizeof(struct hgrep_range));
+    }
+    *pos = end+((src[end] == ',') ? 1 : 0);
   }
-
-  if ((r = number_handle(src,pos,size)) == -1)
-    goto END;
-  *x = (uint)r;
-
-  while_is(isspace,src,*pos,size);
-
-  if (src[*pos] != '-')
-    goto END;
-
-  NEXT_VALUE: ;
+  if (src[*pos] != ']')
+    hgrep_error(1,"range: char %d: unprecedented end of range",*pos);
   (*pos)++;
-  while_is(isspace,src,*pos,size);
-  if (src[*pos] == ']') {
-    *y = -1;
-    goto END;
-  }
-  if (src[*pos] == '$') {
-    (*pos)++;
-    *y = -1;
-    goto END;
-  }
-
-  if ((r = number_handle(src,pos,size)) == -1)
-    goto END;
-  *y = (uint)r;
-
-  END: ;
-  while (src[*pos] != ']' && *pos < size)
-    (*pos)++;
-  if (src[*pos] == ']' && *pos < size)
-    (*pos)++;
-  while_is(isspace,src,*pos,size);
 }
 
 static void
@@ -685,13 +736,21 @@ function_handle(hgrep_pattern *p, char *func, size_t *pos, size_t *size, const i
   if (!found)
     return;
 
-  uint x,y;
+  uint x;
+  p->flags |= functions[i].flagstoset;
 
   while_is(isspace,func,*pos,*size);
   if (functions[i].flags&F_SBRACKET) {
     if (func[*pos] != '[')
       return;
-    sbrackets_handle(func,pos,*size,&x,&y);
+    if (functions[i].flags&F_ATTRIBUTES) {
+      ranges_handle(func,pos,*size,&p->attribute_r,&p->attribute_rl);
+    } else if (functions[i].flags&F_LEVEL) {
+      ranges_handle(func,pos,*size,&p->position_r,&p->position_rl);
+    } else if (functions[i].flags&F_SIZE) {
+      ranges_handle(func,pos,*size,&p->size_r,&p->size_rl);
+    } else if (functions[i].flags&F_CHILD_COUNT)
+      ranges_handle(func,pos,*size,&p->child_count_r,&p->child_count_rl);
   } else if (functions[i].flags&F_STRING) {
     if (func[*pos] != '"')
       return;
@@ -704,35 +763,22 @@ function_handle(hgrep_pattern *p, char *func, size_t *pos, size_t *size, const i
     (*pos)++;
     if (*pos > *size)
       return;
-  }
 
-  p->flags |= functions[i].flagstoset;
-  if (functions[i].flags&F_ATTRIBUTES) {
-    p->ax = x;
-    p->ay = y;
-  } else if (functions[i].flags&F_LEVEL) {
-    p->px = x;
-    p->py = y;
-  } else if (functions[i].flags&F_SIZE) {
-    p->sx = x;
-    p->sy = y;
-  } else if (functions[i].flags&F_CHILD_COUNT) {
-    p->cx = x;
-    p->cy = y;
-  } else if (*pos-t) {
-      size_t s = *pos-t-1;
-      if (functions[i].flags&F_PRINTF) {
-        p->format.b = memcpy(malloc(s),func+t,s);
-        p->format.s = s;
-      } else if (functions[i].flags&F_MATCH_INSIDES) {
-        char *tmp = func+t;
-        x = tmp[s];
-        tmp[s] = 0;
-        int r = regcomp(&p->in,tmp,regexflags);
-        tmp[s] = x;
-        if (r)
-          return;
-      }
+    if (*pos-t) {
+        size_t s = *pos-t-1;
+        if (functions[i].flags&F_PRINTF) {
+          p->format.b = memcpy(malloc(s),func+t,s);
+          p->format.s = s;
+        } else if (functions[i].flags&F_MATCH_INSIDES) {
+          char *tmp = func+t;
+          x = tmp[s];
+          tmp[s] = 0;
+          int r = regcomp(&p->insides,tmp,regexflags);
+          tmp[s] = x;
+          if (r)
+            return;
+        }
+    }
   }
 
   return;
@@ -749,15 +795,12 @@ hgrep_pcomp(char *pattern, size_t size, hgrep_pattern *p, const uchar flags)
   if (flags&HGREP_EREGEX)
       regexflags |= REG_EXTENDED;
   p->format.b = NULL;
-  ushort attribcount = 0;
-  p->py = -1;
-  p->px = 0;
-  p->ay = -1;
-  p->ax = 0;
-  p->sy = -1;
-  p->sx = 0;
-  p->cy = -1;
-  p->cx = 0;
+  //ushort attribcount = 0;
+
+  p->position_rl = 0;
+  p->attribute_rl = 0;
+  p->size_rl = 0;
+  p->child_count_rl = 0;
   char tmp[PATTERN_SIZE];
   tmp[0] = '^';
 
@@ -785,7 +828,7 @@ hgrep_pcomp(char *pattern, size_t size, hgrep_pattern *p, const uchar flags)
   memcpy(tmp+1,pattern+t,pos-t);
   tmp[pos+1-t] = '$';
   tmp[pos+2-t] = 0;
-  if (regcomp(&p->r,tmp,regexflags))
+  if (regcomp(&p->tag,tmp,regexflags))
     return;
 
   flexarr *attrib = flexarr_init(sizeof(struct hgrep_pattrib),PATTRIB_INC);
@@ -798,12 +841,14 @@ hgrep_pcomp(char *pattern, size_t size, hgrep_pattern *p, const uchar flags)
 
     if (pattern[i] == '+' || pattern[i] == '-') {
       uchar tf = pattern[i++]; 
-      uint x=0,y=-1;
 
       while_is(isspace,pattern,i,size);
 
+      pa = (struct hgrep_pattrib*)flexarr_inc(attrib);
+      pa->flags = 0;
+
       if (pattern[i] == '[')
-        sbrackets_handle(pattern,&i,size,&x,&y);
+        ranges_handle(pattern,&i,size,&pa->position_r,&pa->position_rl);
 
       if (pattern[i] == '"') {
         t = ++i;
@@ -827,10 +872,8 @@ hgrep_pcomp(char *pattern, size_t size, hgrep_pattern *p, const uchar flags)
       if (pattern[i] == '"')
         i++;
 
-      pa = (struct hgrep_pattrib*)flexarr_inc(attrib);
-      pa->flags = 0;
       if (tf == '+') {
-        attribcount++;
+        //attribcount++;
         pa->flags |= A_INVERT;
       } else {
         pa->flags &= ~A_INVERT;
@@ -838,8 +881,6 @@ hgrep_pcomp(char *pattern, size_t size, hgrep_pattern *p, const uchar flags)
 
       if (regcomp(&pa->r[0],tmp,regexflags))
         goto CONV;
-      pa->px = x;
-      pa->py = y;
 
       while_is(isspace,pattern,i,size);
 
@@ -876,8 +917,8 @@ hgrep_pcomp(char *pattern, size_t size, hgrep_pattern *p, const uchar flags)
     if (pattern[i] != '+' && pattern[i] != '-' && pattern[i] != '@')
       i++;
   }
-  if (p->ax < attribcount)
-    p->ax = attribcount;
+  /*if (p->ax < attribcount) //match patterns even if @[]a is lower then count of +tags (obsolete)
+    p->ax = attribcount;*/
   CONV: ;
   size_t attribl;
   flexarr_conv(attrib,(void**)&p->attrib,&attribl);
@@ -891,15 +932,25 @@ hgrep_pfree(hgrep_pattern *p)
   if (p == NULL)
     return;
   if (!(p->flags&P_EMPTY)) {
-    regfree(&p->r);
+    regfree(&p->tag);
     if (p->flags&P_MATCH_INSIDES)
-      regfree(&p->in);
+      regfree(&p->insides);
     for (size_t j = 0; j < p->attribl; j++) {
       regfree(&p->attrib[j].r[0]);
       if (p->attrib[j].flags&A_VAL_MATTERS)
         regfree(&p->attrib[j].r[1]);
+      if (p->attrib[j].position_rl)
+        free(p->attrib[j].position_r);
     }
     free(p->attrib);
+    if (p->position_rl)
+      free(p->position_r);
+    if (p->attribute_rl)
+      free(p->attribute_r);
+    if (p->size_rl)
+      free(p->size_r);
+    if (p->child_count_rl)
+      free(p->child_count_r);
   }
   if (p->format.b)
     free(p->format.b);
