@@ -39,7 +39,6 @@ typedef unsigned long int ulong;
 
 #define PATTERN_SIZE (1<<9)
 #define PATTRIB_INC 8
-#define BRACKETS_SIZE (1<<6)
 
 #define P_INVERT 0x1
 #define P_MATCH_INSIDES 0x2
@@ -56,8 +55,8 @@ typedef unsigned long int ulong;
 #define F_MATCH_INSIDES 0x80
 
 #define ATTRIB_INC (1<<3)
-#define HGREP_NODES_INC (1<<3)
-#define RANGES_INC (1<<5)
+#define HGREP_NODES_INC (1<<10)
+#define RANGES_INC (1<<4)
 
 #define toggleflag(x,y,z) (y) = (x) ? (y)|(z) : (y)&~(z)
 #define while_is(w,x,y,z) while ((y) < (z) && w((x)[(y)])) {(y)++;}
@@ -713,6 +712,17 @@ ranges_handle(const char *src, size_t *pos, const size_t size, struct hgrep_rang
   if (src[*pos] != ']')
     hgrep_error(1,"range: char %d: unprecedented end of range",*pos);
   (*pos)++;
+
+  if (*rangesl != rangesl_buffer) {
+    if ((new_ptr = realloc(*ranges,(*rangesl)*sizeof(struct hgrep_range))) == NULL) {
+      if (*rangesl > 0)
+        free(*ranges);
+      *ranges = NULL;
+      *rangesl = 0;
+      return;
+    }
+    *ranges = new_ptr;
+  }
 }
 
 static void
@@ -960,10 +970,11 @@ void
 hgrep_free(hgrep *hg)
 {
     if (hg == NULL)
-        return;
+      return;
     for (size_t i = 0; i < hg->nodesl; i++)
-        free(hg->nodes[i].attrib);
-    free(hg->nodes);
+      free(hg->nodes[i].attrib);
+    if (hg->nodesl)
+      free(hg->nodes);
 }
 
 void

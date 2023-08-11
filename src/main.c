@@ -46,14 +46,14 @@
 #define F_RECURSIVE 0x1
 #define F_FAST 0x2
 
-#define BUFF_INC_VALUE (1<<15)
+#define BUFF_INC_VALUE (1<<23)
 
 typedef unsigned char uchar;
 typedef unsigned short ushort;
 typedef unsigned int uint;
 typedef unsigned long int ulong;
 
-#define PATTERN_SIZE_INC (1<<5)
+#define PATTERN_SIZE_INC (1<<8)
 #define PASSED_INC (1<<10)
 
 #define while_is(w,x,y,z) while ((y) < (z) && w((x)[(y)])) {(y)++;}
