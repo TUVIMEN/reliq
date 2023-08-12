@@ -135,19 +135,24 @@ patterns_split(char *src, size_t *pos, size_t s, const uchar flags)
     apattern.posx = posx;
 
     while (i < s) {
-      if (src[i] == '\\' && (src[i+1] == ',' || src[i+1] == ';' || src[i+1] == '"')) {
+      if (src[i] == '\\' && src[i+1] == '\\') {
+        i += 2;
+        continue;
+      }
+      if (src[i] == '\\' && (src[i+1] == ',' || src[i+1] == ';' || src[i+1] == '"' || src[i+1] == '\'')) {
         delchar(src,i++,&s);
         patternl = i-j;
         continue;
       }
-      if (src[i] == '"') {
+      if (src[i] == '"' || src[i] == '\'') {
+        char tf = src[i];
         i++;
-        while (i < s && src[i] != '"') {
-          if (src[i] == '\\' && src[i+1] == '"')
+        while (i < s && src[i] != tf) {
+          if (src[i] == '\\' && (src[i+1] == '\\' || src[i+1] == tf))
             i++;
           i++;
         }
-        if (src[i] == '"')
+        if (src[i] == tf)
           i++;
       }
       if (src[i] == '[') {
