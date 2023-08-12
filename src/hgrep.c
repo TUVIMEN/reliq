@@ -770,6 +770,32 @@ get_pattern_fullline(char *dest, char *src, size_t *i, size_t *size, const char 
 }
 
 static void
+get_pattern_word(char *dest, char *src, size_t *i, size_t *size, const char delim, const char eregex)
+{
+  size_t start,len;
+  get_pattern(src,i,size,delim,&start,&len);
+
+  if (len > PATTERN_SIZE-(eregex ? 29 : 33))
+    hgrep_error(1,"pattern: [%lu:%lu] is too large",start,start+len);
+
+  size_t t;
+  if (eregex) {
+    t = 14;
+    memcpy(dest,"([ \\t\\n\\r].*)*",t);
+  } else {
+    t = 16;
+    memcpy(dest,"\\([ \\t\\n\\r].*\\)*",t);
+  }
+  memcpy(dest+t,src+start,len);
+  t += len;
+  if (eregex) {
+    memcpy(dest+t,"(.*[ \\t\\n\\r])*\0",15);
+  } else {
+    memcpy(dest+t,"\\(.*[ \\t\\n\\r]\\)*\0",17);
+  }
+}
+
+static void
 function_handle(hgrep_pattern *p, char *func, size_t *pos, size_t *size, const int regexflags)
 {
   if (*pos >= *size || !func || func[*pos] != '@')
@@ -806,7 +832,7 @@ function_handle(hgrep_pattern *p, char *func, size_t *pos, size_t *size, const i
     } else if (functions[i].flags&F_CHILD_COUNT)
       ranges_handle(func,pos,*size,&p->child_count_r,&p->child_count_rl);
   } else if (functions[i].flags&F_STRING) {
-    if (func[*pos] != '"')
+    if (func[*pos] != '"' && func[*pos] != '\'')
       return;
     size_t start,len;
     get_pattern(func,pos,size,' ',&start,&len);
@@ -833,7 +859,7 @@ function_handle(hgrep_pattern *p, char *func, size_t *pos, size_t *size, const i
 void
 hgrep_pcomp(char *pattern, size_t size, hgrep_pattern *p, const uchar flags)
 {
-  struct hgrep_pattrib *pa;
+  struct hgrep_pattrib pa;
   int regexflags = REG_NEWLINE|REG_NOSUB;
   p->flags = 0;
   if (flags&HGREP_ICASE)
@@ -871,32 +897,72 @@ hgrep_pcomp(char *pattern, size_t size, hgrep_pattern *p, const uchar flags)
   flexarr *attrib = flexarr_init(sizeof(struct hgrep_pattrib),PATTRIB_INC);
   for (size_t i = pos; i < size;) {
     while_is(isspace,pattern,i,size);
+    if (i >= size)
+      break;
+
     if (pattern[i] == '@') {
       function_handle(p,pattern,&i,&size,regexflags);
       continue;
     }
 
-    if (pattern[i] == '+' || pattern[i] == '-') {
-      uchar tf = pattern[i++]; 
+    memset(&pa,0,sizeof(struct hgrep_pattrib));
+    pa.flags = 0;
+    char isset = 0;
 
-      while_is(isspace,pattern,i,size);
+    if (pattern[i] == '+') {
+      //attribcount++;
+      pa.flags |= A_INVERT;
+      isset = 1;
+      i++;
+    } else if (pattern[i] == '-') {
+      isset = -1;
+      pa.flags &= ~A_INVERT;
+      i++;
+    } else if (pattern[i] == '\\' && (pattern[i+1] == '+' || pattern[i+1] == '-'))
+      i++;
 
-      pa = (struct hgrep_pattrib*)flexarr_inc(attrib);
-      pa->flags = 0;
+    char shortcut = 0;
+    if (i >= size)
+      break;
 
-      if (pattern[i] == '[')
-        ranges_handle(pattern,&i,size,&pa->position_r,&pa->position_rl);
+    if (pattern[i] == '.' || pattern[i] == '#') {
+      shortcut = pattern[i++]; 
+    } else if (pattern[i] == '\\' && (pattern[i+1] == '.' || pattern[i+1] == '#'))
+      i++;
 
+    while_is(isspace,pattern,i,size);
+    if (i >= size)
+      break;
+
+    if (pattern[i] == '[') {
+      ranges_handle(pattern,&i,size,&pa.position_r,&pa.position_rl);
+    } else if (pattern[i] == '\\' && pattern[i+1] == '[')
+      i++;
+
+    if (i >= size)
+      break;
+
+    if (isset == 0)
+      pa.flags |= A_INVERT;
+
+    if (pattern[i] == '@')
+      continue;
+
+    if (shortcut == '.' || shortcut == '#') {
+      pa.flags |= A_VAL_MATTERS;
+      if (shortcut == '.') {
+        memcpy(regex_tmp,"^class$\0",8);
+      } else
+        memcpy(regex_tmp,"^id$\0",5);
+      if (regcomp(&pa.r[0],regex_tmp,regexflags))
+        goto CONV;
+
+      get_pattern_word(regex_tmp,pattern,&i,&size,' ',(flags&HGREP_EREGEX) ? 1 : 0);
+      if (regcomp(&pa.r[1],regex_tmp,regexflags))
+        goto CONV;
+    } else {
       get_pattern_fullline(regex_tmp,pattern,&i,&size,'=');
-
-      if (tf == '+') {
-        //attribcount++;
-        pa->flags |= A_INVERT;
-      } else {
-        pa->flags &= ~A_INVERT;
-      }
-
-      if (regcomp(&pa->r[0],regex_tmp,regexflags))
+      if (regcomp(&pa.r[0],regex_tmp,regexflags))
         goto CONV;
 
       while_is(isspace,pattern,i,size);
@@ -904,14 +970,19 @@ hgrep_pcomp(char *pattern, size_t size, hgrep_pattern *p, const uchar flags)
       if (pattern[i] == '=') {
         i++;
         while_is(isspace,pattern,i,size);
-
+        if (i >= size)
+          break;
+    
         get_pattern_fullline(regex_tmp,pattern,&i,&size,' ');
-        if (regcomp(&pa->r[1],regex_tmp,regexflags))
+        if (regcomp(&pa.r[1],regex_tmp,regexflags))
           goto CONV;
-        pa->flags |= A_VAL_MATTERS;
+        pa.flags |= A_VAL_MATTERS;
       } else
-        pa->flags &= ~A_VAL_MATTERS;
+        pa.flags &= ~A_VAL_MATTERS;
     }
+
+    memcpy(flexarr_inc(attrib),&pa,sizeof(struct hgrep_pattrib));
+
     if (pattern[i] != '+' && pattern[i] != '-' && pattern[i] != '@')
       i++;
   }

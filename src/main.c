@@ -177,6 +177,10 @@ patterns_split(char *src, size_t *pos, size_t s, const uchar flags)
       i++;
       patternl = i-j;
     }
+
+    if (j+patternl > s)
+      patternl = s-j;
+      
     hgrep_pcomp(src+j,patternl,&apattern.p,flags);
     memcpy(flexarr_inc(ret),&apattern,sizeof(apattern));
 

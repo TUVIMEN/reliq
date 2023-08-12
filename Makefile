@@ -69,6 +69,10 @@ test: clean all
 	@./test.sh test.csv test.html
 	@[ ${O_PHPTAGS} -eq 1 ] && ./test.sh test-php.csv test.php || true
 
+test-update: test
+	@./test.sh test.csv test.html update
+	@[ ${O_PHPTAGS} -eq 1 ] && ./test.sh test-php.csv test.php update || true
+
 dist: clean
 	mkdir -p ${TARGET}-${VERSION}
 	cp -r LICENSE Makefile README.md src hgrep.1 ${TARGET}-${VERSION}
