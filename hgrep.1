@@ -81,26 +81,110 @@ Follow all symbolic links, unlike
 .B \-l
 set
 .IR PATTERN
-to '@p\\"%t%I - %c/%l/%s/%p\\n\\"'.
+to '@p"%t%I - %c/%l/%s/%p\\n"'.
 
-
-.SH PATTERNS
-Each group of patterns should be separated by colon.
-Output of pattern can be processed by another if they are separated by semicolon.
 
 .SH HGREP PATTERN
+.SS PATTERN
+A simple regex expression, can be quoted, if not some characters or constructs may be restricted, and ignored by '\\' character before each of them.
+.nf
+\&
+.in +4m
+.B 'REGEX'
+\fB"REGEX"\fR
+.B REGEX
+.in
+\&
+.SS ATTRIBUTE_NAME
+Attribute's name \fBPATTERN\fR. Starting by '+' or '-' will reliably assure that it will be treated as attribute, but in most cases can be omitted. '-' signifies its negation. It can be followed by \fB[RANGE]\fR which matches attribute's position in tag.
+
+Attribute name can be shortened to '.' or '#' (see below). If not using glibc you should use that with \fB-E\fR flag.
+.nf
+\&
+.in +4m
+\fBPATTERN\fR          - existing attribute
+\fB+PATTERN\fR         - existing attribute
+\fB-PATTERN\fR         - non existing attribute
+\fB.PATTERN\fR         - same as class="\\([ \\t\\n\\r].*\\)*PATTERN\\(.*[ \\t\\n\\r]\\)*"
+\fB#PATTERN\fR         - same as id="\\([ \\t\\n\\r].*\\)*PATTERN\\(.*[ \\t\\n\\r]\\)*"
+\fB[RANGE]PATTERN\fR   - existing attribute at position determined by RANGE
+\fB-[RANGE]PATTERN\fR
+\fB+.PATTERN\fR
+\fB-[RANGE]#PATTERN\fR
+.in
+\&
+.SS ATTRIBUTE
+Consists of \fBATTRIBUTE_NAME\fR followed by '=' and \fBPATTERN\fR of attribute's value. When given only \fBATTRIBUTE_NAME\fR  without specifying its value equals of ignoring its value (which is faster than \fBATTRIBUTE_NAME=.*\fR).
+
+.nf
+\&
+.in +4m
+\fBATTRIBUTE\fR - ignore value of attribute
+\fBATTRIBUTE_NAME=PATTERN\fR
+.in
+\&
+.SS RANGE
+Is always embedded in square brackets. Consists of groups of three numbers separated by ':', that can be practically endlessly separated by ','. Empty values will be complementes. Putting '-' before two first values (even if they are not specified) makes subtracted from the maximal value. 
+
+Specifying only one value equals to matching only to that value.
+
+Specifying two values equals to matching range between and of them.
+
+Specifying three values additionally matches only values of which modulo of third value is equal to 0.
+
+.nf
+\&
+.in +4m
+\fB[x1,x2,x3,x4]\fR - match to one of the values
+\fB[x1:y1,x2:y2]\fR - match to one of the ranges
+\fB[-]\fR           - match to last value
+\fB[-x]\fR          - match to x'th value from the end
+\fB[:-y]\fR         - match to range from 0 to y'th value from end
+\fB[::z]\fR         - match to values from which modulo of z is equal to 0
+\fB[x:y:z]\fR       - match to range from x to y from which modulo of z is equal to 0
+.in
+\&
+.SS FUNCTION
+Always begins with '@' followed by name of function, optionally ended with argument which can be a \fBRANGE\fR or \fBTEXT\fR in '"' or '\\'' quotes.
+
+.nf
+\&
+.in +4m
+\fB@NAME\fR
+\fB@NAME"TEXT"\fR
+\fB@NAME'TEXT'\fR
+\fB@NAME[RANGE]\fR
+.in
+\&
 .SS TAG
-At the begining each pattern should contain regex of html tag. If the first character is exclamation point then matching will be inverted.
-.SS ATTRIBUTES
-Before each attribute regex should be '+' or '-', where '-' means not-matching of such attribute and '+' matching. To specify its value it should be followed by '=' and double quote in which should be regex of value. Leaving attribute without specifying the value of it means that maching of its value will be skipped.
-.SS FUNCTIONS
-Before each function should be '@' sign. Some functions can also take arguments in square brackets or double quotes, which should be specified after the name of function.
-.SS "SQUARE BRACKETS"
-Specifying one value in them means that matching value needs to be the same as in the brackets.
-.PP
-Character \'$' is aliased to the last value.
-.PP
-Specifying two values separated by '-' means range for matching value. Leaving the values empty means that value will become zero or the last depending on the order.
+At the begining each \fBTAG\fR must contain \fBPATTERN\fR of html tag and that can be followed by a number of \fBATTRIBUTE\fRs and \fBFUNCTION\fRs.
+
+.nf
+\&
+.in +4m
+\fBPATTERN\fR
+\fBPATTERN ATTRIBUTE... FUNCTION...\fR
+.in
+\&
+.SS NODE
+Consists of \fBTAG\fRs and \fBEXPRESSION\fRs separated by ';' which makes them pass result from previous node to the next.
+
+.nf
+\&
+.in +4m
+\fBTAG1; TAG2; NODE\fR - matches result of TAG1 by TAG2 and by NODE
+.in
+\&
+.SS EXPRESSION
+Consists of \fBNODE\fRs separated by ',' and grouped in '{' '}' brackets (which accumulate their output and increases their level).
+.nf
+\&
+.in +4m
+\fBNODE1, NODE2\fR - two expressions
+\fBEXPRESSION1; { EXPRESSION2; {EXPRESSION3, EXPRESSION4}, EXPRESSION5}; EXPRESSION6\fR
+a +[0]href
+.in
+\&
 
 .SH HGREP PATTERN FUNCTIONS
 .BR m ",  " match_insides " " \fI"PATTERN"\fR
