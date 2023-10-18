@@ -133,11 +133,8 @@ ranges_match(const uint matched, const struct hgrep_range *ranges, const size_t 
     x = r->v[0];
     y = r->v[1];
     if (!(r->flags&8)) {
-      if (r->flags&1) {
-        if ((uint)last < r->v[0])
-          continue;
-        x = last-r->v[0];
-      }
+      if (r->flags&1)
+        x = ((uint)last < r->v[0]) ? 0 : last-r->v[0];
       if (matched == x)
         return 1;
     } else {
@@ -789,9 +786,9 @@ get_pattern_word(char *dest, char *src, size_t *i, size_t *size, const char deli
   memcpy(dest+t,src+start,len);
   t += len;
   if (eregex) {
-    memcpy(dest+t,"(.*[ \\t\\n\\r])*\0",15);
+    memcpy(dest+t,"(.*[ \\t\\n\\r])*",15);
   } else {
-    memcpy(dest+t,"\\(.*[ \\t\\n\\r]\\)*\0",17);
+    memcpy(dest+t,"\\(.*[ \\t\\n\\r]\\)*",17);
   }
 }
 
