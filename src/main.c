@@ -60,9 +60,17 @@ typedef unsigned long int ulong;
 #define LENGHT(x) (sizeof(x)/(sizeof(*x)))
 
 typedef struct {
-  hgrep_pattern p;
-  uchar posx;
+  void *p;
+  uchar istable;
 } auxiliary_pattern;
+
+#pragma pack(push, 1)
+typedef struct {
+  hgrep_pattern *pattern;
+  size_t id;
+  ushort lvl;
+} hgrep_x;
+#pragma pack(pop)
 
 char *argv0;
 flexarr *patterns = NULL;
@@ -117,6 +125,27 @@ delchar(char *src, const size_t pos, size_t *size)
   return src;
 }
 
+/*void
+apatterns_print(flexarr *apatterns, size_t tab)
+{
+  auxiliary_pattern *a = (auxiliary_pattern*)apatterns->v;
+  for (size_t j = 0; j < tab; j++)
+    fputc('\t',stderr);
+  fprintf(stderr,"%% %lu",apatterns->size);
+  fputc('\n',stderr);
+  tab++;
+  for (size_t i = 0; i < apatterns->size; i++) {
+    if (a[i].istable&1) {
+      fprintf(stderr,"%%x %d\n",a[i].istable);
+      apatterns_print((flexarr*)a[i].p,tab);
+    } else {
+      for (size_t j = 0; j < tab; j++)
+        fputc('\t',stderr);
+      fprintf(stderr,"%%j\n");
+    }
+  }
+}*/
+
 static flexarr *
 patterns_split(char *src, size_t *pos, size_t s, const uchar flags)
 {
@@ -126,20 +155,23 @@ patterns_split(char *src, size_t *pos, size_t s, const uchar flags)
   if (pos == NULL)
     pos = &tpos;
   flexarr *ret = flexarr_init(sizeof(auxiliary_pattern),PATTERN_SIZE_INC);
+  auxiliary_pattern *acurrent = (auxiliary_pattern*)flexarr_inc(ret);
+  acurrent->p = flexarr_init(sizeof(auxiliary_pattern),PATTERN_SIZE_INC);
+  acurrent->istable = 1|4;
   auxiliary_pattern apattern;
   size_t patternl=0;
-  uchar posx = 0;
   size_t i = *pos;
+  uchar next = 0;
+  while_is(isspace,src,*pos,s);
   for (size_t j; i < s; i++) {
     j = i;
-    apattern.posx = posx;
 
     while (i < s) {
       if (src[i] == '\\' && src[i+1] == '\\') {
         i += 2;
         continue;
       }
-      if (src[i] == '\\' && (src[i+1] == ',' || src[i+1] == ';' || src[i+1] == '"' || src[i+1] == '\'')) {
+      if (src[i] == '\\' && (src[i+1] == ',' || src[i+1] == ';' || src[i+1] == '"' || src[i+1] == '\'' || src[i+1] == '{' || src[i+1] == '}')) {
         delchar(src,i++,&s);
         patternl = i-j;
         continue;
@@ -164,7 +196,7 @@ patterns_split(char *src, size_t *pos, size_t s, const uchar flags)
       }
 
       if (src[i] == ',') {
-        posx++;
+        next = 1;
         patternl = i-j;
         i++;
         break;
@@ -174,15 +206,63 @@ patterns_split(char *src, size_t *pos, size_t s, const uchar flags)
         i++;
         break;
       }
+      if (src[i] == '{') {
+        i++;
+        next = 2;
+        break;
+      }
+      if (src[i] == '}') {
+        i++;
+        next = 3;
+        break;
+      }
       i++;
       patternl = i-j;
     }
 
     if (j+patternl > s)
       patternl = s-j;
-      
-    hgrep_pcomp(src+j,patternl,&apattern.p,flags);
-    memcpy(flexarr_inc(ret),&apattern,sizeof(apattern));
+
+    apattern.p = malloc(sizeof(hgrep_pattern));
+    hgrep_pcomp(src+j,patternl,(hgrep_pattern*)apattern.p,flags);
+
+    auxiliary_pattern *new = (auxiliary_pattern*)flexarr_inc(acurrent->p);
+    new->p = apattern.p;
+
+    if (next == 2) {
+      next = 0;
+      new->istable = 1|2;
+      *pos = i;
+      new->p = patterns_split(src,pos,s,flags);
+      i = *pos;
+      while_is(isspace,src,i,s);
+      if (i < s) {
+        if (src[i] == ',') {
+          i++;
+          goto NEXT_NODE;
+        } else if (src[i] == '}') {
+          i++;
+          goto END_BRACKET;
+        } else if (src[i] == ';')
+          i++;
+      }
+      //apatterns_print(new->p,0);
+    } else
+      new->istable = 0;
+
+    if (next == 1) {
+      NEXT_NODE: ;
+      next = 0;
+      acurrent = (auxiliary_pattern*)flexarr_inc(ret);
+      acurrent->p = flexarr_init(sizeof(auxiliary_pattern),PATTERN_SIZE_INC);
+      acurrent->istable = 1|4;
+    }
+    if (next == 3) {
+      END_BRACKET:
+      *pos = i;
+      flexarr_clearb(ret);
+      return ret;
+    }
 
     while_is(isspace,src,i,s);
     i--;
@@ -192,11 +272,11 @@ patterns_split(char *src, size_t *pos, size_t s, const uchar flags)
   return ret;
 }
 
-#define print_or_add(x,y) { \
+/*#define print_or_add(x,y) { \
   if (hgrep_match(&nodes[x],y)) { \
   if (dest) { *(size_t*)flexarr_inc(dest) = x; } \
   else if ((y)->format.b) hgrep_printf(outfile,(y)->format.b,(y)->format.s,&nodes[x],hg->data); \
-  else hgrep_print(outfile,&nodes[x]); }}
+  else hgrep_print(outfile,&nodes[x]); }}*/
 
 static void
 first_match(FILE *outfile, hgrep *hg, hgrep_pattern *pattern, flexarr *dest)
@@ -204,16 +284,23 @@ first_match(FILE *outfile, hgrep *hg, hgrep_pattern *pattern, flexarr *dest)
   hgrep_node *nodes = hg->nodes;
   size_t nodesl = hg->nodesl;
   for (size_t i = 0; i < nodesl; i++) {
-    print_or_add(i,pattern);
+    //print_or_add(i,pattern);
+    if (hgrep_match(&nodes[i],pattern)) {
+      hgrep_x *x = (hgrep_x*)flexarr_inc(dest);
+      x->pattern = pattern;
+      x->lvl = 0;
+      x->id = i;
+      //*(size_t*)flexarr_inc(dest) = i;
+    }
   }
 }
 
 
 static void
-pattern_exec(FILE *outfile, hgrep *hg, auxiliary_pattern *pattern, flexarr *source, flexarr *dest)
+pattern_exec(FILE *outfile, hgrep *hg, hgrep_pattern *pattern, flexarr *source, flexarr *dest)
 {
   if (source->size == 0) {
-    first_match(outfile,hg,&pattern->p,dest);
+    first_match(outfile,hg,pattern,dest);
     return;
   }
   
@@ -221,38 +308,62 @@ pattern_exec(FILE *outfile, hgrep *hg, auxiliary_pattern *pattern, flexarr *sour
   hgrep_node *nodes = hg->nodes;
   size_t current,n;
   for (size_t i = 0; i < source->size; i++) {
-    current = ((size_t*)source->v)[i];
+    current = ((hgrep_x*)source->v)[i].id;
     lvl = nodes[current].lvl;
     for (size_t j = 0; j <= nodes[current].child_count; j++) {
       n = current+j;
       nodes[n].lvl -= lvl;
-      print_or_add(n,&pattern->p);
+      if (hgrep_match(&nodes[n],pattern)) {
+        hgrep_x *x = (hgrep_x*)flexarr_inc(dest);
+        x->pattern = pattern;
+        x->lvl = lvl;
+        x->id = n;
+      }
       nodes[n].lvl += lvl;
     }
   }
 }
 
 static size_t
-columns_handle(hgrep *hg, auxiliary_pattern *patterns, const size_t size)
+patterns_recursive_exec(hgrep *hg, auxiliary_pattern *patterns, const size_t size, flexarr *source, flexarr *dest, const size_t lvl)
 {
-  size_t i = 0;
-  flexarr *buf[2];
-  buf[0] = flexarr_init(sizeof(size_t),PASSED_INC);
-  buf[1] = flexarr_init(sizeof(size_t),PASSED_INC);
+  flexarr *buf[3];
 
-  for (; i < size; i++) {
-    flexarr *d = (i == size-1 || patterns[i].posx != patterns[i+1].posx) ? NULL : buf[1];
-    pattern_exec(outfile,hg,&patterns[i],buf[0],d);
-    if (d == NULL) {
-      buf[0]->size = 0;
+  buf[0] = flexarr_init(sizeof(hgrep_x),PASSED_INC);
+  if (source) {
+    buf[0]->asize = source->asize;
+    buf[0]->size = source->size;
+    buf[0]->v = memcpy(malloc(source->asize*sizeof(hgrep_x)),source->v,source->asize*sizeof(hgrep_x));
+  }
+
+  buf[1] = flexarr_init(sizeof(hgrep_x),PASSED_INC);
+  buf[2] = dest ? dest : flexarr_init(sizeof(hgrep_x),PASSED_INC);
+  flexarr *buf_unchanged[2];
+  buf_unchanged[0] = buf[0];
+  buf_unchanged[1] = buf[1];
+
+  for (size_t i = 0; i < size; i++) {
+    //flexarr *out = buf[1];
+    //flexarr *out = (source == NULL || (dest == NULL && i == size-1)) ? NULL : buf[1];
+    if (patterns[i].istable&1) {
+      /*flexarr *copy = flexarr_init(sizeof(hgrep_x),PASSED_INC);
+      copy->asize = buf[0]->asize;
+      copy->size = buf[0]->size;
+      copy->v = memcpy(malloc(buf[0]->asize*sizeof(hgrep_x)),buf[0]->v,buf[0]->asize*sizeof(hgrep_x));*/
+      patterns_recursive_exec(hg,(auxiliary_pattern*)((flexarr*)patterns[i].p)->v,((flexarr*)patterns[i].p)->size,buf[0],buf[1],lvl+1);
+      //fprintf(stderr,"pase %p %p %lu\n",copy,buf[1],lvl);
+      //flexarr_free(copy);
+    } else
+      pattern_exec(outfile,hg,(hgrep_pattern*)patterns[i].p,buf[0],buf[1]);
+
+    if ((patterns[i].istable&1 && !(patterns[i].istable&2)) || i == size-1) {
+      for (size_t j = 0; j < buf[1]->size; j++)
+        memcpy(flexarr_inc(buf[2]),&((hgrep_x*)buf[1]->v)[j],sizeof(hgrep_x));
       buf[1]->size = 0;
       continue;
     }
-    if (!d->size) {
-        while (i < size && patterns[i].posx == patterns[i+1].posx)
-            i++;
-        continue;
-    }
+    if (!buf[1]->size)
+      break;
 
     buf[0]->size = 0;
     flexarr *tmp = buf[0];
@@ -260,8 +371,22 @@ columns_handle(hgrep *hg, auxiliary_pattern *patterns, const size_t size)
     buf[1] = tmp;
   }
 
-  flexarr_free(buf[0]);
-  flexarr_free(buf[1]);
+  if (!dest) {
+    for (size_t j = 0; j < buf[2]->size; j++) {
+      hgrep_x *x = &((hgrep_x*)buf[2]->v)[j];
+      hg->nodes[x->id].lvl -= x->lvl;
+      if (x->pattern->format.b) {
+        hgrep_printf(outfile,x->pattern->format.b,x->pattern->format.s,&hg->nodes[x->id],hg->data); \
+      } else
+        hgrep_print(outfile,&hg->nodes[x->id]);
+      hg->nodes[x->id].lvl += x->lvl;
+    }
+    flexarr_free(buf[2]);
+  }
+
+  flexarr_free(buf_unchanged[0]);
+  flexarr_free(buf_unchanged[1]);
+
   return 0;
 }
 
@@ -269,19 +394,22 @@ columns_handle(hgrep *hg, auxiliary_pattern *patterns, const size_t size)
 static void
 patterns_exec_fast(char *f, size_t s, const uchar inpipe)
 {
-  for (size_t i = 0; i < patterns->size; i++)
-    if (((auxiliary_pattern*)patterns->v)[i].posx)
-      die("unexpected delimiter ',' in fast mode");
+  if (patterns->size == 0)
+    return;
+  if (patterns->size > 1)
+    die("fast mode cannot run in non linear mode");
+
   FILE *t = outfile;
   char *ptr;
   size_t fsize;
 
-  for (size_t i = 0; i < patterns->size; i++) {
-    outfile = (i == patterns->size-1) ? t : open_memstream(&ptr,&fsize);
+  flexarr *fpatterns = (flexarr*)((auxiliary_pattern*)patterns->v)[0].p;
+  for (size_t i = 0; i < fpatterns->size; i++) {
+    outfile = (i == fpatterns->size-1) ? t : open_memstream(&ptr,&fsize);
 
-    auxiliary_pattern *fl = &((auxiliary_pattern*)patterns->v)[i];
-    hgrep_pattern *flv = &fl->p;
-    hgrep_init(NULL,f,s,outfile,flv);
+    if (((auxiliary_pattern*)fpatterns->v)[i].istable&1)
+      die("fast mode cannot run in non linear mode");
+    hgrep_init(NULL,f,s,outfile,(hgrep_pattern*)((auxiliary_pattern*)fpatterns->v)[i].p);
     fflush(outfile);
 
     if (!inpipe && i == 0) {
@@ -289,7 +417,7 @@ patterns_exec_fast(char *f, size_t s, const uchar inpipe)
     } else {
       free(f);
     }
-    if (i != patterns->size-1)
+    if (i != fpatterns->size-1)
       fclose(outfile);
 
     f = ptr;
@@ -310,7 +438,7 @@ patterns_exec(char *f, size_t s, const uchar inpipe)
 
   hgrep hg;
   hgrep_init(&hg,f,s,NULL,NULL);
-  columns_handle(&hg,patterns->v,patterns->size);
+  patterns_recursive_exec(&hg,patterns->v,patterns->size,NULL,NULL,0);
 
   hgrep_free(&hg);
 }
@@ -388,8 +516,13 @@ void
 apatterns_free(flexarr *apatterns)
 {
   auxiliary_pattern *a = (auxiliary_pattern*)apatterns->v;
-  for (size_t i = 0; i < apatterns->size; i++)
-    hgrep_pfree(&a[i].p);
+  for (size_t i = 0; i < apatterns->size; i++) {
+    if (a[i].istable&1) {
+      apatterns_free((flexarr*)a[i].p);
+    } else {
+      hgrep_pfree((hgrep_pattern*)a[i].p);
+    }
+  }
   flexarr_free(apatterns);
 }
 
@@ -423,6 +556,7 @@ main(int argc, char **argv)
         pipe_to_str(fd,&p,&s);
         close(fd);
         patterns = patterns_split(p,NULL,s,hflags);
+        //apatterns_print(patterns,0);
         free(p);
         }
         break;
@@ -438,6 +572,7 @@ main(int argc, char **argv)
 
   if (!patterns && optind < argc) {
     patterns = patterns_split(argv[optind],NULL,strlen(argv[optind]),hflags);
+    //apatterns_print(patterns,0);
     optind++;
   }
   if (!patterns)

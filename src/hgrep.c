@@ -859,20 +859,15 @@ function_handle(hgrep_pattern *p, char *func, size_t *pos, size_t *size, const i
 void
 hgrep_pcomp(char *pattern, size_t size, hgrep_pattern *p, const uchar flags)
 {
+  memset(p,0,sizeof(hgrep_pattern));
   struct hgrep_pattrib pa;
   int regexflags = REG_NEWLINE|REG_NOSUB;
-  p->flags = 0;
   if (flags&HGREP_ICASE)
       regexflags |= REG_ICASE;
   if (flags&HGREP_EREGEX)
       regexflags |= REG_EXTENDED;
-  p->format.b = NULL;
   //ushort attribcount = 0;
 
-  p->position_rl = 0;
-  p->attribute_rl = 0;
-  p->size_rl = 0;
-  p->child_count_rl = 0;
   char regex_tmp[PATTERN_SIZE];
 
   size_t pos=0;

@@ -71,30 +71,6 @@ typedef struct {
   unsigned char flags;
 } hgrep_pattern;
 
-/*struct hgrep_pattrib {
-  regex_t r[2];
-  unsigned int px; //position
-  unsigned int py;
-  unsigned char flags;
-};
-
-typedef struct {
-  regex_t tag;
-  regex_t insides;
-  hgrep_str format;
-  struct hgrep_pattrib *attrib;
-  size_t attribl;
-  unsigned int px; //position
-  unsigned int py;
-  unsigned int ax; //atribute
-  unsigned int ay;
-  unsigned int sx; //size
-  unsigned int sy;
-  unsigned int cx; //child count
-  unsigned int cy;
-  unsigned char flags;
-} hgrep_pattern;*/
-
 typedef struct {
   char *data;
   FILE *output;
