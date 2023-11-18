@@ -55,7 +55,7 @@ typedef unsigned long int ulong;
 #define F_MATCH_INSIDES 0x80
 
 #define ATTRIB_INC (1<<3)
-#define HGREP_NODES_INC (1<<10)
+#define HGREP_NODES_INC (1<<13)
 #define RANGES_INC (1<<4)
 
 #define toggleflag(x,y,z) (y) = (x) ? (y)|(z) : (y)&~(z)
@@ -1052,10 +1052,10 @@ hgrep_init(hgrep *hg, char *ptr, const size_t size, FILE *output, hgrep_pattern 
     flexarr_conv(nodes,(void**)&t.nodes,&t.nodesl);
   } else {
     flexarr_free(nodes);
-    t.nodes = 0;
+    t.nodes = NULL;
     t.nodesl = 0;
   }
   flexarr_free((flexarr*)t.attrib_buffer);
   if (hg)
-      memcpy(hg,&t,sizeof(hgrep));
+      *hg = t;
 }

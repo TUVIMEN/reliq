@@ -1,4 +1,4 @@
-VERSION = 1.7
+VERSION = 2.0
 CC = gcc -std=c99
 CFLAGS = -O3 -march=native -Wall -Wextra -DVERSION=\"${VERSION}\"
 LDFLAGS =
