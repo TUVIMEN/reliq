@@ -969,8 +969,11 @@ hgrep_pcomp(char *pattern, size_t size, hgrep_pattern *p, const uchar flags)
         if (regcomp(&pa.r[1],regex_tmp,regexflags))
           goto CONV;
         pa.flags |= A_VAL_MATTERS;
-      } else
+      } else {
         pa.flags &= ~A_VAL_MATTERS;
+        memcpy(flexarr_inc(attrib),&pa,sizeof(struct hgrep_pattrib));
+        continue;
+      }
     }
 
     memcpy(flexarr_inc(attrib),&pa,sizeof(struct hgrep_pattrib));
