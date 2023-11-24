@@ -29,7 +29,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <sys/mman.h>
-#include <linux/limits.h>
+#include <limits.h>
 #include <regex.h>
 #include <ftw.h>
 #include <err.h>
