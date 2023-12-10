@@ -72,6 +72,19 @@ typedef struct {
 } hgrep_pattern;
 
 typedef struct {
+  void *p;
+  unsigned char istable;
+} hgrep_epattern;
+
+#pragma pack(push, 1)
+typedef struct {
+  hgrep_pattern *pattern;
+  size_t id;
+  ushort lvl;
+} hgrep_compressed;
+#pragma pack(pop)
+
+typedef struct {
   char *data;
   FILE *output;
   hgrep_node *nodes;
@@ -82,12 +95,16 @@ typedef struct {
   unsigned char flags;
 } hgrep;
 
-void hgrep_init(hgrep *hg, char *ptr, const size_t size, FILE *output, hgrep_pattern *pattern);
+hgrep hgrep_init(char *ptr, const size_t size, FILE *output);
+void hgrep_fmatch(char *ptr, const size_t size, FILE *output, hgrep_pattern *pattern);
 void hgrep_pcomp(char *pattern, size_t size, hgrep_pattern *p, const unsigned char flags);
+void hgrep_epcomp(char *src, size_t *pos, size_t s, const unsigned char flags, hgrep_epattern **epatterns, size_t *epatternsl);
 int hgrep_match(const hgrep_node *hgn, const hgrep_pattern *p);
+void hgrep_ematch(hgrep *hg, hgrep_epattern *patterns, const size_t size, hgrep_compressed *source, size_t sourcel, hgrep_compressed *dest, size_t destl);
 void hgrep_printf(FILE *outfile, const char *format, const size_t formatl, const hgrep_node *hgn, const char *reference);
 void hgrep_print(FILE *outfile, const hgrep_node *hg);
 void hgrep_pfree(hgrep_pattern *p);
+void hgrep_epattern_free(hgrep_epattern *epatterns, const size_t epatternsl);
 void hgrep_free(hgrep *hg);
 
 #endif
