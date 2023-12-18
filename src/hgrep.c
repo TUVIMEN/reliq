@@ -60,7 +60,6 @@ typedef unsigned long int ulong;
 #define HGREP_NODES_INC (1<<13)
 #define RANGES_INC (1<<4)
 
-#define toggleflag(x,y,z) (y) = (x) ? (y)|(z) : (y)&~(z)
 #define while_is(w,x,y,z) while ((y) < (z) && w((x)[(y)])) {(y)++;}
 #define LENGHT(x) (sizeof(x)/(sizeof(*x)))
 
@@ -576,6 +575,25 @@ print_attribs(FILE *outfile, const hgrep_node *hgn)
   }
 }
 
+static void
+print_clearinsides(FILE *outfile, const hgrep_str *insides)
+{
+  hgrep_str t = *insides;
+  if (t.s == 0)
+    return;
+  void *start,*end;
+  size_t i = 0;
+  while (isspace(t.b[i]) && i < t.s)
+    i++;
+  start = t.b+i;
+  i = t.s-1;
+  while (isspace(t.b[i]) && i > 0)
+    i--;
+  end = t.b+i;
+  if (end-start+1 > 0)
+    fwrite(start,1,end-start+1,outfile);
+}
+
 void
 hgrep_printf(FILE *outfile, const char *format, const size_t formatl, const hgrep_node *hgn, const char *reference)
 {
@@ -609,6 +627,7 @@ hgrep_printf(FILE *outfile, const char *format, const size_t formatl, const hgre
         case 't': fwrite(hgn->all.b,1,hgn->all.s,outfile); break;
         case 'n': fwrite(hgn->tag.b,1,hgn->tag.s,outfile); break;
         case 'i': fwrite(hgn->insides.b,1,hgn->insides.s,outfile); break;
+        case 'I': print_clearinsides(outfile,&hgn->insides); break;
         case 'l': fprintf(outfile,"%u",hgn->lvl); break;
         case 's': fprintf(outfile,"%lu",hgn->all.s); break;
         case 'c': fprintf(outfile,"%u",hgn->child_count); break;
