@@ -569,9 +569,9 @@ print_attribs(FILE *outfile, const hgrep_node *hgn)
     return;
   for (ushort j = 0; j < hgn->attribl; j++) {
     fputc(' ',outfile);
-    fwrite(a[j].f.b,a[j].f.s,1,outfile);
+    fwrite(a[j].f.b,1,a[j].f.s,outfile);
     fputs("=\"",outfile);
-    fwrite(a[j].s.b,a[j].s.s,1,outfile);
+    fwrite(a[j].s.b,1,a[j].s.s,outfile);
     fputc('"',outfile);
   }
 }
@@ -606,9 +606,9 @@ hgrep_printf(FILE *outfile, const char *format, const size_t formatl, const hgre
 
       switch (format[i++]) {
         case '%': fputc('%',outfile); break;
-        case 't': fwrite(hgn->all.b,hgn->all.s,1,outfile); break;
-        case 'n': fwrite(hgn->tag.b,hgn->tag.s,1,outfile); break;
-        case 'i': fwrite(hgn->insides.b,hgn->insides.s,1,outfile); break;
+        case 't': fwrite(hgn->all.b,1,hgn->all.s,outfile); break;
+        case 'n': fwrite(hgn->tag.b,1,hgn->tag.s,outfile); break;
+        case 'i': fwrite(hgn->insides.b,1,hgn->insides.s,outfile); break;
         case 'l': fprintf(outfile,"%u",hgn->lvl); break;
         case 's': fprintf(outfile,"%lu",hgn->all.s); break;
         case 'c': fprintf(outfile,"%u",hgn->child_count); break;
@@ -618,13 +618,13 @@ hgrep_printf(FILE *outfile, const char *format, const size_t formatl, const hgre
           hgrep_str_pair *a = hgn->attrib;
           if (num != -1) {
             if ((size_t)num < hgn->attribl)
-              fwrite(a[num].s.b,a[num].s.s,1,outfile);
+              fwrite(a[num].s.b,1,a[num].s.s,outfile);
           } else if (contl != 0) {
             for (size_t i = 0; i < hgn->attribl; i++)
               if (a[i].f.s == contl && memcmp(a[i].f.b,format+cont,contl) == 0)
-                fwrite(a[i].s.b,a[i].s.s,1,outfile);
+                fwrite(a[i].s.b,1,a[i].s.s,outfile);
           } else for (size_t i = 0; i < hgn->attribl; i++) {
-            fwrite(a[i].s.b,a[i].s.s,1,outfile);
+            fwrite(a[i].s.b,1,a[i].s.s,outfile);
             fputc('"',outfile);
           }
         }
@@ -639,7 +639,7 @@ hgrep_printf(FILE *outfile, const char *format, const size_t formatl, const hgre
 void
 hgrep_print(FILE *outfile, const hgrep_node *hgn)
 {
-  fwrite(hgn->all.b,hgn->all.s,1,outfile);
+  fwrite(hgn->all.b,1,hgn->all.s,outfile);
   fputc('\n',outfile);
 }
 
