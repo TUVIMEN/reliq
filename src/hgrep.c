@@ -606,14 +606,14 @@ hgrep_printf(FILE *outfile, const char *format, const size_t formatl, const hgre
 
       switch (format[i++]) {
         case '%': fputc('%',outfile); break;
-        case 'A': fwrite(hgn->all.b,hgn->all.s,1,outfile); break;
-        case 't': fwrite(hgn->tag.b,hgn->tag.s,1,outfile); break;
+        case 't': fwrite(hgn->all.b,hgn->all.s,1,outfile); break;
+        case 'n': fwrite(hgn->tag.b,hgn->tag.s,1,outfile); break;
         case 'i': fwrite(hgn->insides.b,hgn->insides.s,1,outfile); break;
         case 'l': fprintf(outfile,"%u",hgn->lvl); break;
         case 's': fprintf(outfile,"%lu",hgn->all.s); break;
         case 'c': fprintf(outfile,"%u",hgn->child_count); break;
         case 'p': fprintf(outfile,"%lu",hgn->all.b-reference); break;
-        case 'I': print_attribs(outfile,hgn); break;
+        case 'A': print_attribs(outfile,hgn); break;
         case 'a': {
           hgrep_str_pair *a = hgn->attrib;
           if (num != -1) {
