@@ -17,9 +17,14 @@ hgrep is a simple html parsing tool.
     make linked
 
 ## Examples
-Get tags 'a' with attribute 'href' at position 0 of value ending with '.org' from result of matching tags 'div' with attribute 'id' and without attribute 'class' from file 'index.html'.
 
-    $ hgrep 'div +id -class; a +[0]href=".*\.org"' index.html
+Get 'div' tags with class 'tile'.
+
+    $ hgrep 'div class="tile"'
+
+Get 'div' tags with class 'tile' as a word and id 'current' as a word.
+
+    $ hgrep 'div .tile #current' index.html
 
 Get tags which does not have any tags inside them from file 'index.html'.
 
@@ -37,10 +42,10 @@ Get any tag with class "cont" and without id starting with "img-".
 
     $ hgrep '.* .cont -#img-.*' index.html
 
-Get "ul" tags and "i" tags inside "p".
+Get 'ul' tags and then 'i' tags inside 'p'.
 
     $ hgrep 'ul, i; p' index.html
 
-Get "tr" and "td" inside "table" tag.
+Get 'tr' and 'td' inside 'table' tag.
 
     $ hgrep 'table; { tr, td }' index.html
