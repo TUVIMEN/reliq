@@ -78,7 +78,7 @@ typedef struct {
 
 #pragma pack(push, 1)
 typedef struct {
-  hgrep_pattern *pattern;
+  //hgrep_pattern *pattern;
   size_t id;
   ushort lvl;
 } hgrep_compressed;

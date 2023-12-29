@@ -63,6 +63,29 @@ flexarr_set(flexarr *f, const size_t s)
 }
 
 void *
+flexarr_alloc(flexarr *f, const size_t s)
+{
+  if (s == 0 || f->asize-f->size >= s)
+    return f->v;
+  void *v = realloc(f->v,(f->size+s)*f->nmemb);
+  if (v == NULL)
+    return NULL;
+  f->asize = f->size+s;
+  return f->v = v;
+}
+
+void *
+flexarr_add(flexarr *dst, const flexarr *src)
+{
+  if (dst->size+src->size > dst->asize)
+    if (flexarr_alloc(dst,src->size) == NULL)
+      return NULL;
+  memcpy(dst->v+(dst->size*dst->nmemb),src->v,src->size*dst->nmemb);
+  dst->size += src->size;
+  return dst->v;
+}
+
+void *
 flexarr_clearb(flexarr *f)
 {
   if (f->size == f->asize)
