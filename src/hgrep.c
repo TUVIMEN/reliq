@@ -1103,7 +1103,7 @@ hgrep_epcomp_pre(char *src, size_t *pos, size_t s, const uchar flags)
     if (j+patternl > s)
       patternl = s-j;
 
-    hgrep_epattern *new;
+    hgrep_epattern *new = NULL;
     if ((next != 3 || src[j] != '}') && (next >= 2 || patternl)) {
       epattern.p = malloc(sizeof(hgrep_pattern));
       if (patternl && (next != 2 || next < 2))
@@ -1212,14 +1212,8 @@ pattern_exec(hgrep *hg, hgrep_pattern *pattern, flexarr *source, flexarr *dest)
   }
 }
 
-typedef struct {
-  hgrep_str *format;
-  size_t s;
-  size_t e;
-} hgrep_pformat;
-
 static void
-hgrep_ematch_pre(hgrep *hg, hgrep_epattern *patterns, const size_t patternsl, flexarr *source, flexarr *dest, uint llvl, flexarr *pformats)
+hgrep_ematch_pre(hgrep *hg, hgrep_epattern *patterns, const size_t patternsl, flexarr *source, flexarr *dest, flexarr *pcollector)
 {
   flexarr *buf[3];
 
@@ -1236,10 +1230,10 @@ hgrep_ematch_pre(hgrep *hg, hgrep_epattern *patterns, const size_t patternsl, fl
   buf_unchanged[0] = buf[0];
   buf_unchanged[1] = buf[1];
 
-  size_t startp = pformats->size;
+  size_t startp = pcollector->size;
   size_t lastp = startp;
 
-  hgrep_str *lastformat = NULL;
+  hgrep_pattern *lastformat = NULL;
 
   for (size_t i = 0; i < patternsl; i++) {
     //flexarr *out = buf[1];
@@ -1249,12 +1243,12 @@ hgrep_ematch_pre(hgrep *hg, hgrep_epattern *patterns, const size_t patternsl, fl
       copy->asize = buf[0]->asize;
       copy->size = buf[0]->size;
       copy->v = memcpy(malloc(buf[0]->asize*sizeof(hgrep_compressed)),buf[0]->v,buf[0]->asize*sizeof(hgrep_compressed));*/
-      lastp = pformats->size;
-      hgrep_ematch_pre(hg,(hgrep_epattern*)((flexarr*)patterns[i].p)->v,((flexarr*)patterns[i].p)->size,buf[0],buf[1],llvl+1,pformats);
+      lastp = pcollector->size;
+      hgrep_ematch_pre(hg,(hgrep_epattern*)((flexarr*)patterns[i].p)->v,((flexarr*)patterns[i].p)->size,buf[0],buf[1],pcollector);
       //fprintf(stderr,"pase %p %p %lu\n",copy,buf[1],lvl);
       //flexarr_free(copy);
     } else if (patterns[i].p) {
-      lastformat = &((hgrep_pattern*)patterns[i].p)->format;
+      lastformat = (hgrep_pattern*)patterns[i].p;
       pattern_exec(hg,(hgrep_pattern*)patterns[i].p,buf[0],buf[1]);
     }
 
@@ -1264,14 +1258,14 @@ hgrep_ematch_pre(hgrep *hg, hgrep_epattern *patterns, const size_t patternsl, fl
         flexarr_add(buf[2],buf[1]);
         if (lastformat) {
           if (patterns[i].istable) {
-            if (startp != lastp) { //truncate previously added, now useless pformats
-                for (size_t c = lastp; c < pformats->size; c++)
-                    ((hgrep_pformat*)pformats->v)[c-lastp] = ((hgrep_pformat*)pformats->v)[c];
-                pformats->size -= lastp-startp;
+            if (startp != lastp) { //truncate previously added, now useless pcollector
+                for (size_t c = lastp; c < pcollector->size; c++)
+                    ((hgrep_str*)pcollector->v)[c-lastp] = ((hgrep_str*)pcollector->v)[c];
+                pcollector->size -= lastp-startp;
             }
           } else {
-            pformats->size = startp;
-            *(hgrep_pformat*)flexarr_inc(pformats) = (hgrep_pformat){lastformat,prevsize,buf[2]->size};
+            pcollector->size = startp;
+            *(hgrep_str*)flexarr_inc(pcollector) = (hgrep_str){(char*)lastformat,buf[2]->size-prevsize};
           }
         }
       }
@@ -1288,34 +1282,30 @@ hgrep_ematch_pre(hgrep *hg, hgrep_epattern *patterns, const size_t patternsl, fl
   }
 
   if (!dest) {
+    hgrep_str *pcol = (hgrep_str*)pcollector->v;
     //ONLY NEEDED FOR DEBUGGING PURPOSES
-    size_t pformats_sum = 0;
-    for (size_t j = 0; j < pformats->size; j++)
-      pformats_sum += ((hgrep_pformat*)pformats->v)[j].e-((hgrep_pformat*)pformats->v)[j].s;
-    if (pformats_sum != buf[2]->size)
-      hgrep_error(1,"pformats does not match count of found tags, %lu != %lu",pformats_sum,buf[2]->size);
+    size_t pcollector_sum = 0;
+    for (size_t j = 0; j < pcollector->size; j++)
+      pcollector_sum += pcol[j].s;
+    if (pcollector_sum != buf[2]->size)
+      hgrep_error(1,"pcollector does not match count of found tags, %lu != %lu",pcollector_sum,buf[2]->size);
     //ONLY NEEDED FOR DEBUGGING PURPOSES
 
 
-    hgrep_pformat *pf = (hgrep_pformat*)pformats->v;
-    if (pformats->size)
-    for (size_t j = 0, pfcurrent = 0, g = 0; j < buf[2]->size; j++, g++) {
-      if (pf[pfcurrent].e-pf[pfcurrent].s == g) {
+    if (pcollector->size)
+    for (size_t j = 0, pcurrent = 0, g = 0; j < buf[2]->size; j++, g++) {
+      if (pcol[pcurrent].s == g) {
         g = 0;
-        pfcurrent++;
-        /*if (pfcurrent >= pformats->size)
+        pcurrent++;
+        /*if (pcurrent >= pcollector->size)
             break;*/
       }
       hgrep_compressed *x = &((hgrep_compressed*)buf[2]->v)[j];
       hg->nodes[x->id].lvl -= x->lvl;
-      if (pf[pfcurrent].format->b) {
-        hgrep_printf(hg->output,pf[pfcurrent].format->b,pf[pfcurrent].format->s,&hg->nodes[x->id],hg->data);
+      if (((hgrep_pattern*)pcol[pcurrent].b)->format.b) {
+        hgrep_printf(hg->output,((hgrep_pattern*)pcol[pcurrent].b)->format.b,((hgrep_pattern*)pcol[pcurrent].b)->format.s,&hg->nodes[x->id],hg->data);
       } else
         hgrep_print(hg->output,&hg->nodes[x->id]);
-      /*if (x->pattern->format.b) {
-        hgrep_printf(hg->output,x->pattern->format.b,x->pattern->format.s,&hg->nodes[x->id],hg->data);
-      } else
-        hgrep_print(hg->output,&hg->nodes[x->id]);*/
       hg->nodes[x->id].lvl += x->lvl;
     }
     flexarr_free(buf[2]);
@@ -1344,9 +1334,9 @@ hgrep_ematch(hgrep *hg, hgrep_epattern *patterns, const size_t patternsl, hgrep_
       fsource->size = destl;
       fsource->asize = destl;
     }
-    flexarr *pformats = flexarr_init(sizeof(hgrep_pformat),32);
-    hgrep_ematch_pre(hg,patterns,patternsl,fsource,fdest,0,pformats);
-    flexarr_free(pformats);
+    flexarr *pcollector = flexarr_init(sizeof(hgrep_str),32);
+    hgrep_ematch_pre(hg,patterns,patternsl,fsource,fdest,pcollector);
+    flexarr_free(pcollector);
 }
 
 void
