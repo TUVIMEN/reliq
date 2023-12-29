@@ -34,19 +34,22 @@ typedef unsigned long int ulong;
 
 #define HGREP_SAVE 0x8
 
-#define A_INVERT 0x1
-#define A_VAL_MATTERS 0x2
-
 #define PASSED_INC (1<<14)
 #define PATTERN_SIZE (1<<9)
 #define PATTERN_SIZE_INC (1<<8)
 #define PATTRIB_INC 8
 
+//hgrep_pattrib flags
+#define A_INVERT 0x1
+#define A_VAL_MATTERS 0x2
+
+//hgrep_pattern flags
 #define P_INVERT 0x1
 #define P_MATCH_INSIDES 0x2
 #define P_INVERT_INSIDES 0x4
 #define P_EMPTY 0x8
 
+//hgrep_function flags
 #define F_SBRACKET 0x1
 #define F_STRING 0x2
 #define F_ATTRIBUTES 0x4
@@ -56,16 +59,21 @@ typedef unsigned long int ulong;
 #define F_PRINTF 0x40
 #define F_MATCH_INSIDES 0x80
 
+//hgrep_range flags
+#define R_RANGE 0x8
+#define R_NOTEMPTY 0x10
+
+//hgrep_epattern flags
+#define EPATTERN_TABLE 0x1
+#define EPATTERN_NEWBLOCK 0x2
+#define EPATTERN_NEWCHAIN 0x4
+
 #define ATTRIB_INC (1<<3)
 #define HGREP_NODES_INC (1<<13)
 #define RANGES_INC (1<<4)
 
 #define while_is(w,x,y,z) while ((y) < (z) && w((x)[(y)])) {(y)++;}
 #define LENGHT(x) (sizeof(x)/(sizeof(*x)))
-
-#define EPATTERN_TABLE 0x1
-#define EPATTERN_NEWBLOCK 0x2
-#define EPATTERN_NEWCHAIN 0x4
 
 typedef struct {
   char *b;
@@ -675,17 +683,17 @@ range_handle(const char *src, const size_t size, struct hgrep_range *range)
   for (int i = 0; i < 3; i++) {
     while_is(isspace,src,pos,size);
     if (i == 1)
-      range->flags |= 8; //is a range
+      range->flags |= R_RANGE; //is a range
     if (src[pos] == '-') {
       pos++;
       while_is(isspace,src,pos,size);
       range->flags |= 1<<i; //starts from the end
-      range->flags |= 16; //not empty
+      range->flags |= R_NOTEMPTY; //not empty
     }
     if (isdigit(src[pos])) {
       range->v[i] = number_handle(src,&pos,size);
       while_is(isspace,src,pos,size);
-      range->flags |= 16; //not empty
+      range->flags |= R_NOTEMPTY; //not empty
     } else if (i == 1)
       range->flags |= 1<<i;
 
@@ -715,7 +723,7 @@ ranges_handle(const char *src, size_t *pos, const size_t size, struct hgrep_rang
       hgrep_error(1,"range: char %u(%c): not a number",end,src[end]);
 
     range_handle(src+(*pos),end-(*pos),&range);
-    if (range.flags&(8|16)) {
+    if (range.flags&(R_RANGE|R_NOTEMPTY)) {
       (*rangesl)++;
       if (*rangesl > rangesl_buffer)
         rangesl_buffer += RANGES_INC;
