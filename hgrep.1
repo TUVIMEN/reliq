@@ -81,8 +81,7 @@ Follow all symbolic links, unlike
 .B \-l
 set
 .IR PATTERN
-to '@p"%t%I - %c/%l/%s/%p\\n"'.
-
+to '| "%t%I - %c/%l/%s/%p\\n"'.
 
 .SH HGREP PATTERN
 .SS PATTERN
@@ -156,65 +155,13 @@ Always begins with '@' followed by name of function, optionally ended with argum
 \fB@NAME[RANGE]\fR
 .in
 \&
-.SS TAG
-At the begining each \fBTAG\fR must contain \fBPATTERN\fR of html tag and that can be followed by a number of \fBATTRIBUTE\fRs and \fBFUNCTION\fRs. Matching will be inverted if \fBTAG\fR begins with '!'.
 
-.nf
-\&
-.in +4m
-\fBPATTERN\fR
-\fB!PATTERN\fR
-\fBPATTERN ATTRIBUTE... FUNCTION...\fR
-.in
-\&
-.SS NODE
-Consists of \fBTAG\fRs and \fBEXPRESSION\fRs separated by ';' which makes them pass result from previous node to the next.
+.SS FORMAT
+It has to be specified in '"' or '\\'' quotes.
 
-.nf
-\&
-.in +4m
-\fBTAG1; TAG2; NODE\fR - matches result of TAG1 by TAG2 and by NODE
-.in
-\&
-.SS EXPRESSION
-Consists of \fBNODE\fRs separated by ',' and grouped in '{' '}' brackets (which accumulate their output and increases their level).
-.nf
-\&
-.in +4m
-\fBNODE1, NODE2\fR - two expressions
-\fBEXPRESSION1; { EXPRESSION2; {EXPRESSION3, EXPRESSION4}, EXPRESSION5}; EXPRESSION6\fR
-.in
-\&
+If format is not specified it will be set to "%t\\n".
 
-.SH HGREP PATTERN FUNCTIONS
-.BR m ",  " match_insides " " \fI"PATTERN"\fR
-Get tags with insides that match
-.IR PATTERN .
-.TP
-.BR M ",  " rev_match_insides " " \fI"PATTERN"\fR
-Get tags with insides that does not match
-.IR PATTERN .
-.TP
-.BR a ",  " attributes " " \fI[RANGE]\fR
-Get tags with attributes that are within the
-.IR RANGE .
-.TP
-.BR l ",  " level " " \fI[RANGE]\fR
-Get tags that are on level within the
-.IR RANGE .
-.TP
-.BR s ",  " size " " \fI[RANGE]\fR
-Get tags with size of insides that is within the
-.IR RANGE .
-.TP
-.BR c ",  " child_count " " \fI[RANGE]\fR
-Get tags with number of children that is within the
-.IR RANGE .
-.TP
-.BR p ",  " printf " " \fI"FORMAT"\fR
-Print output according to
-.IR FORMAT ,
-interpreting '\e' escapes and `%' directives. The escapes and directives are:
+Prints output according to \fBFORMAT\fR interpreting '\e' escapes and `%' directives. The escapes and directives are:
 .RS
 .IP \ea
 Alarm bell.
@@ -261,6 +208,65 @@ Value of tag's attribute, where \fIk\fP is its position counted from zero.
 .IP %(\fIk\fP)a
 Value of tag's attribute, where \fIk\fP is its name.
 
+.SS TAG
+At the begining each \fBTAG\fR must contain \fBPATTERN\fR of html tag and that can be followed by a number of \fBATTRIBUTE\fRs and \fBFUNCTION\fRs.
+
+Matching will be inverted if \fBTAG\fR begins with '!'.
+
+Output \fBFORMAT\fR can be specified after '|' character, everything after it will be taken as \fBFORMAT\fR.
+
+.nf
+\&
+.in +4m
+\fBPATTERN\fR
+\fB!PATTERN\fR
+\fBPATTERN ATTRIBUTE... FUNCTION... | FORMAT\fR
+.in
+\&
+.SS NODE
+Consists of \fBTAG\fRs and \fBEXPRESSION\fRs separated by ';' which makes them pass result from previous node to the next.
+
+.nf
+\&
+.in +4m
+\fBTAG1; TAG2; NODE\fR - matches result of TAG1 by TAG2 and by NODE
+.in
+\&
+.SS EXPRESSION
+Consists of \fBNODE\fRs separated by ',' and grouped in '{' '}' brackets (which accumulate their output and increases their level).
+.nf
+\&
+.in +4m
+\fBNODE1, NODE2\fR - two expressions
+\fBEXPRESSION1; { EXPRESSION2; {EXPRESSION3, EXPRESSION4}, EXPRESSION5}; EXPRESSION6\fR
+.in
+\&
+
+.SH HGREP PATTERN FUNCTIONS
+.BR m ",  " match_insides " " \fI"PATTERN"\fR
+Get tags with insides that match
+.IR PATTERN .
+.TP
+.BR M ",  " rev_match_insides " " \fI"PATTERN"\fR
+Get tags with insides that does not match
+.IR PATTERN .
+.TP
+.BR a ",  " attributes " " \fI[RANGE]\fR
+Get tags with attributes that are within the
+.IR RANGE .
+.TP
+.BR l ",  " level " " \fI[RANGE]\fR
+Get tags that are on level within the
+.IR RANGE .
+.TP
+.BR s ",  " size " " \fI[RANGE]\fR
+Get tags with size of insides that is within the
+.IR RANGE .
+.TP
+.BR c ",  " child_count " " \fI[RANGE]\fR
+Get tags with number of children that is within the
+.IR RANGE .
+
 .SH EXAMPLES
 Get tags 'a' with attribute 'href' at position 0 of value ending with '.org', from result of matching tags 'div' with attribute 'id', and without attribute 'class', from file 'index.html'.
 .nf
@@ -287,14 +293,14 @@ Get hyperlinks from level greater or equal to 6 from file 'index.html'.
 .nf
 \&
 .in +4m
-.B $ hgrep 'a +href @l[6\-] @p"%(href)a\\\\n"' index.html
+.B $ hgrep 'a +href @l[6\-] | "%(href)a\\\\n"' index.html
 .in
 \&
 Get all urls from 'a' and 'img' tags
 .nf
 \&
 .in +4m
-.B $ hgrep 'img +src @p"%(src)a\\\\n", a +href @p"%(href)a\\\\n"'
+.B $ hgrep 'img +src | "%(src)a\\\\n", a +href | "%(href)a\\\\n"'
 .in
 \&
 

@@ -253,7 +253,7 @@ main(int argc, char **argv)
     switch (opt) {
       case 'E': hflags |= HGREP_EREGEX; break;
       case 'i': hflags |= HGREP_ICASE; break;
-      case 'l': hgrep_epcomp("@p\"%n%A - %c/%l/%s/%p\n\"",NULL,23,hflags,&patterns,&patternsl); break;
+      case 'l': hgrep_epcomp("| \"%n%A - %c/%l/%s/%p\n\"",NULL,23,hflags,&patterns,&patternsl); break;
       case 'o': {
         outfile = fopen(optarg,"w");
         if (outfile == NULL)
