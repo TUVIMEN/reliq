@@ -1,6 +1,6 @@
 /*
     hgrep - simple html searching tool
-    Copyright (C) 2020-2023 Dominik Stanisław Suchora <suchora.dominik7@gmail.com>
+    Copyright (C) 2020-2024 Dominik Stanisław Suchora <suchora.dominik7@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -54,10 +54,22 @@ struct hgrep_pattrib {
   unsigned char flags;
 };
 
+#ifdef HGREP_EDITING
+typedef struct {
+  void *arg[4];
+  unsigned char flags;
+} hgrep_format_func;
+#endif
+
 typedef struct {
   regex_t tag;
   regex_t insides;
+  #ifdef HGREP_EDITING
+  hgrep_format_func *format;
+  size_t formatl;
+  #else
   hgrep_str format;
+  #endif
   struct hgrep_pattrib *attrib;
   size_t attribl;
   struct hgrep_range *position_r;
@@ -79,7 +91,7 @@ typedef struct {
 #pragma pack(push, 1)
 typedef struct {
   size_t id;
-  ushort lvl;
+  unsigned short lvl;
 } hgrep_compressed;
 #pragma pack(pop)
 

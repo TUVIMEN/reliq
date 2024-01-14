@@ -5,15 +5,19 @@ LDFLAGS =
 TARGET := hgrep
 
 O_PHPTAGS := 1 # support for <?php ?>
-O_AUTOCLOSING := 1 # support for autoclosing tags
+O_AUTOCLOSING := 1 # support for autoclosing tags, without it some tests will fail (as intended)
+O_EDITING := 0 #support for editing
 O_LIB := 0 # compile libhgrep
 O_LINKED := 0 # link hgrep to libhgrep
 
 ifeq ($(strip ${O_PHPTAGS}),1)
-	CFLAGS += -DPHPTAGS
+	CFLAGS += -DHGREP_PHPTAGS
 endif
 ifeq ($(strip ${O_AUTOCLOSING}),1)
-	CFLAGS += -DAUTOCLOSING
+	CFLAGS += -DHGREP_AUTOCLOSING
+endif
+ifeq ($(strip ${O_EDITING}),1)
+	CFLAGS += -DHGREP_EDITING
 endif
 
 PREFIX ?= /usr
