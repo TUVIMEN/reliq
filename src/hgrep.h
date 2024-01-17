@@ -28,15 +28,25 @@ typedef struct {
 } hgrep_str;
 
 typedef struct {
-  hgrep_str f;
-  hgrep_str s;
-} hgrep_str_pair;
+  char const *b;
+  size_t s;
+} hgrep_cstr;
 
 typedef struct {
-  hgrep_str all;
-  hgrep_str tag;
-  hgrep_str insides;
-  hgrep_str_pair *attrib;
+  hgrep_cstr f;
+  hgrep_cstr s;
+} hgrep_cstr_pair;
+
+typedef struct {
+  char msg[512];
+  int code;
+} hgrep_error;
+
+typedef struct {
+  hgrep_cstr all;
+  hgrep_cstr tag;
+  hgrep_cstr insides;
+  hgrep_cstr_pair *attrib;
   unsigned int child_count;
   unsigned short attribl;
   unsigned short lvl;
@@ -66,10 +76,10 @@ typedef struct {
   regex_t insides;
   #ifdef HGREP_EDITING
   hgrep_format_func *format;
-  size_t formatl;
   #else
-  hgrep_str format;
+  char *format;
   #endif
+  size_t formatl;
   struct hgrep_pattrib *attrib;
   size_t attribl;
   struct hgrep_range *position_r;
@@ -96,22 +106,29 @@ typedef struct {
 #pragma pack(pop)
 
 typedef struct {
-  char *data;
+  char const *data;
   FILE *output;
   hgrep_node *nodes;
-  hgrep_pattern *pattern;
+  hgrep_pattern const *pattern;
   void *attrib_buffer;
   size_t size;
   size_t nodesl;
   unsigned char flags;
 } hgrep;
 
-hgrep hgrep_init(char *ptr, const size_t size, FILE *output);
-void hgrep_fmatch(char *ptr, const size_t size, FILE *output, hgrep_pattern *pattern);
-void hgrep_pcomp(char *pattern, size_t size, hgrep_pattern *p, const unsigned char flags);
-void hgrep_epcomp(char *src, size_t *pos, size_t s, const unsigned char flags, hgrep_epattern **epatterns, size_t *epatternsl);
+enum hgrep_UnallocMethod {
+    HGREP_UNALLOC_NO = 0, //don't unalloc
+    HGREP_UNALLOC_FREE, //unalloc with free()
+    HGREP_UNALLOC_MUNMAP //unalloc with munmap()
+};
+
+hgrep hgrep_init(const char *ptr, const size_t size, FILE *output);
+hgrep_error *hgrep_fmatch(const char *ptr, const size_t size, FILE *output, const hgrep_pattern *pattern);
+hgrep_error *hgrep_efmatch(char *ptr, const size_t size, FILE *output, const hgrep_epattern *epatterns, const size_t epatternsl, const enum hgrep_UnallocMethod unalloc_method);
+hgrep_error *hgrep_pcomp(const char *pattern, size_t size, hgrep_pattern *p, const unsigned char flags);
+hgrep_error *hgrep_epcomp(const char *src, size_t size, hgrep_epattern **epatterns, size_t *epatternsl, const unsigned char flags);
 int hgrep_match(const hgrep_node *hgn, const hgrep_pattern *p);
-void hgrep_ematch(hgrep *hg, hgrep_epattern *patterns, const size_t size, hgrep_compressed *source, size_t sourcel, hgrep_compressed *dest, size_t destl);
+hgrep_error *hgrep_ematch(hgrep *hg, const hgrep_epattern *patterns, const size_t size, hgrep_compressed *source, size_t sourcel, hgrep_compressed *dest, size_t destl);
 void hgrep_printf(FILE *outfile, const char *format, const size_t formatl, const hgrep_node *hgn, const char *reference);
 void hgrep_print(FILE *outfile, const hgrep_node *hg);
 void hgrep_pfree(hgrep_pattern *p);

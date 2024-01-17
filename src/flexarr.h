@@ -21,13 +21,13 @@
 
 typedef struct {
   void *v;
-  size_t asize;
-  size_t size;
-  size_t nmemb;
-  size_t inc_r;
+  size_t asize; //allocated size
+  size_t size; //used size
+  size_t elsize; //size of a single element
+  size_t inc_r; //increase rate
 } flexarr;
 
-flexarr *flexarr_init(const size_t nmemb, const size_t inc_r);
+flexarr *flexarr_init(const size_t elsize, const size_t inc_r);
 void *flexarr_inc(flexarr *f);
 void *flexarr_dec(flexarr *f);
 void *flexarr_set(flexarr *f, const size_t s);

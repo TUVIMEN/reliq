@@ -22,11 +22,11 @@
 #include "flexarr.h"
 
 flexarr *
-flexarr_init(const size_t nmemb, const size_t inc_r)
+flexarr_init(const size_t elsize, const size_t inc_r)
 {
   flexarr *ret = calloc(sizeof(flexarr),1);
   ret->inc_r = inc_r;
-  ret->nmemb = nmemb;
+  ret->elsize = elsize;
   return ret;
 }
 
@@ -34,12 +34,12 @@ void *
 flexarr_inc(flexarr *f)
 {
   if (f->size == f->asize) {
-    void *v = realloc(f->v,(f->asize+=f->inc_r)*f->nmemb);
+    void *v = realloc(f->v,(f->asize+=f->inc_r)*f->elsize);
     if (v == NULL)
       return NULL;
     f->v = v;
   }
-  return f->v+(f->size++*f->nmemb);
+  return f->v+(f->size++*f->elsize);
 }
 
 void *
@@ -47,7 +47,7 @@ flexarr_dec(flexarr *f)
 {
   if (f->size == 0)
     return NULL;
-  return f->v+(f->size--*f->nmemb);
+  return f->v+(f->size--*f->elsize);
 }
 
 void *
@@ -55,7 +55,7 @@ flexarr_set(flexarr *f, const size_t s)
 {
   if (f->size >= s || f->asize >= s)
     return NULL;
-  void *v = realloc(f->v,s*f->nmemb);
+  void *v = realloc(f->v,s*f->elsize);
   if (v == NULL)
     return NULL;
   f->asize = s;
@@ -67,7 +67,7 @@ flexarr_alloc(flexarr *f, const size_t s)
 {
   if (s == 0 || f->asize-f->size >= s)
     return f->v;
-  void *v = realloc(f->v,(f->size+s)*f->nmemb);
+  void *v = realloc(f->v,(f->size+s)*f->elsize);
   if (v == NULL)
     return NULL;
   f->asize = f->size+s;
@@ -80,7 +80,7 @@ flexarr_add(flexarr *dst, const flexarr *src)
   if (dst->size+src->size > dst->asize)
     if (flexarr_alloc(dst,src->size) == NULL)
       return NULL;
-  memcpy(dst->v+(dst->size*dst->nmemb),src->v,src->size*dst->nmemb);
+  memcpy(dst->v+(dst->size*dst->elsize),src->v,src->size*dst->elsize);
   dst->size += src->size;
   return dst->v;
 }
@@ -90,7 +90,7 @@ flexarr_clearb(flexarr *f)
 {
   if (f->size == f->asize || !f->v)
       return NULL;
-  void *v = realloc(f->v,f->size*f->nmemb);
+  void *v = realloc(f->v,f->size*f->elsize);
   if (v == NULL)
     return NULL;
   return f->v = v;

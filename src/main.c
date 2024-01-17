@@ -79,6 +79,19 @@ die(const char *s, ...)
 }
 
 static void
+handle_hgrep_error(hgrep_error *err) {
+  if (err == NULL)
+    return;
+
+  fputs(err->msg,stderr);
+  fputc('\n',stderr);
+
+  int c = err->code;
+  free(err);
+  exit(c);
+}
+
+static void
 usage()
 {
   die("Usage: %s [OPTION]... PATTERNS [FILE]...\n"\
@@ -99,61 +112,6 @@ usage()
       "When FILE isn't specified, FILE will become standard input.",argv0,argv0,argv0);
 }
 
-/*void
-hgrep_epattern_print(flexarr *epatterns, size_t tab)
-{
-  hgrep_epattern *a = (hgrep_patterns*)epatterns->v;
-  for (size_t j = 0; j < tab; j++)
-    fputc('\t',stderr);
-  fprintf(stderr,"%% %lu",epatterns->size);
-  fputc('\n',stderr);
-  tab++;
-  for (size_t i = 0; i < epatterns->size; i++) {
-    if (a[i].istable&1) {
-      fprintf(stderr,"%%x %d\n",a[i].istable);
-      hgrep_epattern_print((flexarr*)a[i].p,tab);
-    } else {
-      for (size_t j = 0; j < tab; j++)
-        fputc('\t',stderr);
-      fprintf(stderr,"%%j\n");
-    }
-  }
-} //used for debugging*/
-
-static void
-patterns_exec_fast(char *f, size_t s, const uchar inpipe, hgrep_epattern *epatterns, size_t epatternsl)
-{
-  if (epatternsl == 0)
-    return;
-  if (epatternsl > 1)
-    die("fast mode cannot run in non linear mode");
-
-  FILE *t = outfile;
-  char *ptr;
-  size_t fsize;
-
-  flexarr *first = (flexarr*)epatterns[0].p;
-  for (size_t i = 0; i < first->size; i++) {
-    outfile = (i == first->size-1) ? t : open_memstream(&ptr,&fsize);
-
-    if (((hgrep_epattern*)first->v)[i].istable&1)
-      die("fast mode cannot run in non linear mode");
-    hgrep_fmatch(f,s,outfile,(hgrep_pattern*)((hgrep_epattern*)first->v)[i].p);
-    fflush(outfile);
-
-    if (i == 0 && !inpipe) {
-      munmap(f,s);
-    } else
-      free(f);
-    
-    if (i != first->size-1)
-      fclose(outfile);
-
-    f = ptr;
-    s = fsize;
-  }
-}
-
 static void
 patterns_exec(char *f, size_t s, const uchar inpipe)
 {
@@ -161,12 +119,12 @@ patterns_exec(char *f, size_t s, const uchar inpipe)
     return;
 
   if (settings&F_FAST) {
-    patterns_exec_fast(f,s,inpipe,patterns,patternsl);
+    handle_hgrep_error(hgrep_efmatch(f,s,outfile,patterns,patternsl,inpipe ? HGREP_UNALLOC_FREE : HGREP_UNALLOC_MUNMAP));
     return;
   }
 
   hgrep hg = hgrep_init(f,s,outfile);
-  hgrep_ematch(&hg,patterns,patternsl,NULL,0,NULL,0);
+  handle_hgrep_error(hgrep_ematch(&hg,patterns,patternsl,NULL,0,NULL,0));
   hgrep_free(&hg);
 }
 
@@ -251,9 +209,15 @@ main(int argc, char **argv)
 
   while ((opt = getopt(argc,argv,"Eilo:f:HrRFvh")) != -1) {
     switch (opt) {
-      case 'E': hflags |= HGREP_EREGEX; break;
-      case 'i': hflags |= HGREP_ICASE; break;
-      case 'l': hgrep_epcomp("| \"%n%A - %c/%l/%s/%p\\n\"",NULL,24,hflags,&patterns,&patternsl); break;
+      case 'E':
+        hflags |= HGREP_EREGEX;
+        break;
+      case 'i':
+        hflags |= HGREP_ICASE;
+        break;
+      case 'l':
+        handle_hgrep_error(hgrep_epcomp("| \"%n%A - %c/%l/%s/%p\\n\"",24,&patterns,&patternsl,hflags));
+        break;
       case 'o': {
         outfile = fopen(optarg,"w");
         if (outfile == NULL)
@@ -268,7 +232,7 @@ main(int argc, char **argv)
         char *p;
         pipe_to_str(fd,&p,&s);
         close(fd);
-        hgrep_epcomp(p,NULL,s,hflags,&patterns,&patternsl);
+        handle_hgrep_error(hgrep_epcomp(p,s,&patterns,&patternsl,hflags));
         //hgrep_epattern_print(patterns,0);
         free(p);
         }
@@ -284,7 +248,7 @@ main(int argc, char **argv)
   }
 
   if (!patterns && optind < argc) {
-    hgrep_epcomp(argv[optind],NULL,strlen(argv[optind]),hflags,&patterns,&patternsl);
+    handle_hgrep_error(hgrep_epcomp(argv[optind],strlen(argv[optind]),&patterns,&patternsl,hflags));
     //hgrep_epattern_print(patterns,0);
     optind++;
   }
