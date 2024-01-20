@@ -1427,7 +1427,7 @@ hgrep_epcomp_pre(const char *csrc, size_t *pos, size_t s, const uchar flags, hgr
           i++;
       }
       //hgrep_epattern_print(new->p,0);
-    } else
+    } else if (new)
       new->istable = 0;
 
     if (next == 1) {
