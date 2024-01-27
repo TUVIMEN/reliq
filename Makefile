@@ -27,8 +27,8 @@ MANDIR = $(DESTDIR)${MANPREFIX}/man1
 LD_LIBRARY_PATH ?= ${PREFIX}/lib
 INCLUDE_PATH ?= ${PREFIX}/include
 
-SRC = src/main.c src/flexarr.c src/hgrep.c src/ctype.c src/utils.c
-LIB_SRC = src/flexarr.c src/hgrep.c src/ctype.c src/utils.c
+SRC = src/main.c src/flexarr.c src/html.c src/hgrep.c src/ctype.c src/utils.c
+LIB_SRC = src/flexarr.c src/html.c src/hgrep.c src/ctype.c src/utils.c
 
 ifeq ($(strip ${O_EDITING}),1)
 	SRC += src/edit.c

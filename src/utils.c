@@ -41,6 +41,12 @@ typedef unsigned long int ulong;
 
 #define while_is(w,x,y,z) while ((y) < (z) && w((x)[(y)])) {(y)++;}
 
+void *
+memdup(void const *src, size_t size)
+{
+  return memcpy(malloc(size),src,size);
+}
+
 char
 special_character(const char c)
 {
@@ -138,35 +144,6 @@ conv_special_characters(char *src, size_t *size)
   }
 }
 
-static void
-range_handle(const char *src, const size_t size, struct hgrep_range *range)
-{
-  memset(range->v,0,sizeof(struct hgrep_range));
-  size_t pos = 0;
-
-  for (int i = 0; i < 3; i++) {
-    while_is(isspace,src,pos,size);
-    if (i == 1)
-      range->flags |= R_RANGE; //is a range
-    if (src[pos] == '-') {
-      pos++;
-      while_is(isspace,src,pos,size);
-      range->flags |= 1<<i; //starts from the end
-      range->flags |= R_NOTEMPTY; //not empty
-    }
-    if (isdigit(src[pos])) {
-      range->v[i] = number_handle(src,&pos,size);
-      while_is(isspace,src,pos,size);
-      range->flags |= R_NOTEMPTY; //not empty
-    } else if (i == 1)
-      range->flags |= 1<<i;
-
-    if (pos >= size || src[pos] != ':')
-      break;
-    pos++;
-  }
-}
-
 uchar
 ranges_match(const uint matched, const struct hgrep_range *ranges, const size_t rangesl, const size_t last)
 {
@@ -199,56 +176,80 @@ ranges_match(const uint matched, const struct hgrep_range *ranges, const size_t 
   return 0;
 }
 
-hgrep_error *
-ranges_handle(const char *src, size_t *pos, const size_t size, struct hgrep_range **ranges, size_t *rangesl)
+static void
+range_comp(const char *src, const size_t size, struct hgrep_range *range)
 {
-  if (src[*pos] != '[')
+  memset(range->v,0,sizeof(struct hgrep_range));
+  size_t pos = 0;
+
+  for (int i = 0; i < 3; i++) {
+    while_is(isspace,src,pos,size);
+    if (i == 1)
+      range->flags |= R_RANGE; //is a range
+    if (pos < size && src[pos] == '-') {
+      pos++;
+      while_is(isspace,src,pos,size);
+      range->flags |= 1<<i; //starts from the end
+      range->flags |= R_NOTEMPTY; //not empty
+    }
+    if (pos < size && isdigit(src[pos])) {
+      range->v[i] = number_handle(src,&pos,size);
+      while_is(isspace,src,pos,size);
+      range->flags |= R_NOTEMPTY; //not empty
+    } else if (i == 1)
+      range->flags |= 1<<i;
+
+    if (pos >= size || src[pos] != ':')
+      break;
+    pos++;
+  }
+}
+
+static hgrep_error *
+ranges_comp_pre(const char *src, size_t *pos, const size_t size, flexarr *ranges)
+{
+  if (*pos >= size || src[*pos] != '[')
     return NULL;
   (*pos)++;
   size_t end;
-  struct hgrep_range range, *new_ptr;
-  *rangesl = 0;
-  *ranges = NULL;
-  size_t rangesl_buffer = 0;
+  struct hgrep_range range;
 
   while (*pos < size && src[*pos] != ']') {
     while_is(isspace,src,*pos,size);
     end = *pos;
     while (end < size && (isspace(src[end]) || isdigit(src[end]) || src[end] == ':' || src[end] == '-') && src[end] != ',')
       end++;
+    if (end >= size)
+      goto ERR;
     if (src[end] != ',' && src[end] != ']')
       return hgrep_set_error(1,"range: char %u(0x%02x): not a number",end,src[end]);
 
-    range_handle(src+(*pos),end-(*pos),&range);
-    if (range.flags&(R_RANGE|R_NOTEMPTY)) {
-      (*rangesl)++;
-      if (*rangesl > rangesl_buffer)
-        rangesl_buffer += RANGES_INC;
-      if ((new_ptr = realloc(*ranges,rangesl_buffer*sizeof(struct hgrep_range))) == NULL) {
-        if (*rangesl > 0)
-          free(*ranges);
-        *ranges = NULL;
-        *rangesl = 0;
-        return NULL;
-      }
-      *ranges = new_ptr;
-      memcpy(&(*ranges)[*rangesl-1],&range,sizeof(struct hgrep_range));
-    }
+    range_comp(src+(*pos),end-(*pos),&range);
+    if (range.flags&(R_RANGE|R_NOTEMPTY))
+      memcpy(flexarr_inc(ranges),&range,sizeof(struct hgrep_range));
     *pos = end+((src[end] == ',') ? 1 : 0);
   }
-  if (src[*pos] != ']')
+  if (*pos >= size || src[*pos] != ']') {
+    ERR: ;
     return hgrep_set_error(1,"range: char %d: unprecedented end of range",*pos);
+  }
   (*pos)++;
 
-  if (*rangesl != rangesl_buffer) {
-    if ((new_ptr = realloc(*ranges,(*rangesl)*sizeof(struct hgrep_range))) == NULL) {
-      if (*rangesl > 0)
-        free(*ranges);
-      *ranges = NULL;
-      *rangesl = 0;
-      return NULL;
-    }
-    *ranges = new_ptr;
+  return NULL;
+}
+
+hgrep_error *
+ranges_comp(const char *src, size_t *pos, const size_t size, struct hgrep_range **ranges, size_t *rangesl)
+{
+  hgrep_error *err;
+  flexarr *r = flexarr_init(sizeof(struct hgrep_range),RANGES_INC);
+
+  err = ranges_comp_pre(src,pos,size,r);
+  if (err) {
+    flexarr_free(r);
+    return err;
   }
+
+  flexarr_conv(r,(void**)ranges,rangesl);
   return NULL;
 }

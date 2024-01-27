@@ -21,6 +21,7 @@
 
 #define HGREP_EREGEX 0x1
 #define HGREP_ICASE 0x2
+#define HGREP_SAVE 0x8
 
 typedef struct {
   void *arg[4];
@@ -101,6 +102,11 @@ typedef struct {
   unsigned char istable;
 } hgrep_epattern;
 
+typedef struct {
+  hgrep_epattern *b;
+  size_t s;
+} hgrep_epatterns;
+
 #pragma pack(push, 1)
 typedef struct {
   size_t id;
@@ -121,15 +127,15 @@ typedef struct {
 
 hgrep hgrep_init(const char *ptr, const size_t size, FILE *output);
 hgrep_error *hgrep_fmatch(const char *ptr, const size_t size, FILE *output, const hgrep_pattern *pattern);
-hgrep_error *hgrep_efmatch(char *ptr, const size_t size, FILE *output, const hgrep_epattern *epatterns, const size_t epatternsl, int (*freeptr)(void *ptr, size_t size));
+hgrep_error *hgrep_efmatch(char *ptr, const size_t size, FILE *output, const hgrep_epatterns *epatterns, int (*freeptr)(void *ptr, size_t size));
 hgrep_error *hgrep_pcomp(const char *pattern, size_t size, hgrep_pattern *p, const unsigned char flags);
-hgrep_error *hgrep_epcomp(const char *src, size_t size, hgrep_epattern **epatterns, size_t *epatternsl, const unsigned char flags);
+hgrep_error *hgrep_epcomp(const char *src, size_t size, hgrep_epatterns *epatterns, const unsigned char flags);
 int hgrep_match(const hgrep_node *hgn, const hgrep_pattern *p);
-hgrep_error *hgrep_ematch(hgrep *hg, const hgrep_epattern *patterns, const size_t size, hgrep_compressed *source, size_t sourcel, hgrep_compressed *dest, size_t destl);
+hgrep_error *hgrep_ematch(hgrep *hg, const hgrep_epatterns *patterns, hgrep_compressed *source, size_t sourcel, hgrep_compressed *dest, size_t destl);
 void hgrep_printf(FILE *outfile, const char *format, const size_t formatl, const hgrep_node *hgn, const char *reference);
 void hgrep_print(FILE *outfile, const hgrep_node *hg);
 void hgrep_pfree(hgrep_pattern *p);
-void hgrep_epattern_free(hgrep_epattern *epatterns, const size_t epatternsl);
+void hgrep_epatterns_free(hgrep_epatterns *epatterns);
 void hgrep_free(hgrep *hg);
 hgrep_error *hgrep_set_error(const int code, const char *fmt, ...);
 

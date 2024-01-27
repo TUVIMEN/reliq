@@ -108,7 +108,8 @@ flexarr_conv(flexarr *f, void **v, size_t *s)
 void
 flexarr_free(flexarr *f)
 {
-  free(f->v);
+  if (f->v)
+    free(f->v);
   f->v = NULL;
   f->size = 0;
   f->asize = 0;

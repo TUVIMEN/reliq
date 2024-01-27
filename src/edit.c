@@ -115,13 +115,13 @@ format_get_func_args(hgrep_format_func *f, char *src, size_t *pos, size_t *size)
 
       if (len) {
         hgrep_str *str = f->arg[i] = malloc(sizeof(hgrep_str));
-        str->b = memcpy(malloc(len),src+start,len);
+        str->b = memdup(src+start,len);
         str->s = len;
         f->flags |= (FORMAT_ARG0_ISSTR<<i);
       }
     } else if (src[*pos] == '[') {
       hgrep_str *str = f->arg[i] = malloc(sizeof(hgrep_str));
-      err = ranges_handle(src,pos,*size,(struct hgrep_range**)&str->b,&str->s);
+      err = ranges_comp(src,pos,*size,(struct hgrep_range**)&str->b,&str->s);
       if (err)
         return err;
     }
@@ -167,7 +167,7 @@ format_get_funcs(flexarr *format, char *src, size_t *pos, size_t *size)
       char found = 0;
       size_t i = 0;
       for (; i < LENGTH(format_functions); i++) {
-        if (format_functions[i].name.s == fnamel && memcmp(format_functions[i].name.b,fname,fnamel) == 0) {
+        if (memcomp(format_functions[i].name.b,fname,format_functions[i].name.s,fnamel)) {
           found = 1;
           break;
         }
@@ -217,13 +217,13 @@ const struct { char *name; size_t namel; const char *arr; } tr_ctypes[] = {
 static char const *
 tr_match_ctypes(const char *name, const size_t namel) {
   for (size_t i = 0; i < LENGTH(tr_ctypes); i++)
-    if (namel == tr_ctypes[i].namel && memcmp(name,tr_ctypes[i].name,namel) == 0)
+    if (memcomp(tr_ctypes[i].name,name,tr_ctypes[i].namel,namel))
       return tr_ctypes[i].arr;
   return NULL;
 }
 
 static int
-strrange_next(const char *src, const size_t size, size_t *pos, int *rstart, int *rend, char const**array, int *repeat, int *hasended, hgrep_error **err)
+tr_strrange_next(const char *src, const size_t size, size_t *pos, int *rstart, int *rend, char const**array, int *repeat, int *hasended, hgrep_error **err)
 {
   *err = NULL;
   if (*repeat != -1 && *rstart != -1) {
@@ -310,7 +310,7 @@ strrange_next(const char *src, const size_t size, size_t *pos, int *rstart, int 
     *rstart = ch;
     *rend = second;
     *pos += 3;
-    return strrange_next(src,size,pos,rstart,rend,array,repeat,hasended,err);
+    return tr_strrange_next(src,size,pos,rstart,rend,array,repeat,hasended,err);
   } else {
     if (och != '\\' && *pos+5 < size && ch == '[' && src[(*pos)+1] == ':') {
       size_t j = *pos+2;
@@ -324,7 +324,7 @@ strrange_next(const char *src, const size_t size, size_t *pos, int *rstart, int 
         if (ctype) {
           *array = ctype;
           *rstart = 0;
-          return strrange_next(src,size,pos,rstart,rend,array,repeat,hasended,err);
+          return tr_strrange_next(src,size,pos,rstart,rend,array,repeat,hasended,err);
         } else {
           *err = hgrep_set_error(1,"tr: invalid character class '%.*s'",(int)classl,class);
           return -1;
@@ -348,7 +348,7 @@ strrange_next(const char *src, const size_t size, size_t *pos, int *rstart, int 
           *repeat = num;
           *rstart = cha;
           (*pos)++;
-          return strrange_next(src,size,pos,rstart,rend,array,repeat,hasended,err);
+          return tr_strrange_next(src,size,pos,rstart,rend,array,repeat,hasended,err);
         }
       }
       *rend = -1;
@@ -362,7 +362,7 @@ strrange_next(const char *src, const size_t size, size_t *pos, int *rstart, int 
 }
 
 static hgrep_error *
-strrange(const char *src1, const size_t size1, const char *src2, const size_t size2, uchar arr[256], uchar arr_enabled[256], uchar complement)
+tr_strrange(const char *src1, const size_t size1, const char *src2, const size_t size2, uchar arr[256], uchar arr_enabled[256], uchar complement)
 {
   size_t pos[2]={0};
   int rstart[2]={-1,-1},rend[2]={-1,-1},repeat[2]={-1,-1},hasended[2]={0};
@@ -370,14 +370,14 @@ strrange(const char *src1, const size_t size1, const char *src2, const size_t si
   hgrep_error *err;
 
   while (!hasended[0]) {
-    int r1 = strrange_next(src1,size1,&pos[0],&rstart[0],&rend[0],&array[0],&repeat[0],&hasended[0],&err);
+    int r1 = tr_strrange_next(src1,size1,&pos[0],&rstart[0],&rend[0],&array[0],&repeat[0],&hasended[0],&err);
     if (err)
       return err;
     if (r1 == -1 || hasended[0])
       break;
     int r2 = -1;
     if (src2 && !complement) {
-      r2 = strrange_next(src2,size2,&pos[1],&rstart[1],&rend[1],&array[1],&repeat[1],&hasended[1],&err);
+      r2 = tr_strrange_next(src2,size2,&pos[1],&rstart[1],&rend[1],&array[1],&repeat[1],&hasended[1],&err);
       if (err)
         return err;
       if (r2 == -1)
@@ -392,7 +392,7 @@ strrange(const char *src1, const size_t size1, const char *src2, const size_t si
     int last = 0;
     if (src2) {
       while (!hasended[1]) {
-        int r = strrange_next(src2,size2,&pos[1],&rstart[1],&rend[1],&array[1],&repeat[1],&hasended[1],&err);
+        int r = tr_strrange_next(src2,size2,&pos[1],&rstart[1],&rend[1],&array[1],&repeat[1],&hasended[1],&err);
         if (err)
           return err;
         if (r == -1 || hasended[1])
@@ -907,8 +907,8 @@ sed_script_comp_pre(const char *src, size_t size, int eflags, flexarr **script)
     if ((scriptv[i].name == 'b' || scriptv[i].name == 't' || scriptv[i].name == 'T') && scriptv[i].arg.s) {
       uchar found = 0;
       for (size_t j = 0; j < (*script)->size; j++) {
-        if (scriptv[j].name == ':' && scriptv[i].arg.s == scriptv[j].arg.s &&
-          memcmp(scriptv[i].arg.b,scriptv[j].arg.b,scriptv[j].arg.s) == 0) {
+        if (scriptv[j].name == ':' &&
+          strcomp(scriptv[i].arg,scriptv[j].arg)) {
           found = 1;
           break;
         }
@@ -1085,8 +1085,7 @@ sed_pre_edit(char *src, size_t size, FILE *output, char *buffers[3], flexarr *sc
             goto NEXT;
           }
           for (size_t i = 0; i < script->size; i++)
-            if (scriptv[i].name == ':' && scriptv[cycle].arg.s == scriptv[i].arg.s &&
-              memcmp(scriptv[cycle].arg.b,scriptv[i].arg.b,scriptv[i].arg.s) == 0)
+            if (scriptv[i].name == ':' && strcomp(scriptv[cycle].arg,scriptv[i].arg))
               cycle = i;
           break;
         case 'y': {
@@ -1220,7 +1219,7 @@ sed_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigne
   }
   if (arg[2] && flag&FORMAT_ARG3_ISSTR && ((hgrep_str*)arg[2])->b) {
     hgrep_str *str = (hgrep_str*)arg[2];
-    err = strrange(str->b,str->s,NULL,0,linedelim,NULL,0);
+    err = tr_strrange(str->b,str->s,NULL,0,linedelim,NULL,0);
     if (err)
       return err;
   } else
@@ -1263,7 +1262,7 @@ cut_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigne
   }
   if (arg[1] && flag&FORMAT_ARG1_ISSTR && ((hgrep_str*)arg[1])->b && ((hgrep_str*)arg[1])->s) {
     hgrep_str *str = (hgrep_str*)arg[1];
-    err = strrange(str->b,str->s,NULL,0,delim,NULL,0);
+    err = tr_strrange(str->b,str->s,NULL,0,delim,NULL,0);
     if (err)
       return err;
     delimited = 1;
@@ -1281,7 +1280,7 @@ cut_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigne
   }
   if (arg[3] && flag&FORMAT_ARG3_ISSTR && ((hgrep_str*)arg[3])->b) {
     hgrep_str *str = (hgrep_str*)arg[3];
-    err = strrange(str->b,str->s,NULL,0,linedelim,NULL,0);
+    err = tr_strrange(str->b,str->s,NULL,0,linedelim,NULL,0);
     if (err)
       return err;
   } else
@@ -1386,7 +1385,7 @@ tr_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned
   size_t bufcurrent = 0;
 
   if (string[0] && !string[1]) {
-    err = strrange(string[0]->b,string[0]->s,NULL,0,array,NULL,complement);
+    err = tr_strrange(string[0]->b,string[0]->s,NULL,0,array,NULL,complement);
     if (err)
       return err;
     for (size_t i = 0; i < size; i++) {
@@ -1406,7 +1405,7 @@ tr_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned
   }
 
   uchar array_enabled[256] = {0};
-  err = strrange(string[0]->b,string[0]->s,string[1]->b,string[1]->s,array,array_enabled,complement);
+  err = tr_strrange(string[0]->b,string[0]->s,string[1]->b,string[1]->s,array,array_enabled,complement);
   if (err)
     return err;
 
@@ -1441,7 +1440,7 @@ trim_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsign
   uchar delim[256] = {0};
   if (arg[0] && flag&FORMAT_ARG0_ISSTR && ((hgrep_str*)arg[0])->b) {
     hgrep_str *str = (hgrep_str*)arg[0];
-    err = strrange(str->b,str->s,NULL,0,delim,NULL,0);
+    err = tr_strrange(str->b,str->s,NULL,0,delim,NULL,0);
     if (err)
       return err;
   }

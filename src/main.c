@@ -53,8 +53,7 @@ typedef unsigned int uint;
 typedef unsigned long int ulong;
 
 char *argv0;
-hgrep_epattern *patterns = NULL;
-size_t patternsl = 0;
+hgrep_epatterns patterns = {NULL,0};
 
 uint settings = 0;
 uchar hflags = 0;
@@ -122,12 +121,12 @@ patterns_exec(char *f, size_t s, const uchar inpipe)
     return;
 
   if (settings&F_FAST) {
-    handle_hgrep_error(hgrep_efmatch(f,s,outfile,patterns,patternsl,inpipe ? unalloc_free : munmap));
+    handle_hgrep_error(hgrep_efmatch(f,s,outfile,&patterns,inpipe ? unalloc_free : munmap));
     return;
   }
 
   hgrep hg = hgrep_init(f,s,outfile);
-  handle_hgrep_error(hgrep_ematch(&hg,patterns,patternsl,NULL,0,NULL,0));
+  handle_hgrep_error(hgrep_ematch(&hg,&patterns,NULL,0,NULL,0));
   hgrep_free(&hg);
 }
 
@@ -219,7 +218,7 @@ main(int argc, char **argv)
         hflags |= HGREP_ICASE;
         break;
       case 'l':
-        handle_hgrep_error(hgrep_epcomp("| \"%n%A - %c/%l/%s/%p\\n\"",24,&patterns,&patternsl,hflags));
+        handle_hgrep_error(hgrep_epcomp("| \"%n%A - %c/%l/%s/%p\\n\"",24,&patterns,hflags));
         break;
       case 'o':
         outfile = fopen(optarg,"w");
@@ -234,7 +233,7 @@ main(int argc, char **argv)
         char *p;
         pipe_to_str(fd,&p,&s);
         close(fd);
-        handle_hgrep_error(hgrep_epcomp(p,s,&patterns,&patternsl,hflags));
+        handle_hgrep_error(hgrep_epcomp(p,s,&patterns,hflags));
         free(p);
         }
         break;
@@ -248,11 +247,11 @@ main(int argc, char **argv)
     }
   }
 
-  if (!patterns && optind < argc) {
-    handle_hgrep_error(hgrep_epcomp(argv[optind],strlen(argv[optind]),&patterns,&patternsl,hflags));
+  if (!patterns.b && optind < argc) {
+    handle_hgrep_error(hgrep_epcomp(argv[optind],strlen(argv[optind]),&patterns,hflags));
     optind++;
   }
-  if (!patterns)
+  if (!patterns.b)
       return -1;
   int g = optind;
   for (; g < argc; g++)
@@ -261,7 +260,7 @@ main(int argc, char **argv)
     file_handle(NULL);
 
   fclose(outfile);
-  hgrep_epattern_free(patterns,patternsl);
+  hgrep_epatterns_free(&patterns);
 
   return 0;
 }

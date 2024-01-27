@@ -28,6 +28,10 @@
 #define while_is(w,x,y,z) while ((y) < (z) && w((x)[(y)])) {(y)++;}
 #define LENGTH(x) (sizeof(x)/(sizeof(*x)))
 
+#define memcomp(w,x,y,z) ((y) == (z) && memcmp(w,x,y) == 0)
+#define strcomp(x,y) memcomp(x.b,y.b,x.s,y.s)
+
+void *memdup(void const *src, size_t size);
 char special_character(const char c);
 char *delchar(char *src, const size_t pos, size_t *size);
 unsigned int get_dec(const char *src, size_t size, size_t *traversed);
@@ -35,6 +39,6 @@ unsigned int number_handle(const char *src, size_t *pos, const size_t size);
 hgrep_error *get_quoted(char *src, size_t *i, size_t *size, const char delim, size_t *start, size_t *len);
 void conv_special_characters(char *src, size_t *size);
 unsigned char ranges_match(const uint matched, const struct hgrep_range *ranges, const size_t rangesl, const size_t last);
-hgrep_error *ranges_handle(const char *src, size_t *pos, const size_t size, struct hgrep_range **ranges, size_t *rangesl);
+hgrep_error *ranges_comp(const char *src, size_t *pos, const size_t size, struct hgrep_range **ranges, size_t *rangesl);
 
 #endif
