@@ -1,6 +1,6 @@
 VERSION = 2.1
 CC = gcc -std=c99
-CFLAGS = -O3 -march=native -Wall -Wextra -DVERSION=\"${VERSION}\"
+CFLAGS = -O3 -march=native -Wall -Wextra -Wno-implicit-fallthrough -DVERSION=\"${VERSION}\"
 LDFLAGS =
 TARGET := hgrep
 
@@ -27,8 +27,14 @@ MANDIR = $(DESTDIR)${MANPREFIX}/man1
 LD_LIBRARY_PATH ?= ${PREFIX}/lib
 INCLUDE_PATH ?= ${PREFIX}/include
 
-SRC = src/main.c src/flexarr.c src/hgrep.c src/ctype.c
-LIB_SRC = src/flexarr.c src/hgrep.c src/ctype.c
+SRC = src/main.c src/flexarr.c src/hgrep.c src/ctype.c src/utils.c
+LIB_SRC = src/flexarr.c src/hgrep.c src/ctype.c src/utils.c
+
+ifeq ($(strip ${O_EDITING}),1)
+	SRC += src/edit.c
+	LIB_SRC += src/edit.c
+endif
+
 ifeq ($(strip ${O_LIB}),1)
 	SRC = ${LIB_SRC}
 	LDFLAGS = -shared

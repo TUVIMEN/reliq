@@ -1,5 +1,5 @@
 /*
-    hgrep - simple html searching tool
+    hgrep - html searching tool
     Copyright (C) 2020-2024 Dominik Stanisław Suchora <suchora.dominik7@gmail.com>
 
     This program is free software: you can redistribute it and/or modify

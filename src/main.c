@@ -1,5 +1,5 @@
 /*
-    hgrep - simple html searching tool
+    hgrep - html searching tool
     Copyright (C) 2020-2024 Dominik Stanisław Suchora <suchora.dominik7@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
@@ -29,7 +29,6 @@
 #include <string.h>
 #include <stdarg.h>
 #include <sys/mman.h>
-#include <limits.h>
 #include <regex.h>
 #include <ftw.h>
 #include <err.h>
@@ -52,9 +51,6 @@ typedef unsigned char uchar;
 typedef unsigned short ushort;
 typedef unsigned int uint;
 typedef unsigned long int ulong;
-
-#define while_is(w,x,y,z) while ((y) < (z) && w((x)[(y)])) {(y)++;}
-#define LENGHT(x) (sizeof(x)/(sizeof(*x)))
 
 char *argv0;
 hgrep_epattern *patterns = NULL;
@@ -112,6 +108,13 @@ usage()
       "When FILE isn't specified, FILE will become standard input.",argv0,argv0,argv0);
 }
 
+static int
+unalloc_free(void *ptr, size_t size)
+{
+  free(ptr);
+  return 0;
+}
+
 static void
 patterns_exec(char *f, size_t s, const uchar inpipe)
 {
@@ -119,7 +122,7 @@ patterns_exec(char *f, size_t s, const uchar inpipe)
     return;
 
   if (settings&F_FAST) {
-    handle_hgrep_error(hgrep_efmatch(f,s,outfile,patterns,patternsl,inpipe ? HGREP_UNALLOC_FREE : HGREP_UNALLOC_MUNMAP));
+    handle_hgrep_error(hgrep_efmatch(f,s,outfile,patterns,patternsl,inpipe ? unalloc_free : munmap));
     return;
   }
 
@@ -218,11 +221,10 @@ main(int argc, char **argv)
       case 'l':
         handle_hgrep_error(hgrep_epcomp("| \"%n%A - %c/%l/%s/%p\\n\"",24,&patterns,&patternsl,hflags));
         break;
-      case 'o': {
+      case 'o':
         outfile = fopen(optarg,"w");
         if (outfile == NULL)
           err(1,"%s",optarg);
-        }
         break;
       case 'f': {
         int fd = open(optarg,O_RDONLY);
@@ -233,7 +235,6 @@ main(int argc, char **argv)
         pipe_to_str(fd,&p,&s);
         close(fd);
         handle_hgrep_error(hgrep_epcomp(p,s,&patterns,&patternsl,hflags));
-        //hgrep_epattern_print(patterns,0);
         free(p);
         }
         break;
@@ -249,7 +250,6 @@ main(int argc, char **argv)
 
   if (!patterns && optind < argc) {
     handle_hgrep_error(hgrep_epcomp(argv[optind],strlen(argv[optind]),&patterns,&patternsl,hflags));
-    //hgrep_epattern_print(patterns,0);
     optind++;
   }
   if (!patterns)

@@ -1,5 +1,5 @@
 /*
-    hgrep - simple html searching tool
+    hgrep - html searching tool
     Copyright (C) 2020-2024 Dominik Stanisław Suchora <suchora.dominik7@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
@@ -21,6 +21,16 @@
 
 #define HGREP_EREGEX 0x1
 #define HGREP_ICASE 0x2
+
+typedef struct {
+  void *arg[4];
+  unsigned char flags;
+} hgrep_format_func;
+
+typedef struct {
+  char *b;
+  unsigned char s;
+} hgrep_str8;
 
 typedef struct {
   char *b;
@@ -63,13 +73,6 @@ struct hgrep_pattrib {
   size_t position_rl;
   unsigned char flags;
 };
-
-#ifdef HGREP_EDITING
-typedef struct {
-  void *arg[4];
-  unsigned char flags;
-} hgrep_format_func;
-#endif
 
 typedef struct {
   regex_t tag;
@@ -116,15 +119,9 @@ typedef struct {
   unsigned char flags;
 } hgrep;
 
-enum hgrep_UnallocMethod {
-    HGREP_UNALLOC_NO = 0, //don't unalloc
-    HGREP_UNALLOC_FREE, //unalloc with free()
-    HGREP_UNALLOC_MUNMAP //unalloc with munmap()
-};
-
 hgrep hgrep_init(const char *ptr, const size_t size, FILE *output);
 hgrep_error *hgrep_fmatch(const char *ptr, const size_t size, FILE *output, const hgrep_pattern *pattern);
-hgrep_error *hgrep_efmatch(char *ptr, const size_t size, FILE *output, const hgrep_epattern *epatterns, const size_t epatternsl, const enum hgrep_UnallocMethod unalloc_method);
+hgrep_error *hgrep_efmatch(char *ptr, const size_t size, FILE *output, const hgrep_epattern *epatterns, const size_t epatternsl, int (*freeptr)(void *ptr, size_t size));
 hgrep_error *hgrep_pcomp(const char *pattern, size_t size, hgrep_pattern *p, const unsigned char flags);
 hgrep_error *hgrep_epcomp(const char *src, size_t size, hgrep_epattern **epatterns, size_t *epatternsl, const unsigned char flags);
 int hgrep_match(const hgrep_node *hgn, const hgrep_pattern *p);
@@ -134,5 +131,6 @@ void hgrep_print(FILE *outfile, const hgrep_node *hg);
 void hgrep_pfree(hgrep_pattern *p);
 void hgrep_epattern_free(hgrep_epattern *epatterns, const size_t epatternsl);
 void hgrep_free(hgrep *hg);
+hgrep_error *hgrep_set_error(const int code, const char *fmt, ...);
 
 #endif
