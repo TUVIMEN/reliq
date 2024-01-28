@@ -21,7 +21,7 @@
 
 hgrep_error *node_output(hgrep_node *hgn, 
         #ifdef HGREP_EDITING
-        const hgrep_format_func * format
+        const hgrep_format_func *format
         #else
         const char *format
         #endif

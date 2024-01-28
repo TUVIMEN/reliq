@@ -55,7 +55,7 @@ const hgrep_str8 autoclosing_s[] = { //tags that don't need to be closed
 hgrep_error *
 node_output(hgrep_node *hgn, 
         #ifdef HGREP_EDITING
-        const hgrep_format_func * format
+        const hgrep_format_func *format
         #else
         const char *format
         #endif
@@ -227,6 +227,7 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
   size_t index = nodes->size-1;
   flexarr *a = (flexarr*)hg->attrib_buffer;
   size_t attrib_start = a->size;
+  uchar foundend = 1;
 
   hgn->all.b = f+*i;
   hgn->all.s = 0;
@@ -301,7 +302,7 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
         (*i)++;
         while_is(isspace,f,*i,s);
 
-        if (memcmp(hgn->tag.b,f+*i,hgn->tag.s) == 0) {
+        if (*i+hgn->tag.s < s && memcmp(hgn->tag.b,f+*i,hgn->tag.s) == 0) {
           hgn->insides.s = tagend-hgn->insides.s;
           *i += hgn->tag.s;
           char *ending = memchr(f+*i,'>',s-*i);
@@ -315,29 +316,32 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
           goto END;
         }
 
-        if (index > 0) {
-          hgrep_cstr endname;
-          hgrep_node *nodesv = (hgrep_node*)nodes->v;
-          name_handle(f,i,s,&endname);
-          if (!endname.s) {
-            (*i)++;
+        if (!index) {
+          foundend = 0;
+          continue;
+        }
+
+        hgrep_cstr endname;
+        hgrep_node *nodesv = (hgrep_node*)nodes->v;
+        name_handle(f,i,s,&endname);
+        if (!endname.s) {
+          (*i)++;
+          continue;
+        }
+        for (size_t j = index-1;; j--) {
+          if (nodesv[j].all.s || nodesv[j].lvl >= lvl) {
+            if (!j)
+              break;
             continue;
           }
-          for (size_t j = index-1;; j--) {
-            if (nodesv[j].all.s || nodesv[j].lvl >= lvl) {
-              if (!j)
-                break;
-              continue;
-            }
-            if (strcomp(nodesv[j].tag,endname)) {
-              *i = tagend;
-              hgn->insides.s = *i-hgn->insides.s;
-              ret = (ret&0xffffffff)+((ulong)(lvl-nodesv[j].lvl-1)<<32);
-              goto END;
-            }
-            if (!j || !nodesv[j].lvl)
-              break;
+          if (strcomp(nodesv[j].tag,endname)) {
+            *i = tagend;
+            hgn->insides.s = *i-hgn->insides.s;
+            ret = (ret&0xffffffff)+((ulong)(lvl-nodesv[j].lvl-1)<<32);
+            goto END;
           }
+          if (!j || !nodesv[j].lvl)
+            break;
         }
       } else if (!script) {
         if (f[*i] == '!') {
@@ -384,9 +388,10 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
 
   if (*i >= s) {
     hgn->all.s = s-(hgn->all.b-f)-1;
-  } else if (!hgn->all.s) {
+  } else if (!hgn->all.s)
     hgn->all.s = f+*i-hgn->all.b;
-  }
+  if (!foundend)
+    hgn->insides.s = hgn->all.s;
 
   size_t size = a->size-attrib_start;
   hgn->attribl = size;

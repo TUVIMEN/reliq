@@ -654,14 +654,13 @@ hgrep_epcomp_pre(const char *csrc, size_t *pos, size_t s, const uchar flags, hgr
     j = i;
 
     while (i < s) {
-      if (src[i] == '\\' && src[i+1] == '\\') {
+      if (i+1 < s && src[i] == '\\' && src[i+1] == '\\') {
         i += 2;
         continue;
       }
-      if (src[i] == '\\' && (src[i+1] == ',' || src[i+1] == ';' || src[i+1] == '"' || src[i+1] == '\'' || src[i+1] == '{' || src[i+1] == '}')) {
+      if (i+1 < s && src[i] == '\\' && (src[i+1] == ',' || src[i+1] == ';' || src[i+1] == '"' || src[i+1] == '\'' || src[i+1] == '{' || src[i+1] == '}')) {
         delchar(src,i++,&s);
         patternl = i-j;
-        continue;
       }
       if (src[i] == '"' || src[i] == '\'') {
         char tf = src[i];
@@ -671,15 +670,19 @@ hgrep_epcomp_pre(const char *csrc, size_t *pos, size_t s, const uchar flags, hgr
             i++;
           i++;
         }
-        if (src[i] == tf)
+        if (i < s && src[i] == tf) {
           i++;
+        } else
+          goto PASS;
       }
       if (src[i] == '[') {
         i++;
         while (i < s && src[i] != ']')
           i++;
-        if (src[i] == ']')
+        if (i < s && src[i] == ']') {
           i++;
+        } else
+          goto PASS;
       }
 
       if (src[i] == ',') {
@@ -707,6 +710,7 @@ hgrep_epcomp_pre(const char *csrc, size_t *pos, size_t s, const uchar flags, hgr
       patternl = i-j;
     }
 
+    PASS: ;
     if (j+patternl > s)
       patternl = s-j;
 
