@@ -36,6 +36,7 @@ hgrep_error *trim_edit(char *src, size_t size, FILE *output, const void *arg[4],
 hgrep_error *tr_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag);
 hgrep_error *cut_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag);
 hgrep_error *sed_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag);
+hgrep_error *line_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag);
 
 extern const struct hgrep_format_function format_functions[];
 

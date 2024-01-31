@@ -47,6 +47,7 @@ const struct hgrep_format_function format_functions[] = {
     {{"tr",2},tr_edit},
     {{"cut",3},cut_edit},
     {{"sed",3},sed_edit},
+    {{"line",4},line_edit},
     {{"match",5},NULL},
     {{"error",5},NULL},
 };
@@ -1194,6 +1195,56 @@ sed_pre_edit(char *src, size_t size, FILE *output, char *buffers[3], flexarr *sc
     fwrite(patternsp,1,patternspl,output);
     if (hasdelim)
       fputc(prevdelim,output);
+  }
+
+  return NULL;
+}
+
+hgrep_error *
+line_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
+{
+  hgrep_error *err;
+  uchar delim[256] = {0};
+
+  struct hgrep_range *list = NULL;
+  size_t listl;
+
+  if (arg[0] && !(flag&FORMAT_ARG0_ISSTR)) {
+    list = (struct hgrep_range*)((hgrep_str*)arg[0])->b;
+    listl = ((hgrep_str*)arg[0])->s;
+  }
+
+  if (arg[1] && flag&FORMAT_ARG1_ISSTR && ((hgrep_str*)arg[1])->b) {
+    hgrep_str *str = (hgrep_str*)arg[1];
+    err = tr_strrange(str->b,str->s,NULL,0,delim,NULL,0);
+    if (err)
+      return err;
+  } else
+    delim['\n'] = 1;
+
+  if (!list)
+    return hgrep_set_error(0,"line: missing arguments");
+
+  size_t linecount=0,currentline=0;
+  size_t line = 0,startline;
+
+  while (line < size) {
+    while(line < size && !delim[(uchar)src[line]])
+      line++;
+    if (line < size && delim[(uchar)src[line]])
+      line++;
+    linecount++;
+  }
+  line = 0;
+  while (line < size) {
+    startline = line;
+    while(line < size && !delim[(uchar)src[line]])
+      line++;
+    if (line < size && delim[(uchar)src[line]])
+      line++;
+    currentline++;
+    if (ranges_match(currentline,list,listl,linecount))
+      fwrite(src+startline,1,line-startline,output);
   }
 
   return NULL;

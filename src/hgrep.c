@@ -765,7 +765,7 @@ hgrep_epcomp_pre(const char *csrc, size_t *pos, size_t s, const uchar flags, hgr
       if (exprf.b) {
         size_t g=0,t=exprf.s;
         *err = format_comp(exprf.b,&g,&t,&epattern.exprf,&epattern.exprfl);
-        s -= nodef.s-t;
+        s -= exprf.s-t;
         if (*err)
           goto EXIT1;
       }
