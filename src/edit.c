@@ -433,6 +433,7 @@ tr_strrange(const char *src1, const size_t size1, const char *src2, const size_t
 struct sed_address {
   unsigned int num[2];
   regex_t reg[2];
+  unsigned int fline;
   ushort flags;
 };
 
@@ -488,7 +489,7 @@ sed_address_comp_reverse(const char *src, size_t *pos, size_t size, struct sed_a
 static hgrep_error *
 sed_address_comp_pre(const char *src, size_t *pos, size_t size, struct sed_address *address, int eflags)
 {
-  hgrep_error *err;
+  hgrep_error *err = NULL;
   address->flags = 0;
   while_is(isspace,src,*pos,size);
   if (*pos >= size)
@@ -504,15 +505,12 @@ sed_address_comp_pre(const char *src, size_t *pos, size_t size, struct sed_addre
   } else if (src[*pos] == '$') {
     address->flags |= SED_A_END;
     (*pos)++;
-    return NULL;
   }
 
   while_is(isspace,src,*pos,size);
 
-  if (*pos >= size)
+  if (*pos >= size || src[*pos] == '!')
     return NULL;
-  if (src[*pos] == '!')
-    return sed_address_comp_reverse(src,pos,size,address);
   if (src[*pos] == '~') {
     if (address->flags&SED_A_REG1)
       return NULL;
@@ -520,7 +518,7 @@ sed_address_comp_pre(const char *src, size_t *pos, size_t size, struct sed_addre
     while_is(isspace,src,*pos,size);
     sed_address_comp_number(src,pos,size,&address->num[1]);
     address->flags |= SED_A_NUM2|SED_A_STEP;
-    return sed_address_comp_reverse(src,pos,size,address);
+    return NULL;
   }
 
   uchar onlynumber = 0;
@@ -537,10 +535,8 @@ sed_address_comp_pre(const char *src, size_t *pos, size_t size, struct sed_addre
     while_is(isspace,src,*pos,size);
   } else  if (src[*pos] == '\\' || src[*pos] == '/') {
     err = sed_address_comp_regex(src,pos,size,&address->reg[1],eflags);
-    if (err)
-      return err;
     address->flags |= SED_A_REG2;
-    return sed_address_comp_reverse(src,pos,size,address);
+    return err;
   }
 
   if (*pos >= size)
@@ -556,7 +552,7 @@ sed_address_comp_pre(const char *src, size_t *pos, size_t size, struct sed_addre
     (*pos)++;
   }
 
-   return sed_address_comp_reverse(src,pos,size,address);
+  return NULL;
 }
 
 static void
@@ -574,6 +570,7 @@ sed_address_comp(const char *src, size_t *pos, size_t size, struct sed_address *
   hgrep_error *err = sed_address_comp_pre(src,pos,size,address,eflags|REG_NOSUB);
   if (err)
     sed_address_free(address);
+  err = sed_address_comp_reverse(src,pos,size,address);
   return err;
 }
 
@@ -585,10 +582,10 @@ sed_address_exec(const char *src, size_t size, uint line, uchar islast, struct s
   regmatch_t pmatch;
   uchar rev=0,range=0,first=0;
   ushort flags = address->flags;
+
   if (flags&SED_A_REVERSE)
     rev = 1;
-
-  if (flags&SED_A_REG2 || address->flags&SED_A_NUM2)
+  if (flags&(SED_A_REG2|SED_A_NUM2) || (flags&(SED_A_NUM1|SED_A_REG1) && flags&SED_A_END))
     range = 1;
 
   if (flags&SED_A_STEP)
@@ -598,7 +595,7 @@ sed_address_exec(const char *src, size_t size, uint line, uchar islast, struct s
     return (islast > 0)^rev;
 
   if (flags&SED_A_NUM1) {
-    first = (range ? (address->num[0] >= line) : (address->num[0] == line));
+    first = (range ? (line >= address->num[0]) : (address->num[0] == line));
   } else if (flags&SED_A_REG1) {
     if (range && flags&SED_A_FOUND1) {
       first = 1;
@@ -606,26 +603,55 @@ sed_address_exec(const char *src, size_t size, uint line, uchar islast, struct s
       pmatch.rm_so = 0;
       pmatch.rm_eo = (int)size;
       first = (regexec(&address->reg[0],src,1,&pmatch,REG_STARTEND) == 0);
-      address->flags |= SED_A_FOUND1;
+      if (first) {
+        address->flags |= SED_A_FOUND1;
+        address->flags &= ~SED_A_FOUND2;
+        flags = address->flags;
+        address->fline = line;
+      }
     }
   }
 
   if (!range || (!first && !rev))
     return first^rev;
 
-  if (flags&SED_A_ADD)
-    return (first&(line <= address->num[0]+address->num[1]))^rev;
-  if (flags&SED_A_MULTIPLE)
-    return (first&((line%address->num[1]) == 0))^rev;
-  if (flags^SED_A_END)
+  if (flags&SED_A_ADD) {
+    if (flags&SED_A_NUM1)
+      return (line <= address->num[0]+address->num[1])^rev;
+
+    if (!(flags&SED_A_FOUND1))
+      return rev;
+    uchar r = (line <= address->fline+address->num[1]);
+    if (!r)
+      address->flags &= ~SED_A_FOUND1;
+    return r^rev;
+  }
+  if (flags&SED_A_MULTIPLE) {
+    size_t prevline = address->num[0];
+    if (flags&SED_A_FOUND1)
+      prevline = address->fline;
+    if (line == prevline)
+      return !rev;
+    if (flags&SED_A_FOUND2)
+      return rev;
+    if ((line%address->num[1]) == 0) {
+      address->flags |= SED_A_FOUND2;
+      address->flags &= ~SED_A_FOUND1;
+    }
+    return !rev;
+  }
+  if (flags&SED_A_END)
     return first^rev;
-  if (flags^SED_A_NUM2)
+  if (flags&SED_A_NUM2)
     return (first&(line <= address->num[1]))^rev;
-  if (flags^SED_A_REG2) {
-    if (line == 1 && !(flags^SED_A_CHECKFIRST))
+  if (flags&flags&SED_A_REG2) {
+    if (flags&SED_A_REG1 && !(flags&SED_A_FOUND1))
+      return rev;
+    if (line == 1 && !(flags&SED_A_CHECKFIRST))
       return first^rev;
-    if (flags^SED_A_FOUND2) {
-      return 0^rev;
+    if (flags&SED_A_FOUND2) {
+      address->flags &= ~SED_A_FOUND1;
+      return rev;
     } else {
       pmatch.rm_so = 0;
       pmatch.rm_eo = (int)size;
@@ -741,7 +767,7 @@ sed_script_comp_pre(const char *src, size_t size, int eflags, flexarr **script)
       return err;
     while_is(isspace,src,pos,size);
     if (pos >= size)
-      break;
+      return hgrep_set_error(1,"sed: char %u: missing command");
     command = sed_get_command(src[pos]);
     if (!command)
       return hgrep_set_error(1,"sed: char %u: unknown command: `%c'",pos,src[pos]);
@@ -1201,6 +1227,55 @@ sed_pre_edit(char *src, size_t size, FILE *output, char *buffers[3], flexarr *sc
 }
 
 hgrep_error *
+sed_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
+{
+  hgrep_error *err;
+  uchar zeroterminated=0,extendedregex=0,silent=0;
+  flexarr *script = NULL;
+
+  uchar linedelim[256] = {0};
+
+  if (arg[1] && flag&FORMAT_ARG1_ISSTR && ((hgrep_str*)arg[1])->b && ((hgrep_str*)arg[1])->s) {
+    hgrep_str *str = (hgrep_str*)arg[1];
+    for (size_t i = 0; i < str->s; i++) {
+      if (str->b[i] == 'E') {
+        extendedregex = 1;
+      } else if (str->b[i] == 'z') {
+        zeroterminated = 1;
+      } else if (str->b[i] == 'n')
+        silent = 1;
+    }
+  }
+  if (arg[2] && flag&FORMAT_ARG3_ISSTR && ((hgrep_str*)arg[2])->b) {
+    hgrep_str *str = (hgrep_str*)arg[2];
+    err = tr_strrange(str->b,str->s,NULL,0,linedelim,NULL,0);
+    if (err)
+      return err;
+  } else
+    linedelim[(zeroterminated) ? '\0' : '\n'] = 1;
+
+  if (arg[0] && flag&FORMAT_ARG0_ISSTR && ((hgrep_str*)arg[0])->b && ((hgrep_str*)arg[0])->s) {
+    hgrep_str *str = (hgrep_str*)arg[0];
+    err = sed_script_comp(str->b,str->s,extendedregex ? REG_EXTENDED : 0,&script);
+    if (err)
+      return err;
+  }
+  if (script == NULL)
+    return hgrep_set_error(0,"sed: missing script argument");
+
+  char *buffers[3];
+  for (size_t i = 0; i < 3; i++)
+    buffers[i] = malloc(MAX_PATTERN_SPACE);
+
+  err = sed_pre_edit(src,size,output,buffers,script,linedelim,silent);
+
+  for (size_t i = 0; i < 3; i++)
+    free(buffers[i]);
+  sed_script_free(script);
+  return err;
+}
+
+hgrep_error *
 line_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
 {
   hgrep_error *err;
@@ -1246,57 +1321,7 @@ line_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsign
     if (ranges_match(currentline,list,listl,linecount))
       fwrite(src+startline,1,line-startline,output);
   }
-
   return NULL;
-}
-
-hgrep_error *
-sed_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
-{
-  hgrep_error *err;
-  uchar zeroterminated=0,extendedregex=0,silent=0;
-  flexarr *script = NULL;
-
-  uchar linedelim[256] = {0};
-
-  if (arg[1] && flag&FORMAT_ARG1_ISSTR && ((hgrep_str*)arg[1])->b && ((hgrep_str*)arg[1])->s) {
-    hgrep_str *str = (hgrep_str*)arg[1];
-    for (size_t i = 0; i < str->s; i++) {
-        if (str->b[i] == 'E') {
-          extendedregex = 1;
-        } else if (str->b[i] == 'z') {
-          zeroterminated = 1;
-        } else if (str->b[i] == 'n')
-          silent = 1;
-    }
-  }
-  if (arg[2] && flag&FORMAT_ARG3_ISSTR && ((hgrep_str*)arg[2])->b) {
-    hgrep_str *str = (hgrep_str*)arg[2];
-    err = tr_strrange(str->b,str->s,NULL,0,linedelim,NULL,0);
-    if (err)
-      return err;
-  } else
-    linedelim[(zeroterminated) ? '\0' : '\n'] = 1;
-
-  if (arg[0] && flag&FORMAT_ARG0_ISSTR && ((hgrep_str*)arg[0])->b && ((hgrep_str*)arg[0])->s) {
-    hgrep_str *str = (hgrep_str*)arg[0];
-    err = sed_script_comp(str->b,str->s,extendedregex ? REG_EXTENDED : 0,&script);
-    if (err)
-      return err;
-  }
-  if (script == NULL)
-    return hgrep_set_error(0,"sed: missing script argument");
-  
-  char *buffers[3];
-  for (size_t i = 0; i < 3; i++)
-    buffers[i] = malloc(MAX_PATTERN_SPACE);
-
-  err = sed_pre_edit(src,size,output,buffers,script,linedelim,silent);
-
-  for (size_t i = 0; i < 3; i++)
-    free(buffers[i]);
-  sed_script_free(script);
-  return err;
 }
 
 hgrep_error *
