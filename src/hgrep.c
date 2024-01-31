@@ -600,6 +600,7 @@ hgrep_epattern_free(hgrep_epattern *p)
 {
   #ifdef HGREP_EDITING
   format_free(p->nodef,p->nodefl);
+  format_free(p->exprf,p->exprfl);
   #else
   if (p->nodef)
     free(p->nodef);

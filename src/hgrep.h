@@ -96,7 +96,6 @@ typedef struct {
   #ifdef HGREP_EDITING
   hgrep_format_func *nodef;
   hgrep_format_func *exprf;
-  hgrep_format_func *passedf;
   #else
   char *nodef;
   #endif
