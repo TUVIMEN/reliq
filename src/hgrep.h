@@ -78,12 +78,6 @@ struct hgrep_pattrib {
 typedef struct {
   regex_t tag;
   regex_t insides;
-  #ifdef HGREP_EDITING
-  hgrep_format_func *format;
-  #else
-  char *format;
-  #endif
-  size_t formatl;
   struct hgrep_pattrib *attrib;
   size_t attribl;
   struct hgrep_range *position_r;
@@ -99,6 +93,18 @@ typedef struct {
 
 typedef struct {
   void *p;
+  #ifdef HGREP_EDITING
+  hgrep_format_func *nodef;
+  hgrep_format_func *exprf;
+  hgrep_format_func *passedf;
+  #else
+  char *nodef;
+  #endif
+  size_t nodefl;
+  #ifdef HGREP_EDITING
+  size_t exprfl;
+  size_t passedfl;
+  #endif
   unsigned char istable;
 } hgrep_epattern;
 
@@ -119,6 +125,12 @@ typedef struct {
   FILE *output;
   hgrep_node *nodes;
   hgrep_pattern const *pattern;
+  #ifdef HGREP_EDITING
+  hgrep_format_func *nodef;
+  #else
+  char *nodef;
+  #endif
+  size_t nodefl;
   void *attrib_buffer;
   size_t size;
   size_t nodesl;
@@ -126,7 +138,13 @@ typedef struct {
 } hgrep;
 
 hgrep hgrep_init(const char *ptr, const size_t size, FILE *output);
-hgrep_error *hgrep_fmatch(const char *ptr, const size_t size, FILE *output, const hgrep_pattern *pattern);
+hgrep_error *hgrep_fmatch(const char *ptr, const size_t size, FILE *output, const hgrep_pattern *pattern,
+#ifdef HGREP_EDITING
+  hgrep_format_func *nodef,
+#else
+  char *nodef,
+#endif
+  size_t nodefl);
 hgrep_error *hgrep_efmatch(char *ptr, const size_t size, FILE *output, const hgrep_epatterns *epatterns, int (*freeptr)(void *ptr, size_t size));
 hgrep_error *hgrep_pcomp(const char *pattern, size_t size, hgrep_pattern *p, const unsigned char flags);
 hgrep_error *hgrep_epcomp(const char *src, size_t size, hgrep_epatterns *epatterns, const unsigned char flags);

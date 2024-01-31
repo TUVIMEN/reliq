@@ -16,6 +16,11 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#define _GNU_SOURCE
+#define __USE_XOPEN
+#define __USE_XOPEN_EXTENDED
+#define _XOPEN_SOURCE 600
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -61,7 +66,7 @@ node_output(hgrep_node *hgn,
         #endif
         , const size_t formatl, FILE *output, const char *reference) {
   #ifdef HGREP_EDITING
-  return format_exec(output,hgn,format,formatl,reference);
+  return format_exec(NULL,0,output,hgn,format,formatl,reference);
   #else
   if (format) {
     hgrep_printf(output,format,formatl,hgn,reference);
@@ -76,22 +81,52 @@ nodes_output(hgrep *hg, flexarr *compressed_nodes, flexarr *pcollector)
 {
   if (!pcollector->size)
     return NULL;
-  hgrep_error *err;
+  hgrep_error *err = NULL;
   hgrep_cstr *pcol = (hgrep_cstr*)pcollector->v;
-  for (size_t j = 0, pcurrent = 0, g = 0; j < compressed_nodes->size; j++, g++) {
+
+  FILE *out = hg->output;
+  size_t j=0,pcurrent=0,g=0;
+  #ifdef HGREP_EDITING
+  size_t fsize;
+  char *ptr;
+  #endif
+  for (;; j++) {
+    #ifdef HGREP_EDITING
+    if (compressed_nodes->size && g == 0) {
+      if (out != hg->output) {
+        fclose(out);
+        err = format_exec(ptr,fsize,hg->output,NULL,
+          ((hgrep_epattern*)pcol[pcurrent-1].b)->exprf,
+          ((hgrep_epattern*)pcol[pcurrent-1].b)->exprfl,hg->data);
+        free(ptr);
+        if (err)
+          return err;
+      }
+      out = hg->output;
+      if (j >= compressed_nodes->size)
+        break;
+      if (((hgrep_epattern*)pcol[pcurrent].b)->exprfl) {
+        out = open_memstream(&ptr,&fsize);
+      }
+    }
+    #endif
+    if (j >= compressed_nodes->size)
+      break;
+    hgrep_compressed *x = &((hgrep_compressed*)compressed_nodes->v)[j];
+    hg->nodes[x->id].lvl -= x->lvl;
+    err = node_output(&hg->nodes[x->id],((hgrep_epattern*)pcol[pcurrent].b)->nodef,
+      ((hgrep_epattern*)pcol[pcurrent].b)->nodefl,out,hg->data);
+    hg->nodes[x->id].lvl += x->lvl;
+    if (err)
+      return err;
+
+    g++;
     if (pcol[pcurrent].s == g) {
       g = 0;
       pcurrent++;
       /*if (pcurrent >= pcollector->size)
           break;*/
     }
-    hgrep_compressed *x = &((hgrep_compressed*)compressed_nodes->v)[j];
-    hg->nodes[x->id].lvl -= x->lvl;
-    err = node_output(&hg->nodes[x->id],((hgrep_pattern*)pcol[pcurrent].b)->format,
-      ((hgrep_pattern*)pcol[pcurrent].b)->formatl,hg->output,hg->data);
-    hg->nodes[x->id].lvl += x->lvl;
-    if (err)
-      return err;
   }
   return NULL;
 }
@@ -385,7 +420,6 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
   }
 
   END: ;
-
   if (*i >= s) {
     hgn->all.s = s-(hgn->all.b-f)-1;
   } else if (!hgn->all.s)
@@ -404,7 +438,7 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
     hgn->attrib = a->v+(attrib_start*a->elsize);
     hgrep_pattern const *pattern = hg->pattern;
     if (pattern && hgrep_match(hgn,pattern)) {
-      *err = node_output(hgn,pattern->format,pattern->formatl,hg->output,hg->data);
+      *err = node_output(hgn,hg->nodef,hg->nodefl,hg->output,hg->data);
     }
     flexarr_dec(nodes);
   }

@@ -321,12 +321,17 @@ get_pattern_word(char *dest, char *src, size_t *i, size_t *size, const char deli
 }
 
 static hgrep_error *
-format_comp(hgrep_pattern *p, char *src, size_t *pos, size_t *size)
+format_comp(char *src, size_t *pos, size_t *size,
+#ifdef HGREP_EDITING
+  hgrep_format_func **format,
+#else
+  char **format,
+#endif
+  size_t *formatl)
 {
   hgrep_error *err;
-  if (*pos >= *size || !src || src[*pos] != '|')
+  if (*pos >= *size || !src)
     return NULL;
-  (*pos)++;
   #ifndef HGREP_EDITING
   while_is(isspace,src,*pos,*size);
 
@@ -339,13 +344,13 @@ format_comp(hgrep_pattern *p, char *src, size_t *pos, size_t *size)
     return err;
 
   if (len) {
-    p->format = memdup(src+start,len);
-    p->formatl = len;
+    *format = memdup(src+start,len);
+    *formatl = len;
   }
   #else
-  flexarr *format = flexarr_init(sizeof(hgrep_format_func),8);
-  err = format_get_funcs(format,src,pos,size);
-  flexarr_conv(format,(void**)&p->format,&p->formatl);
+  flexarr *f = flexarr_init(sizeof(hgrep_format_func),8);
+  err = format_get_funcs(f,src,pos,size);
+  flexarr_conv(f,(void**)format,formatl);
   if (err)
     return err;
   #endif
@@ -438,16 +443,10 @@ get_pattribs(char *pat, size_t *size, hgrep_pattern *p, struct hgrep_pattrib **a
       continue;
     }
 
-    if (pat[i] == '|') {
-      err = format_comp(p,pat,&i,size);
-      break;
-    }
-
     memset(&pa,0,sizeof(struct hgrep_pattrib));
     char isset = 0;
 
     if (pat[i] == '+') {
-      //attribcount++;
       pa.flags |= A_INVERT;
       isset = 1;
       i++;
@@ -484,7 +483,7 @@ get_pattribs(char *pat, size_t *size, hgrep_pattern *p, struct hgrep_pattrib **a
     if (isset == 0)
       pa.flags |= A_INVERT;
 
-    if (pat[i] == '@' || pat[i] == '|')
+    if (pat[i] == '@')
       continue;
 
     if (shortcut == '.' || shortcut == '#') {
@@ -524,13 +523,11 @@ get_pattribs(char *pat, size_t *size, hgrep_pattern *p, struct hgrep_pattrib **a
     }
 
     ADD: ;
-    if (pat[i] != '+' && pat[i] != '-' && pat[i] != '@' && pat[i] != '|')
+    if (pat[i] != '+' && pat[i] != '-' && pat[i] != '@')
       i++;
     ADD_SKIP: ;
     memcpy(flexarr_inc(pattrib),&pa,sizeof(struct hgrep_pattrib));
   }
-  /*if (p->ax < attribcount) //match patterns even if @[]a is lower then count of +tags (obsolete)
-    p->ax = attribcount;*/
   flexarr_conv(pattrib,(void**)attrib,attribl);
   return err;
 }
@@ -547,17 +544,13 @@ hgrep_pcomp(const char *pattern, size_t size, hgrep_pattern *p, const uchar flag
     regexflags |= REG_ICASE;
   if (flags&HGREP_EREGEX)
     regexflags |= REG_EXTENDED;
-  //ushort attribcount = 0;
 
   char regex_tmp[REGEX_PATTERN_SIZE];
   char *pat = memdup(pattern,size);
   size_t pos=0;
   while_is(isspace,pat,pos,size);
 
-  if (pos >= size)
-    goto END;
-  if (pat[pos] == '|') {
-    err = format_comp(p,pat,&pos,&size);
+  if (pos >= size) {
     p->flags |= P_EMPTY;
     goto END;
   }
@@ -581,7 +574,7 @@ hgrep_pcomp(const char *pattern, size_t size, hgrep_pattern *p, const uchar flag
   return err;
 }
 
-/*void
+/*void //just for debugging
 hgrep_epattern_print(flexarr *epatterns, size_t tab)
 {
   hgrep_epattern *a = (hgrep_patterns*)epatterns->v;
@@ -600,19 +593,29 @@ hgrep_epattern_print(flexarr *epatterns, size_t tab)
       fprintf(stderr,"%%j\n");
     }
   }
-} //used for debugging*/
-
+}*/
 
 static void
-hgrep_epattern_free_pre(flexarr *epatterns)
+hgrep_epattern_free(hgrep_epattern *p)
+{
+  #ifdef HGREP_EDITING
+  format_free(p->nodef,p->nodefl);
+  #else
+  if (p->nodef)
+    free(p->nodef);
+  #endif
+  hgrep_pfree((hgrep_pattern*)p->p);
+}
+
+static void
+hgrep_epatterns_free_pre(flexarr *epatterns)
 {
   hgrep_epattern *a = (hgrep_epattern*)epatterns->v;
   for (size_t i = 0; i < epatterns->size; i++) {
     if (a[i].istable&EPATTERN_TABLE) {
-      hgrep_epattern_free_pre((flexarr*)a[i].p);
-    } else {
-      hgrep_pfree((hgrep_pattern*)a[i].p);
-    }
+      hgrep_epatterns_free_pre((flexarr*)a[i].p);
+    } else
+      hgrep_epattern_free(&a[i]);
   }
   flexarr_free(epatterns);
 }
@@ -622,10 +625,9 @@ hgrep_epatterns_free(hgrep_epatterns *epatterns)
 {
   for (size_t i = 0; i < epatterns->s; i++) {
     if (epatterns->b[i].istable&EPATTERN_TABLE) {
-      hgrep_epattern_free_pre((flexarr*)epatterns->b[i].p);
-    } else {
-      hgrep_pfree((hgrep_pattern*)epatterns->b[i].p);
-    }
+      hgrep_epatterns_free_pre((flexarr*)epatterns->b[i].p);
+    } else
+      hgrep_epattern_free(&epatterns->b[i]);
   }
   free(epatterns->b);
 }
@@ -646,25 +648,49 @@ hgrep_epcomp_pre(const char *csrc, size_t *pos, size_t s, const uchar flags, hgr
   acurrent->istable = EPATTERN_TABLE|EPATTERN_NEWCHAIN;
   hgrep_epattern epattern;
   char *src = memdup(csrc,s);
-  size_t patternl=0;
+  size_t patternl;
   size_t i = *pos;
   uchar next = 0;
+
+  hgrep_str nodef,exprf;
+
   while_is(isspace,src,*pos,s);
   for (size_t j; i < s; i++) {
     j = i;
+
+    nodef.b = NULL;
+    nodef.s = 0;
+    exprf.b = NULL;
+    exprf.s = 0;
+    uchar haspattern = 0;
+    patternl = 0;
 
     while (i < s) {
       if (i+1 < s && src[i] == '\\' && src[i+1] == '\\') {
         i += 2;
         continue;
       }
-      if (i+1 < s && src[i] == '\\' && (src[i+1] == ',' || src[i+1] == ';' || src[i+1] == '"' || src[i+1] == '\'' || src[i+1] == '{' || src[i+1] == '}')) {
+      if (i+1 < s && src[i] == '\\' && (src[i+1] == ',' || src[i+1] == ';' ||
+        src[i+1] == '"' || src[i+1] == '\'' || src[i+1] == '{' || src[i+1] == '}')) {
         delchar(src,i++,&s);
-        patternl = i-j;
+        patternl = (i-j)-nodef.s-((nodef.b) ? 1 : 0);
+        continue;
+      }
+      if ((i == j || (i && isspace(src[i-1]))) && !exprf.b &&
+        ((src[i] == '|' && !nodef.b) || src[i] == '/')) {
+        if (i == j)
+          haspattern = 1;
+        if (src[i] == '|') {
+          nodef.b = src+(++i);
+        } else {
+          if (nodef.b)
+            nodef.s = i-(nodef.b-src);
+          exprf.b = src+(++i);
+        }
+        continue;
       }
       if (src[i] == '"' || src[i] == '\'') {
-        char tf = src[i];
-        i++;
+        char tf = src[i++];
         while (i < s && src[i] != tf) {
           if (src[i] == '\\' && (src[i+1] == '\\' || src[i+1] == tf))
             i++;
@@ -685,46 +711,79 @@ hgrep_epcomp_pre(const char *csrc, size_t *pos, size_t s, const uchar flags, hgr
           goto PASS;
       }
 
-      if (src[i] == ',') {
-        next = 1;
-        patternl = i-j;
+      if (src[i] == ',' || src[i] == ';' || src[i] == '{' || src[i] == '}') {
+        if (exprf.b) {
+          exprf.s = i-(exprf.b-src);
+        } else if (nodef.b)
+          nodef.s = i-(nodef.b-src);
+
+        if (src[i] == '{') {
+          next = 2;
+        } else if (src[i] == '}') {
+          next = 3;
+        } else {
+          next = (src[i] == ',') ? 1 : 0;
+          patternl = i-j;
+          patternl -= nodef.s+((nodef.b) ? 1 : 0);
+          patternl -= exprf.s+((exprf.b) ? 1 : 0);
+        }
         i++;
-        break;
-      }
-      if (src[i] == ';') {
-        patternl = i-j;
-        i++;
-        break;
-      }
-      if (src[i] == '{') {
-        i++;
-        next = 2;
-        break;
-      }
-      if (src[i] == '}') {
-        i++;
-        next = 3;
         break;
       }
       i++;
-      patternl = i-j;
+      if (!nodef.b && !exprf.b)
+        patternl = i-j;
     }
 
     PASS: ;
     if (j+patternl > s)
       patternl = s-j;
+    if (i > s)
+      i = s;
+    epattern.nodef = NULL;
+    epattern.nodefl = 0;
+    if (!nodef.s)
+      nodef.s = i-(nodef.b-src);
+
+    #ifdef HGREP_EDITING
+    epattern.exprf = NULL;
+    epattern.exprfl = 0;
+    if (!exprf.s)
+      exprf.s = i-(exprf.b-src);
+    #endif
+
+    if (next != 2) {
+      if (nodef.b) {
+        size_t g=0,t=nodef.s;
+        *err = format_comp(nodef.b,&g,&t,&epattern.nodef,&epattern.nodefl);
+        s -= nodef.s-t;
+        if (*err)
+          goto EXIT1;
+      }
+      #ifdef HGREP_EDITING
+      if (exprf.b) {
+        size_t g=0,t=exprf.s;
+        *err = format_comp(exprf.b,&g,&t,&epattern.exprf,&epattern.exprfl);
+        s -= nodef.s-t;
+        if (*err)
+          goto EXIT1;
+      }
+      #endif
+    }
 
     hgrep_epattern *new = NULL;
-    if ((next != 3 || src[j] != '}') && (next >= 2 || patternl)) {
+    if ((next != 3 || src[j] != '}') && (next >= 2 || patternl || haspattern)) {
       epattern.p = malloc(sizeof(hgrep_pattern));
-      if (patternl && (next != 2 || next < 2)) {
+      if (!patternl) {
+        ((hgrep_pattern*)epattern.p)->flags |= P_EMPTY;
+      } else if (next != 2 || next < 2) {
         *err = hgrep_pcomp(src+j,patternl,(hgrep_pattern*)epattern.p,flags);
         if (*err)
           goto EXIT1;
       }
 
       new = (hgrep_epattern*)flexarr_inc(acurrent->p);
-      new->p = epattern.p;
+      *new = epattern;
     }
 
     if (next == 2) {
@@ -746,7 +805,6 @@ hgrep_epcomp_pre(const char *csrc, size_t *pos, size_t s, const uchar flags, hgr
         } else if (src[i] == ';')
           i++;
       }
-      //hgrep_epattern_print(new->p,0);
     } else if (new)
       new->istable = 0;
 
@@ -770,7 +828,7 @@ hgrep_epcomp_pre(const char *csrc, size_t *pos, size_t s, const uchar flags, hgr
   EXIT1:
   free(src);
   if (*err) {
-    hgrep_epattern_free_pre(ret);
+    hgrep_epatterns_free_pre(ret);
     return NULL;
   }
   return ret;
@@ -794,13 +852,10 @@ first_match(hgrep *hg, hgrep_pattern *pattern, flexarr *dest)
   hgrep_node *nodes = hg->nodes;
   size_t nodesl = hg->nodesl;
   for (size_t i = 0; i < nodesl; i++) {
-    //print_or_add(i,pattern);
     if (hgrep_match(&nodes[i],pattern)) {
       hgrep_compressed *x = (hgrep_compressed*)flexarr_inc(dest);
-      //x->pattern = pattern;
       x->lvl = 0;
       x->id = i;
-      //*(size_t*)flexarr_inc(dest) = i;
     }
   }
 }
@@ -825,7 +880,6 @@ pattern_exec(hgrep *hg, hgrep_pattern *pattern, flexarr *source, flexarr *dest)
       nodes[n].lvl -= lvl;
       if (hgrep_match(&nodes[n],pattern)) {
         hgrep_compressed *x = (hgrep_compressed*)flexarr_inc(dest);
-        //x->pattern = pattern;
         x->lvl = lvl;
         x->id = n;
       }
@@ -834,7 +888,7 @@ pattern_exec(hgrep *hg, hgrep_pattern *pattern, flexarr *source, flexarr *dest)
   }
 }
 
-static hgrep_error *
+/*static hgrep_error *
 pcollector_check(flexarr *pcollector, size_t correctsize)
 {
   size_t pcollector_sum = 0;
@@ -844,10 +898,10 @@ pcollector_check(flexarr *pcollector, size_t correctsize)
   if (pcollector_sum != correctsize)
     return hgrep_set_error(1,"pcollector does not match count of found tags, %lu != %lu",pcollector_sum,correctsize);
   return NULL;
-}
+}*/
 
 static void
-pcollector_add(flexarr *pcollector, flexarr *dest, flexarr *source, size_t startp, size_t lastp, hgrep_pattern *lastformat, uchar istable)
+pcollector_add(flexarr *pcollector, flexarr *dest, flexarr *source, size_t startp, size_t lastp, const hgrep_epattern *lastformat, uchar istable)
 {
   if (!source->size)
     return;
@@ -863,7 +917,7 @@ pcollector_add(flexarr *pcollector, flexarr *dest, flexarr *source, size_t start
     }
   } else {
     pcollector->size = startp;
-    *(hgrep_cstr*)flexarr_inc(pcollector) = (hgrep_cstr){(char*)lastformat,dest->size-prevsize};
+    *(hgrep_cstr*)flexarr_inc(pcollector) = (hgrep_cstr){(char const*)lastformat,dest->size-prevsize};
   }
 }
 
@@ -889,24 +943,16 @@ hgrep_ematch_pre(hgrep *hg, const hgrep_epattern *patterns, size_t patternsl, fl
   size_t startp = pcollector->size;
   size_t lastp = startp;
 
-  hgrep_pattern *lastformat = NULL;
+  hgrep_epattern const *lastformat = NULL;
 
   for (size_t i = 0; i < patternsl; i++) {
-    //flexarr *out = buf[1];
-    //flexarr *out = (source == NULL || (dest == NULL && i == size-1)) ? NULL : buf[1];
     if (patterns[i].istable&EPATTERN_TABLE) {
-      /*flexarr *copy = flexarr_init(sizeof(hgrep_compressed),PASSED_INC);
-      copy->asize = buf[0]->asize;
-      copy->size = buf[0]->size;
-      copy->v = memcpy(malloc(buf[0]->asize*sizeof(hgrep_compressed)),buf[0]->v,buf[0]->asize*sizeof(hgrep_compressed));*/
       lastp = pcollector->size;
       err = hgrep_ematch_pre(hg,(hgrep_epattern*)((flexarr*)patterns[i].p)->v,((flexarr*)patterns[i].p)->size,buf[0],buf[1],pcollector);
       if (err)
         goto ERR;
-      //fprintf(stderr,"pase %p %p %lu\n",copy,buf[1],lvl);
-      //flexarr_free(copy);
     } else if (patterns[i].p) {
-      lastformat = (hgrep_pattern*)patterns[i].p;
+      lastformat = &patterns[i];
       pattern_exec(hg,(hgrep_pattern*)patterns[i].p,buf[0],buf[1]);
     }
 
@@ -926,11 +972,9 @@ hgrep_ematch_pre(hgrep *hg, const hgrep_epattern *patterns, size_t patternsl, fl
   }
 
   if (!dest) {
-    //ONLY NEEDED FOR DEBUGGING PURPOSES
-    err = pcollector_check(pcollector,buf[2]->size);
-    if (err)
-      goto ERR;
-    //ONLY NEEDED FOR DEBUGGING PURPOSES
+    /*err = pcollector_check(pcollector,buf[2]->size);
+    if (err) //just for debugging
+      goto ERR;*/
 
     err = nodes_output(hg,buf[2],pcollector);
     if (err)
@@ -1005,12 +1049,6 @@ hgrep_pfree(hgrep_pattern *p)
     if (p->child_count_rl)
       free(p->child_count_r);
   }
-  #ifdef HGREP_EDITING
-  format_free(p->format,p->formatl);
-  #else
-  if (p->format)
-    free(p->format);
-  #endif
 }
 
 void
@@ -1041,12 +1079,20 @@ hgrep_analyze(const char *ptr, const size_t size, flexarr *nodes, hgrep *hg)
 }
 
 hgrep_error *
-hgrep_fmatch(const char *ptr, const size_t size, FILE *output, const hgrep_pattern *pattern)
+hgrep_fmatch(const char *ptr, const size_t size, FILE *output, const hgrep_pattern *pattern,
+#ifdef HGREP_EDITING
+  hgrep_format_func *nodef,
+#else
+  char *nodef,
+#endif
+  size_t nodefl)
 {
   hgrep t;
   t.data = ptr;
   t.size = size;
   t.pattern = pattern;
+  t.nodef = nodef;
+  t.nodefl = nodefl;
   t.flags = 0;
   if (output == NULL)
     output = stdout;
@@ -1054,13 +1100,11 @@ hgrep_fmatch(const char *ptr, const size_t size, FILE *output, const hgrep_patte
   flexarr *nodes = flexarr_init(sizeof(hgrep_node),HGREP_NODES_INC);
   t.attrib_buffer = (void*)flexarr_init(sizeof(hgrep_cstr_pair),ATTRIB_INC);
   hgrep_error *err = hgrep_analyze(ptr,size,nodes,&t);
-  if (err)
-    return err;
   flexarr_free(nodes);
   t.nodes = NULL;
   t.nodesl = 0;
   flexarr_free((flexarr*)t.attrib_buffer);
-  return NULL;
+  return err;
 }
 
 hgrep_error *
@@ -1081,7 +1125,8 @@ hgrep_efmatch(char *ptr, size_t size, FILE *output, const hgrep_epatterns *epatt
 
     if (((hgrep_epattern*)first->v)[i].istable&1)
       return hgrep_set_error(1,"fast mode cannot run in non linear mode");
-    hgrep_error *err = hgrep_fmatch(ptr,size,output,(hgrep_pattern*)((hgrep_epattern*)first->v)[i].p);
+    hgrep_error *err = hgrep_fmatch(ptr,size,output,(hgrep_pattern*)((hgrep_epattern*)first->v)[i].p,
+      ((hgrep_epattern*)first->v)[i].nodef,((hgrep_epattern*)first->v)[i].nodefl);
     fflush(output);
 
     if (i == 0) {

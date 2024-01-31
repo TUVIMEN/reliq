@@ -52,13 +52,13 @@ const struct hgrep_format_function format_functions[] = {
 };
 
 hgrep_error *
-format_exec(FILE *output, const hgrep_node *hgn, const hgrep_format_func *format, const size_t formatl, const char *reference)
+format_exec(char *input, size_t inputl, FILE *output, const hgrep_node *hgn, const hgrep_format_func *format, const size_t formatl, const char *reference)
 {
-  if (!format || (formatl == 1 && (format[0].flags&FORMAT_FUNC) == 0 && (!format[0].arg[0] || !((hgrep_cstr*)format[0].arg[0])->b))) {
+  if (hgn && (!formatl || (formatl == 1 && (format[0].flags&FORMAT_FUNC) == 0 && (!format[0].arg[0] || !((hgrep_cstr*)format[0].arg[0])->b)))) {
     hgrep_print(output,hgn);
     return NULL;
   }
-  if (formatl == 1 && (format[0].flags&FORMAT_FUNC) == 0 && format[0].arg[0] && ((hgrep_cstr*)format[0].arg[0])->b) {
+  if (hgn && formatl == 1 && (format[0].flags&FORMAT_FUNC) == 0 && format[0].arg[0] && ((hgrep_cstr*)format[0].arg[0])->b) {
     hgrep_printf(output,((hgrep_cstr*)format[0].arg[0])->b,((hgrep_cstr*)format[0].arg[0])->s,hgn,reference);
     return NULL;
   }
@@ -70,32 +70,34 @@ format_exec(FILE *output, const hgrep_node *hgn, const hgrep_format_func *format
 
   for (size_t i = 0; i < formatl; i++) {
     out = (i == formatl-1) ? output : open_memstream(&ptr[1],&fsize[1]);
-    if (i == 0 && (format[i].flags&FORMAT_FUNC) == 0) {
-        hgrep_printf(out,((hgrep_cstr*)format[i].arg[0])->b,((hgrep_cstr*)format[i].arg[0])->s,hgn,reference);
+    if (hgn && i == 0 && (format[i].flags&FORMAT_FUNC) == 0) {
+      hgrep_printf(out,((hgrep_cstr*)format[i].arg[0])->b,((hgrep_cstr*)format[i].arg[0])->s,hgn,reference);
     } else {
       if (i == 0) {
-        FILE *t = open_memstream(&ptr[0],&fsize[0]);
-        hgrep_print(t,hgn);
-        fclose(t);
+        if (hgn) {
+          FILE *t = open_memstream(&ptr[0],&fsize[0]);
+          hgrep_print(t,hgn);
+          fclose(t);
+        } else {
+          ptr[0] = input;
+          fsize[0] = inputl;
+        }
       }
-      hgrep_error *err = format_functions[(format[i].flags&FORMAT_FUNC)-1].func(ptr[0],fsize[0],out,(const void**)format[i].arg,format[i].flags);
-      if (err)
-        return err;
+      if (format[i].flags&FORMAT_FUNC) {
+        hgrep_error *err = format_functions[(format[i].flags&FORMAT_FUNC)-1].func(ptr[0],fsize[0],out,(const void**)format[i].arg,format[i].flags);
+        if (err)
+          return err;
+      }
     }
 
     if (i != formatl-1)
       fclose(out);
-    if (i != 0 || (format[i].flags&FORMAT_FUNC) != 0)
+    if (i != 0 || (hgn && (format[i].flags&FORMAT_FUNC) != 0))
       free(ptr[0]);
     ptr[0] = ptr[1];
     fsize[0] = fsize[1];
   }
 
-  /*char *ptr;
-  size_t fsize;
-    outfile = (i == first->size-1) ? t : open_memstream(&ptr,&fsize);
-    fflush(outfile);
-      fclose(outfile);*/
   return NULL;
 }
 
@@ -176,7 +178,7 @@ format_get_funcs(flexarr *format, char *src, size_t *pos, size_t *size)
         return hgrep_set_error(1,"format function does not exist: \"%.*s\"",fnamel,fname);
       f->flags |= i+1;
     } else if (format->size > 1)
-      return hgrep_set_error(1,"printf defined two times %u in format",format->size);
+      return hgrep_set_error(1,"printf defined two times in format");
     (*pos)++;
   }
   return NULL;
@@ -664,7 +666,7 @@ sed_expression_free(struct sed_expression *e)
   }
 }
 
-#define SC_ONLY_NEWLINE 0x1 //can be ended only by a newline
+#define SC_ONLY_NEWLINE 0x1 //can be ended only by a newline eg. i, a, c commands
 #define SC_ARG 0x2
 #define SC_ARG_OPTIONAL 0x4
 #define SC_NOADDRESS 0x8
@@ -1230,9 +1232,9 @@ sed_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigne
     err = sed_script_comp(str->b,str->s,extendedregex ? REG_EXTENDED : 0,&script);
     if (err)
       return err;
-    if (script == NULL)
-      return NULL;
   }
+  if (script == NULL)
+    return hgrep_set_error(0,"sed: missing script argument");
   
   char *buffers[3];
   for (size_t i = 0; i < 3; i++)
