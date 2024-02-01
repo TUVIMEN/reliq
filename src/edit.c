@@ -650,13 +650,14 @@ sed_address_exec(const char *src, size_t size, uint line, uchar islast, struct s
     if (line == 1 && !(flags&SED_A_CHECKFIRST))
       return first^rev;
     if (flags&SED_A_FOUND2) {
-      address->flags &= ~SED_A_FOUND1;
       return rev;
     } else {
       pmatch.rm_so = 0;
       pmatch.rm_eo = (int)size;
-      if (!regexec(&address->reg[1],src,1,&pmatch,REG_STARTEND))
+      if (!regexec(&address->reg[1],src,1,&pmatch,REG_STARTEND)) {
         address->flags |= SED_A_FOUND2;
+        address->flags &= ~SED_A_FOUND1;
+      }
       return first^rev;
     }
   }
@@ -1016,10 +1017,11 @@ sed_pre_edit(char *src, size_t size, FILE *output, char *buffers[3], flexarr *sc
     for (; cycle < script->size; cycle++) {
       if (!sed_address_exec(patternsp,patternspl,linenumber,islastline,&scriptv[cycle].address)) {
         if (scriptv[cycle].name == '{') {
-          uint lvl = scriptv[cycle++].lvl;
-          while (lvl > scriptv[cycle].lvl)
+          uint lvl = scriptv[++cycle].lvl;
+          while (cycle+1 < script->size && lvl >= scriptv[cycle+1].lvl)
             cycle++;
-          cycle--;
+          if (cycle < script->size)
+            cycle--;
         }
         continue;
       }
@@ -1193,7 +1195,7 @@ sed_pre_edit(char *src, size_t size, FILE *output, char *buffers[3], flexarr *sc
           break;
       }
     }
-    if (cycle == script->size)
+    if (cycle >= script->size)
       cycle = 0;
 
     NEXT_PRINT: ;
