@@ -48,6 +48,8 @@ const struct hgrep_format_function format_functions[] = {
     {{"cut",3},cut_edit},
     {{"sed",3},sed_edit},
     {{"line",4},line_edit},
+    {{"sort",4},sort_edit},
+    {{"uniq",4},uniq_edit},
     {{"match",5},NULL},
     {{"error",5},NULL},
 };
@@ -964,11 +966,11 @@ sed_script_comp(const char *src, size_t size, int eflags, flexarr **script)
 }
 
 static hgrep_error *
-sed_pre_edit(char *src, size_t size, FILE *output, char *buffers[3], flexarr *script, const uchar *linedelim, uchar silent)
+sed_pre_edit(char *src, size_t size, FILE *output, char *buffers[3], flexarr *script, const char linedelim, uchar silent)
 {
   char *patternsp = buffers[0],
-       *buffersp = buffers[1],
-       *holdsp = buffers[2];
+    *buffersp = buffers[1],
+    *holdsp = buffers[2];
   size_t patternspl=0,bufferspl=0,holdspl=0;
 
   size_t line=0,lineend;
@@ -990,9 +992,9 @@ sed_pre_edit(char *src, size_t size, FILE *output, char *buffers[3], flexarr *sc
     islastline = 0;
     size_t start=line,end=lineend,offset=0;
     if (lineend < size) {
-      while (lineend < size && !linedelim[(uchar)src[lineend]])
+      while (lineend < size && src[lineend] != linedelim)
         lineend++;
-      if (linedelim[(uchar)src[lineend]]) {
+      if (src[lineend] == linedelim) {
         prevdelim = src[lineend];
         hasdelim = 1;
       }
@@ -1049,9 +1051,9 @@ sed_pre_edit(char *src, size_t size, FILE *output, char *buffers[3], flexarr *sc
           break;
         case 'D': {
             size_t i = 0;
-            while (i < end && !linedelim[(uchar)patternsp[i]])
+            while (i < end && patternsp[i] != linedelim)
               i++;
-            if (i == end || !linedelim[(uchar)patternsp[i]]) {
+            if (i == end || patternsp[i] != linedelim) {
               patternspl = 0;
               cycle = 0;
               goto NEXT;
@@ -1064,7 +1066,7 @@ sed_pre_edit(char *src, size_t size, FILE *output, char *buffers[3], flexarr *sc
           break;
         case 'P':
           offset = 0;
-          while (offset < end && !linedelim[(uchar)patternsp[offset]])
+          while (offset < end && patternsp[offset] != linedelim)
             offset++;
         case 'p':
           if (scriptv[cycle].name == 'p') {
@@ -1232,10 +1234,10 @@ hgrep_error *
 sed_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
 {
   hgrep_error *err;
-  uchar zeroterminated=0,extendedregex=0,silent=0;
+  uchar extendedregex=0,silent=0;
   flexarr *script = NULL;
 
-  uchar linedelim[256] = {0};
+  char linedelim = '\n';
 
   if (arg[1] && flag&FORMAT_ARG1_ISSTR && ((hgrep_str*)arg[1])->b && ((hgrep_str*)arg[1])->s) {
     hgrep_str *str = (hgrep_str*)arg[1];
@@ -1243,18 +1245,19 @@ sed_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigne
       if (str->b[i] == 'E') {
         extendedregex = 1;
       } else if (str->b[i] == 'z') {
-        zeroterminated = 1;
+        linedelim = '\0';
       } else if (str->b[i] == 'n')
         silent = 1;
     }
   }
-  if (arg[2] && flag&FORMAT_ARG3_ISSTR && ((hgrep_str*)arg[2])->b) {
+  if (arg[2] && flag&FORMAT_ARG2_ISSTR) {
     hgrep_str *str = (hgrep_str*)arg[2];
-    err = tr_strrange(str->b,str->s,NULL,0,linedelim,NULL,0);
-    if (err)
-      return err;
-  } else
-    linedelim[(zeroterminated) ? '\0' : '\n'] = 1;
+    if (str->b && str->s) {
+      linedelim = *str->b;
+      if (linedelim == '\\' && str->s > 1)
+        linedelim = special_character(str->b[1]);
+    }
+  }
 
   if (arg[0] && flag&FORMAT_ARG0_ISSTR && ((hgrep_str*)arg[0])->b && ((hgrep_str*)arg[0])->s) {
     hgrep_str *str = (hgrep_str*)arg[0];
@@ -1277,12 +1280,157 @@ sed_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigne
   return err;
 }
 
+static hgrep_cstr
+cstr_get_line(const char *src, size_t size, size_t *saveptr, const char delim)
+{
+  hgrep_cstr ret = {NULL,0};
+  size_t startline = *saveptr;
+  while(*saveptr < size && src[*saveptr] != delim)
+    (*saveptr)++;
+  if (*saveptr < size && src[*saveptr] == delim)
+    (*saveptr)++;
+  if (startline != *saveptr) {
+    ret.b = src+startline;
+    ret.s = *saveptr-startline;
+  }
+  return ret;
+}
+
+//without delim saved
+static hgrep_cstr
+cstr_get_line_d(const char *src, size_t size, size_t *saveptr, const char delim)
+{
+  hgrep_cstr ret = cstr_get_line(src,size,saveptr,delim);
+  if (ret.b && ret.b[ret.s-1] == delim)
+    ret.s--;
+  return ret;
+}
+
+hgrep_error *
+uniq_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
+{
+  char delim = '\n';
+
+  if (arg[0] && flag&FORMAT_ARG0_ISSTR) {
+    hgrep_str *str = (hgrep_str*)arg[0];
+    if (str->b && str->s) {
+      delim = *str->b;
+      if (delim == '\\' && str->s > 1)
+        delim = special_character(str->b[1]);
+    }
+  }
+
+  hgrep_cstr line,previous;
+  size_t saveptr = 0;
+
+  previous = cstr_get_line_d(src,size,&saveptr,delim);
+  if (!previous.b)
+    return NULL;
+
+  while (1) {
+    REPEAT: ;
+    line = cstr_get_line_d(src,size,&saveptr,delim);
+    if (!line.b) {
+      fwrite(previous.b,1,previous.s,output);
+      fputc(delim,output);
+      break;
+    }
+
+    if (strcomp(line,previous))
+      goto REPEAT;
+    fwrite(previous.b,1,previous.s,output);
+    fputc(delim,output);
+    previous = line;
+  }
+  return NULL;
+}
+
+static int
+sort_cmp(const hgrep_cstr *s1, const hgrep_cstr *s2)
+{
+  size_t s = s1->s;
+  if (s < s2->s)
+    s = s2->s;
+  return memcmp(s1->b,s2->b,s);
+}
+
+hgrep_error *
+sort_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
+{
+  char delim = '\n';
+  uchar reverse=0,unique=0; //,natural=0,icase=0;
+
+  if (arg[0] && flag&FORMAT_ARG0_ISSTR && ((hgrep_str*)arg[0])->b) {
+    hgrep_str *str = (hgrep_str*)arg[0];
+    for (size_t i = 0; i < str->s; i++) {
+      if (str->b[i] == 'r') {
+        reverse = 1;
+      } /* else if (str->b[i] == 'n') {
+        natural = 1;
+      } else if (str->b[i] == 'i') {
+        icase = 1;
+      } */ else if (str->b[i] == 'u')
+        unique = 1;
+    }
+  }
+
+  if (arg[1] && flag&FORMAT_ARG1_ISSTR) {
+    hgrep_str *str = (hgrep_str*)arg[1];
+    if (str->b && str->s) {
+      delim = *str->b;
+      if (delim == '\\' && str->s > 1)
+        delim = special_character(str->b[1]);
+    }
+  }
+
+  flexarr *lines = flexarr_init(sizeof(hgrep_cstr),(1<<10));
+  hgrep_cstr line,previous;
+  size_t saveptr = 0;
+  
+  while (1) {
+    line = cstr_get_line_d(src,size,&saveptr,delim);
+    if (!line.b)
+      break;
+    *(hgrep_cstr*)flexarr_inc(lines) = line;
+  }
+  qsort(lines->v,lines->size,sizeof(hgrep_cstr),(int(*)(const void*,const void*))sort_cmp);
+  hgrep_cstr *linesv = (hgrep_cstr*)lines->v;
+
+  if (reverse) {
+    for (size_t i=0,j=lines->size-1; i < j; i++,j--) {
+      line = linesv[i];
+      linesv[i] = linesv[j];
+      linesv[j] = line;
+    }
+  }
+
+  if (!lines->size)
+    goto END;
+  size_t i = 0;
+  previous = linesv[i];
+
+  while (1) {
+    REPEAT: ;
+    if (++i >= lines->size)
+      break;
+    if (unique && strcomp(previous,linesv[i]))
+      goto REPEAT;
+    fwrite(previous.b,1,previous.s,output);
+    fputc(delim,output);
+    previous = linesv[i];
+  }
+  fwrite(previous.b,1,previous.s,output);
+  fputc(delim,output);
+
+  END: ;
+  flexarr_free(lines);
+  return NULL;
+}
+
 hgrep_error *
 line_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
 {
-  hgrep_error *err;
-  uchar delim[256] = {0};
-
+  char delim = '\n';
   struct hgrep_range *list = NULL;
   size_t listl;
 
@@ -1291,37 +1439,36 @@ line_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsign
     listl = ((hgrep_str*)arg[0])->s;
   }
 
-  if (arg[1] && flag&FORMAT_ARG1_ISSTR && ((hgrep_str*)arg[1])->b) {
+  if (arg[1] && flag&FORMAT_ARG1_ISSTR) {
     hgrep_str *str = (hgrep_str*)arg[1];
-    err = tr_strrange(str->b,str->s,NULL,0,delim,NULL,0);
-    if (err)
-      return err;
-  } else
-    delim['\n'] = 1;
+    if (str->b && str->s) {
+      delim = *str->b;
+      if (delim == '\\' && str->s > 1)
+        delim = special_character(str->b[1]);
+    }
+  }
 
   if (!list)
     return hgrep_set_error(0,"line: missing arguments");
 
-  size_t linecount=0,currentline=0;
-  size_t line = 0,startline;
+  size_t saveptr=0,linecount=0,currentline=0;
+  hgrep_cstr line;
 
-  while (line < size) {
-    while(line < size && !delim[(uchar)src[line]])
-      line++;
-    if (line < size && delim[(uchar)src[line]])
-      line++;
+  while (1) {
+    line = cstr_get_line(src,size,&saveptr,delim);
+    if (!line.b)
+      break;
     linecount++;
   }
-  line = 0;
-  while (line < size) {
-    startline = line;
-    while(line < size && !delim[(uchar)src[line]])
-      line++;
-    if (line < size && delim[(uchar)src[line]])
-      line++;
+
+  saveptr = 0;
+  while (1) {
+    line = cstr_get_line(src,size,&saveptr,delim);
+    if (!line.b)
+      break;
     currentline++;
     if (ranges_match(currentline,list,listl,linecount))
-      fwrite(src+startline,1,line-startline,output);
+      fwrite(line.b,1,line.s,output);
   }
   return NULL;
 }
@@ -1329,8 +1476,9 @@ line_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsign
 hgrep_error *
 cut_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
 {
-  uchar delim[256]={0},linedelim[256]={0};
-  uchar complement=0,onlydelimited=0,zeroterminated=0,delimited=0;
+  uchar delim[256]={0};
+  uchar complement=0,onlydelimited=0,delimited=0;
+  char linedelim = '\n';
   hgrep_error *err;
 
   struct hgrep_range *list = NULL;
@@ -1355,34 +1503,37 @@ cut_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigne
         } else if (str->b[i] == 'c') {
           complement = 1;
         } else if (str->b[i] == 'z')
-          zeroterminated = 1;
+          linedelim = '\0';
     }
   }
-  if (arg[3] && flag&FORMAT_ARG3_ISSTR && ((hgrep_str*)arg[3])->b) {
+  if (arg[3] && flag&FORMAT_ARG3_ISSTR) {
     hgrep_str *str = (hgrep_str*)arg[3];
-    err = tr_strrange(str->b,str->s,NULL,0,linedelim,NULL,0);
-    if (err)
-      return err;
-  } else
-    linedelim[(zeroterminated) ? '\0' : '\n'] = 1;
+    if (str->b && str->s) {
+      linedelim = *str->b;
+      if (linedelim == '\\' && str->s > 1)
+        linedelim = special_character(str->b[1]);
+    }
+  }
 
   if (!list)
     return hgrep_set_error(0,"cut: missing range argument");
 
-  size_t line=0,lineend,delimstart;
+  hgrep_cstr line;
+  size_t saveptr = 0;
   const size_t bufsize = 8192;
   char buf[bufsize];
   size_t bufcurrent = 0;
   uchar printlinedelim;
 
-  while (line < size) {
-    lineend = line;
+  while (1) {
+    line = cstr_get_line_d(src,size,&saveptr,linedelim);
+    if (!line.b)
+      return NULL;
+
     printlinedelim = 1;
-    while (lineend < size && !linedelim[(uchar)src[lineend]])
-      lineend++;
-    size_t start=line,end=lineend;
+    size_t start=line.b-src,end=(line.b-src)+line.s;
     if (delimited) {
-      size_t dstart,dend,dlength,dcount=0,dprevend=0,dprevendlength=0;
+      size_t dstart,dend,dlength,dcount=0,dprevend=start,dprevendlength=0;
       if (onlydelimited)
         printlinedelim = 0;
       while (1) {
@@ -1393,8 +1544,13 @@ cut_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigne
         dlength = dend-dstart;
         if (delim[(uchar)src[dend]] && dend < end)
           dend++;
-        if (dlength != dend-dstart)
+        if (dlength != dend-dstart) {
           printlinedelim = 1;
+        } else if (!onlydelimited && start == (size_t)(line.b-src)) {
+          fwrite(src+dstart,1,dlength,output);
+          goto PRINT;
+        }
+
         start = dend;
         if (ranges_match(dcount+1,list,listl,-1)^complement) {
           if (dprevendlength)
@@ -1423,12 +1579,19 @@ cut_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigne
         bufcurrent = 0;
       }
     }
-    line = lineend;
-    delimstart = line;
-    while (line < size && linedelim[(uchar)src[line]])
-      line++;
-    if (line-delimstart && printlinedelim) {
-      fwrite(src+delimstart,1,(delimited && onlydelimited) ? 1 : line-delimstart,output);
+    PRINT: ;
+    size_t n = 0;
+    if (line.b[line.s] == linedelim)
+      n = 1;
+    while (saveptr < size && src[saveptr] == linedelim) {
+      saveptr++;
+      n++;
+    }
+    if (printlinedelim) {
+      if (!n || (delimited && onlydelimited)) {
+        fputc(linedelim,output);
+      } else for (size_t i = 0; i < n; i++)
+        fputc(linedelim,output);
     }
   }
 
@@ -1512,28 +1675,33 @@ tr_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned
 hgrep_error *
 trim_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
 {
-  size_t line = 0;
-  size_t lineend;
-  size_t delimstart;
-  hgrep_error *err;
+  char delim = '\0';
+  uchar hasdelim = 0;
 
-  uchar delim[256] = {0};
-  if (arg[0] && flag&FORMAT_ARG0_ISSTR && ((hgrep_str*)arg[0])->b) {
+  if (arg[0] && flag&FORMAT_ARG0_ISSTR) {
     hgrep_str *str = (hgrep_str*)arg[0];
-    err = tr_strrange(str->b,str->s,NULL,0,delim,NULL,0);
-    if (err)
-      return err;
+    if (str->b && str->s) {
+      delim = *str->b;
+      if (delim == '\\' && str->s > 1)
+        delim = special_character(str->b[1]);
+      hasdelim = 1;
+    }
   }
 
+  size_t line=0,delimstart,lineend;
+
   while (line < size) {
-    delimstart = line;
-    while (line < size && delim[(uchar)src[line]])
-      line++;
-    if (line-delimstart)
-      fwrite(src+delimstart,1,line-delimstart,output);
-    lineend = line;
-    while (lineend < size && !delim[(uchar)src[lineend]])
-      lineend++;
+    if (hasdelim) {
+        delimstart = line;
+        while (line < size && src[line] == delim)
+          line++;
+        if (line-delimstart)
+          fwrite(src+delimstart,1,line-delimstart,output);
+        lineend = line;
+        while (lineend < size && src[lineend] != delim)
+          lineend++;
+    } else
+      lineend = size;
     if (lineend-line) {
       size_t start=line,end=lineend;
       while (start < end && isspace(src[start]))
