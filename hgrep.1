@@ -104,8 +104,8 @@ Attribute name can be shortened to '.' or '#' (see below). If not using glibc yo
 \fBPATTERN\fR          - existing attribute
 \fB+PATTERN\fR         - existing attribute
 \fB-PATTERN\fR         - non existing attribute
-\fB.PATTERN\fR         - same as class="\\([ \\t\\n\\r].*\\)*PATTERN\\(.*[ \\t\\n\\r]\\)*"
-\fB#PATTERN\fR         - same as id="\\([ \\t\\n\\r].*\\)*PATTERN\\(.*[ \\t\\n\\r]\\)*"
+\fB.PATTERN\fR         - same as class="^\\(.*[ \\t\\n\\r]\\+\\)*PATTERN\\([ \\t\\n\\r]\\+.*\\)*$"
+\fB#PATTERN\fR         - same as id="^\\(.*[ \\t\\n\\r]\\+\\)*PATTERN\\([ \\t\\n\\r]\\+.*\\)*$"
 \fB[RANGE]PATTERN\fR   - existing attribute at position determined by RANGE
 \fB-[RANGE]PATTERN\fR
 \fB+.PATTERN\fR
