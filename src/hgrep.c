@@ -299,24 +299,25 @@ get_pattern_word(char *dest, char *src, size_t *i, size_t *size, const char deli
   if (err)
     return err;
 
-  if (len > REGEX_PATTERN_SIZE-(eregex ? 33 : 39))
+  if (len > REGEX_PATTERN_SIZE-(eregex ? 27 : 33))
     return hgrep_set_error(1,"pattern: [%lu:%lu] is too large",start,start+len);
 
   size_t t;
   if (eregex) {
-    t = 16;
-    memcpy(dest,"^(.*[ \\t\\n\\r]+)*",t);
+    t = 13;
+    memcpy(dest,"^(.*[ \t\n\r]+)*",t);
   } else {
-    t = 19;
-    memcpy(dest,"^\\(.*[ \\t\\n\\r]\\+\\)*",t);
+    t = 16;
+    memcpy(dest,"^\\(.*[ \t\n\r]\\+\\)*",t);
   }
   memcpy(dest+t,src+start,len);
   t += len;
   if (eregex) {
-    memcpy(dest+t,"([ \\t\\n\\r]+.*)*$",17);
+    memcpy(dest+t,"([ \t\n\r]+.*)*$",14);
   } else {
-    memcpy(dest+t,"\\([ \\t\\n\\r]\\+.*\\)*$",20);
+    memcpy(dest+t,"\\([ \t\n\r]\\+.*\\)*$",17);
   }
+  fprintf(stderr,"word: %s\n",dest);
   return NULL;
 }
 
