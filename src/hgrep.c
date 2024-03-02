@@ -317,7 +317,6 @@ get_pattern_word(char *dest, char *src, size_t *i, size_t *size, const char deli
   } else {
     memcpy(dest+t,"\\([ \t\n\r]\\+.*\\)*$",17);
   }
-  fprintf(stderr,"word: %s\n",dest);
   return NULL;
 }
 
