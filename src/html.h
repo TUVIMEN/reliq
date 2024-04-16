@@ -19,14 +19,25 @@
 #ifndef HTML_H
 #define HTML_H
 
-hgrep_error *node_output(hgrep_node *hgn, 
+struct fcol_pattern {
+  const hgrep_epattern *p;
+  size_t start;
+  size_t end;
+  unsigned short lvl;
+};
+
+hgrep_error *node_output(hgrep_node *hgn,
         #ifdef HGREP_EDITING
         const hgrep_format_func *format
         #else
         const char *format
         #endif
         , const size_t formatl, FILE *output, const char *reference);
-hgrep_error *nodes_output(hgrep *hg, flexarr *compressed_nodes, flexarr *pcollector);
+hgrep_error *nodes_output(hgrep *hg, flexarr *compressed_nodes, flexarr *pcollector
+        #ifdef HGREP_EDITING
+        , flexarr *fcollector
+        #endif
+        );
 ulong html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, flexarr *nodes, hgrep *hg, hgrep_error **err);
 
 #endif

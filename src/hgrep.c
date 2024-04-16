@@ -462,7 +462,7 @@ get_pattribs(char *pat, size_t *size, hgrep_pattern *p, struct hgrep_pattrib **a
       break;
 
     if (pat[i] == '.' || pat[i] == '#') {
-      shortcut = pat[i++]; 
+      shortcut = pat[i++];
     } else if (pat[i] == '\\' && (pat[i+1] == '.' || pat[i+1] == '#'))
       i++;
 
@@ -511,7 +511,7 @@ get_pattribs(char *pat, size_t *size, hgrep_pattern *p, struct hgrep_pattrib **a
         while_is(isspace,pat,i,*size);
         if (i >= *size)
           break;
-    
+
         err = get_pattern_fullline(regex_tmp,pat,&i,size,' ');
         if (err || regcomp(&pa.r[1],regex_tmp,regexflags))
           break;
@@ -577,20 +577,20 @@ hgrep_pcomp(const char *pattern, size_t size, hgrep_pattern *p, const uchar flag
 /*void //just for debugging
 hgrep_epattern_print(flexarr *epatterns, size_t tab)
 {
-  hgrep_epattern *a = (hgrep_patterns*)epatterns->v;
+  hgrep_epattern *a = (hgrep_epattern*)epatterns->v;
   for (size_t j = 0; j < tab; j++)
-    fputc('\t',stderr);
+    fputs("  ",stderr);
   fprintf(stderr,"%% %lu",epatterns->size);
   fputc('\n',stderr);
   tab++;
   for (size_t i = 0; i < epatterns->size; i++) {
+    for (size_t j = 0; j < tab; j++)
+      fputs("  ",stderr);
     if (a[i].istable&1) {
-      fprintf(stderr,"%%x %d\n",a[i].istable);
+      fprintf(stderr,"%%x %d node(%u) expr(%u)\n",a[i].istable,a[i].nodefl,a[i].exprfl);
       hgrep_epattern_print((flexarr*)a[i].p,tab);
     } else {
-      for (size_t j = 0; j < tab; j++)
-        fputc('\t',stderr);
-      fprintf(stderr,"%%j\n");
+      fprintf(stderr,"%%j node(%u) expr(%u)\n",a[i].nodefl,a[i].exprfl);
     }
   }
 }*/
@@ -658,14 +658,16 @@ hgrep_epcomp_pre(const char *csrc, size_t *pos, size_t s, const uchar flags, hgr
   while_is(isspace,src,*pos,s);
   for (size_t j; i < s; i++) {
     j = i;
+    uchar haspattern=0,hasended=0;
+    hgrep_epattern *new = NULL;
+    patternl = 0;
+
+    REPEAT: ;
 
     nodef.b = NULL;
     nodef.s = 0;
     exprf.b = NULL;
     exprf.s = 0;
-    uchar haspattern = 0;
-    patternl = 0;
-
     while (i < s) {
       if (i+1 < s && src[i] == '\\' && src[i+1] == '\\') {
         i += 2;
@@ -690,6 +692,7 @@ hgrep_epcomp_pre(const char *csrc, size_t *pos, size_t s, const uchar flags, hgr
         }
         continue;
       }
+
       if (src[i] == '"' || src[i] == '\'') {
         char tf = src[i++];
         while (i < s && src[i] != tf) {
@@ -753,26 +756,41 @@ hgrep_epcomp_pre(const char *csrc, size_t *pos, size_t s, const uchar flags, hgr
       exprf.s = i-(exprf.b-src);
     #endif
 
-    if (next != 2) {
-      if (nodef.b) {
-        size_t g=0,t=nodef.s;
-        *err = format_comp(nodef.b,&g,&t,&epattern.nodef,&epattern.nodefl);
-        s -= nodef.s-t;
-        if (*err)
-          goto EXIT1;
+    if (nodef.b) {
+      size_t g=0,t=nodef.s;
+      *err = format_comp(nodef.b,&g,&t,&epattern.nodef,&epattern.nodefl);
+      s -= nodef.s-t;
+      if (*err)
+        goto EXIT1;
+      if (hasended) {
+        new->nodef = epattern.nodef;
+        new->nodefl = epattern.nodefl;
       }
-      #ifdef HGREP_EDITING
-      if (exprf.b) {
-        size_t g=0,t=exprf.s;
-        *err = format_comp(exprf.b,&g,&t,&epattern.exprf,&epattern.exprfl);
-        s -= exprf.s-t;
-        if (*err)
-          goto EXIT1;
+    }
+    #ifdef HGREP_EDITING
+    if (exprf.b) {
+      size_t g=0,t=exprf.s;
+      //fprintf(stderr,"exprf %lu\n",t);
+      *err = format_comp(exprf.b,&g,&t,&epattern.exprf,&epattern.exprfl);
+      s -= exprf.s-t;
+      if (*err)
+        goto EXIT1;
+      if (hasended) {
+        //fprintf(stderr,"exprf.b\n");
+        new->exprf = epattern.exprf;
+        new->exprfl = epattern.exprfl;
       }
-      #endif
+    }
+    #endif
+
+    if (hasended) {
+      if (next == 3)
+        goto END_BRACKET;
+      if (next == 1)
+        goto NEXT_NODE;
+      continue;
     }
 
-    hgrep_epattern *new = NULL;
     if ((next != 3 || src[j] != '}') && (next >= 2 || patternl || haspattern)) {
       epattern.p = malloc(sizeof(hgrep_pattern));
       if (!patternl) {
@@ -797,14 +815,19 @@ hgrep_epcomp_pre(const char *csrc, size_t *pos, size_t s, const uchar flags, hgr
       i = *pos;
       while_is(isspace,src,i,s);
       if (i < s) {
+      //fprintf(stderr,"epcomp '%c'\n",src[i]);
         if (src[i] == ',') {
           i++;
           goto NEXT_NODE;
         } else if (src[i] == '}') {
           i++;
           goto END_BRACKET;
-        } else if (src[i] == ';')
-          i++;
+        } else if (src[i] == ';' || src[i] == '{') {
+          continue;
+        } else if (src[i] == '|' || src[i] == '/') {
+           hasended = 1;
+           goto REPEAT;
+        }
       }
     } else if (new)
       new->istable = 0;
@@ -841,6 +864,7 @@ hgrep_epcomp(const char *src, size_t size, hgrep_epatterns *epatterns, const uch
   hgrep_error *err = NULL;
   flexarr *ret = hgrep_epcomp_pre(src,NULL,size,flags,&err);
   if (ret) {
+    //hgrep_epattern_print(ret,0);
     flexarr_conv(ret,(void**)&epatterns->b,&epatterns->s);
   } else
     epatterns->s = 0;
@@ -869,7 +893,7 @@ pattern_exec(hgrep *hg, hgrep_pattern *pattern, flexarr *source, flexarr *dest)
     first_match(hg,pattern,dest);
     return;
   }
-  
+
   ushort lvl;
   hgrep_node *nodes = hg->nodes;
   size_t current,n;
@@ -908,22 +932,30 @@ pcollector_add(flexarr *pcollector, flexarr *dest, flexarr *source, size_t start
     return;
   size_t prevsize = dest->size;
   flexarr_add(dest,source);
-  if (!lastformat)
+  if (!lastformat) {
+    //fprintf(stderr,"lastformat\n");
     return;
+  }
   if (istable) {
     if (startp != lastp) { //truncate previously added, now useless pcollector
+      //fprintf(stderr,"istable\n");
       for (size_t i = lastp; i < pcollector->size; i++)
         ((hgrep_cstr*)pcollector->v)[i-lastp] = ((hgrep_cstr*)pcollector->v)[i];
       pcollector->size -= lastp-startp;
     }
   } else {
+    //fprintf(stderr,"!istable\n");
     pcollector->size = startp;
     *(hgrep_cstr*)flexarr_inc(pcollector) = (hgrep_cstr){(char const*)lastformat,dest->size-prevsize};
   }
 }
 
 static hgrep_error *
-hgrep_ematch_pre(hgrep *hg, const hgrep_epattern *patterns, size_t patternsl, flexarr *source, flexarr *dest, flexarr *pcollector)
+hgrep_ematch_pre(hgrep *hg, const hgrep_epattern *patterns, size_t patternsl, flexarr *source, flexarr *dest, flexarr *pcollector
+    #ifdef HGREP_EDITING
+    , flexarr *fcollector
+    #endif
+    )
 {
   flexarr *buf[3];
   hgrep_error *err;
@@ -949,13 +981,30 @@ hgrep_ematch_pre(hgrep *hg, const hgrep_epattern *patterns, size_t patternsl, fl
   for (size_t i = 0; i < patternsl; i++) {
     if (patterns[i].istable&EPATTERN_TABLE) {
       lastp = pcollector->size;
-      err = hgrep_ematch_pre(hg,(hgrep_epattern*)((flexarr*)patterns[i].p)->v,((flexarr*)patterns[i].p)->size,buf[0],buf[1],pcollector);
+      err = hgrep_ematch_pre(hg,(hgrep_epattern*)((flexarr*)patterns[i].p)->v,((flexarr*)patterns[i].p)->size,buf[0],buf[1],pcollector
+        #ifdef HGREP_EDITING
+        ,fcollector
+        #endif
+        );
       if (err)
         goto ERR;
     } else if (patterns[i].p) {
       lastformat = &patterns[i];
       pattern_exec(hg,(hgrep_pattern*)patterns[i].p,buf[0],buf[1]);
     }
+
+    //fprintf(stderr,"ematch %p %lu %lu %lu %u %lu\n",patterns,startp,lastp,pcollector->size,(patterns[i].istable&EPATTERN_NEWBLOCK),patterns[i].exprfl);
+
+    #ifdef HGREP_EDITING
+    if (patterns[i].istable&EPATTERN_NEWBLOCK && patterns[i].exprfl) {
+      struct fcol_pattern *fcols = (struct fcol_pattern*)fcollector->v;
+      for (size_t j = 0; j < fcollector->size; j++) {
+        if (fcols[j].start >= lastp)
+          fcols[j].lvl++;
+      }
+      *(struct fcol_pattern*)flexarr_inc(fcollector) = (struct fcol_pattern){&patterns[i],lastp,pcollector->size,0};
+    }
+    #endif
 
     if ((patterns[i].istable&EPATTERN_TABLE &&
       !(patterns[i].istable&EPATTERN_NEWBLOCK)) || i == patternsl-1) {
@@ -977,7 +1026,11 @@ hgrep_ematch_pre(hgrep *hg, const hgrep_epattern *patterns, size_t patternsl, fl
     if (err) //just for debugging
       goto ERR;*/
 
-    err = nodes_output(hg,buf[2],pcollector);
+    err = nodes_output(hg,buf[2],pcollector
+        #ifdef HGREP_EDITING
+        ,fcollector
+        #endif
+        );
     if (err)
       goto ERR;
     flexarr_free(buf[2]);
@@ -1013,8 +1066,18 @@ hgrep_ematch(hgrep *hg, const hgrep_epatterns *patterns, hgrep_compressed *sourc
     }
     hgrep_error *err;
     flexarr *pcollector = flexarr_init(sizeof(hgrep_cstr),32);
-    err = hgrep_ematch_pre(hg,patterns->b,patterns->s,fsource,fdest,pcollector);
+    #ifdef HGREP_EDITING
+    flexarr *fcollector = flexarr_init(sizeof(struct fcol_pattern),16);
+    #endif
+    err = hgrep_ematch_pre(hg,patterns->b,patterns->s,fsource,fdest,pcollector
+        #ifdef HGREP_EDITING
+        ,fcollector
+        #endif
+        );
     flexarr_free(pcollector);
+    #ifdef HGREP_EDITING
+    flexarr_free(fcollector);
+    #endif
     return err;
 }
 
@@ -1134,7 +1197,7 @@ hgrep_efmatch(char *ptr, size_t size, FILE *output, const hgrep_epatterns *epatt
       (*freeptr)(ptr,size);
     } else
       free(ptr);
-    
+
     if (i != first->size-1)
       fclose(output);
 

@@ -765,12 +765,16 @@ sed_script_comp_pre(const char *src, size_t size, int eflags, flexarr **script)
   while (pos < size) {
     while (pos < size && (isspace(src[pos]) || src[pos] == ';'))
       pos++;
+    size_t addrdiff = pos;
     err = sed_address_comp(src,&pos,size,&sedexpr->address,eflags);
     if (err)
       return err;
     while_is(isspace,src,pos,size);
-    if (pos >= size)
-      return hgrep_set_error(1,"sed: char %u: missing command");
+    if (pos >= size) {
+      if (pos-addrdiff)
+        return hgrep_set_error(1,"sed: char %u: missing command");
+      return NULL;
+    }
     command = sed_get_command(src[pos]);
     if (!command)
       return hgrep_set_error(1,"sed: char %u: unknown command: `%c'",pos,src[pos]);
@@ -778,16 +782,15 @@ sed_script_comp_pre(const char *src, size_t size, int eflags, flexarr **script)
       return hgrep_set_error(1,"sed: char %u: %c doesn't want any addresses",pos,src[pos]);
     sedexpr->name = src[pos];
     sedexpr->lvl = lvl;
-    if (sedexpr->name == '{') {
-      lvl++;
+    if (sedexpr->name == '{' || sedexpr->name == '}') {
+      if (sedexpr->name == '}') {
+        CLOSING_BRACKET: ;
+        if (!lvl)
+          return hgrep_set_error(1,"sed: char %u: unexpected `}'",pos);
+        lvl--;
+      } else
+        lvl++;
       sedexpr = (struct sed_expression*)flexarr_inc(*script);
-      pos++;
-      continue;
-    } else if (sedexpr->name == '}') {
-      CLOSING_BRACKET: ;
-      if (!lvl)
-        return hgrep_set_error(1,"sed: char %u: unexpected `}'",pos);
-      lvl--;
       pos++;
       continue;
     }
@@ -849,7 +852,7 @@ sed_script_comp_pre(const char *src, size_t size, int eflags, flexarr **script)
         char tmp[REGEX_PATTERN_SIZE];
         if (sedexpr->arg.s >= REGEX_PATTERN_SIZE-1)
           return hgrep_set_error(1,"sed: `s' pattern is too big");
-        
+
         ulong arg2 = 0;
         for (size_t i = 0; i < third.s; i++) {
           if (third.b[i] == 'i') {
@@ -891,7 +894,7 @@ sed_script_comp_pre(const char *src, size_t size, int eflags, flexarr **script)
           sedexpr->arg1 = NULL;
           return hgrep_set_error(1,"sed: char %u: couldn't compile regex",sedexpr->arg.b-src);
         }
-        
+
         sedexpr->arg = second;
       }
     } else if (command->name == ':') {
@@ -930,7 +933,8 @@ sed_script_comp_pre(const char *src, size_t size, int eflags, flexarr **script)
       goto CLOSING_BRACKET;
     }
   }
-  sed_expression_free(sedexpr);
+  /*if (sedexpr->arg1) //random solution for it giving segfault
+    sed_expression_free(sedexpr);*/
   if (lvl)
     return hgrep_set_error(1,"sed: char %u: unmatched `{'",pos);
   flexarr_dec(*script);
@@ -1123,7 +1127,7 @@ sed_pre_edit(char *src, size_t size, FILE *output, char *buffers[3], flexarr *sc
           break;
         case 'y': {
           for (size_t i = 0; i < patternspl; i++)
-            buffersp[i] = (((uchar*)scriptv[cycle].arg2)[(uchar)patternsp[i]]) ? 
+            buffersp[i] = (((uchar*)scriptv[cycle].arg2)[(uchar)patternsp[i]]) ?
                 ((char*)scriptv[cycle].arg1)[(uchar)patternsp[i]] : patternsp[i];
           memcpy(patternsp,buffersp,patternspl);
           }
@@ -1386,7 +1390,7 @@ sort_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsign
   flexarr *lines = flexarr_init(sizeof(hgrep_cstr),(1<<10));
   hgrep_cstr line,previous;
   size_t saveptr = 0;
-  
+
   while (1) {
     line = cstr_get_line_d(src,size,&saveptr,delim);
     if (!line.b)
