@@ -130,14 +130,19 @@ format_get_func_args(hgrep_format_func *f, char *src, size_t *pos, size_t *size)
       if (err)
         return err;
     }
+
     if (*pos >= *size)
-      return NULL;
-    if (src[*pos] != '|') {
-      if (src[*pos] == ' ')
-        return NULL;
+        break;
+
+    while_is(isspace,src,*pos,*size);
+    if (*pos >= *size)
+        break;
+
+    if (src[*pos] != '[' && src[*pos] != '"' && src[*pos] != '\'') {
+      if (isalnum(src[*pos]) || src[*pos] == '/' || src[*pos] == '|')
+          break;
       return hgrep_set_error(1,"bad argument at %lu(0x%02x)",*pos,src[*pos]);
     }
-    (*pos)++;
   }
   return NULL;
 }
@@ -158,12 +163,15 @@ format_get_funcs(flexarr *format, char *src, size_t *pos, size_t *size)
       fname = src+*pos;
       while_is(isalnum,src,*pos,*size);
       fnamel = *pos-(fname-src);
+      if (*pos < *size && !isspace(src[*pos]))
+        return hgrep_set_error(1,"format function has to be separated by space from its arguments");
     } else
       fname = NULL;
 
     f = (hgrep_format_func*)flexarr_inc(format);
     memset(f,0,sizeof(hgrep_format_func));
 
+    while_is(isspace,src,*pos,*size);
     hgrep_error *err = format_get_func_args(f,src,pos,size);
     if (err)
       return err;
@@ -182,7 +190,6 @@ format_get_funcs(flexarr *format, char *src, size_t *pos, size_t *size)
       f->flags |= i+1;
     } else if (format->size > 1)
       return hgrep_set_error(1,"printf defined two times in format");
-    (*pos)++;
   }
   return NULL;
 }
