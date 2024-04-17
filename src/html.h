@@ -19,7 +19,7 @@
 #ifndef HTML_H
 #define HTML_H
 
-struct fcol_pattern {
+struct fcollector_pattern {
   const hgrep_epattern *p;
   size_t start;
   size_t end;

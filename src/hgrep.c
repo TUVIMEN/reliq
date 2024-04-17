@@ -997,12 +997,12 @@ hgrep_ematch_pre(hgrep *hg, const hgrep_epattern *patterns, size_t patternsl, fl
 
     #ifdef HGREP_EDITING
     if (patterns[i].istable&EPATTERN_NEWBLOCK && patterns[i].exprfl) {
-      struct fcol_pattern *fcols = (struct fcol_pattern*)fcollector->v;
+      struct fcollector_pattern *fcols = (struct fcollector_pattern*)fcollector->v;
       for (size_t j = 0; j < fcollector->size; j++) {
         if (fcols[j].start >= lastp)
           fcols[j].lvl++;
       }
-      *(struct fcol_pattern*)flexarr_inc(fcollector) = (struct fcol_pattern){&patterns[i],lastp,pcollector->size,0};
+      *(struct fcollector_pattern*)flexarr_inc(fcollector) = (struct fcollector_pattern){&patterns[i],lastp,pcollector->size,0};
     }
     #endif
 
@@ -1067,7 +1067,7 @@ hgrep_ematch(hgrep *hg, const hgrep_epatterns *patterns, hgrep_compressed *sourc
     hgrep_error *err;
     flexarr *pcollector = flexarr_init(sizeof(hgrep_cstr),32);
     #ifdef HGREP_EDITING
-    flexarr *fcollector = flexarr_init(sizeof(struct fcol_pattern),16);
+    flexarr *fcollector = flexarr_init(sizeof(struct fcollector_pattern),16);
     #endif
     err = hgrep_ematch_pre(hg,patterns->b,patterns->s,fsource,fdest,pcollector
         #ifdef HGREP_EDITING

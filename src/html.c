@@ -77,7 +77,7 @@ node_output(hgrep_node *hgn,
   #endif
 }
 
-struct fcol_out {
+struct fcollector_out {
   FILE *f;
   char *v;
   size_t s;
@@ -86,7 +86,7 @@ struct fcol_out {
 
 #ifdef HGREP_EDITING
 void
-fcollector_rearrange_pre(struct fcol_pattern *fcols, size_t start, size_t end, ushort lvl)
+fcollector_rearrange_pre(struct fcollector_pattern *fcols, size_t start, size_t end, ushort lvl)
 {
   size_t i=start;
   while (start < end) {
@@ -94,7 +94,7 @@ fcollector_rearrange_pre(struct fcol_pattern *fcols, size_t start, size_t end, u
       i++;
 
     if (i < end && i != start) {
-      struct fcol_pattern t = fcols[i];
+      struct fcollector_pattern t = fcols[i];
       for (size_t j = i-1;; j--) {
         fcols[j+1] = fcols[j];
         if (j == start)
@@ -113,7 +113,7 @@ fcollector_rearrange_pre(struct fcol_pattern *fcols, size_t start, size_t end, u
 void
 fcollector_rearrange(flexarr *fcollector)
 {
-  fcollector_rearrange_pre((struct fcol_pattern*)fcollector->v,0,fcollector->size,0);
+  fcollector_rearrange_pre((struct fcollector_pattern*)fcollector->v,0,fcollector->size,0);
 }
 #endif
 
@@ -126,7 +126,7 @@ nodes_output(hgrep *hg, flexarr *compressed_nodes, flexarr *pcollector
 {
   #ifdef HGREP_EDITING
   //fprintf(stderr,"fcollector - size(%lu) compressed_nodes->size(%lu)\n",fcollector->size,compressed_nodes->size);
-  struct fcol_pattern *fcols = (struct fcol_pattern*)fcollector->v;
+  struct fcollector_pattern *fcols = (struct fcollector_pattern*)fcollector->v;
   //for (size_t j = 0; j < fcollector->size; j++)
     //fprintf(stderr,"fcollector start(%lu) end(%lu) diff(%lu) lvl(%u)\n",fcols[j].start,fcols[j].end,(fcols[j].end+1)-fcols[j].start,fcols[j].lvl);
   if (fcollector->size) {
@@ -145,7 +145,7 @@ nodes_output(hgrep *hg, flexarr *compressed_nodes, flexarr *pcollector
   FILE *fout = out;
   size_t j=0,pcurrent=0,g=0;
   #ifdef HGREP_EDITING
-  flexarr *outs = flexarr_init(sizeof(struct fcol_out),16);
+  flexarr *outs = flexarr_init(sizeof(struct fcollector_out),16);
   size_t fcurrent=0;
   size_t fsize;
   char *ptr;
@@ -168,11 +168,11 @@ nodes_output(hgrep *hg, flexarr *compressed_nodes, flexarr *pcollector
 
       REP: ;
       if (outs->size) {
-        struct fcol_out *fcol_out_last = &((struct fcol_out*)outs->v)[outs->size-1];
+        struct fcollector_out *fcol_out_last = &((struct fcollector_out*)outs->v)[outs->size-1];
         while (fcols[fcol_out_last->current].end == pcurrent) {
           //fprintf(stderr,"fcollector end fcurrent(%lu) pcurrent(%lu)\n",fcurrent,pcurrent);
 
-          FILE *tmp_out = (fcols[fcol_out_last->current].lvl == 0) ? hg->output : ((struct fcol_out*)outs->v)[outs->size-2].f;
+          FILE *tmp_out = (fcols[fcol_out_last->current].lvl == 0) ? hg->output : ((struct fcollector_out*)outs->v)[outs->size-2].f;
           fout = tmp_out;
 
           fclose(fcol_out_last->f);
@@ -192,8 +192,8 @@ nodes_output(hgrep *hg, flexarr *compressed_nodes, flexarr *pcollector
 
       while (fcurrent < fcollector->size && fcols[fcurrent].start == pcurrent) { // && fcols[fcurrent].lvl != 0
         //fprintf(stderr,"fcollector start fcurrent(%lu) pcurrent(%lu)\n",fcurrent,pcurrent);
-        struct fcol_out *ff;
-        ff = (struct fcol_out*)flexarr_inc(outs);
+        struct fcollector_out *ff;
+        ff = (struct fcollector_out*)flexarr_inc(outs);
         ff->f = open_memstream(&ff->v,&ff->s);
         ff->current = fcurrent;
         fout = ff->f;
@@ -227,7 +227,7 @@ nodes_output(hgrep *hg, flexarr *compressed_nodes, flexarr *pcollector
   }
   /*fprintf(stderr,"FCOL outs %lu\n",outs->size);
   for (size_t i = 0; i < outs->size; i++) {
-    struct fcol_out *ff = &((struct fcol_out*)outs->v)[i];
+    struct fcollector_out *ff = &((struct fcol_out*)outs->v)[i];
     fprintf(stderr,"FCOL outs - %lu %lu\n",ff->current,ff->s);
     //fwrite(ff->v,1,ff->s,hg->output);
   }*/
