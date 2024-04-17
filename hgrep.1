@@ -143,7 +143,7 @@ Specifying three values additionally matches only values of which modulo of thir
 \fB[x:y:z]\fR       - match to range from x to y from which modulo of z is equal to 0
 .in
 \&
-.SS FUNCTION
+.SS HOOK
 Always begins with '@' followed by name of function, optionally ended with argument which can be a \fBRANGE\fR or \fBTEXT\fR in '"' or '\\'' quotes.
 
 .nf
@@ -156,7 +156,21 @@ Always begins with '@' followed by name of function, optionally ended with argum
 .in
 \&
 
-.SS FORMAT
+.SS TAG
+At the begining each \fBTAG\fR must contain \fBPATTERN\fR of html tag and that can be followed by a number of \fBATTRIBUTE\fRs and \fBHOOK\fRs.
+
+Matching will be inverted if \fBTAG\fR begins with '!'.
+
+.nf
+\&
+.in +4m
+\fBPATTERN\fR
+\fB!PATTERN\fR
+\fBPATTERN ATTRIBUTE... HOOK...\fR
+.in
+\&
+
+.SS TAG_FORMAT
 It has to be specified in '"' or '\\'' quotes.
 
 If format is not specified it will be set to "%t\\n".
@@ -208,30 +222,47 @@ Value of tag's attribute, where \fIk\fP is its position counted from zero.
 .IP %(\fIk\fP)a
 Value of tag's attribute, where \fIk\fP is its name.
 
-.SS TAG
-At the begining each \fBTAG\fR must contain \fBPATTERN\fR of html tag and that can be followed by a number of \fBATTRIBUTE\fRs and \fBFUNCTION\fRs.
+.SS FUNCTION
+Begins with name followed by arguments separated by whitespaces.
 
-Matching will be inverted if \fBTAG\fR begins with '!'.
-
-Output \fBFORMAT\fR can be specified after '|' character, everything after it will be taken as \fBFORMAT\fR.
+\fBFUNCTION\fR can have up to 4 arguments that are clearly defined in [] brackets or in "",'' quotes.
 
 .nf
 \&
 .in +4m
-\fBPATTERN\fR
-\fB!PATTERN\fR
-\fBPATTERN ATTRIBUTE... FUNCTION... | FORMAT\fR
+\fBNAME\fR - function with no arguments
+\fBNAME [list] "text1" "text2"\fR - function with first argument as a list, and second and third as text
 .in
 \&
+
+
+.SS FORMAT
+Consists of \fBFUNCTION\fRs separated by whitespace. Output of the tag is passed to \fBFUNCTION\fR, and its output is passed to the next until the last one which will print it.
+
+If specified after '|' \fBFORMAT\fR will be executed separately for each matched tag.
+
+If after '/' \fBFORMAT\fR will be executed for the whole output.
+
+.nf
+\&
+.in +4m
+\fBFUNCTION FUNCTION...\fR
+.in
+\&
+
 .SS NODE
 Consists of \fBTAG\fRs and \fBEXPRESSION\fRs separated by ';' which makes them pass result from previous node to the next.
+
+Output \fBFORMAT\fR can be specified after '|' and '/' characters, everything after it will be taken as \fBFORMAT\fR.
 
 .nf
 \&
 .in +4m
 \fBTAG1; TAG2; NODE\fR - matches result of TAG1 by TAG2 and by NODE
+\fBNODE1; NODE2  | TAG_FORMAT FORMAT1 / FORMAT2\fR - prints results of NODE2 with TAG_FORMAT which is then processed separately by FORMAT1, and then processed as a whole by FORMAT2
 .in
 \&
+
 .SS EXPRESSION
 Consists of \fBNODE\fRs separated by ',' and grouped in '{' '}' brackets (which accumulate their output and increases their level).
 .nf
@@ -242,7 +273,7 @@ Consists of \fBNODE\fRs separated by ',' and grouped in '{' '}' brackets (which 
 .in
 \&
 
-.SH HGREP PATTERN FUNCTIONS
+.SH HGREP PATTERN HOOKS
 .BR m ",  " match_insides " " \fI"PATTERN"\fR
 Get tags with insides that match
 .IR PATTERN .
@@ -266,6 +297,88 @@ Get tags with size of insides that is within the
 .BR c ",  " child_count " " \fI[RANGE]\fR
 Get tags with number of children that is within the
 .IR RANGE .
+
+.SH HGREP FUNCTIONS
+.B line \fI[SELECTED]\fR \fI"DELIM"\fR
+.IP
+Return selected lines.
+
+Lines are separated by
+.IR DELIM
+(by default '\\n').
+.TP
+
+.B trim \fI"DELIM"\fR
+.IP
+Trim whitespaces at the beginning and end of the whole input.
+
+Input can be split by
+.IR DELIM
+and trimmed separatedly.
+.TP
+
+.B sort \fI"FLAGS"\fR \fI"DELIM"\fR
+.IP
+Sort input delimited by \fIDELIM\fR (by default '\\n').
+
+Flags:
+    r - reverse the results of comparison
+    u - omit repeated lines
+.TP
+
+.B uniq \fI"DELIM"\fR
+.IP
+Filter out repeating lines from input delimited by \fIDELIM\fR (by default '\\n').
+.TP
+
+.B tr \fI"STR1"\fR \fI"STR2"\fR \fI"FLAGS"\fR
+.IP
+Translate characters in
+.IR STR1
+to
+.IR STR2 .
+If \fISTR2\fR is not specified characters in \fISTR1\fR will be deleted.
+
+special STR syntax:
+    \fBCHAR1-CHAR2\fR - all characters from CHAR1 to CHAR2 in descending order
+    \fB[CHAR*REPEAT]\fR - REPEAT copies of CHAR
+    \fB[:space:]\fR - support for common character types, written in lower case
+
+Flags:
+    s - replace repeating sequences of characters with only one
+    c - use the complement of \fISTR1\fR
+.TP
+
+.B cut \fI[SELECTED]\fR \fI"DELIMS"\fR \fI"FLAGS"\fR \fI"DELIM"\fR
+.IP
+Return selected parts from input delimited by \fIDELIM\fR (by default '\\n').
+
+\fIDELIMS\fR specifies delimiters for fields and selects fields, if none are specified selection is based on bytes.
+
+\fIDELIMS\fR have the same syntax as \fBtr\fR \fISTR\fR.
+
+Flags:
+    s - do not return lines with no delimiters
+    c - complement \fILIST\fR
+    z - sets \fIDELIM\fR to '\\0'
+.TP
+
+.B sed \fI"SCRIPT"\fR \fI"FLAGS"\fR \fI"DELIM"\fR
+.IP
+Implementation of
+.BR sed (1).
+
+Lines are delimited by \fIDELIM\fR (by default '\\n').
+
+Flags:
+    n - suppress automatic printing of pattern space
+    z - set \fIDELIM\fR to '\\0'
+    E - use extended regexp
+
+Deviations from standard:
+    \fBi\fR \fBc\fR \fBa\fR commands do nothing even though they take arguments
+    \fBl\fR \fBr\fR \fBR\fR \fBQ\fR \fBw\fR \fBW\fR are not implemented
+.TP
 
 .SH EXAMPLES
 Get tags 'a' with attribute 'href' at position 0 of value ending with '.org', from result of matching tags 'div' with attribute 'id', and without attribute 'class', from file 'index.html'.
@@ -293,7 +406,7 @@ Get hyperlinks from level greater or equal to 6 from file 'index.html'.
 .nf
 \&
 .in +4m
-.B $ hgrep 'a +href @l[6\-] | "%(href)a\\\\n"' index.html
+.B $ hgrep 'a +href @l[6:] | "%(href)a\\\\n"' index.html
 .in
 \&
 Get all urls from 'a' and 'img' tags

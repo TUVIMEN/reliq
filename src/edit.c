@@ -50,8 +50,8 @@ const struct hgrep_format_function format_functions[] = {
     {{"line",4},line_edit},
     {{"sort",4},sort_edit},
     {{"uniq",4},uniq_edit},
-    {{"match",5},NULL},
-    {{"error",5},NULL},
+    /*{{"match",5},NULL},
+    {{"error",5},NULL},*/
 };
 
 hgrep_error *
