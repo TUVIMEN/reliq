@@ -61,6 +61,7 @@ typedef unsigned long int ulong;
 #define F_CHILD_COUNT 0x10
 #define F_SIZE 0x20
 #define F_MATCH_INSIDES 0x40
+#define F_POSITION 0x80
 
 //hgrep_epattern flags
 #define EPATTERN_TABLE 0x1
@@ -83,6 +84,7 @@ const struct hgrep_match_function match_functions[] = {
     {{"l",1},F_SBRACKET|F_LEVEL,0},
     {{"s",1},F_SBRACKET|F_SIZE,0},
     {{"c",1},F_SBRACKET|F_CHILD_COUNT,0},
+    {{"p",1},F_SBRACKET|F_POSITION,0},
 
     {{"match_insides",13},F_STRING|F_MATCH_INSIDES,P_MATCH_INSIDES},
     {{"rev_match_insides",17},F_STRING|F_MATCH_INSIDES,P_MATCH_INSIDES|P_INVERT_INSIDES},
@@ -90,6 +92,7 @@ const struct hgrep_match_function match_functions[] = {
     {{"level",5},F_SBRACKET|F_LEVEL,0},
     {{"size",4},F_SBRACKET|F_SIZE,0},
     {{"child_count",11},F_SBRACKET|F_CHILD_COUNT,0},
+    {{"position",8},F_SBRACKET|F_POSITION,0},
 };
 
 hgrep_error *
@@ -145,7 +148,7 @@ hgrep_match(const hgrep_node *hgn, const hgrep_pattern *p)
   uchar rev = ((p->flags&P_INVERT) == P_INVERT);
   regmatch_t pmatch;
 
-  if (!ranges_match(hgn->lvl,p->position_r,p->position_rl,-1)
+  if (!ranges_match(hgn->lvl,p->level_r,p->level_rl,-1)
     || !ranges_match(hgn->attribl,p->attribute_r,p->attribute_rl,-1)
     || !ranges_match(hgn->child_count,p->child_count_r,p->child_count_rl,-1)
     || !ranges_match(hgn->insides.s,p->size_r,p->size_rl,-1))
@@ -391,7 +394,7 @@ match_function_handle(hgrep_pattern *p, char *src, size_t *pos, size_t *size, co
       if (err)
         return err;
     } else if (match_functions[i].flags&F_LEVEL) {
-      err = ranges_comp(src,pos,*size,&p->position_r,&p->position_rl);
+      err = ranges_comp(src,pos,*size,&p->level_r,&p->level_rl);
       if (err)
         return err;
     } else if (match_functions[i].flags&F_SIZE) {
@@ -400,6 +403,10 @@ match_function_handle(hgrep_pattern *p, char *src, size_t *pos, size_t *size, co
         return err;
     } else if (match_functions[i].flags&F_CHILD_COUNT) {
       err = ranges_comp(src,pos,*size,&p->child_count_r,&p->child_count_rl);
+      if (err)
+        return err;
+    } else if (match_functions[i].flags&F_POSITION) {
+      err = ranges_comp(src,pos,*size,&p->position_r,&p->position_rl);
       if (err)
         return err;
     }
@@ -872,6 +879,20 @@ hgrep_epcomp(const char *src, size_t size, hgrep_epatterns *epatterns, const uch
 }
 
 static void
+dest_match_position(const struct hgrep_range *range, const size_t rangel, flexarr *dest, const size_t start, const size_t end) {
+  hgrep_compressed *x = (hgrep_compressed*)dest->v;
+  size_t count = 0;
+  for (size_t i = start; i < end; i++) {
+    if (!ranges_match(i-start,range,rangel,end-start))
+      continue;
+    if (count != i)
+      x[count] = x[i];
+    count++;
+  }
+  dest->size = start+count;
+}
+
+static void
 first_match(hgrep *hg, hgrep_pattern *pattern, flexarr *dest)
 {
   hgrep_node *nodes = hg->nodes;
@@ -883,6 +904,8 @@ first_match(hgrep *hg, hgrep_pattern *pattern, flexarr *dest)
       x->id = i;
     }
   }
+  if (pattern->position_rl)
+    dest_match_position(pattern->position_r,pattern->position_rl,dest,0,dest->size);
 }
 
 
@@ -900,6 +923,7 @@ pattern_exec(hgrep *hg, hgrep_pattern *pattern, flexarr *source, flexarr *dest)
   for (size_t i = 0; i < source->size; i++) {
     current = ((hgrep_compressed*)source->v)[i].id;
     lvl = nodes[current].lvl;
+    size_t prevdestsize = dest->size;
     for (size_t j = 0; j <= nodes[current].child_count; j++) {
       n = current+j;
       nodes[n].lvl -= lvl;
@@ -910,6 +934,8 @@ pattern_exec(hgrep *hg, hgrep_pattern *pattern, flexarr *source, flexarr *dest)
       }
       nodes[n].lvl += lvl;
     }
+    if (pattern->position_rl)
+      dest_match_position(pattern->position_r,pattern->position_rl,dest,prevdestsize,dest->size);
   }
 }
 
@@ -1104,14 +1130,16 @@ hgrep_pfree(hgrep_pattern *p)
     if (p->flags&P_MATCH_INSIDES)
       regfree(&p->insides);
     pattrib_free(p->attrib,p->attribl);
-    if (p->position_rl)
-      free(p->position_r);
+    if (p->level_rl)
+      free(p->level_r);
     if (p->attribute_rl)
       free(p->attribute_r);
     if (p->size_rl)
       free(p->size_r);
     if (p->child_count_rl)
       free(p->child_count_r);
+    if (p->position_rl)
+      free(p->position_r);
   }
 }
 

@@ -80,14 +80,16 @@ typedef struct {
   regex_t insides;
   struct hgrep_pattrib *attrib;
   size_t attribl;
-  struct hgrep_range *position_r;
+  struct hgrep_range *level_r;
   struct hgrep_range *attribute_r;
   struct hgrep_range *size_r;
   struct hgrep_range *child_count_r;
-  size_t position_rl;
+  struct hgrep_range *position_r;
+  size_t level_rl;
   size_t attribute_rl;
   size_t size_rl;
   size_t child_count_rl;
+  size_t position_rl;
   unsigned char flags;
 } hgrep_pattern;
 

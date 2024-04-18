@@ -287,7 +287,7 @@ Get tags with attributes that are within the
 .IR RANGE .
 .TP
 .BR l ",  " level " " \fI[RANGE]\fR
-Get tags that are on level within the
+Get tags that are on level relative to parent within the
 .IR RANGE .
 .TP
 .BR s ",  " size " " \fI[RANGE]\fR
@@ -297,6 +297,11 @@ Get tags with size of insides that is within the
 .BR c ",  " child_count " " \fI[RANGE]\fR
 Get tags with number of children that is within the
 .IR RANGE .
+.TP
+.BR p ",  " position " " \fI[RANGE]\fR
+Get tags with position relative to parent within the
+.IR RANGE .
+Not compatible with fast mode.
 
 .SH HGREP FUNCTIONS
 .B line \fI[SELECTED]\fR \fI"DELIM"\fR
