@@ -155,11 +155,11 @@ ranges_match(const uint matched, const struct hgrep_range *ranges, const size_t 
     r = &ranges[i];
     x = r->v[0];
     y = r->v[1];
-    if (!(r->flags&8)) {
+    if (!(r->flags&R_RANGE)) {
       if (r->flags&1)
         x = ((uint)last < r->v[0]) ? 0 : last-r->v[0];
       if (matched == x)
-        return 1;
+        return r->flags&R_INVERT ? 0 : 1;
     } else {
       if (r->flags&1)
         x = ((uint)last < r->v[0]) ? 0 : last-r->v[0];
@@ -170,10 +170,10 @@ ranges_match(const uint matched, const struct hgrep_range *ranges, const size_t 
       }
       if (matched >= x && matched <= y)
         if (r->v[2] < 2 || matched%r->v[2] == 0)
-          return 1;
+          return r->flags&R_INVERT ? 0 : 1;
     }
   }
-  return 0;
+  return r->flags&R_INVERT ? 1 : 0;
 }
 
 static void
@@ -184,6 +184,11 @@ range_comp(const char *src, const size_t size, struct hgrep_range *range)
 
   for (int i = 0; i < 3; i++) {
     while_is(isspace,src,pos,size);
+    if (i == 0 && pos < size && src[pos] == '!') {
+      range->flags |= R_INVERT; //invert
+      pos++;
+      while_is(isspace,src,pos,size);
+    }
     if (i == 1)
       range->flags |= R_RANGE; //is a range
     if (pos < size && src[pos] == '-') {
@@ -198,6 +203,9 @@ range_comp(const char *src, const size_t size, struct hgrep_range *range)
       range->flags |= R_NOTEMPTY; //not empty
     } else if (i == 1)
       range->flags |= 1<<i;
+
+    while (pos < size && src[pos] == '!')
+      pos++;
 
     if (pos >= size || src[pos] != ':')
       break;
@@ -217,7 +225,7 @@ ranges_comp_pre(const char *src, size_t *pos, const size_t size, flexarr *ranges
   while (*pos < size && src[*pos] != ']') {
     while_is(isspace,src,*pos,size);
     end = *pos;
-    while (end < size && (isspace(src[end]) || isdigit(src[end]) || src[end] == ':' || src[end] == '-') && src[end] != ',')
+    while (end < size && (isspace(src[end]) || isdigit(src[end]) || src[end] == ':' || src[end] == '-' || src[end] == '!') && src[end] != ',')
       end++;
     if (end >= size)
       goto ERR;

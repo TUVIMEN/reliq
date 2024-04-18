@@ -123,7 +123,7 @@ Consists of \fBATTRIBUTE_NAME\fR followed by '=' and \fBPATTERN\fR of attribute'
 .in
 \&
 .SS RANGE
-Is always embedded in square brackets. Consists of groups of three numbers separated by ':', that can be practically endlessly separated by ','. Empty values will be complementes. Putting '-' before two first values (even if they are not specified) makes subtracted from the maximal value. 
+Is always embedded in square brackets. Consists of groups of three numbers separated by ':', that can be practically endlessly separated by ','. Empty values will be complemented. Putting '-' before two first values (even if they are not specified) makes them subtracted from the maximal value. If '!' is found before the first value the matching will be inversed.
 
 Specifying only one value equals to matching only to that value.
 
@@ -134,8 +134,8 @@ Specifying three values additionally matches only values of which modulo of thir
 .nf
 \&
 .in +4m
-\fB[x1,x2,x3,x4]\fR - match to one of the values
-\fB[x1:y1,x2:y2]\fR - match to one of the ranges
+\fB[x1,!x2,x3,x4]\fR - match to one of the values that is not x2
+\fB[x1:y1,x2:y2,!x3:y4]\fR - match to one of the ranges that is not in x3:y4
 \fB[-]\fR           - match to last value
 \fB[-x]\fR          - match to x'th value from the end
 \fB[:-y]\fR         - match to range from 0 to y'th value from end

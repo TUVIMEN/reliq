@@ -22,6 +22,7 @@
 //hgrep_range flags
 #define R_RANGE 0x8
 #define R_NOTEMPTY 0x10
+#define R_INVERT 0x20
 
 #define REGEX_PATTERN_SIZE (1<<9)
 

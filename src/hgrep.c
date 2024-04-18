@@ -881,15 +881,15 @@ hgrep_epcomp(const char *src, size_t size, hgrep_epatterns *epatterns, const uch
 static void
 dest_match_position(const struct hgrep_range *range, const size_t rangel, flexarr *dest, const size_t start, const size_t end) {
   hgrep_compressed *x = (hgrep_compressed*)dest->v;
-  size_t count = 0;
+  size_t found = start;
   for (size_t i = start; i < end; i++) {
     if (!ranges_match(i-start,range,rangel,end-start))
       continue;
-    if (count != i)
-      x[count] = x[i];
-    count++;
+    if (found != i)
+      x[found] = x[i];
+    found++;
   }
-  dest->size = start+count;
+  dest->size = found;
 }
 
 static void
