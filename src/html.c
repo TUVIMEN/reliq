@@ -115,6 +115,44 @@ fcollector_rearrange(flexarr *fcollector)
 {
   fcollector_rearrange_pre((struct fcollector_pattern*)fcollector->v,0,fcollector->size,0);
 }
+
+static hgrep_error *
+fcollector_out_end(flexarr *outs, const size_t pcurrent, struct fcollector_pattern *fcols, FILE *output, const char *data, FILE **fout)
+{
+  hgrep_error *err = NULL;
+  START: ;
+  if (!outs->size)
+    return err;
+
+  struct fcollector_out *fcol_out_last = &((struct fcollector_out*)outs->v)[outs->size-1];
+
+  if (fcols[fcol_out_last->current].end != pcurrent)
+    return err;
+
+  hgrep_format_func *format = fcols[fcol_out_last->current].p->exprf;
+  size_t formatl = fcols[fcol_out_last->current].p->exprfl;
+  if (fcols[fcol_out_last->current].isnodef) {
+    format = fcols[fcol_out_last->current].p->nodef;
+    formatl = fcols[fcol_out_last->current].p->nodefl;
+  }
+  //fprintf(stderr,"fcollector out end pcurrent(%lu)\n",pcurrent);
+
+  FILE *tmp_out = (fcols[fcol_out_last->current].lvl == 0) ? output : ((struct fcollector_out*)outs->v)[outs->size-2].f;
+  *fout = tmp_out;
+
+  fclose(fcol_out_last->f);
+  /*fprintf(stderr,"%.*s\n",fcol_out_last->s,fcol_out_last->v);
+  fprintf(stderr,"fcollector end\n\n");*/
+  err = format_exec(fcol_out_last->v,fcol_out_last->s,tmp_out,NULL,format,formatl,data);
+  free(fcol_out_last->v);
+
+  flexarr_dec(outs);
+
+  if (err)
+    return err;
+
+  goto START;
+}
 #endif
 
 hgrep_error *
@@ -125,10 +163,10 @@ nodes_output(hgrep *hg, flexarr *compressed_nodes, flexarr *pcollector
         )
 {
   #ifdef HGREP_EDITING
-  //fprintf(stderr,"fcollector - size(%lu) compressed_nodes->size(%lu)\n",fcollector->size,compressed_nodes->size);
+  //fprintf(stderr,"fcollector - size(%lu) compressed_nodes->size(%lu) pcollector->size(%lu)\n",fcollector->size,compressed_nodes->size,pcollector->size);
   struct fcollector_pattern *fcols = (struct fcollector_pattern*)fcollector->v;
-  //for (size_t j = 0; j < fcollector->size; j++)
-    //fprintf(stderr,"fcollector start(%lu) end(%lu) diff(%lu) lvl(%u)\n",fcols[j].start,fcols[j].end,(fcols[j].end+1)-fcols[j].start,fcols[j].lvl);
+  /*for (size_t j = 0; j < fcollector->size; j++)
+    fprintf(stderr,"fcollector start(%lu) end(%lu) diff(%lu) lvl(%u)\n",fcols[j].start,fcols[j].end,(fcols[j].end+1)-fcols[j].start,fcols[j].lvl);*/
   if (fcollector->size) {
       fcollector_rearrange(fcollector);
       /*fprintf(stderr,"fcollector rearrangement\n");
@@ -153,65 +191,27 @@ nodes_output(hgrep *hg, flexarr *compressed_nodes, flexarr *pcollector
   for (;; j++) {
     #ifdef HGREP_EDITING
     if (compressed_nodes->size && g == 0) {
-      if (out != hg->output) {
-        fclose(out);
-        err = format_exec(ptr,fsize,fout,NULL,
-          ((hgrep_epattern*)pcol[pcurrent-1].b)->exprf,
-          ((hgrep_epattern*)pcol[pcurrent-1].b)->exprfl,hg->data);
-        free(ptr);
-        if (err)
-          return err;
-        out = hg->output;
-      }
-
-      //fprintf(stderr,"loop fcurrent(%lu) pg(%lu)\n",fcurrent,pcurrent);
-
-      REP: ;
-      if (outs->size) {
-        struct fcollector_out *fcol_out_last = &((struct fcollector_out*)outs->v)[outs->size-1];
-        while (fcols[fcol_out_last->current].end == pcurrent) {
-          //fprintf(stderr,"fcollector end fcurrent(%lu) pcurrent(%lu)\n",fcurrent,pcurrent);
-
-          FILE *tmp_out = (fcols[fcol_out_last->current].lvl == 0) ? hg->output : ((struct fcollector_out*)outs->v)[outs->size-2].f;
-          fout = tmp_out;
-
-          fclose(fcol_out_last->f);
-          //fprintf(stderr,"%.*s\n",fcol_out_last->s,fcol_out_last->v);
-          //fprintf(stderr,"fcollector end\n\n",fcurrent,pcurrent);
-          err = format_exec(fcol_out_last->v,fcol_out_last->s,tmp_out,NULL,
-            fcols[fcol_out_last->current].p->exprf,
-            fcols[fcol_out_last->current].p->exprfl,hg->data);
-          free(fcol_out_last->v);
-          if (err)
-            return err;
-
-          flexarr_dec(outs);
-          goto REP;
-        }
-      }
 
       while (fcurrent < fcollector->size && fcols[fcurrent].start == pcurrent) { // && fcols[fcurrent].lvl != 0
-        //fprintf(stderr,"fcollector start fcurrent(%lu) pcurrent(%lu)\n",fcurrent,pcurrent);
+        //fprintf(stderr,"fcollector out start fcurrent(%lu) pcurrent(%lu)\n",fcurrent,pcurrent);
         struct fcollector_out *ff;
         ff = (struct fcollector_out*)flexarr_inc(outs);
         ff->f = open_memstream(&ff->v,&ff->s);
-        ff->current = fcurrent;
+        ff->current = fcurrent++;
         fout = ff->f;
-        fcurrent++;
       }
 
       if (j >= compressed_nodes->size)
         break;
-      if (((hgrep_epattern*)pcol[pcurrent].b)->exprfl) {
+      if (((hgrep_epattern*)pcol[pcurrent].b)->exprfl)
         out = open_memstream(&ptr,&fsize);
-        //fprintf(stderr,"fexpr pcurrent(%u) fout(%p)\n",pcurrent,fout);
-      }
     }
-    #endif
+    #else
     if (j >= compressed_nodes->size)
       break;
+    #endif
+
     hgrep_compressed *x = &((hgrep_compressed*)compressed_nodes->v)[j];
-    //fprintf(stderr,"nodes_output istalbe(%u) pcurrent(%u) pcollector->size(%u) j(%lu) name(%.*s)\n",((hgrep_epattern*)pcol[pcurrent].b)->istable,pcurrent,pcollector->size,j,hg->nodes[x->id].tag.s,hg->nodes[x->id].tag.b);
     hg->nodes[x->id].lvl -= x->lvl;
     err = node_output(&hg->nodes[x->id],((hgrep_epattern*)pcol[pcurrent].b)->nodef,
       ((hgrep_epattern*)pcol[pcurrent].b)->nodefl,(out == hg->output) ? fout : out,hg->data);
@@ -221,16 +221,27 @@ nodes_output(hgrep *hg, flexarr *compressed_nodes, flexarr *pcollector
 
     g++;
     if (pcol[pcurrent].s == g) {
+      #ifdef HGREP_EDITING
+      if (out != hg->output) {
+        fclose(out);
+        err = format_exec(ptr,fsize,fout,NULL,
+          ((hgrep_epattern*)pcol[pcurrent].b)->exprf,
+          ((hgrep_epattern*)pcol[pcurrent].b)->exprfl,hg->data);
+        free(ptr);
+        if (err)
+          return err;
+        out = hg->output;
+      }
+
+      err = fcollector_out_end(outs,pcurrent,fcols,hg->output,hg->data,&fout);
+      if (err)
+        return err;
+      #endif
+
       g = 0;
       pcurrent++;
     }
   }
-  /*fprintf(stderr,"FCOL outs %lu\n",outs->size);
-  for (size_t i = 0; i < outs->size; i++) {
-    struct fcollector_out *ff = &((struct fcol_out*)outs->v)[i];
-    fprintf(stderr,"FCOL outs - %lu %lu\n",ff->current,ff->s);
-    //fwrite(ff->v,1,ff->s,hg->output);
-  }*/
   return NULL;
 }
 

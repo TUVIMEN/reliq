@@ -258,8 +258,8 @@ Output \fBFORMAT\fR can be specified after '|' and '/' characters, everything af
 .nf
 \&
 .in +4m
-\fBTAG1; TAG2; NODE\fR - matches result of TAG1 by TAG2 and by NODE
-\fBNODE1; NODE2  | TAG_FORMAT FORMAT1 / FORMAT2\fR - prints results of NODE2 with TAG_FORMAT which is then processed separately by FORMAT1, and then processed as a whole by FORMAT2
+\fBTAG1; TAG2; NODE\fR - matches results of TAG1 by TAG2 and by NODE
+\fBNODE1; NODE2\fR - process the results of NODE1 by NODE2
 .in
 \&
 
@@ -272,6 +272,30 @@ Consists of \fBNODE\fRs separated by ',' and grouped in '{' '}' brackets (which 
 \fBEXPRESSION1; { EXPRESSION2; {EXPRESSION3, EXPRESSION4}, EXPRESSION5}; EXPRESSION6\fR
 .in
 \&
+
+.SS OUTPUT
+
+Is changed based on output \fBFORMAT\fR and can be specified only to the last \fBEXPRESSION\fRs, or if they are children of groups having \fBFORMAT\fR.
+
+Output \fBFORMAT\fR can be specified after '|' and '/' characters, everything after it will be taken as \fBFORMAT\fR.
+
+If the first thing in \fBFORMAT\fR specified after '|' character of a node is a \fI"TEXT"\fR it will be used as \fBTAG_FORMAT\fR.
+
+\fBFORMAT\fR after '|' character is executed on each element matched, and after '/' to the whole result.
+
+Groups with format after '|' will execute their \fBEXPRESSION\fRs for each element in input independently, contrary to normal behavior where the child processes all the input at once before going to the next.
+
+.nf
+\&
+.in +4m
+\fBNODE1; NODE2 | TAG_FORMAT FORMAT1 / FORMAT2\fR - matches NODE2 to results of NODE1, then prints them one by one with TAG_FORMAT and processes WITH FORMAT1, then processes everything by FORMAT2
+\fBNODE1 | FORMAT, NODE2 / FORMAT\fR
+\fBNODE1; { NODE1 | FORMAT, NODE2 / FORMAT }\fR
+\fBNODE1; { NODE1 | FORMAT, NODE2 / FORMAT } / FORMAT\fR - process results of GROUP
+\fBNODE1; { NODE1 | FORMAT, NODE2 / FORMAT } | FORMAT / FORMAT\fR - process results of GROUP one by one, and then as a whole
+.in
+\&
+
 
 .SH HGREP PATTERN HOOKS
 .BR m ",  " match_insides " " \fI"PATTERN"\fR

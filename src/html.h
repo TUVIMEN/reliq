@@ -24,6 +24,7 @@ struct fcollector_pattern {
   size_t start;
   size_t end;
   unsigned short lvl;
+  unsigned char isnodef;
 };
 
 hgrep_error *node_output(hgrep_node *hgn,

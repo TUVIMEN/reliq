@@ -104,7 +104,6 @@ typedef struct {
   size_t nodefl;
   #ifdef HGREP_EDITING
   size_t exprfl;
-  size_t passedfl;
   #endif
   unsigned char istable;
 } hgrep_epattern;
