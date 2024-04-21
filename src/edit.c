@@ -50,6 +50,7 @@ const struct hgrep_format_function format_functions[] = {
     {{"line",4},line_edit},
     {{"sort",4},sort_edit},
     {{"uniq",4},uniq_edit},
+    {{"echo",4},echo_edit},
     /*{{"match",5},NULL},
     {{"error",5},NULL},*/
 };
@@ -1315,6 +1316,40 @@ cstr_get_line_d(const char *src, size_t size, size_t *saveptr, const char delim)
   if (ret.b && ret.b[ret.s-1] == delim)
     ret.s--;
   return ret;
+}
+
+static void
+echo_edit_print(hgrep_str *str, FILE *output)
+{
+  for (size_t i = 0; i < str->s; i++) {
+    if (str->b[i] == '\\' && i+1 < str->s) {
+      fputc(special_character(str->b[++i]),output);
+      continue;
+    }
+    fputc(str->b[i],output);
+  }
+}
+
+hgrep_error *
+echo_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
+{
+  hgrep_str *str[2] = {NULL};
+
+  if (arg[0] && flag&FORMAT_ARG0_ISSTR && ((hgrep_str*)arg[0])->b && ((hgrep_str*)arg[0])->s)
+    str[0] = (hgrep_str*)arg[0];
+  if (arg[1] && flag&FORMAT_ARG1_ISSTR && ((hgrep_str*)arg[1])->b && ((hgrep_str*)arg[1])->s)
+    str[1] = (hgrep_str*)arg[1];
+
+  if (!str[0] && !str[1])
+    return hgrep_set_error(0,"echo: missing arguments");
+
+  if (str[0] && str[0]->s)
+    echo_edit_print(str[0],output);
+  fwrite(src,1,size,output);
+  if (str[1] && str[1]->s)
+    echo_edit_print(str[1],output);
+
+  return NULL;
 }
 
 hgrep_error *

@@ -39,6 +39,7 @@ hgrep_error *sed_edit(char *src, size_t size, FILE *output, const void *arg[4], 
 hgrep_error *line_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag);
 hgrep_error *sort_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag);
 hgrep_error *uniq_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag);
+hgrep_error *echo_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag);
 
 extern const struct hgrep_format_function format_functions[];
 
