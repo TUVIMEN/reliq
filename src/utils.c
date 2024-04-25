@@ -40,11 +40,104 @@ typedef unsigned long int ulong;
 #define RANGES_INC (1<<4)
 
 #define while_is(w,x,y,z) while ((y) < (z) && w((x)[(y)])) {(y)++;}
+#define while_isnt(w,x,y,z) while ((y) < (z) && !w((x)[(y)])) {(y)++;}
+
+void
+memtrim(void const **dest, size_t *destsize, const void *src, const size_t size)
+{
+  if (!src || !size)
+    return;
+
+  size_t start=0,end=size;
+  while (start < end && isspace(((char*)src)[start]))
+    start++;
+
+  while (end-1 > start && isspace(((char*)src)[end-1]))
+    end--;
+
+  *dest = (void*)src+start;
+  *(size_t*)destsize = end-start;
+}
+
+static size_t
+memwordtok_r_get_word(const char *ptr, const size_t plen, char const **word, size_t *wordlen)
+{
+  *word = NULL;
+  *wordlen = 0;
+  size_t p = 0;
+  if (plen == 0)
+    return p;
+  while_is(isspace,ptr,p,plen);
+  if (p >= plen)
+    return p;
+  *word = ptr+p;
+  while_isnt(isspace,ptr,p,plen);
+  *wordlen = p-(*word-ptr);
+  return p;
+}
+
+void
+memwordtok_r(const void *ptr, const size_t plen, void const **saveptr, size_t *saveptrlen, void const **word, size_t *wordlen)
+{
+  *word = NULL;
+  *wordlen = 0;
+
+  if (ptr) {
+    size_t size = memwordtok_r_get_word((char*)ptr,plen,(char const**)word,wordlen);
+    if (*wordlen) {
+      *saveptr = ptr+size;
+      *saveptrlen = plen-size;
+    }
+    return;
+  }
+
+  if (!*saveptr)
+    return;
+
+  size_t size = memwordtok_r_get_word((char*)*saveptr,*saveptrlen,(char const**)word,wordlen);
+  if (*wordlen) {
+    *saveptr += size;
+    *saveptrlen -= size;
+  }
+  return;
+}
 
 void *
 memdup(void const *src, size_t size)
 {
   return memcpy(malloc(size),src,size);
+}
+
+int
+memcasecmp(const void *v1, const void *v2, const size_t n)
+{
+  const char *s1 = v1,
+    *s2 = v2;
+  for (size_t i = 0; i < n; i++) {
+    char u1 = toupper(s1[i]);
+    char u2 = toupper(s2[i]);
+    char diff = u1-u2;
+    if (diff)
+      return diff;
+  }
+  return 0;
+}
+
+void const*
+memcasemem(void const *haystack, size_t const haystackl, const void *needle, const size_t needlel)
+{
+  if (haystackl < needlel || !haystackl || !needlel)
+    return NULL;
+  const char *haystack_s = haystack,
+    *needle_s = needle;
+  for (size_t i=0,prev; i < haystackl; i++) {
+    prev = i;
+    for (size_t j=0; i < haystackl && j < needlel && toupper(needle_s[j]) == toupper(haystack_s[i]); i++, j++)
+      if (j == needlel-1)
+        return haystack+(i-j);
+    i = prev;
+  }
+  return NULL;
 }
 
 char
@@ -113,7 +206,7 @@ get_quoted(char *src, size_t *i, size_t *size, const char delim, size_t *start, 
       (*i)++;
     }
     if (src[*i] != tf)
-      return hgrep_set_error(1,"pattern: could not find the end of %c quote [%lu:]",tf,*start);
+      return hgrep_set_error(1,"string: could not find the end of %c quote",tf);
     *len = ((*i)++)-(*start);
   } else {
     *start = *i;
@@ -122,7 +215,8 @@ get_quoted(char *src, size_t *i, size_t *size, const char delim, size_t *start, 
         (*i)++;
       } else if (src[*i] == '\\' && (isspace(src[*i+1]) || src[*i+1] == delim)) {
         delchar(src,*i,size);
-      }
+      } else if (src[*i] == '"' || src[*i] == '\'')
+        return hgrep_set_error(1,"string: illegal use of %c inside unquoted string",src[*i]);
       (*i)++;
     }
     *len = *i-*start;

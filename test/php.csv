@@ -1,8 +1,8 @@
 a6d1c040ae951940792bc23d633b4f19,-Fl
-c151b5806db093dd3c2741f048f4cea9,'div @a[1]'
-b351fe035a51e0719b9c3139bd511f63,'.* @s[1:] @M"<"'
+c151b5806db093dd3c2741f048f4cea9,'div a@[1]'
+b351fe035a51e0719b9c3139bd511f63,'* m@>[1:] m@v>"<"'
 c151b5806db093dd3c2741f048f4cea9,'div +class'
 c151b5806db093dd3c2741f048f4cea9,'div +class -id'
-7502d7c1245c048174431cda540320a5,-F '!html; !body'
-dbd4964190d1df2aa4be3fc1314199e4,'php'
-acecfd2ae39913cceb9af894f0de9e7d,-F '!php'
+7f46b447ea5d264e9c43737dd0c305eb,-F 'html; body'
+bb9ccba96b59bb92811e12162110c08e,'v>php'
+dbd4964190d1df2aa4be3fc1314199e4,-F 'php'

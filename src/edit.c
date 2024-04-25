@@ -1748,15 +1748,15 @@ trim_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsign
           lineend++;
     } else
       lineend = size;
+
     if (lineend-line) {
-      size_t start=line,end=lineend;
-      while (start < end && isspace(src[start]))
-        start++;
-      while (end-1 > start && isspace(src[end-1]))
-        end--;
-      if (end-start)
-        fwrite(src+start,1,end-start,output);
+      char *trimmed;
+      size_t trimmedl = 0;
+      memtrim((void const**)&trimmed,&trimmedl,src+line,lineend-line);
+      if (trimmedl)
+        fwrite(trimmed,1,trimmedl,output);
     }
+
     line = lineend;
   }
 

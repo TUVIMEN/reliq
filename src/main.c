@@ -93,11 +93,9 @@ usage()
       "Search for PATTERNS in each html FILE.\n"\
       "Example: %s -i 'div +id; a +href=\".*\\.org\"' index.html\n\n"\
       "Options:\n"\
-      "  -i\t\t\tignore case distinctions in patterns and data\n"\
       "  -l\t\t\tlist structure of FILE\n"\
       "  -o FILE\t\tchange output to a FILE instead of stdout\n"\
       "  -f FILE\t\tobtain PATTERNS from FILE\n"\
-      "  -E\t\t\tuse extended regular expressions\n"\
       "  -H\t\t\tfollow symlinks\n"\
       "  -r\t\t\tread all files under each directory, recursively\n"\
       "  -R\t\t\tlikewise but follow all symlinks\n"\
@@ -209,14 +207,8 @@ main(int argc, char **argv)
   int opt;
   outfile = stdout;
 
-  while ((opt = getopt(argc,argv,"Eilo:f:HrRFvh")) != -1) {
+  while ((opt = getopt(argc,argv,"lo:f:HrRFvh")) != -1) {
     switch (opt) {
-      case 'E':
-        hflags |= HGREP_EREGEX;
-        break;
-      case 'i':
-        hflags |= HGREP_ICASE;
-        break;
       case 'l':
         handle_hgrep_error(hgrep_epcomp("| \"%n%A - %c/%l/%s/%p\\n\"",24,&patterns,hflags));
         break;

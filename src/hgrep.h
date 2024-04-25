@@ -19,8 +19,6 @@
 #ifndef HGREP_H
 #define HGREP_H
 
-#define HGREP_EREGEX 0x1
-#define HGREP_ICASE 0x2
 #define HGREP_SAVE 0x8
 
 typedef struct {
@@ -68,28 +66,42 @@ struct hgrep_range {
   unsigned char flags;
 };
 
+typedef struct {
+  union {
+    hgrep_str str;
+    regex_t reg;
+  } match;
+  struct hgrep_range *ranges;
+  size_t rangesl;
+  unsigned short flags;
+} hgrep_regex;
+
+typedef struct {
+  struct hgrep_range *b;
+  size_t s;
+} hgrep_list;
+
 struct hgrep_pattrib {
-  regex_t r[2];
-  struct hgrep_range *position_r;
-  size_t position_rl;
+  hgrep_regex r[2];
+  hgrep_list position;
   unsigned char flags;
 };
 
 typedef struct {
-  regex_t tag;
-  regex_t insides;
+  union {
+    hgrep_regex r;
+    hgrep_list l;
+  } match;
+  unsigned short flags;
+} hgrep_hook;
+
+typedef struct {
+  hgrep_regex tag;
   struct hgrep_pattrib *attrib;
   size_t attribl;
-  struct hgrep_range *level_r;
-  struct hgrep_range *attribute_r;
-  struct hgrep_range *size_r;
-  struct hgrep_range *child_count_r;
-  struct hgrep_range *position_r;
-  size_t level_rl;
-  size_t attribute_rl;
-  size_t size_rl;
-  size_t child_count_rl;
-  size_t position_rl;
+  hgrep_hook *hooks;
+  size_t hooksl;
+  hgrep_list position;
   unsigned char flags;
 } hgrep_pattern;
 
@@ -146,7 +158,7 @@ hgrep_error *hgrep_fmatch(const char *ptr, const size_t size, FILE *output, cons
 #endif
   size_t nodefl);
 hgrep_error *hgrep_efmatch(char *ptr, const size_t size, FILE *output, const hgrep_epatterns *epatterns, int (*freeptr)(void *ptr, size_t size));
-hgrep_error *hgrep_pcomp(const char *pattern, size_t size, hgrep_pattern *p, const unsigned char flags);
+hgrep_error *hgrep_pcomp(const char *pattern, size_t size, hgrep_pattern *p);
 hgrep_error *hgrep_epcomp(const char *src, size_t size, hgrep_epatterns *epatterns, const unsigned char flags);
 int hgrep_match(const hgrep_node *hgn, const hgrep_pattern *p);
 hgrep_error *hgrep_ematch(hgrep *hg, const hgrep_epatterns *patterns, hgrep_compressed *source, size_t sourcel, hgrep_compressed *dest, size_t destl);
