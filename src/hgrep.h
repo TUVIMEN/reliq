@@ -55,9 +55,9 @@ typedef struct {
   hgrep_cstr all;
   hgrep_cstr tag;
   hgrep_cstr insides;
-  hgrep_cstr_pair *attrib;
+  hgrep_cstr_pair *attribs;
   unsigned int child_count;
-  unsigned short attribl;
+  unsigned short attribsl;
   unsigned short lvl;
 } hgrep_node;
 
@@ -97,8 +97,8 @@ typedef struct {
 
 typedef struct {
   hgrep_regex tag;
-  struct hgrep_pattrib *attrib;
-  size_t attribl;
+  struct hgrep_pattrib *attribs;
+  size_t attribsl;
   hgrep_hook *hooks;
   size_t hooksl;
   hgrep_list position;

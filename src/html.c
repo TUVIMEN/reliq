@@ -542,14 +542,14 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
     hgn->insides.s = hgn->all.s;
 
   size_t size = a->size-attrib_start;
-  hgn->attribl = size;
+  hgn->attribsl = size;
   hgn->child_count = ret-1;
   if (hg->flags&HGREP_SAVE) {
-    hgn->attrib = size ?
+    hgn->attribs = size ?
         memdup(a->v+(attrib_start*a->elsize),size*a->elsize)
         : NULL;
   } else {
-    hgn->attrib = a->v+(attrib_start*a->elsize);
+    hgn->attribs = a->v+(attrib_start*a->elsize);
     hgrep_pattern const *pattern = hg->pattern;
     if (pattern && hgrep_match(hgn,pattern)) {
       *err = node_output(hgn,hg->nodef,hg->nodefl,hg->output,hg->data);

@@ -44,13 +44,13 @@ typedef unsigned long int ulong;
 #define PATTRIB_INC 8
 #define HOOK_INC 8
 
+#define UINT_TO_STR_MAX 32
+
 //hgrep_pattrib flags
 #define A_INVERT 0x1
 #define A_VAL_MATTERS 0x2
 
 //hgrep_pattern flags
-#define P_MATCH_INSIDES 0x1
-#define P_INVERT_INSIDES 0x2
 #define P_EMPTY 0x4
 
 //hgrep_match_function flags
@@ -446,26 +446,81 @@ hgrep_regfree(hgrep_regex *r)
     regfree(&r->match.reg);
 }
 
-static int
-pattrib_match(const hgrep_node *hgn, const struct hgrep_pattrib *attrib, size_t attribl)
+static void
+pattrib_free(struct hgrep_pattrib *attrib) {
+  if (!attrib)
+    return;
+  hgrep_regfree(&attrib->r[0]);
+  if (attrib->flags&A_VAL_MATTERS)
+    hgrep_regfree(&attrib->r[1]);
+  if (attrib->position.s)
+    free(attrib->position.b);
+}
+
+static void
+pattribs_free(struct hgrep_pattrib *attribs, size_t attribsl)
 {
-  const hgrep_cstr_pair *a = hgn->attrib;
-  for (size_t i = 0; i < attribl; i++) {
+  for (size_t i = 0; i < attribsl; i++)
+    pattrib_free(&attribs[i]);
+  free(attribs);
+}
+
+void
+hgrep_pfree(hgrep_pattern *p)
+{
+  if (p == NULL)
+    return;
+  if (!(p->flags&P_EMPTY)) {
+    hgrep_regfree(&p->tag);
+
+    pattribs_free(p->attribs,p->attribsl);
+
+    if (p->hooksl && p->hooks) {
+      for (size_t i = 0; i < p->hooksl; i++) {
+        if (p->hooks[i].flags&F_LIST) {
+          if (p->hooks[i].match.l.s)
+            free(p->hooks[i].match.l.b);
+        } else
+          hgrep_regfree(&p->hooks[i].match.r);
+      }
+      free(p->hooks);
+    }
+    if (p->position.s)
+      free(p->position.b);
+  }
+}
+
+void
+hgrep_free(hgrep *hg)
+{
+    if (hg == NULL)
+      return;
+    for (size_t i = 0; i < hg->nodesl; i++)
+      free(hg->nodes[i].attribs);
+    if (hg->nodesl)
+      free(hg->nodes);
+}
+
+static int
+pattrib_match(const hgrep_node *hgn, const struct hgrep_pattrib *attribs, size_t attribsl)
+{
+  const hgrep_cstr_pair *a = hgn->attribs;
+  for (size_t i = 0; i < attribsl; i++) {
     uchar found = 0;
-    for (ushort j = 0; j < hgn->attribl; j++) {
-      if (!ranges_match(j,attrib[i].position.b,attrib[i].position.s,hgn->attribl-1))
+    for (ushort j = 0; j < hgn->attribsl; j++) {
+      if (!ranges_match(j,attribs[i].position.b,attribs[i].position.s,hgn->attribsl-1))
         continue;
 
-      if (!hgrep_regexec(&attrib[i].r[0],a[j].f.b,a[j].f.s))
+      if (!hgrep_regexec(&attribs[i].r[0],a[j].f.b,a[j].f.s))
         continue;
 
-      if (attrib[i].flags&A_VAL_MATTERS && !hgrep_regexec(&attrib[i].r[1],a[j].s.b,a[j].s.s))
+      if (attribs[i].flags&A_VAL_MATTERS && !hgrep_regexec(&attribs[i].r[1],a[j].s.b,a[j].s.s))
         continue;
 
       found = 1;
       break;
     }
-    if (((attrib[i].flags&A_INVERT)==A_INVERT)^found)
+    if (((attribs[i].flags&A_INVERT)==A_INVERT)^found)
       return 0;
   }
   return 1;
@@ -480,7 +535,7 @@ hgrep_match_hooks(const hgrep_node *hgn, const hgrep_hook *hooks, const size_t h
 
     switch (hooks[i].flags&F_KINDS) {
       case F_ATTRIBUTES:
-        srcl = hgn->attribl;
+        srcl = hgn->attribsl;
         break;
       case F_LEVEL:
         srcl = hgn->lvl;
@@ -515,51 +570,68 @@ hgrep_match(const hgrep_node *hgn, const hgrep_pattern *p)
   if (!hgrep_match_hooks(hgn,p->hooks,p->hooksl))
     return 0;
 
-  if (!pattrib_match(hgn,p->attrib,p->attribl))
+  if (!pattrib_match(hgn,p->attribs,p->attribsl))
     return 0;
 
   return 1;
 }
 
 static void
-print_attribs(FILE *outfile, const hgrep_node *hgn)
+print_trimmed_if(const hgrep_cstr *str, const uchar trim, FILE *outfile)
 {
-  hgrep_cstr_pair *a = hgn->attrib;
-  if (!a)
-    return;
-  for (ushort j = 0; j < hgn->attribl; j++) {
+  char const *dest = str->b;
+  size_t destl = str->s;
+  if (trim)
+    memtrim((void const**)&dest,&destl,str->b,str->s);
+  if (destl)
+    fwrite(dest,1,destl,outfile);
+}
+
+static void
+print_attribs(const hgrep_node *hgn, const uchar trim, FILE *outfile)
+{
+  hgrep_cstr_pair *a = hgn->attribs;
+  for (ushort j = 0; j < hgn->attribsl; j++) {
     fputc(' ',outfile);
     fwrite(a[j].f.b,1,a[j].f.s,outfile);
     fputs("=\"",outfile);
-    fwrite(a[j].s.b,1,a[j].s.s,outfile);
+    print_trimmed_if(&a[j].s,trim,outfile);
     fputc('"',outfile);
   }
 }
 
 static void
-print_clearinsides(FILE *outfile, const hgrep_cstr *insides)
+print_uint(unsigned long num, FILE *outfile)
 {
-  hgrep_cstr t = *insides;
-  if (t.s == 0)
-    return;
-  void const *start,*end;
-  size_t i = 0;
-  while (isspace(t.b[i]) && i < t.s)
-    i++;
-  start = t.b+i;
-  i = t.s-1;
-  while (isspace(t.b[i]) && i > 0)
-    i--;
-  end = t.b+i;
-  if (end-start+1 > 0)
-    fwrite(start,1,end-start+1,outfile);
+  char str[UINT_TO_STR_MAX];
+  size_t len = 0;
+  uint_to_str(str,&len,UINT_TO_STR_MAX,num);
+  if (len)
+    fwrite(str,1,len,outfile);
+}
+
+static void
+print_attrib_value(const hgrep_cstr_pair *attribs, const size_t attribsl, const char *text, const size_t textl, const int num, const uchar trim, FILE *outfile)
+{
+  if (num != -1) {
+    if ((size_t)num < attribsl)
+      print_trimmed_if(&attribs[num].s,trim,outfile);
+  } else if (textl != 0) {
+    for (size_t i = 0; i < attribsl; i++)
+      if (memcomp(attribs[i].f.b,text,textl,attribs[i].f.s))
+        print_trimmed_if(&attribs[i].s,trim,outfile);
+  } else for (size_t i = 0; i < attribsl; i++) {
+    print_trimmed_if(&attribs[i].s,trim,outfile);
+    fputc('"',outfile);
+  }
 }
 
 void
 hgrep_printf(FILE *outfile, const char *format, const size_t formatl, const hgrep_node *hgn, const char *reference)
 {
   size_t i = 0;
-  size_t cont=0,contl=0;
+  char const *text;
+  size_t textl=0;
   int num = -1;
   while (i < formatl) {
     if (format[i] == '\\') {
@@ -573,42 +645,37 @@ hgrep_printf(FILE *outfile, const char *format, const size_t formatl, const hgre
       if (isdigit(format[i])) {
         num = number_handle(format,&i,formatl);
       } else if (format[i] == '(') {
-        cont = ++i;
+        text = ++i+format;
         char *t = memchr(format+i,')',formatl-i);
         if (!t)
           return;
-        contl = t-(format+i);
+        textl = t-(format+i);
         i = t-format+1;
       }
       if (i >= formatl)
           return;
 
+      uchar trim = 0;
+
       switch (format[i++]) {
         case '%': fputc('%',outfile); break;
         case 't': fwrite(hgn->all.b,1,hgn->all.s,outfile); break;
         case 'n': fwrite(hgn->tag.b,1,hgn->tag.s,outfile); break;
-        case 'i': fwrite(hgn->insides.b,1,hgn->insides.s,outfile); break;
-        case 'I': print_clearinsides(outfile,&hgn->insides); break;
-        case 'l': fprintf(outfile,"%u",hgn->lvl); break;
-        case 's': fprintf(outfile,"%lu",hgn->all.s); break;
-        case 'c': fprintf(outfile,"%u",hgn->child_count); break;
-        case 'p': fprintf(outfile,"%lu",hgn->all.b-reference); break;
-        case 'A': print_attribs(outfile,hgn); break;
-        case 'a': {
-          hgrep_cstr_pair *a = hgn->attrib;
-          if (num != -1) {
-            if ((size_t)num < hgn->attribl)
-              fwrite(a[num].s.b,1,a[num].s.s,outfile);
-          } else if (contl != 0) {
-            for (size_t i = 0; i < hgn->attribl; i++)
-              if (memcomp(a[i].f.b,format+cont,contl,a[i].f.s))
-                fwrite(a[i].s.b,1,a[i].s.s,outfile);
-          } else for (size_t i = 0; i < hgn->attribl; i++) {
-            fwrite(a[i].s.b,1,a[i].s.s,outfile);
-            fputc('"',outfile);
-          }
-        }
-        break;
+        case 'i':
+          trim = 1;
+        case 'I': print_trimmed_if(&hgn->insides,trim,outfile); break;
+        case 'l': print_uint(hgn->lvl,outfile); break;
+        case 's': print_uint(hgn->all.s,outfile); break;
+        case 'c': print_uint(hgn->child_count,outfile); break;
+        case 'p': print_uint(hgn->all.b-reference,outfile); break;
+        case 'a':
+          trim = 1;
+        case 'A': print_attribs(hgn,trim,outfile); break;
+        case 'v':
+          trim = 1;
+        case 'V':
+          print_attrib_value(hgn->attribs,hgn->attribsl,text,textl,num,trim,outfile);
+          break;
       }
       continue;
     }
@@ -726,6 +793,8 @@ get_pattribs(char *pat, size_t *size, struct hgrep_pattrib **attrib, size_t *att
   flexarr *pattrib = flexarr_init(sizeof(struct hgrep_pattrib),PATTRIB_INC);
   flexarr *phooks = flexarr_init(sizeof(hgrep_hook),HOOK_INC);
 
+  uchar tofree = 0;
+
   for (size_t i = 0; i < *size;) {
     while_is(isspace,pat,i,*size);
     if (i >= *size)
@@ -734,14 +803,17 @@ get_pattribs(char *pat, size_t *size, struct hgrep_pattrib **attrib, size_t *att
     memset(&pa,0,sizeof(struct hgrep_pattrib));
     char isset = 0;
     uchar isattrib = 0;
+    tofree = 1;
 
     if (isalpha(pat[i])) {
       size_t prev = i;
       err = match_function_handle(pat,&i,size,phooks);
       if (err)
         break;
-      if (i != prev)
+      if (i != prev) {
+        tofree = 0;
         continue;
+      }
     }
 
     if (pat[i] == '+') {
@@ -777,6 +849,7 @@ get_pattribs(char *pat, size_t *size, struct hgrep_pattrib **attrib, size_t *att
       if (!isattrib && (i >= *size || isspace(pat[i]))) {
         list->b = pa.position.b;
         list->s = pa.position.s;
+        tofree = 0;
         continue;
       }
     } else if (pat[i] == '\\' && pat[i+1] == '[')
@@ -824,7 +897,11 @@ get_pattribs(char *pat, size_t *size, struct hgrep_pattrib **attrib, size_t *att
       i++;
     ADD_SKIP: ;
     memcpy(flexarr_inc(pattrib),&pa,sizeof(struct hgrep_pattrib));
+    tofree = 0;
   }
+  if (tofree)
+    pattrib_free(&pa);
+
   flexarr_conv(pattrib,(void**)attrib,attribl);
   flexarr_conv(phooks,(void**)hooks,hooksl);
   return err;
@@ -853,7 +930,7 @@ hgrep_pcomp(const char *pattern, size_t size, hgrep_pattern *p)
   }
 
   size_t s = size-pos;
-  err = get_pattribs(pat+pos,&s,&p->attrib,&p->attribl,&p->hooks,&p->hooksl,&p->position);
+  err = get_pattribs(pat+pos,&s,&p->attribs,&p->attribsl,&p->hooks,&p->hooksl,&p->position);
   size = s+pos;
 
   END: ;
@@ -1453,55 +1530,6 @@ hgrep_ematch(hgrep *hg, const hgrep_epatterns *patterns, hgrep_compressed *sourc
     return err;
 }
 
-static void
-pattrib_free(struct hgrep_pattrib *attrib, size_t attribl)
-{
-  for (size_t i = 0; i < attribl; i++) {
-    hgrep_regfree(&attrib[i].r[0]);
-    if (attrib[i].flags&A_VAL_MATTERS)
-      hgrep_regfree(&attrib[i].r[1]);
-    if (attrib[i].position.s)
-      free(attrib[i].position.b);
-  }
-  free(attrib);
-}
-
-void
-hgrep_pfree(hgrep_pattern *p)
-{
-  if (p == NULL)
-    return;
-  if (!(p->flags&P_EMPTY)) {
-    hgrep_regfree(&p->tag);
-
-    pattrib_free(p->attrib,p->attribl);
-
-    if (p->hooksl && p->hooks) {
-      for (size_t i = 0; i < p->hooksl; i++) {
-        if (p->hooks[i].flags&F_LIST) {
-          if (p->hooks[i].match.l.s)
-            free(p->hooks[i].match.l.b);
-        } else
-          hgrep_regfree(&p->hooks[i].match.r);
-      }
-      free(p->hooks);
-    }
-    if (p->position.s)
-      free(p->position.b);
-  }
-}
-
-void
-hgrep_free(hgrep *hg)
-{
-    if (hg == NULL)
-      return;
-    for (size_t i = 0; i < hg->nodesl; i++)
-      free(hg->nodes[i].attrib);
-    if (hg->nodesl)
-      free(hg->nodes);
-}
-
 static hgrep_error *
 hgrep_analyze(const char *ptr, const size_t size, flexarr *nodes, hgrep *hg)
 {
@@ -1585,7 +1613,6 @@ hgrep_efmatch(char *ptr, size_t size, FILE *output, const hgrep_epatterns *epatt
   }
   return NULL;
 }
-
 
 hgrep
 hgrep_init(const char *ptr, const size_t size, FILE *output)

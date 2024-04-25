@@ -43,8 +43,41 @@ typedef unsigned long int ulong;
 #define while_isnt(w,x,y,z) while ((y) < (z) && !w((x)[(y)])) {(y)++;}
 
 void
+strrev(char *v, size_t size)
+{
+  if (!v || !size)
+    return;
+  for (size_t i = 0, j = size-1; i < j; i++, j--) {
+    char t = v[i];
+    v[i] = v[j];
+    v[j] = t;
+  }
+}
+
+void
+uint_to_str(char *dest, size_t *destl, const size_t max_destl, unsigned long num)
+{
+  *destl = 0;
+  if (!max_destl)
+    return;
+  size_t p = 0;
+  while (p < max_destl && num) {
+    dest[p++] = (num%10)+'0';
+    num /= 10;
+  }
+  *destl = p;
+  if (p) {
+    strrev(dest,p);
+  } else {
+    dest[0] = '0';
+    *destl = 1;
+  }
+}
+
+void
 memtrim(void const **dest, size_t *destsize, const void *src, const size_t size)
 {
+  *destsize = 0;
   if (!src || !size)
     return;
 

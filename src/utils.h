@@ -32,6 +32,8 @@
 #define memcomp(w,x,y,z) ((y) == (z) && memcmp(w,x,y) == 0)
 #define strcomp(x,y) memcomp(x.b,y.b,x.s,y.s)
 
+void strrev(char *v, size_t size);
+void uint_to_str(char *dest, size_t *destl, const size_t max_destl, unsigned long num);
 void memtrim(void const **dest, size_t *destsize, const void *src, const size_t size);
 void memwordtok_r(const void *ptr, const size_t plen, void const **saveptr, size_t *saveptrlen, void const **word, size_t *wordlen);
 int memcasecmp(const void *v1, const void *v2, const size_t n);
