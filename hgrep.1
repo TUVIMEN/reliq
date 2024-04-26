@@ -39,9 +39,6 @@ and exit.
 
 .SS "Pattern Syntax"
 .TP
-.BR \-E
-Use extended regular expressions.
-.TP
 .BR \-F
 Enter fast and low memory consumption mode, in which use of multiple output patterns is forbidden.
 
@@ -51,11 +48,6 @@ Enter fast and low memory consumption mode, in which use of multiple output patt
 Obtain pattern from
 .IR FILE.
 The empty file contains zero patterns, and therefore matches nothing.
-.TP
-.BR \-i
-Ignore case distinctions in patterns and input data,
-so that characters that differ only in case
-match each other.
 
 .SS "General Output Control"
 .TP
@@ -83,29 +75,72 @@ set
 .IR PATTERN
 to '| "%t%I - %c/%l/%s/%p\\n"'.
 
-.SH HGREP PATTERN
+.SH SYNTAX
 .SS PATTERN
-A simple regex expression, can be quoted, if not some characters or constructs may be restricted, and ignored by '\\' character before each of them.
+Consists of text that can be specified in ' and " brackets.
+
+It can be preceded by characters specifying the way of matching ended with '>' character. By default it's set to "tfncs".
+
+After '>' character a range might be specified, which will match the number of characters in matched string. In such case specifying text is not mandatory.
+
+If unquoted text is set to a single '*' character matching of text will be ommited, leaving only matching by range.
+
 .nf
 \&
 .in +4m
-.B 'REGEX'
-\fB"REGEX"\fR
-.B REGEX
+\fBTEXT\fR
+\fB"TEXT"\fR
+\fB'TEXT'\fR
+\fB[a-z]>TEXT\fR
+\fB[a-z]>[RANGE]TEXT\fR
+\fB>[RANGE]"TEXT"\fR
+\fB>'TEXT'\fR
+\fB>TEXT\fR
+\fB*\fR
+\fB>*\fR
+\fB>[RANGE]\fR
+\fB>[RANGE]*\fR
 .in
 \&
+
+List of ways of matching:
+
+.nf
+\&
+.in +4m
+\fBt\fR - Match trimmed
+\fBu\fR - Match untrimmed
+
+\fBc\fR - Be case sensitive
+\fBi\fR - Be case insensitive
+
+\fBv\fR - Invert matching
+\fBn\fR - Match without invertion
+
+\fBa\fR - Match if it occurs at any position
+\fBf\fR - Match if it fully matches
+\fBw\fR - Match if it matches any of the words in it
+\fBb\fR - Match if it matches at the begining
+\fBe\fR - Match if it matches at the end
+
+\fBs\fR - Use string matching
+\fBB\fR - Use BRE matching
+\fBE\fR - Use ERE matching
+.in
+\&
+
 .SS ATTRIBUTE_NAME
 Attribute's name \fBPATTERN\fR. Starting by '+' or '-' will reliably assure that it will be treated as attribute, but in most cases can be omitted. '-' signifies its negation. It can be followed by \fB[RANGE]\fR which matches attribute's position in tag.
 
-Attribute name can be shortened to '.' or '#' (see below). If not using glibc you should use that with \fB-E\fR flag.
+Attribute name can be shortened to '.' or '#' (see below).
 .nf
 \&
 .in +4m
 \fBPATTERN\fR          - existing attribute
 \fB+PATTERN\fR         - existing attribute
 \fB-PATTERN\fR         - non existing attribute
-\fB.PATTERN\fR         - same as class="^\\(.*[ \\t\\n\\r]\\+\\)*PATTERN\\([ \\t\\n\\r]\\+.*\\)*$"
-\fB#PATTERN\fR         - same as id="^\\(.*[ \\t\\n\\r]\\+\\)*PATTERN\\([ \\t\\n\\r]\\+.*\\)*$"
+\fB.PATTERN\fR         - same as class=w>PATTERN
+\fB#PATTERN\fR         - same as id=w>PATTERN
 \fB[RANGE]PATTERN\fR   - existing attribute at position determined by RANGE
 \fB-[RANGE]PATTERN\fR
 \fB+.PATTERN\fR
@@ -113,7 +148,7 @@ Attribute name can be shortened to '.' or '#' (see below). If not using glibc yo
 .in
 \&
 .SS ATTRIBUTE
-Consists of \fBATTRIBUTE_NAME\fR followed by '=' and \fBPATTERN\fR of attribute's value. When given only \fBATTRIBUTE_NAME\fR  without specifying its value equals of ignoring its value (which is faster than \fBATTRIBUTE_NAME=.*\fR).
+Consists of \fBATTRIBUTE_NAME\fR followed by '=' and \fBPATTERN\fR of attribute's value. Specifying only \fBATTRIBUTE_NAME\fR  without specifying its value equals to ignoring its value.
 
 .nf
 \&
@@ -136,7 +171,6 @@ Specifying three values additionally matches only values of which modulo of thir
 .in +4m
 \fB[x1,!x2,x3,x4]\fR - match to one of the values that is not x2
 \fB[x1:y1,x2:y2,!x3:y4]\fR - match to one of the ranges that is not in x3:y4
-\fB[-]\fR           - match to last value
 \fB[-x]\fR          - match to x'th value from the end
 \fB[:-y]\fR         - match to range from 0 to y'th value from end
 \fB[::z]\fR         - match to values from which modulo of z is equal to 0
@@ -144,29 +178,41 @@ Specifying three values additionally matches only values of which modulo of thir
 .in
 \&
 .SS HOOK
-Always begins with '@' followed by name of function, optionally ended with argument which can be a \fBRANGE\fR or \fBTEXT\fR in '"' or '\\'' quotes.
+Begins with a name of function followed by '@' and ended with argument which can be a \fBRANGE\fR or \fBPATTERN\fR.
 
 .nf
 \&
 .in +4m
-\fB@NAME\fR
-\fB@NAME"TEXT"\fR
-\fB@NAME'TEXT'\fR
-\fB@NAME[RANGE]\fR
+\fBNAME@PATTERN\fR
+\fBNAME@[RANGE]\fR
 .in
 \&
+
+List of implemented hooks:
+
+.TP
+.BR m ",  " match " " \fI"PATTERN"\fR
+Get tags with insides that match \fIPATTERN\fR, by default the matching of it will be set to "ucas".
+.TP
+.BR a ",  " attributes " " \fI[RANGE]\fR
+Get tags with attributes that are within the \fIRANGE\fR.
+.TP
+.BR l ",  " level " " \fI[RANGE]\fR
+Get tags that are on level relative to parent within the \fIRANGE\fR.
+.TP
+.BR c ",  " children " " \fI[RANGE]\fR
+Get tags with number of children that is within the \fIRANGE\fR.
 
 .SS TAG
 At the begining each \fBTAG\fR must contain \fBPATTERN\fR of html tag and that can be followed by a number of \fBATTRIBUTE\fRs and \fBHOOK\fRs.
 
-Matching will be inverted if \fBTAG\fR begins with '!'.
+Any specified range will match the position of results.
 
 .nf
 \&
 .in +4m
 \fBPATTERN\fR
-\fB!PATTERN\fR
-\fBPATTERN ATTRIBUTE... HOOK...\fR
+\fBPATTERN ATTRIBUTE... HOOK... [RANGE]\fR
 .in
 \&
 
@@ -202,9 +248,9 @@ Whole tag.
 .IP %n
 Tag's name.
 .IP %i
-Tag's insides.
+Tag's insides, trimmed.
 .IP %I
-Tag's insides without white space characters at the begining and end.
+Tag's insides.
 .IP %l
 Tag's level.
 .IP %p
@@ -213,13 +259,21 @@ Tag's position in current file.
 Tag's size.
 .IP %c
 Tag's children count.
+.IP %a
+All of the tag's attributes, trimmed.
 .IP %A
 All of the tag's attributes.
-.IP %a
+.IP %v
+Trimmed values of tag's attributes separated with '"'.
+.IP %\fIk\fPv
+Trimmed value of tag's attribute, where \fIk\fP is its position counted from zero.
+.IP %(\fIk\fP)v
+Trimmed value of tag's attribute, where \fIk\fP is its name.
+.IP %V
 Values of tag's attributes separated with '"'.
-.IP %\fIk\fPa
+.IP %\fIk\fPV
 Value of tag's attribute, where \fIk\fP is its position counted from zero.
-.IP %(\fIk\fP)a
+.IP %(\fIk\fP)V
 Value of tag's attribute, where \fIk\fP is its name.
 
 .SS FUNCTION
@@ -235,106 +289,13 @@ Begins with name followed by arguments separated by whitespaces.
 .in
 \&
 
+List of implemented functions:
 
-.SS FORMAT
-Consists of \fBFUNCTION\fRs separated by whitespace. Output of the tag is passed to \fBFUNCTION\fR, and its output is passed to the next until the last one which will print it.
-
-If specified after '|' \fBFORMAT\fR will be executed separately for each matched tag.
-
-If after '/' \fBFORMAT\fR will be executed for the whole output.
-
-.nf
-\&
-.in +4m
-\fBFUNCTION FUNCTION...\fR
-.in
-\&
-
-.SS NODE
-Consists of \fBTAG\fRs and \fBEXPRESSION\fRs separated by ';' which makes them pass result from previous node to the next.
-
-Output \fBFORMAT\fR can be specified after '|' and '/' characters, everything after it will be taken as \fBFORMAT\fR.
-
-.nf
-\&
-.in +4m
-\fBTAG1; TAG2; NODE\fR - matches results of TAG1 by TAG2 and by NODE
-\fBNODE1; NODE2\fR - process the results of NODE1 by NODE2
-.in
-\&
-
-.SS EXPRESSION
-Consists of \fBNODE\fRs separated by ',' and grouped in '{' '}' brackets (which accumulate their output and increases their level).
-.nf
-\&
-.in +4m
-\fBNODE1, NODE2\fR - two expressions
-\fBEXPRESSION1; { EXPRESSION2; {EXPRESSION3, EXPRESSION4}, EXPRESSION5}; EXPRESSION6\fR
-.in
-\&
-
-.SS OUTPUT
-
-Is changed based on output \fBFORMAT\fR and can be specified only to the last \fBEXPRESSION\fRs, or if they are children of groups having \fBFORMAT\fR.
-
-Output \fBFORMAT\fR can be specified after '|' and '/' characters, everything after it will be taken as \fBFORMAT\fR.
-
-If the first thing in \fBFORMAT\fR specified after '|' character of a node is a \fI"TEXT"\fR it will be used as \fBTAG_FORMAT\fR.
-
-\fBFORMAT\fR after '|' character is executed on each element matched, and after '/' to the whole result.
-
-Groups with format after '|' will execute their \fBEXPRESSION\fRs for each element in input independently, contrary to normal behavior where the child processes all the input at once before going to the next.
-
-.nf
-\&
-.in +4m
-\fBNODE1; NODE2 | TAG_FORMAT FORMAT1 / FORMAT2\fR - matches NODE2 to results of NODE1, then prints them one by one with TAG_FORMAT and processes WITH FORMAT1, then processes everything by FORMAT2
-\fBNODE1 | FORMAT, NODE2 / FORMAT\fR
-\fBNODE1; { NODE1 | FORMAT, NODE2 / FORMAT }\fR
-\fBNODE1; { NODE1 | FORMAT, NODE2 / FORMAT } / FORMAT\fR - process results of GROUP
-\fBNODE1; { NODE1 | FORMAT, NODE2 / FORMAT } | FORMAT / FORMAT\fR - process results of GROUP one by one, and then as a whole
-.in
-\&
-
-
-.SH HGREP PATTERN HOOKS
-.BR m ",  " match_insides " " \fI"PATTERN"\fR
-Get tags with insides that match
-.IR PATTERN .
-.TP
-.BR M ",  " rev_match_insides " " \fI"PATTERN"\fR
-Get tags with insides that does not match
-.IR PATTERN .
-.TP
-.BR a ",  " attributes " " \fI[RANGE]\fR
-Get tags with attributes that are within the
-.IR RANGE .
-.TP
-.BR l ",  " level " " \fI[RANGE]\fR
-Get tags that are on level relative to parent within the
-.IR RANGE .
-.TP
-.BR s ",  " size " " \fI[RANGE]\fR
-Get tags with size of insides that is within the
-.IR RANGE .
-.TP
-.BR c ",  " child_count " " \fI[RANGE]\fR
-Get tags with number of children that is within the
-.IR RANGE .
-.TP
-.BR p ",  " position " " \fI[RANGE]\fR
-Get tags with position relative to parent within the
-.IR RANGE .
-Not compatible with fast mode.
-
-.SH HGREP FUNCTIONS
 .B line \fI[SELECTED]\fR \fI"DELIM"\fR
 .IP
 Return selected lines.
 
-Lines are separated by
-.IR DELIM
-(by default '\\n').
+Lines are separated by \fIDELIM\fR (by default '\\n').
 .TP
 
 .B trim \fI"DELIM"\fR
@@ -399,8 +360,7 @@ Flags:
 
 .B sed \fI"SCRIPT"\fR \fI"FLAGS"\fR \fI"DELIM"\fR
 .IP
-Implementation of
-.BR sed (1).
+Implementation of \fBsed\fR(1).
 
 Lines are delimited by \fIDELIM\fR (by default '\\n').
 
@@ -412,42 +372,101 @@ Flags:
 Deviations from standard:
     \fBi\fR \fBc\fR \fBa\fR commands do nothing even though they take arguments
     \fBl\fR \fBr\fR \fBR\fR \fBQ\fR \fBw\fR \fBW\fR are not implemented
-.TP
+
+.SS FORMAT
+Consists of \fBFUNCTION\fRs separated by whitespace. Output of the tag is passed to \fBFUNCTION\fR, and its output is passed to the next until the last one which will print it.
+
+If specified after '|' \fBFORMAT\fR will be executed separately for each matched tag.
+
+If after '/' \fBFORMAT\fR will be executed for the whole output.
+
+.nf
+\&
+.in +4m
+\fBFUNCTION FUNCTION...\fR
+.in
+\&
+
+.SS NODE
+Consists of \fBTAG\fRs and \fBEXPRESSION\fRs separated by ';' which makes them pass result from previous node to the next.
+
+Output \fBFORMAT\fR can be specified after '|' and '/' characters, everything after it will be taken as \fBFORMAT\fR.
+
+.nf
+\&
+.in +4m
+\fBTAG1; TAG2; NODE\fR - matches results of TAG1 by TAG2 and by NODE
+\fBNODE1; NODE2\fR - process the results of NODE1 by NODE2
+.in
+\&
+
+.SS EXPRESSION
+Consists of \fBNODE\fRs separated by ',' and grouped in '{' '}' brackets (which accumulate their output and increases their level).
+.nf
+\&
+.in +4m
+\fBNODE1, NODE2\fR - two expressions
+\fBEXPRESSION1; { EXPRESSION2; {EXPRESSION3, EXPRESSION4}, EXPRESSION5}; EXPRESSION6\fR
+.in
+\&
+
+.SS OUTPUT
+
+Is changed based on output \fBFORMAT\fR and can be specified only to the last \fBEXPRESSION\fRs, or if they are children of groups having \fBFORMAT\fR.
+
+Output \fBFORMAT\fR can be specified after '|' and '/' characters, everything after it will be taken as \fBFORMAT\fR.
+
+If the first thing in \fBFORMAT\fR specified after '|' character of a node is a \fI"TEXT"\fR it will be used as \fBTAG_FORMAT\fR.
+
+\fBFORMAT\fR after '|' character is executed on each element matched, and after '/' to the whole result.
+
+Groups with format after '|' will execute their \fBEXPRESSION\fRs for each element in input independently, contrary to normal behavior where the child processes all the input at once before going to the next.
+
+.nf
+\&
+.in +4m
+\fBNODE1; NODE2 | TAG_FORMAT FORMAT1 / FORMAT2\fR - matches NODE2 to results of NODE1, then prints them one by one with TAG_FORMAT and processes WITH FORMAT1, then processes everything by FORMAT2
+\fBNODE1 | FORMAT, NODE2 / FORMAT\fR
+\fBNODE1; { NODE1 | FORMAT, NODE2 / FORMAT }\fR
+\fBNODE1; { NODE1 | FORMAT, NODE2 / FORMAT } / FORMAT\fR - process results of GROUP
+\fBNODE1; { NODE1 | FORMAT, NODE2 / FORMAT } | FORMAT / FORMAT\fR - process results of GROUP one by one, and then as a whole
+.in
+\&
 
 .SH EXAMPLES
 Get tags 'a' with attribute 'href' at position 0 of value ending with '.org', from result of matching tags 'div' with attribute 'id', and without attribute 'class', from file 'index.html'.
 .nf
 \&
 .in +4m
-.B $ hgrep 'div +id \-class; a +[0]href=".*\\\\.org"' index.html
+.B $ hgrep 'div id \-class; a [0]href=B>".*\\\\.org"' index.html
 .in
 \&
 Get tags which does not have any tags inside them from file 'index.html'.
 .nf
 \&
 .in +4m
-.B $ hgrep '.* @M"<"' index.html
+.B $ hgrep '* c@[0]' index.html
 .in
 \&
 Get empty tags from file 'index.html'.
 .nf
 \&
 .in +4m
-.B $ hgrep '.* @s[0]' index.html
+.B $ hgrep '* m@>[0]' index.html
 .in
 \&
 Get hyperlinks from level greater or equal to 6 from file 'index.html'.
 .nf
 \&
 .in +4m
-.B $ hgrep 'a +href @l[6:] | "%(href)a\\\\n"' index.html
+.B $ hgrep 'a href @l[6:] | "%(href)v\\\\n"' index.html
 .in
 \&
 Get all urls from 'a' and 'img' tags
 .nf
 \&
 .in +4m
-.B $ hgrep 'img +src | "%(src)a\\\\n", a +href | "%(href)a\\\\n"'
+.B $ hgrep 'img src | "%(src)v\\\\n", a href | "%(href)a\\\\n"'
 .in
 \&
 

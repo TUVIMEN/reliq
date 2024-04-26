@@ -91,7 +91,7 @@ usage()
 {
   die("Usage: %s [OPTION]... PATTERNS [FILE]...\n"\
       "Search for PATTERNS in each html FILE.\n"\
-      "Example: %s -i 'div +id; a +href=\".*\\.org\"' index.html\n\n"\
+      "Example: %s 'div id; a href=e>\".org\"' index.html\n\n"\
       "Options:\n"\
       "  -l\t\t\tlist structure of FILE\n"\
       "  -o FILE\t\tchange output to a FILE instead of stdout\n"\

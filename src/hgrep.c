@@ -62,7 +62,7 @@ typedef unsigned long int ulong;
 #define F_MATCH_INSIDES 0x4
 
 #define F_RANGE 0x8
-#define F_REGEX 0x10
+#define F_PATTERN 0x10
 
 //hgrep_expr flags
 #define EXPR_TABLE 0x1
@@ -74,26 +74,26 @@ typedef unsigned long int ulong;
 #define HGREP_NODES_INC (1<<13)
 
 //hgrep_pattern flags
-#define HGRP_PATTERN_TRIM 0x2
-#define HGRP_PATTERN_CASE_INSENSITIVE 0x4
-#define HGRP_PATTERN_INVERT 0x8
+#define HGREP_PATTERN_TRIM 0x2
+#define HGREP_PATTERN_CASE_INSENSITIVE 0x4
+#define HGREP_PATTERN_INVERT 0x8
 
-#define HGRP_PATTERN_MATCH 0x70
+#define HGREP_PATTERN_MATCH 0x70
 
-#define HGRP_PATTERN_MATCH_FULL 0x10
-#define HGRP_PATTERN_MATCH_ALL 0x20
-#define HGRP_PATTERN_MATCH_WORD 0x30
-#define HGRP_PATTERN_MATCH_BEGINNING 0x40
-#define HGRP_PATTERN_MATCH_ENDING 0x50
+#define HGREP_PATTERN_MATCH_FULL 0x10
+#define HGREP_PATTERN_MATCH_ALL 0x20
+#define HGREP_PATTERN_MATCH_WORD 0x30
+#define HGREP_PATTERN_MATCH_BEGINNING 0x40
+#define HGREP_PATTERN_MATCH_ENDING 0x50
 
-#define HGRP_PATTERN_TYPE 0x180
+#define HGREP_PATTERN_TYPE 0x180
 
-#define HGRP_PATTERN_TYPE_STR 0x80
-#define HGRP_PATTERN_TYPE_BRE 0x100
-#define HGRP_PATTERN_TYPE_ERE 0x180
+#define HGREP_PATTERN_TYPE_STR 0x80
+#define HGREP_PATTERN_TYPE_BRE 0x100
+#define HGREP_PATTERN_TYPE_ERE 0x180
 
-#define HGRP_PATTERN_EMPTY 0x200
-#define HGRP_PATTERN_ALL 0x400
+#define HGREP_PATTERN_EMPTY 0x200
+#define HGREP_PATTERN_ALL 0x400
 
 struct hgrep_match_function {
   hgrep_str8 name;
@@ -101,12 +101,12 @@ struct hgrep_match_function {
 };
 
 const struct hgrep_match_function match_functions[] = {
-    {{"m",1},F_REGEX|F_MATCH_INSIDES},
+    {{"m",1},F_PATTERN|F_MATCH_INSIDES},
     {{"a",1},F_RANGE|F_ATTRIBUTES},
     {{"l",1},F_RANGE|F_LEVEL},
     {{"c",1},F_RANGE|F_CHILD_COUNT},
 
-    {{"match",5},F_REGEX|F_MATCH_INSIDES},
+    {{"match",5},F_PATTERN|F_MATCH_INSIDES},
     {{"attributes",10},F_RANGE|F_ATTRIBUTES},
     {{"level",5},F_RANGE|F_LEVEL},
     {{"children",8},F_RANGE|F_CHILD_COUNT},
@@ -130,58 +130,58 @@ hgrep_regcomp_set_flags(ushort *flags, const char *src, const size_t len)
   for (size_t i = 0; i < len; i++) {
     switch (src[i]) {
       case 't':
-          *flags |= HGRP_PATTERN_TRIM;
+          *flags |= HGREP_PATTERN_TRIM;
           break;
       case 'u':
-          *flags &= ~HGRP_PATTERN_TRIM;
+          *flags &= ~HGREP_PATTERN_TRIM;
           break;
       case 'i':
-          *flags |= HGRP_PATTERN_CASE_INSENSITIVE;
+          *flags |= HGREP_PATTERN_CASE_INSENSITIVE;
           break;
       case 'c':
-          *flags &= ~HGRP_PATTERN_CASE_INSENSITIVE;
+          *flags &= ~HGREP_PATTERN_CASE_INSENSITIVE;
           break;
       case 'v':
-          *flags |= HGRP_PATTERN_INVERT;
+          *flags |= HGREP_PATTERN_INVERT;
           break;
       case 'n':
-          *flags &= ~HGRP_PATTERN_INVERT;
+          *flags &= ~HGREP_PATTERN_INVERT;
           break;
       case 'a':
-          *flags &= ~HGRP_PATTERN_MATCH;
-          *flags |= HGRP_PATTERN_MATCH_ALL;
+          *flags &= ~HGREP_PATTERN_MATCH;
+          *flags |= HGREP_PATTERN_MATCH_ALL;
           break;
       case 'f':
-          *flags &= ~HGRP_PATTERN_MATCH;
-          *flags |= HGRP_PATTERN_MATCH_FULL;
+          *flags &= ~HGREP_PATTERN_MATCH;
+          *flags |= HGREP_PATTERN_MATCH_FULL;
           break;
       case 'w':
-          *flags &= ~HGRP_PATTERN_MATCH;
-          *flags |= HGRP_PATTERN_MATCH_WORD;
+          *flags &= ~HGREP_PATTERN_MATCH;
+          *flags |= HGREP_PATTERN_MATCH_WORD;
           break;
       case 'b':
-          *flags &= ~HGRP_PATTERN_MATCH;
-          *flags |= HGRP_PATTERN_MATCH_BEGINNING;
+          *flags &= ~HGREP_PATTERN_MATCH;
+          *flags |= HGREP_PATTERN_MATCH_BEGINNING;
           break;
       case 'e':
-          *flags &= ~HGRP_PATTERN_MATCH;
-          *flags |= HGRP_PATTERN_MATCH_ENDING;
+          *flags &= ~HGREP_PATTERN_MATCH;
+          *flags |= HGREP_PATTERN_MATCH_ENDING;
           break;
       case 's':
-          *flags &= ~HGRP_PATTERN_TYPE;
-          *flags |= HGRP_PATTERN_TYPE_STR;
+          *flags &= ~HGREP_PATTERN_TYPE;
+          *flags |= HGREP_PATTERN_TYPE_STR;
           break;
       case 'B':
-          *flags &= ~HGRP_PATTERN_TYPE;
-          *flags |= HGRP_PATTERN_TYPE_BRE;
+          *flags &= ~HGREP_PATTERN_TYPE;
+          *flags |= HGREP_PATTERN_TYPE_BRE;
           break;
       case 'E':
-          *flags &= ~HGRP_PATTERN_TYPE;
-          *flags |= HGRP_PATTERN_TYPE_ERE;
+          *flags &= ~HGREP_PATTERN_TYPE;
+          *flags |= HGREP_PATTERN_TYPE_ERE;
           break;
       /*case 'P':
-          *flags &= ~HGRP_PATTERN_TYPE;
-          *flags |= HGRP_PATTERN_TYPE_PCRE;
+          *flags &= ~HGREP_PATTERN_TYPE;
+          *flags |= HGREP_PATTERN_TYPE_PCRE;
           break;*/
     }
   }
@@ -191,7 +191,7 @@ static void
 hgrep_regcomp_get_flags(hgrep_pattern *pattern, const char *src, size_t *pos, const size_t size, const char *flags)
 {
   size_t p = *pos;
-  pattern->flags = HGRP_PATTERN_TRIM|HGRP_PATTERN_MATCH_FULL|HGRP_PATTERN_TYPE_STR;
+  pattern->flags = HGREP_PATTERN_TRIM|HGREP_PATTERN_MATCH_FULL|HGREP_PATTERN_TYPE_STR;
   pattern->range.s= 0;
 
   if (flags)
@@ -214,43 +214,43 @@ hgrep_regcomp_get_flags(hgrep_pattern *pattern, const char *src, size_t *pos, co
 static hgrep_error *
 hgrep_regcomp_add_pattern(hgrep_pattern *pattern, const char *src, const size_t size)
 {
-  ushort match = pattern->flags&HGRP_PATTERN_MATCH,
-    type = pattern->flags&HGRP_PATTERN_TYPE;
+  ushort match = pattern->flags&HGREP_PATTERN_MATCH,
+    type = pattern->flags&HGREP_PATTERN_TYPE;
 
   if (!size) {
-    pattern->flags |= HGRP_PATTERN_EMPTY;
+    pattern->flags |= HGREP_PATTERN_EMPTY;
     return NULL;
   }
 
-  if (type == HGRP_PATTERN_TYPE_STR) {
+  if (type == HGREP_PATTERN_TYPE_STR) {
     pattern->match.str.b = memdup(src,size);
     pattern->match.str.s = size;
   } else {
     int regexflags = REG_NOSUB;
-    if (pattern->flags&HGRP_PATTERN_CASE_INSENSITIVE)
+    if (pattern->flags&HGREP_PATTERN_CASE_INSENSITIVE)
       regexflags |= REG_ICASE;
-    if (type == HGRP_PATTERN_TYPE_ERE)
+    if (type == HGREP_PATTERN_TYPE_ERE)
       regexflags |= REG_EXTENDED;
 
     size_t addedspace = 0;
     uchar fullmatch =
-      (match == HGRP_PATTERN_MATCH_FULL || match == HGRP_PATTERN_MATCH_WORD) ? 1 : 0;
+      (match == HGREP_PATTERN_MATCH_FULL || match == HGREP_PATTERN_MATCH_WORD) ? 1 : 0;
 
     if (fullmatch)
       addedspace = 2;
-    else if (match == HGRP_PATTERN_MATCH_BEGINNING || match == HGRP_PATTERN_MATCH_ENDING)
+    else if (match == HGREP_PATTERN_MATCH_BEGINNING || match == HGREP_PATTERN_MATCH_ENDING)
       addedspace = 1;
 
     char *tmp = malloc(size+addedspace+1);
     size_t p = 0;
 
-    if (fullmatch || match == HGRP_PATTERN_MATCH_BEGINNING)
+    if (fullmatch || match == HGREP_PATTERN_MATCH_BEGINNING)
       tmp[p++] = '^';
 
     memcpy(tmp+p,src,size);
     p += size;
 
-    if (fullmatch || match == HGRP_PATTERN_MATCH_ENDING)
+    if (fullmatch || match == HGREP_PATTERN_MATCH_ENDING)
       tmp[p++] = '$';
     tmp[p] = 0;
 
@@ -276,7 +276,7 @@ hgrep_regcomp(hgrep_pattern *pattern, char *src, size_t *pos, size_t *size, cons
     if (err)
       return err;
     if (*pos >= *size || src[*pos] == delim || isspace(src[*pos])) {
-      pattern->flags |= HGRP_PATTERN_ALL;
+      pattern->flags |= HGREP_PATTERN_ALL;
       return NULL;
     }
   }
@@ -286,7 +286,7 @@ hgrep_regcomp(hgrep_pattern *pattern, char *src, size_t *pos, size_t *size, cons
       if (!isspace(src[*pos+1]) && src[*pos+1] != delim)
         goto NOT_ALL;
     (*pos)++;
-    pattern->flags |= HGRP_PATTERN_ALL;
+    pattern->flags |= HGREP_PATTERN_ALL;
     return NULL;
   }
 
@@ -303,8 +303,8 @@ hgrep_regcomp(hgrep_pattern *pattern, char *src, size_t *pos, size_t *size, cons
 static int
 hgrep_regexec_match_word(const hgrep_pattern *pattern, hgrep_cstr *str)
 {
-  ushort type = pattern->flags&HGRP_PATTERN_TYPE;
-  uchar icase = pattern->flags&HGRP_PATTERN_CASE_INSENSITIVE;
+  ushort type = pattern->flags&HGREP_PATTERN_TYPE;
+  uchar icase = pattern->flags&HGREP_PATTERN_CASE_INSENSITIVE;
   const char *ptr = str->b;
   size_t plen = str->s;
   char const *saveptr,*word;
@@ -315,7 +315,7 @@ hgrep_regexec_match_word(const hgrep_pattern *pattern, hgrep_cstr *str)
     if (!word)
       return 0;
 
-    if (type == HGRP_PATTERN_TYPE_STR) {
+    if (type == HGREP_PATTERN_TYPE_STR) {
       if (pattern->match.str.s == wordlen) {
         if (icase) {
           if (memcasecmp(word,pattern->match.str.b,wordlen) == 0)
@@ -340,8 +340,8 @@ static int
 hgrep_regexec_match_str(const hgrep_pattern *pattern, hgrep_cstr *str)
 {
   hgrep_pattern const *p = pattern;
-  ushort match = p->flags&HGRP_PATTERN_MATCH;
-  uchar icase = p->flags&HGRP_PATTERN_CASE_INSENSITIVE;
+  ushort match = p->flags&HGREP_PATTERN_MATCH;
+  uchar icase = p->flags&HGREP_PATTERN_CASE_INSENSITIVE;
 
   if (!p->match.str.s)
     return 1;
@@ -349,14 +349,14 @@ hgrep_regexec_match_str(const hgrep_pattern *pattern, hgrep_cstr *str)
     return 0;
 
   switch (match) {
-    case HGRP_PATTERN_MATCH_ALL:
+    case HGREP_PATTERN_MATCH_ALL:
       if (icase) {
         if (memcasemem(str->b,str->s,p->match.str.b,p->match.str.s) != NULL)
           return 1;
       } else if (memmem(str->b,str->s,p->match.str.b,p->match.str.s) != NULL)
         return 1;
       break;
-    case HGRP_PATTERN_MATCH_FULL:
+    case HGREP_PATTERN_MATCH_FULL:
       if (str->s != p->match.str.s)
         return 0;
       if (icase) {
@@ -365,7 +365,7 @@ hgrep_regexec_match_str(const hgrep_pattern *pattern, hgrep_cstr *str)
       } else if (memcmp(str->b,p->match.str.b,str->s) == 0)
         return 1;
       break;
-    case HGRP_PATTERN_MATCH_BEGINNING:
+    case HGREP_PATTERN_MATCH_BEGINNING:
       if (str->s < p->match.str.s)
         return 0;
       if (icase) {
@@ -374,7 +374,7 @@ hgrep_regexec_match_str(const hgrep_pattern *pattern, hgrep_cstr *str)
       } else if (memcmp(str->b,p->match.str.b,p->match.str.s) == 0)
         return 1;
       break;
-    case HGRP_PATTERN_MATCH_ENDING:
+    case HGREP_PATTERN_MATCH_ENDING:
       if (str->s < p->match.str.s)
         return 0;
       const char *start = str->b+(str->s-p->match.str.s);
@@ -392,28 +392,28 @@ hgrep_regexec_match_str(const hgrep_pattern *pattern, hgrep_cstr *str)
 static int
 hgrep_regexec(const hgrep_pattern *pattern, const char *src, const size_t size)
 {
-  uchar invert = (pattern->flags&HGRP_PATTERN_INVERT) ? 1 : 0;
+  uchar invert = (pattern->flags&HGREP_PATTERN_INVERT) ? 1 : 0;
   if ((!range_match(size,&pattern->range,-1)))
     return invert;
 
-  if (pattern->flags&HGRP_PATTERN_ALL)
+  if (pattern->flags&HGREP_PATTERN_ALL)
     return !invert;
 
-  if (pattern->flags&HGRP_PATTERN_EMPTY)
+  if (pattern->flags&HGREP_PATTERN_EMPTY)
     return (size == 0) ? !invert : invert;
 
-  ushort match = pattern->flags&HGRP_PATTERN_MATCH,
-    type = pattern->flags&HGRP_PATTERN_TYPE;
+  ushort match = pattern->flags&HGREP_PATTERN_MATCH,
+    type = pattern->flags&HGREP_PATTERN_TYPE;
 
   hgrep_cstr str = {src,size};
 
-  if (match == HGRP_PATTERN_MATCH_WORD)
+  if (match == HGREP_PATTERN_MATCH_WORD)
     return hgrep_regexec_match_word(pattern,&str)^invert;
 
-  if (pattern->flags&HGRP_PATTERN_TRIM)
+  if (pattern->flags&HGREP_PATTERN_TRIM)
     memtrim((void const**)&str.b,&str.s,src,size);
 
-  if (type == HGRP_PATTERN_TYPE_STR) {
+  if (type == HGREP_PATTERN_TYPE_STR) {
     return hgrep_regexec_match_str(pattern,&str)^invert;
   } else {
     if (!str.s)
@@ -437,10 +437,10 @@ hgrep_regfree(hgrep_pattern *pattern)
 
   range_free(&pattern->range);
 
-  if (pattern->flags&HGRP_PATTERN_EMPTY || pattern->flags&HGRP_PATTERN_ALL)
+  if (pattern->flags&HGREP_PATTERN_EMPTY || pattern->flags&HGREP_PATTERN_ALL)
     return;
 
-  if ((pattern->flags&HGRP_PATTERN_TYPE) == HGRP_PATTERN_TYPE_STR) {
+  if ((pattern->flags&HGREP_PATTERN_TYPE) == HGREP_PATTERN_TYPE_STR) {
     if (pattern->match.str.b)
       free(pattern->match.str.b);
   } else
@@ -766,7 +766,7 @@ match_function_handle(char *src, size_t *pos, size_t *size, flexarr *hooks)
   hook.flags = match_functions[i].flags;
 
   if (src[*pos] == '[') {
-    if (hook.flags&F_REGEX)
+    if (hook.flags&F_PATTERN)
       return hgrep_set_error(1,"hook \"%.*s\" expected regex argument",(int)func_len,src+p);
 
     islist = 1;
@@ -780,7 +780,7 @@ match_function_handle(char *src, size_t *pos, size_t *size, flexarr *hooks)
   if (err)
     return err;
 
-  if (!islist && !hook.match.pattern.range.s && hook.match.pattern.flags&HGRP_PATTERN_ALL) { //ignore if it matches everything
+  if (!islist && !hook.match.pattern.range.s && hook.match.pattern.flags&HGREP_PATTERN_ALL) { //ignore if it matches everything
     hgrep_regfree(&hook.match.pattern);
     return NULL;
   }
