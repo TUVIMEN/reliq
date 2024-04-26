@@ -1,5 +1,5 @@
 /*
-    hgrep - html searching tool
+    reliq - html searching tool
     Copyright (C) 2020-2024 Dominik Stanisław Suchora <suchora.dominik7@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
@@ -33,7 +33,7 @@ typedef unsigned short ushort;
 typedef unsigned int uint;
 typedef unsigned long int ulong;
 
-#include "hgrep.h"
+#include "reliq.h"
 #include "flexarr.h"
 #include "ctype.h"
 #include "utils.h"
@@ -41,7 +41,7 @@ typedef unsigned long int ulong;
 
 #define MAX_PATTERN_SPACE (1<<24)
 
-const struct hgrep_format_function format_functions[] = {
+const struct reliq_format_function format_functions[] = {
     //{{"htmldecode",10},htmldecode_edit},
     {{"trim",4},trim_edit},
     {{"tr",2},tr_edit},
@@ -55,15 +55,15 @@ const struct hgrep_format_function format_functions[] = {
     {{"error",5},NULL},*/
 };
 
-hgrep_error *
-format_exec(char *input, size_t inputl, FILE *output, const hgrep_hnode *hgn, const hgrep_format_func *format, const size_t formatl, const char *reference)
+reliq_error *
+format_exec(char *input, size_t inputl, FILE *output, const reliq_hnode *rqn, const reliq_format_func *format, const size_t formatl, const char *reference)
 {
-  if (hgn && (!formatl || (formatl == 1 && (format[0].flags&FORMAT_FUNC) == 0 && (!format[0].arg[0] || !((hgrep_cstr*)format[0].arg[0])->b)))) {
-    hgrep_print(output,hgn);
+  if (rqn && (!formatl || (formatl == 1 && (format[0].flags&FORMAT_FUNC) == 0 && (!format[0].arg[0] || !((reliq_cstr*)format[0].arg[0])->b)))) {
+    reliq_print(output,rqn);
     return NULL;
   }
-  if (hgn && formatl == 1 && (format[0].flags&FORMAT_FUNC) == 0 && format[0].arg[0] && ((hgrep_cstr*)format[0].arg[0])->b) {
-    hgrep_printf(output,((hgrep_cstr*)format[0].arg[0])->b,((hgrep_cstr*)format[0].arg[0])->s,hgn,reference);
+  if (rqn && formatl == 1 && (format[0].flags&FORMAT_FUNC) == 0 && format[0].arg[0] && ((reliq_cstr*)format[0].arg[0])->b) {
+    reliq_printf(output,((reliq_cstr*)format[0].arg[0])->b,((reliq_cstr*)format[0].arg[0])->s,rqn,reference);
     return NULL;
   }
 
@@ -74,13 +74,13 @@ format_exec(char *input, size_t inputl, FILE *output, const hgrep_hnode *hgn, co
 
   for (size_t i = 0; i < formatl; i++) {
     out = (i == formatl-1) ? output : open_memstream(&ptr[1],&fsize[1]);
-    if (hgn && i == 0 && (format[i].flags&FORMAT_FUNC) == 0) {
-      hgrep_printf(out,((hgrep_cstr*)format[i].arg[0])->b,((hgrep_cstr*)format[i].arg[0])->s,hgn,reference);
+    if (rqn && i == 0 && (format[i].flags&FORMAT_FUNC) == 0) {
+      reliq_printf(out,((reliq_cstr*)format[i].arg[0])->b,((reliq_cstr*)format[i].arg[0])->s,rqn,reference);
     } else {
       if (i == 0) {
-        if (hgn) {
+        if (rqn) {
           FILE *t = open_memstream(&ptr[0],&fsize[0]);
-          hgrep_print(t,hgn);
+          reliq_print(t,rqn);
           fclose(t);
         } else {
           ptr[0] = input;
@@ -88,7 +88,7 @@ format_exec(char *input, size_t inputl, FILE *output, const hgrep_hnode *hgn, co
         }
       }
       if (format[i].flags&FORMAT_FUNC) {
-        hgrep_error *err = format_functions[(format[i].flags&FORMAT_FUNC)-1].func(ptr[0],fsize[0],out,(const void**)format[i].arg,format[i].flags);
+        reliq_error *err = format_functions[(format[i].flags&FORMAT_FUNC)-1].func(ptr[0],fsize[0],out,(const void**)format[i].arg,format[i].flags);
         if (err)
           return err;
       }
@@ -96,7 +96,7 @@ format_exec(char *input, size_t inputl, FILE *output, const hgrep_hnode *hgn, co
 
     if (i != formatl-1)
       fclose(out);
-    if (i != 0 || (hgn && (format[i].flags&FORMAT_FUNC) != 0))
+    if (i != 0 || (rqn && (format[i].flags&FORMAT_FUNC) != 0))
       free(ptr[0]);
     ptr[0] = ptr[1];
     fsize[0] = fsize[1];
@@ -105,13 +105,13 @@ format_exec(char *input, size_t inputl, FILE *output, const hgrep_hnode *hgn, co
   return NULL;
 }
 
-static hgrep_error *
-format_get_func_args(hgrep_format_func *f, char *src, size_t *pos, size_t *size)
+static reliq_error *
+format_get_func_args(reliq_format_func *f, char *src, size_t *pos, size_t *size)
 {
-  hgrep_error *err;
+  reliq_error *err;
   for (size_t i = 0; *pos < *size; i++) {
     if (i >= 4)
-      return hgrep_set_error(1,"too many arguments passed to a function");
+      return reliq_set_error(1,"too many arguments passed to a function");
 
     if (src[*pos] == '"' || src[*pos] == '\'') {
       size_t start,len;
@@ -120,14 +120,14 @@ format_get_func_args(hgrep_format_func *f, char *src, size_t *pos, size_t *size)
         return err;
 
       if (len) {
-        hgrep_str *str = f->arg[i] = malloc(sizeof(hgrep_str));
+        reliq_str *str = f->arg[i] = malloc(sizeof(reliq_str));
         str->b = memdup(src+start,len);
         str->s = len;
         f->flags |= (FORMAT_ARG0_ISSTR<<i);
       }
     } else if (src[*pos] == '[') {
-      hgrep_str *str = f->arg[i] = malloc(sizeof(hgrep_range));
-      err = range_comp(src,pos,*size,(hgrep_range*)str);
+      reliq_str *str = f->arg[i] = malloc(sizeof(reliq_range));
+      err = range_comp(src,pos,*size,(reliq_range*)str);
       if (err)
         return err;
     }
@@ -142,16 +142,16 @@ format_get_func_args(hgrep_format_func *f, char *src, size_t *pos, size_t *size)
     if (src[*pos] != '[' && src[*pos] != '"' && src[*pos] != '\'') {
       if (isalnum(src[*pos]) || src[*pos] == '/' || src[*pos] == '|')
           break;
-      return hgrep_set_error(1,"bad argument at %lu(0x%02x)",*pos,src[*pos]);
+      return reliq_set_error(1,"bad argument at %lu(0x%02x)",*pos,src[*pos]);
     }
   }
   return NULL;
 }
 
-hgrep_error *
+reliq_error *
 format_get_funcs(flexarr *format, char *src, size_t *pos, size_t *size)
 {
-  hgrep_format_func *f;
+  reliq_format_func *f;
   char *fname;
   size_t fnamel = 0;
 
@@ -165,15 +165,15 @@ format_get_funcs(flexarr *format, char *src, size_t *pos, size_t *size)
       while_is(isalnum,src,*pos,*size);
       fnamel = *pos-(fname-src);
       if (*pos < *size && !isspace(src[*pos]))
-        return hgrep_set_error(1,"format function has to be separated by space from its arguments");
+        return reliq_set_error(1,"format function has to be separated by space from its arguments");
     } else
       fname = NULL;
 
-    f = (hgrep_format_func*)flexarr_inc(format);
-    memset(f,0,sizeof(hgrep_format_func));
+    f = (reliq_format_func*)flexarr_inc(format);
+    memset(f,0,sizeof(reliq_format_func));
 
     while_is(isspace,src,*pos,*size);
-    hgrep_error *err = format_get_func_args(f,src,pos,size);
+    reliq_error *err = format_get_func_args(f,src,pos,size);
     if (err)
       return err;
 
@@ -187,16 +187,16 @@ format_get_funcs(flexarr *format, char *src, size_t *pos, size_t *size)
         }
       }
       if (!found)
-        return hgrep_set_error(1,"format function does not exist: \"%.*s\"",fnamel,fname);
+        return reliq_set_error(1,"format function does not exist: \"%.*s\"",fnamel,fname);
       f->flags |= i+1;
     } else if (format->size > 1)
-      return hgrep_set_error(1,"printf defined two times in format");
+      return reliq_set_error(1,"printf defined two times in format");
   }
   return NULL;
 }
 
 void
-format_free(hgrep_format_func *format, size_t formatl)
+format_free(reliq_format_func *format, size_t formatl)
 {
   if (!format)
     return;
@@ -206,10 +206,10 @@ format_free(hgrep_format_func *format, size_t formatl)
         continue;
 
       if (format[i].flags&(FORMAT_ARG0_ISSTR<<j)) {
-        if (((hgrep_str*)format[i].arg[j])->b)
-          free(((hgrep_str*)format[i].arg[j])->b);
+        if (((reliq_str*)format[i].arg[j])->b)
+          free(((reliq_str*)format[i].arg[j])->b);
       } else
-        range_free((hgrep_range*)format[i].arg[j]);
+        range_free((reliq_range*)format[i].arg[j]);
       free(format[i].arg[j]);
     }
   }
@@ -240,7 +240,7 @@ tr_match_ctypes(const char *name, const size_t namel) {
 }
 
 static int
-tr_strrange_next(const char *src, const size_t size, size_t *pos, int *rstart, int *rend, char const**array, int *repeat, int *hasended, hgrep_error **err)
+tr_strrange_next(const char *src, const size_t size, size_t *pos, int *rstart, int *rend, char const**array, int *repeat, int *hasended, reliq_error **err)
 {
   *err = NULL;
   if (*repeat != -1 && *rstart != -1) {
@@ -343,7 +343,7 @@ tr_strrange_next(const char *src, const size_t size, size_t *pos, int *rstart, i
           *rstart = 0;
           return tr_strrange_next(src,size,pos,rstart,rend,array,repeat,hasended,err);
         } else {
-          *err = hgrep_set_error(1,"tr: invalid character class '%.*s'",(int)classl,class);
+          *err = reliq_set_error(1,"tr: invalid character class '%.*s'",(int)classl,class);
           return -1;
         }
       }
@@ -378,13 +378,13 @@ tr_strrange_next(const char *src, const size_t size, size_t *pos, int *rstart, i
   return -1;
 }
 
-static hgrep_error *
+static reliq_error *
 tr_strrange(const char *src1, const size_t size1, const char *src2, const size_t size2, uchar arr[256], uchar arr_enabled[256], uchar complement)
 {
   size_t pos[2]={0};
   int rstart[2]={-1,-1},rend[2]={-1,-1},repeat[2]={-1,-1},hasended[2]={0};
   char const *array[2] = {NULL};
-  hgrep_error *err;
+  reliq_error *err;
 
   while (!hasended[0]) {
     int r1 = tr_strrange_next(src1,size1,&pos[0],&rstart[0],&rend[0],&array[0],&repeat[0],&hasended[0],&err);
@@ -459,7 +459,7 @@ sed_address_comp_number(const char *src, size_t *pos, size_t size, uint *result)
   *pos += s;
 }
 
-static hgrep_error *
+static reliq_error *
 sed_address_comp_regex(const char *src, size_t *pos, size_t size, regex_t *preg, int eflags)
 {
   char regex_delim = '/';
@@ -470,21 +470,21 @@ sed_address_comp_regex(const char *src, size_t *pos, size_t size, regex_t *preg,
   while (regex_end < size && src[regex_end] != regex_delim)
     regex_end++;
   if (regex_end >= size || src[regex_end] != regex_delim)
-    return hgrep_set_error(1,"sed: char %u: unterminated address regex",*pos);
+    return reliq_set_error(1,"sed: char %u: unterminated address regex",*pos);
   if (regex_end == *pos)
-    return hgrep_set_error(1,"sed: char %u: no previous regular expression",*pos);
+    return reliq_set_error(1,"sed: char %u: no previous regular expression",*pos);
   char tmp[REGEX_PATTERN_SIZE];
   if (regex_end-*pos >= REGEX_PATTERN_SIZE-1)
-    return hgrep_set_error(1,"sed: char %u: regex is too long",regex_end);
+    return reliq_set_error(1,"sed: char %u: regex is too long",regex_end);
   memcpy(tmp,src+*pos,regex_end-*pos);
   tmp[regex_end-*pos] = 0;
   *pos = regex_end+1;
   if (regcomp(preg,tmp,eflags))
-    return hgrep_set_error(1,"sed: char %u: couldn't compile regex",regex_end);
+    return reliq_set_error(1,"sed: char %u: couldn't compile regex",regex_end);
   return NULL;
 }
 
-static hgrep_error *
+static reliq_error *
 sed_address_comp_reverse(const char *src, size_t *pos, size_t size, struct sed_address *address)
 {
   while_is(isspace,src,*pos,size);
@@ -494,16 +494,16 @@ sed_address_comp_reverse(const char *src, size_t *pos, size_t size, struct sed_a
   }
   if (address->flags&SED_A_NUM1 && address->num[0] == 0) {
     if (!(address->flags&SED_A_REG2))
-      return hgrep_set_error(1,"sed: char %u: invalid use of line address 0",*pos);
+      return reliq_set_error(1,"sed: char %u: invalid use of line address 0",*pos);
     address->flags |= SED_A_CHECKFIRST;
   }
   return NULL;
 }
 
-static hgrep_error *
+static reliq_error *
 sed_address_comp_pre(const char *src, size_t *pos, size_t size, struct sed_address *address, int eflags)
 {
-  hgrep_error *err = NULL;
+  reliq_error *err = NULL;
   address->flags = 0;
   while_is(isspace,src,*pos,size);
   if (*pos >= size)
@@ -578,10 +578,10 @@ sed_address_free(struct sed_address *a)
     regfree(&a->reg[1]);
 }
 
-static hgrep_error *
+static reliq_error *
 sed_address_comp(const char *src, size_t *pos, size_t size, struct sed_address *address, int eflags)
 {
-  hgrep_error *err = sed_address_comp_pre(src,pos,size,address,eflags|REG_NOSUB);
+  reliq_error *err = sed_address_comp_pre(src,pos,size,address,eflags|REG_NOSUB);
   if (err)
     sed_address_free(address);
   err = sed_address_comp_reverse(src,pos,size,address);
@@ -688,7 +688,7 @@ struct sed_expression {
   ushort lvl;
   struct sed_address address;
   char name;
-  hgrep_cstr arg;
+  reliq_cstr arg;
   void *arg1;
   void *arg2;
 };
@@ -763,10 +763,10 @@ sed_script_free(flexarr *script)
   flexarr_free(script);
 }
 
-static hgrep_error *
+static reliq_error *
 sed_script_comp_pre(const char *src, size_t size, int eflags, flexarr **script)
 {
-  hgrep_error *err;
+  reliq_error *err;
   size_t pos = 0;
   *script = flexarr_init(sizeof(struct sed_expression),2<<4);
   struct sed_expression *sedexpr = (struct sed_expression*)flexarr_inc(*script);
@@ -784,21 +784,21 @@ sed_script_comp_pre(const char *src, size_t size, int eflags, flexarr **script)
     while_is(isspace,src,pos,size);
     if (pos >= size) {
       if (pos-addrdiff)
-        return hgrep_set_error(1,"sed: char %u: missing command");
+        return reliq_set_error(1,"sed: char %u: missing command");
       return NULL;
     }
     command = sed_get_command(src[pos]);
     if (!command)
-      return hgrep_set_error(1,"sed: char %u: unknown command: `%c'",pos,src[pos]);
+      return reliq_set_error(1,"sed: char %u: unknown command: `%c'",pos,src[pos]);
     if (command->flags&SC_NOADDRESS && sedexpr->address.flags)
-      return hgrep_set_error(1,"sed: char %u: %c doesn't want any addresses",pos,src[pos]);
+      return reliq_set_error(1,"sed: char %u: %c doesn't want any addresses",pos,src[pos]);
     sedexpr->name = src[pos];
     sedexpr->lvl = lvl;
     if (sedexpr->name == '{' || sedexpr->name == '}') {
       if (sedexpr->name == '}') {
         CLOSING_BRACKET: ;
         if (!lvl)
-          return hgrep_set_error(1,"sed: char %u: unexpected `}'",pos);
+          return reliq_set_error(1,"sed: char %u: unexpected `}'",pos);
         lvl--;
       } else
         lvl++;
@@ -827,9 +827,9 @@ sed_script_comp_pre(const char *src, size_t size, int eflags, flexarr **script)
       if (!sedexpr->arg.s) {
         if (command->name == 'y')
           goto DIFFERENT_LENGHTS;
-        return hgrep_set_error(1,"sed: char %u: no previous regular expression",pos);
+        return reliq_set_error(1,"sed: char %u: no previous regular expression",pos);
       }
-      hgrep_cstr second,third;
+      reliq_cstr second,third;
       second.b = src+(++pos);
       while (pos < size && src[pos] != argdelim && src[pos] != '\n') {
         if (pos+1 < size && src[pos] == '\\' && (src[pos+1] == '\\' || src[pos+1] == argdelim))
@@ -850,7 +850,7 @@ sed_script_comp_pre(const char *src, size_t size, int eflags, flexarr **script)
           goto EXTRACHARS;
         if (sedexpr->arg.s != second.s) {
           DIFFERENT_LENGHTS: ;
-          return hgrep_set_error(1,"sed: char %u: strings for `%c' command are different lenghts",pos,command->name);
+          return reliq_set_error(1,"sed: char %u: strings for `%c' command are different lenghts",pos,command->name);
         }
         sedexpr->arg1 = malloc(256*sizeof(char));
         sedexpr->arg2 = malloc(256*sizeof(uchar));
@@ -863,7 +863,7 @@ sed_script_comp_pre(const char *src, size_t size, int eflags, flexarr **script)
       } else {
         char tmp[REGEX_PATTERN_SIZE];
         if (sedexpr->arg.s >= REGEX_PATTERN_SIZE-1)
-          return hgrep_set_error(1,"sed: `s' pattern is too big");
+          return reliq_set_error(1,"sed: `s' pattern is too big");
 
         ulong arg2 = 0;
         for (size_t i = 0; i < third.s; i++) {
@@ -879,18 +879,18 @@ sed_script_comp_pre(const char *src, size_t size, int eflags, flexarr **script)
           } else if (third.b[i] == 'p') {
             if (arg2&SED_EXPRESSION_S_PRINT) {
               S_ARG_REPEAT: ;
-              return hgrep_set_error(1,"sed: char %u: multiple `%c' options to `s' command",pos,third.b[i]);
+              return reliq_set_error(1,"sed: char %u: multiple `%c' options to `s' command",pos,third.b[i]);
             }
             arg2 |= SED_EXPRESSION_S_PRINT;
           } else if (isdigit(third.b[i])) {
             if (arg2&SED_EXPRESSION_S_NUMBER)
-              return hgrep_set_error(1,"sed: char %u: multiple number options to `s' command",pos);
+              return reliq_set_error(1,"sed: char %u: multiple number options to `s' command",pos);
             uint c = number_handle(third.b,&i,third.s);
             if (!c)
-              return hgrep_set_error(1,"sed: char %u: number option to `s' may not be zero",pos);
+              return reliq_set_error(1,"sed: char %u: number option to `s' may not be zero",pos);
             arg2 |= c&SED_EXPRESSION_S_NUMBER;
           } else if (!isspace(third.b[i]))
-            return hgrep_set_error(1,"sed: char %u: unknown option to `s'",pos);
+            return reliq_set_error(1,"sed: char %u: unknown option to `s'",pos);
         }
 
         sedexpr->arg2 = (void*)(ulong)arg2; //XD
@@ -904,7 +904,7 @@ sed_script_comp_pre(const char *src, size_t size, int eflags, flexarr **script)
         if (regcomp(sedexpr->arg1,tmp,eflags)) {
           free(sedexpr->arg1);
           sedexpr->arg1 = NULL;
-          return hgrep_set_error(1,"sed: char %u: couldn't compile regex",sedexpr->arg.b-src);
+          return reliq_set_error(1,"sed: char %u: couldn't compile regex",sedexpr->arg.b-src);
         }
 
         sedexpr->arg = second;
@@ -925,12 +925,12 @@ sed_script_comp_pre(const char *src, size_t size, int eflags, flexarr **script)
       if (command->name != '#') {
         if (!sedexpr->arg.s && command->flags&SC_ARG && !(command->flags&SC_ARG_OPTIONAL)) {
           UNTERMINATED: ;
-          return hgrep_set_error(1,command->name == ':' ? "sed: char %u: \"%c\" lacks a label" :
+          return reliq_set_error(1,command->name == ':' ? "sed: char %u: \"%c\" lacks a label" :
             "sed: char %u: unterminated `%c' command",pos,sedexpr->name);
         }
         if (sedexpr->arg.s && !(command->flags&SC_ARG)) {
           EXTRACHARS: ;
-          return hgrep_set_error(1,"sed: char %u: extra characters after command",pos);
+          return reliq_set_error(1,"sed: char %u: extra characters after command",pos);
         }
       }
     }
@@ -948,7 +948,7 @@ sed_script_comp_pre(const char *src, size_t size, int eflags, flexarr **script)
   /*if (sedexpr->arg1) //random solution for it giving segfault
     sed_expression_free(sedexpr);*/
   if (lvl)
-    return hgrep_set_error(1,"sed: char %u: unmatched `{'",pos);
+    return reliq_set_error(1,"sed: char %u: unmatched `{'",pos);
   flexarr_dec(*script);
   struct sed_expression *scriptv = (struct sed_expression*)(*script)->v;
   for (size_t i = 0; i < (*script)->size; i++) {
@@ -962,16 +962,16 @@ sed_script_comp_pre(const char *src, size_t size, int eflags, flexarr **script)
         }
       }
       if (!found)
-        return hgrep_set_error(1,"sed: can't find label for jump to `%.*s'",scriptv[i].arg.s,scriptv[i].arg.b);
+        return reliq_set_error(1,"sed: can't find label for jump to `%.*s'",scriptv[i].arg.s,scriptv[i].arg.b);
     }
   }
   return NULL;
 }
 
-static hgrep_error *
+static reliq_error *
 sed_script_comp(const char *src, size_t size, int eflags, flexarr **script)
 {
-  hgrep_error *err;
+  reliq_error *err;
   err = sed_script_comp_pre(src,size,eflags,script);
   if (err) {
     sed_script_free(*script);
@@ -981,7 +981,7 @@ sed_script_comp(const char *src, size_t size, int eflags, flexarr **script)
   return NULL;
 }
 
-static hgrep_error *
+static reliq_error *
 sed_pre_edit(char *src, size_t size, FILE *output, char *buffers[3], flexarr *script, const char linedelim, uchar silent)
 {
   char *patternsp = buffers[0],
@@ -1023,7 +1023,7 @@ sed_pre_edit(char *src, size_t size, FILE *output, char *buffers[3], flexarr *sc
         offset = patternspl;
       if ((end-start)+offset >= MAX_PATTERN_SPACE) {
         BIGLINE: ;
-        return hgrep_set_error(1,"sed: line too big to process");
+        return reliq_set_error(1,"sed: line too big to process");
       }
       patternspl = (end-start)+offset;
       if (end-start)
@@ -1170,7 +1170,7 @@ sed_pre_edit(char *src, size_t size, FILE *output, char *buffers[3], flexarr *sc
           if (bufferspl)
             memcpy(buffersp,patternsp,bufferspl);
           if (scriptv[cycle].arg.s) {
-            hgrep_cstr arg = scriptv[cycle].arg;
+            reliq_cstr arg = scriptv[cycle].arg;
             for (size_t i = 0; i < arg.s; i++) {
               char c = arg.b[i];
               if (i+1 < arg.s && arg.b[i] == '\\') {
@@ -1246,17 +1246,17 @@ sed_pre_edit(char *src, size_t size, FILE *output, char *buffers[3], flexarr *sc
   return NULL;
 }
 
-hgrep_error *
+reliq_error *
 sed_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
 {
-  hgrep_error *err;
+  reliq_error *err;
   uchar extendedregex=0,silent=0;
   flexarr *script = NULL;
 
   char linedelim = '\n';
 
-  if (arg[1] && flag&FORMAT_ARG1_ISSTR && ((hgrep_str*)arg[1])->b && ((hgrep_str*)arg[1])->s) {
-    hgrep_str *str = (hgrep_str*)arg[1];
+  if (arg[1] && flag&FORMAT_ARG1_ISSTR && ((reliq_str*)arg[1])->b && ((reliq_str*)arg[1])->s) {
+    reliq_str *str = (reliq_str*)arg[1];
     for (size_t i = 0; i < str->s; i++) {
       if (str->b[i] == 'E') {
         extendedregex = 1;
@@ -1267,7 +1267,7 @@ sed_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigne
     }
   }
   if (arg[2] && flag&FORMAT_ARG2_ISSTR) {
-    hgrep_str *str = (hgrep_str*)arg[2];
+    reliq_str *str = (reliq_str*)arg[2];
     if (str->b && str->s) {
       linedelim = *str->b;
       if (linedelim == '\\' && str->s > 1)
@@ -1275,14 +1275,14 @@ sed_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigne
     }
   }
 
-  if (arg[0] && flag&FORMAT_ARG0_ISSTR && ((hgrep_str*)arg[0])->b && ((hgrep_str*)arg[0])->s) {
-    hgrep_str *str = (hgrep_str*)arg[0];
+  if (arg[0] && flag&FORMAT_ARG0_ISSTR && ((reliq_str*)arg[0])->b && ((reliq_str*)arg[0])->s) {
+    reliq_str *str = (reliq_str*)arg[0];
     err = sed_script_comp(str->b,str->s,extendedregex ? REG_EXTENDED : 0,&script);
     if (err)
       return err;
   }
   if (script == NULL)
-    return hgrep_set_error(0,"sed: missing script argument");
+    return reliq_set_error(0,"sed: missing script argument");
 
   char *buffers[3];
   for (size_t i = 0; i < 3; i++)
@@ -1296,10 +1296,10 @@ sed_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigne
   return err;
 }
 
-static hgrep_cstr
+static reliq_cstr
 cstr_get_line(const char *src, size_t size, size_t *saveptr, const char delim)
 {
-  hgrep_cstr ret = {NULL,0};
+  reliq_cstr ret = {NULL,0};
   size_t startline = *saveptr;
   while(*saveptr < size && src[*saveptr] != delim)
     (*saveptr)++;
@@ -1313,17 +1313,17 @@ cstr_get_line(const char *src, size_t size, size_t *saveptr, const char delim)
 }
 
 //without delim saved
-static hgrep_cstr
+static reliq_cstr
 cstr_get_line_d(const char *src, size_t size, size_t *saveptr, const char delim)
 {
-  hgrep_cstr ret = cstr_get_line(src,size,saveptr,delim);
+  reliq_cstr ret = cstr_get_line(src,size,saveptr,delim);
   if (ret.b && ret.b[ret.s-1] == delim)
     ret.s--;
   return ret;
 }
 
 static void
-echo_edit_print(hgrep_str *str, FILE *output)
+echo_edit_print(reliq_str *str, FILE *output)
 {
   for (size_t i = 0; i < str->s; i++) {
     if (str->b[i] == '\\' && i+1 < str->s) {
@@ -1334,18 +1334,18 @@ echo_edit_print(hgrep_str *str, FILE *output)
   }
 }
 
-hgrep_error *
+reliq_error *
 echo_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
 {
-  hgrep_str *str[2] = {NULL};
+  reliq_str *str[2] = {NULL};
 
-  if (arg[0] && flag&FORMAT_ARG0_ISSTR && ((hgrep_str*)arg[0])->b && ((hgrep_str*)arg[0])->s)
-    str[0] = (hgrep_str*)arg[0];
-  if (arg[1] && flag&FORMAT_ARG1_ISSTR && ((hgrep_str*)arg[1])->b && ((hgrep_str*)arg[1])->s)
-    str[1] = (hgrep_str*)arg[1];
+  if (arg[0] && flag&FORMAT_ARG0_ISSTR && ((reliq_str*)arg[0])->b && ((reliq_str*)arg[0])->s)
+    str[0] = (reliq_str*)arg[0];
+  if (arg[1] && flag&FORMAT_ARG1_ISSTR && ((reliq_str*)arg[1])->b && ((reliq_str*)arg[1])->s)
+    str[1] = (reliq_str*)arg[1];
 
   if (!str[0] && !str[1])
-    return hgrep_set_error(0,"echo: missing arguments");
+    return reliq_set_error(0,"echo: missing arguments");
 
   if (str[0] && str[0]->s)
     echo_edit_print(str[0],output);
@@ -1356,13 +1356,13 @@ echo_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsign
   return NULL;
 }
 
-hgrep_error *
+reliq_error *
 uniq_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
 {
   char delim = '\n';
 
   if (arg[0] && flag&FORMAT_ARG0_ISSTR) {
-    hgrep_str *str = (hgrep_str*)arg[0];
+    reliq_str *str = (reliq_str*)arg[0];
     if (str->b && str->s) {
       delim = *str->b;
       if (delim == '\\' && str->s > 1)
@@ -1370,7 +1370,7 @@ uniq_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsign
     }
   }
 
-  hgrep_cstr line,previous;
+  reliq_cstr line,previous;
   size_t saveptr = 0;
 
   previous = cstr_get_line_d(src,size,&saveptr,delim);
@@ -1396,7 +1396,7 @@ uniq_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsign
 }
 
 static int
-sort_cmp(const hgrep_cstr *s1, const hgrep_cstr *s2)
+sort_cmp(const reliq_cstr *s1, const reliq_cstr *s2)
 {
   size_t s = s1->s;
   if (s < s2->s)
@@ -1404,14 +1404,14 @@ sort_cmp(const hgrep_cstr *s1, const hgrep_cstr *s2)
   return memcmp(s1->b,s2->b,s);
 }
 
-hgrep_error *
+reliq_error *
 sort_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
 {
   char delim = '\n';
   uchar reverse=0,unique=0; //,natural=0,icase=0;
 
-  if (arg[0] && flag&FORMAT_ARG0_ISSTR && ((hgrep_str*)arg[0])->b) {
-    hgrep_str *str = (hgrep_str*)arg[0];
+  if (arg[0] && flag&FORMAT_ARG0_ISSTR && ((reliq_str*)arg[0])->b) {
+    reliq_str *str = (reliq_str*)arg[0];
     for (size_t i = 0; i < str->s; i++) {
       if (str->b[i] == 'r') {
         reverse = 1;
@@ -1425,7 +1425,7 @@ sort_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsign
   }
 
   if (arg[1] && flag&FORMAT_ARG1_ISSTR) {
-    hgrep_str *str = (hgrep_str*)arg[1];
+    reliq_str *str = (reliq_str*)arg[1];
     if (str->b && str->s) {
       delim = *str->b;
       if (delim == '\\' && str->s > 1)
@@ -1433,18 +1433,18 @@ sort_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsign
     }
   }
 
-  flexarr *lines = flexarr_init(sizeof(hgrep_cstr),(1<<10));
-  hgrep_cstr line,previous;
+  flexarr *lines = flexarr_init(sizeof(reliq_cstr),(1<<10));
+  reliq_cstr line,previous;
   size_t saveptr = 0;
 
   while (1) {
     line = cstr_get_line_d(src,size,&saveptr,delim);
     if (!line.b)
       break;
-    *(hgrep_cstr*)flexarr_inc(lines) = line;
+    *(reliq_cstr*)flexarr_inc(lines) = line;
   }
-  qsort(lines->v,lines->size,sizeof(hgrep_cstr),(int(*)(const void*,const void*))sort_cmp);
-  hgrep_cstr *linesv = (hgrep_cstr*)lines->v;
+  qsort(lines->v,lines->size,sizeof(reliq_cstr),(int(*)(const void*,const void*))sort_cmp);
+  reliq_cstr *linesv = (reliq_cstr*)lines->v;
 
   if (reverse) {
     for (size_t i=0,j=lines->size-1; i < j; i++,j--) {
@@ -1477,17 +1477,17 @@ sort_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsign
   return NULL;
 }
 
-hgrep_error *
+reliq_error *
 line_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
 {
   char delim = '\n';
-  hgrep_range *range = NULL;
+  reliq_range *range = NULL;
 
   if (arg[0] && !(flag&FORMAT_ARG0_ISSTR))
-    range = (hgrep_range*)arg[0];
+    range = (reliq_range*)arg[0];
 
   if (arg[1] && flag&FORMAT_ARG1_ISSTR) {
-    hgrep_str *str = (hgrep_str*)arg[1];
+    reliq_str *str = (reliq_str*)arg[1];
     if (str->b && str->s) {
       delim = *str->b;
       if (delim == '\\' && str->s > 1)
@@ -1496,10 +1496,10 @@ line_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsign
   }
 
   if (!range)
-    return hgrep_set_error(0,"line: missing arguments");
+    return reliq_set_error(0,"line: missing arguments");
 
   size_t saveptr=0,linecount=0,currentline=0;
-  hgrep_cstr line;
+  reliq_cstr line;
 
   while (1) {
     line = cstr_get_line(src,size,&saveptr,delim);
@@ -1520,28 +1520,28 @@ line_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsign
   return NULL;
 }
 
-hgrep_error *
+reliq_error *
 cut_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
 {
   uchar delim[256]={0};
   uchar complement=0,onlydelimited=0,delimited=0;
   char linedelim = '\n';
-  hgrep_error *err;
+  reliq_error *err;
 
-  hgrep_range *range = NULL;
+  reliq_range *range = NULL;
 
   if (arg[0] && !(flag&FORMAT_ARG0_ISSTR))
-    range = (hgrep_range*)arg[0];
+    range = (reliq_range*)arg[0];
 
-  if (arg[1] && flag&FORMAT_ARG1_ISSTR && ((hgrep_str*)arg[1])->b && ((hgrep_str*)arg[1])->s) {
-    hgrep_str *str = (hgrep_str*)arg[1];
+  if (arg[1] && flag&FORMAT_ARG1_ISSTR && ((reliq_str*)arg[1])->b && ((reliq_str*)arg[1])->s) {
+    reliq_str *str = (reliq_str*)arg[1];
     err = tr_strrange(str->b,str->s,NULL,0,delim,NULL,0);
     if (err)
       return err;
     delimited = 1;
   }
-  if (arg[2] && flag&FORMAT_ARG2_ISSTR && ((hgrep_str*)arg[2])->b) {
-    hgrep_str *str = (hgrep_str*)arg[2];
+  if (arg[2] && flag&FORMAT_ARG2_ISSTR && ((reliq_str*)arg[2])->b) {
+    reliq_str *str = (reliq_str*)arg[2];
     for (size_t i = 0; i < str->s; i++) {
         if (str->b[i] == 's') {
           onlydelimited = 1;
@@ -1552,7 +1552,7 @@ cut_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigne
     }
   }
   if (arg[3] && flag&FORMAT_ARG3_ISSTR) {
-    hgrep_str *str = (hgrep_str*)arg[3];
+    reliq_str *str = (reliq_str*)arg[3];
     if (str->b && str->s) {
       linedelim = *str->b;
       if (linedelim == '\\' && str->s > 1)
@@ -1561,9 +1561,9 @@ cut_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigne
   }
 
   if (!range)
-    return hgrep_set_error(0,"cut: missing range argument");
+    return reliq_set_error(0,"cut: missing range argument");
 
-  hgrep_cstr line;
+  reliq_cstr line;
   size_t saveptr = 0;
   const size_t bufsize = 8192;
   char buf[bufsize];
@@ -1643,20 +1643,20 @@ cut_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigne
   return NULL;
 }
 
-hgrep_error *
+reliq_error *
 tr_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
 {
   uchar array[256] = {0};
-  hgrep_str *string[2] = {NULL};
+  reliq_str *string[2] = {NULL};
   uchar complement=0,squeeze=0;
-  hgrep_error *err;
+  reliq_error *err;
 
-  if (arg[0] && flag&FORMAT_ARG0_ISSTR && ((hgrep_str*)arg[0])->b && ((hgrep_str*)arg[0])->s)
-    string[0] = (hgrep_str*)arg[0];
-  if (arg[1] && flag&FORMAT_ARG1_ISSTR && ((hgrep_str*)arg[1])->b && ((hgrep_str*)arg[1])->s)
-    string[1] = (hgrep_str*)arg[1];
-  if (arg[2] && flag&FORMAT_ARG2_ISSTR && ((hgrep_str*)arg[2])->b) {
-    hgrep_str *str = (hgrep_str*)arg[2];
+  if (arg[0] && flag&FORMAT_ARG0_ISSTR && ((reliq_str*)arg[0])->b && ((reliq_str*)arg[0])->s)
+    string[0] = (reliq_str*)arg[0];
+  if (arg[1] && flag&FORMAT_ARG1_ISSTR && ((reliq_str*)arg[1])->b && ((reliq_str*)arg[1])->s)
+    string[1] = (reliq_str*)arg[1];
+  if (arg[2] && flag&FORMAT_ARG2_ISSTR && ((reliq_str*)arg[2])->b) {
+    reliq_str *str = (reliq_str*)arg[2];
     for (size_t i = 0; i < str->s; i++) {
         if (str->b[i] == 's') {
           squeeze = 1;
@@ -1666,7 +1666,7 @@ tr_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned
   }
 
   if (!string[0])
-    return hgrep_set_error(0,"tr: missing arguments");
+    return reliq_set_error(0,"tr: missing arguments");
 
   const size_t bufsize = 8192;
   char buf[bufsize];
@@ -1717,14 +1717,14 @@ tr_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned
   return NULL;
 }
 
-hgrep_error *
+reliq_error *
 trim_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
 {
   char delim = '\0';
   uchar hasdelim = 0;
 
   if (arg[0] && flag&FORMAT_ARG0_ISSTR) {
-    hgrep_str *str = (hgrep_str*)arg[0];
+    reliq_str *str = (reliq_str*)arg[0];
     if (str->b && str->s) {
       delim = *str->b;
       if (delim == '\\' && str->s > 1)

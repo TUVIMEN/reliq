@@ -1,24 +1,24 @@
-.TH HGREP 1 hgrep\-VERSION
+.TH RELIQ 1 reliq\-VERSION
 
 .SH NAME
-hgrep - simple html searching tool
+reliq - simple html searching tool
 
 .SH SYNOPSIS
-.B hgrep
+.B reliq
 .RI [ OPTION .\|.\|.]\&
 .I PATTERNS
 .RI [ FILE .\|.\|.]\&
 .br
 
 .SH DESCRIPTION
-.B hgrep
+.B reliq
 searches for
 .I PATTERNS
 in each
 .IR FILE .
 Typically 
 .I PATTERNS
-should be quoted when hgrep is used in shell command.
+should be quoted when reliq is used in shell command.
 .PP
 When
 .I FILE
@@ -34,7 +34,7 @@ Output a usage message and exit.
 .TP
 .BR \-v
 Output the version number of
-.B hgrep
+.B reliq
 and exit.
 
 .SS "Pattern Syntax"
@@ -438,35 +438,35 @@ Get tags 'a' with attribute 'href' at position 0 of value ending with '.org', fr
 .nf
 \&
 .in +4m
-.B $ hgrep 'div id \-class; a [0]href=B>".*\\\\.org"' index.html
+.B $ reliq 'div id \-class; a [0]href=B>".*\\\\.org"' index.html
 .in
 \&
 Get tags which does not have any tags inside them from file 'index.html'.
 .nf
 \&
 .in +4m
-.B $ hgrep '* c@[0]' index.html
+.B $ reliq '* c@[0]' index.html
 .in
 \&
 Get empty tags from file 'index.html'.
 .nf
 \&
 .in +4m
-.B $ hgrep '* m@>[0]' index.html
+.B $ reliq '* m@>[0]' index.html
 .in
 \&
 Get hyperlinks from level greater or equal to 6 from file 'index.html'.
 .nf
 \&
 .in +4m
-.B $ hgrep 'a href @l[6:] | "%(href)v\\\\n"' index.html
+.B $ reliq 'a href @l[6:] | "%(href)v\\\\n"' index.html
 .in
 \&
 Get all urls from 'a' and 'img' tags
 .nf
 \&
 .in +4m
-.B $ hgrep 'img src | "%(src)v\\\\n", a href | "%(href)a\\\\n"'
+.B $ reliq 'img src | "%(src)v\\\\n", a href | "%(href)a\\\\n"'
 .in
 \&
 

@@ -1,5 +1,5 @@
 /*
-    hgrep - html searching tool
+    reliq - html searching tool
     Copyright (C) 2020-2024 Dominik Stanisław Suchora <suchora.dominik7@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
@@ -32,7 +32,7 @@ typedef unsigned short ushort;
 typedef unsigned int uint;
 typedef unsigned long int ulong;
 
-#include "hgrep.h"
+#include "reliq.h"
 #include "flexarr.h"
 #include "ctype.h"
 #include "utils.h"
@@ -224,7 +224,7 @@ number_handle(const char *src, size_t *pos, const size_t size)
   return ret;
 }
 
-hgrep_error *
+reliq_error *
 get_quoted(char *src, size_t *i, size_t *size, const char delim, size_t *start, size_t *len)
 {
   *len = 0;
@@ -239,7 +239,7 @@ get_quoted(char *src, size_t *i, size_t *size, const char delim, size_t *start, 
       (*i)++;
     }
     if (src[*i] != tf)
-      return hgrep_set_error(1,"string: could not find the end of %c quote",tf);
+      return reliq_set_error(1,"string: could not find the end of %c quote",tf);
     *len = ((*i)++)-(*start);
   } else {
     *start = *i;
@@ -249,7 +249,7 @@ get_quoted(char *src, size_t *i, size_t *size, const char delim, size_t *start, 
       } else if (src[*i] == '\\' && (isspace(src[*i+1]) || src[*i+1] == delim)) {
         delchar(src,*i,size);
       } else if (src[*i] == '"' || src[*i] == '\'')
-        return hgrep_set_error(1,"string: illegal use of %c inside unquoted string",src[*i]);
+        return reliq_set_error(1,"string: illegal use of %c inside unquoted string",src[*i]);
       (*i)++;
     }
     *len = *i-*start;
@@ -272,11 +272,11 @@ conv_special_characters(char *src, size_t *size)
 }
 
 uchar
-range_match(const uint matched, const hgrep_range *range, const size_t last)
+range_match(const uint matched, const reliq_range *range, const size_t last)
 {
   if (!range || !range->s)
     return 1;
-  struct hgrep_range_node const *r;
+  struct reliq_range_node const *r;
   uint x,y;
   for (size_t i = 0; i < range->s; i++) {
     r = &range->b[i];
@@ -304,9 +304,9 @@ range_match(const uint matched, const hgrep_range *range, const size_t last)
 }
 
 static void
-range_node_comp(const char *src, const size_t size, struct hgrep_range_node *node)
+range_node_comp(const char *src, const size_t size, struct reliq_range_node *node)
 {
-  memset(node->v,0,sizeof(struct hgrep_range_node));
+  memset(node->v,0,sizeof(struct reliq_range_node));
   size_t pos = 0;
 
   for (int i = 0; i < 3; i++) {
@@ -340,14 +340,14 @@ range_node_comp(const char *src, const size_t size, struct hgrep_range_node *nod
   }
 }
 
-static hgrep_error *
+static reliq_error *
 range_comp_pre(const char *src, size_t *pos, const size_t size, flexarr *nodes)
 {
   if (*pos >= size || src[*pos] != '[')
     return NULL;
   (*pos)++;
   size_t end;
-  struct hgrep_range_node node;
+  struct reliq_range_node node;
 
   while (*pos < size && src[*pos] != ']') {
     while_is(isspace,src,*pos,size);
@@ -357,29 +357,29 @@ range_comp_pre(const char *src, size_t *pos, const size_t size, flexarr *nodes)
     if (end >= size)
       goto ERR;
     if (src[end] != ',' && src[end] != ']')
-      return hgrep_set_error(1,"range: char %u(0x%02x): not a number",end,src[end]);
+      return reliq_set_error(1,"range: char %u(0x%02x): not a number",end,src[end]);
 
     range_node_comp(src+(*pos),end-(*pos),&node);
     if (node.flags&(R_RANGE|R_NOTEMPTY))
-      memcpy(flexarr_inc(nodes),&node,sizeof(struct hgrep_range_node));
+      memcpy(flexarr_inc(nodes),&node,sizeof(struct reliq_range_node));
     *pos = end+((src[end] == ',') ? 1 : 0);
   }
   if (*pos >= size || src[*pos] != ']') {
     ERR: ;
-    return hgrep_set_error(1,"range: char %d: unprecedented end of range",*pos);
+    return reliq_set_error(1,"range: char %d: unprecedented end of range",*pos);
   }
   (*pos)++;
 
   return NULL;
 }
 
-hgrep_error *
-range_comp(const char *src, size_t *pos, const size_t size, hgrep_range *range)
+reliq_error *
+range_comp(const char *src, size_t *pos, const size_t size, reliq_range *range)
 {
   if (!range)
     return NULL;
-  hgrep_error *err;
-  flexarr *r = flexarr_init(sizeof(struct hgrep_range_node),RANGES_INC);
+  reliq_error *err;
+  flexarr *r = flexarr_init(sizeof(struct reliq_range_node),RANGES_INC);
 
   err = range_comp_pre(src,pos,size,r);
   if (err) {
@@ -392,7 +392,7 @@ range_comp(const char *src, size_t *pos, const size_t size, hgrep_range *range)
 }
 
 void
-range_free(hgrep_range *range)
+range_free(reliq_range *range)
 {
   if (!range)
     return;

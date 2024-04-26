@@ -1,5 +1,5 @@
 /*
-    hgrep - html searching tool
+    reliq - html searching tool
     Copyright (C) 2020-2024 Dominik Stanisław Suchora <suchora.dominik7@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
@@ -32,47 +32,47 @@ typedef unsigned short ushort;
 typedef unsigned int uint;
 typedef unsigned long int ulong;
 
-#include "hgrep.h"
+#include "reliq.h"
 #include "flexarr.h"
 #include "ctype.h"
 #include "utils.h"
 #include "edit.h"
 #include "html.h"
 
-const hgrep_str8 selfclosing_s[] = { //tags that don't end with </tag>
+const reliq_str8 selfclosing_s[] = { //tags that don't end with </tag>
   {"br",2},{"hr",2},{"img",3},{"input",5},{"col",3},{"embed",5},
   {"area",4},{"base",4},{"link",4},{"meta",4},{"param",5},
   {"source",6},{"track",5},{"wbr",3},{"command",7},
   {"keygen",6},{"menuitem",8}
 };
 
-const hgrep_str8 script_s[] = { //tags which insides should be ommited
+const reliq_str8 script_s[] = { //tags which insides should be ommited
   {"script",6},{"style",5}
 };
 
-#ifdef HGREP_AUTOCLOSING
-const hgrep_str8 autoclosing_s[] = { //tags that don't need to be closed
+#ifdef RELIQ_AUTOCLOSING
+const reliq_str8 autoclosing_s[] = { //tags that don't need to be closed
   {"p",1},{"tr",2},{"td",2},{"th",2},{"tbody",5},
   {"tfoot",5},{"thead",5},{"rt",2},{"rp",2},
   {"caption",7},{"colgroup",8},{"option",6},{"optgroup",8}
 };
 #endif
 
-hgrep_error *
-node_output(hgrep_hnode *hgn,
-        #ifdef HGREP_EDITING
-        const hgrep_format_func *format
+reliq_error *
+node_output(reliq_hnode *rqn,
+        #ifdef RELIQ_EDITING
+        const reliq_format_func *format
         #else
         const char *format
         #endif
         , const size_t formatl, FILE *output, const char *reference) {
-  #ifdef HGREP_EDITING
-  return format_exec(NULL,0,output,hgn,format,formatl,reference);
+  #ifdef RELIQ_EDITING
+  return format_exec(NULL,0,output,rqn,format,formatl,reference);
   #else
   if (format) {
-    hgrep_printf(output,format,formatl,hgn,reference);
+    reliq_printf(output,format,formatl,rqn,reference);
   } else
-    hgrep_print(output,hgn);
+    reliq_print(output,rqn);
   return NULL;
   #endif
 }
@@ -84,7 +84,7 @@ struct fcollector_out {
   size_t current;
 };
 
-#ifdef HGREP_EDITING
+#ifdef RELIQ_EDITING
 void
 fcollector_rearrange_pre(struct fcollector_expr *fcols, size_t start, size_t end, ushort lvl)
 {
@@ -116,10 +116,10 @@ fcollector_rearrange(flexarr *fcollector)
   fcollector_rearrange_pre((struct fcollector_expr*)fcollector->v,0,fcollector->size,0);
 }
 
-static hgrep_error *
+static reliq_error *
 fcollector_out_end(flexarr *outs, const size_t pcurrent, struct fcollector_expr *fcols, FILE *output, const char *data, FILE **fout)
 {
-  hgrep_error *err = NULL;
+  reliq_error *err = NULL;
   START: ;
   if (!outs->size)
     return err;
@@ -130,13 +130,13 @@ fcollector_out_end(flexarr *outs, const size_t pcurrent, struct fcollector_expr 
   if (ecurrent->end != pcurrent)
     return err;
 
-  hgrep_expr const *hge = ecurrent->e;
+  reliq_expr const *rqe = ecurrent->e;
 
-  hgrep_format_func *format = hge->exprf;
-  size_t formatl = hge->exprfl;
+  reliq_format_func *format = rqe->exprf;
+  size_t formatl = rqe->exprfl;
   if (ecurrent->isnodef) {
-    format = hge->nodef;
-    formatl = hge->nodefl;
+    format = rqe->nodef;
+    formatl = rqe->nodefl;
   }
   //fprintf(stderr,"fcollector out end pcurrent(%lu)\n",pcurrent);
 
@@ -158,14 +158,14 @@ fcollector_out_end(flexarr *outs, const size_t pcurrent, struct fcollector_expr 
 }
 #endif
 
-hgrep_error *
-nodes_output(hgrep *hg, flexarr *compressed_nodes, flexarr *ncollector
-        #ifdef HGREP_EDITING
+reliq_error *
+nodes_output(reliq *rq, flexarr *compressed_nodes, flexarr *ncollector
+        #ifdef RELIQ_EDITING
         , flexarr *fcollector
         #endif
         )
 {
-  #ifdef HGREP_EDITING
+  #ifdef RELIQ_EDITING
   //fprintf(stderr,"fcollector - size(%lu) compressed_nodes->size(%lu) ncollector->size(%lu)\n",fcollector->size,compressed_nodes->size,ncollector->size);
   struct fcollector_expr *fcols = (struct fcollector_expr*)fcollector->v;
   /*for (size_t j = 0; j < fcollector->size; j++)
@@ -179,20 +179,20 @@ nodes_output(hgrep *hg, flexarr *compressed_nodes, flexarr *ncollector
   #endif
   if (!ncollector->size)
     return NULL;
-  hgrep_error *err = NULL;
-  hgrep_cstr *pcol = (hgrep_cstr*)ncollector->v;
+  reliq_error *err = NULL;
+  reliq_cstr *pcol = (reliq_cstr*)ncollector->v;
 
-  FILE *out = hg->output;
+  FILE *out = rq->output;
   FILE *fout = out;
   size_t j=0,pcurrent=0,g=0;
-  #ifdef HGREP_EDITING
+  #ifdef RELIQ_EDITING
   flexarr *outs = flexarr_init(sizeof(struct fcollector_out),16);
   size_t fcurrent=0;
   size_t fsize;
   char *ptr;
   #endif
   for (;; j++) {
-    #ifdef HGREP_EDITING
+    #ifdef RELIQ_EDITING
     if (compressed_nodes->size && g == 0) {
 
       while (fcurrent < fcollector->size && fcols[fcurrent].start == pcurrent) { // && fcols[fcurrent].lvl != 0
@@ -206,7 +206,7 @@ nodes_output(hgrep *hg, flexarr *compressed_nodes, flexarr *ncollector
 
       if (j >= compressed_nodes->size)
         break;
-      if (((hgrep_expr*)pcol[pcurrent].b)->exprfl)
+      if (((reliq_expr*)pcol[pcurrent].b)->exprfl)
         out = open_memstream(&ptr,&fsize);
     }
     #else
@@ -214,29 +214,29 @@ nodes_output(hgrep *hg, flexarr *compressed_nodes, flexarr *ncollector
       break;
     #endif
 
-    hgrep_compressed *x = &((hgrep_compressed*)compressed_nodes->v)[j];
-    hg->nodes[x->id].lvl -= x->lvl;
-    err = node_output(&hg->nodes[x->id],((hgrep_expr*)pcol[pcurrent].b)->nodef,
-      ((hgrep_expr*)pcol[pcurrent].b)->nodefl,(out == hg->output) ? fout : out,hg->data);
-    hg->nodes[x->id].lvl += x->lvl;
+    reliq_compressed *x = &((reliq_compressed*)compressed_nodes->v)[j];
+    rq->nodes[x->id].lvl -= x->lvl;
+    err = node_output(&rq->nodes[x->id],((reliq_expr*)pcol[pcurrent].b)->nodef,
+      ((reliq_expr*)pcol[pcurrent].b)->nodefl,(out == rq->output) ? fout : out,rq->data);
+    rq->nodes[x->id].lvl += x->lvl;
     if (err)
       return err;
 
     g++;
     if (pcol[pcurrent].s == g) {
-      #ifdef HGREP_EDITING
-      if (out != hg->output) {
+      #ifdef RELIQ_EDITING
+      if (out != rq->output) {
         fclose(out);
         err = format_exec(ptr,fsize,fout,NULL,
-          ((hgrep_expr*)pcol[pcurrent].b)->exprf,
-          ((hgrep_expr*)pcol[pcurrent].b)->exprfl,hg->data);
+          ((reliq_expr*)pcol[pcurrent].b)->exprf,
+          ((reliq_expr*)pcol[pcurrent].b)->exprfl,rq->data);
         free(ptr);
         if (err)
           return err;
-        out = hg->output;
+        out = rq->output;
       }
 
-      err = fcollector_out_end(outs,pcurrent,fcols,hg->output,hg->data,&fout);
+      err = fcollector_out_end(outs,pcurrent,fcols,rq->output,rq->data,&fout);
       if (err)
         return err;
       #endif
@@ -264,7 +264,7 @@ comment_handle(const char *f, size_t *i, const size_t s)
 }
 
 static void
-name_handle(const char *f, size_t *i, const size_t s, hgrep_cstr *tag)
+name_handle(const char *f, size_t *i, const size_t s, reliq_cstr *tag)
 {
     tag->b = f+*i;
     while (*i < s && (isalnum(f[*i]) || f[*i] == '-' || f[*i] == '_' || f[*i] == ':'))
@@ -275,7 +275,7 @@ name_handle(const char *f, size_t *i, const size_t s, hgrep_cstr *tag)
 static void
 attrib_handle(const char *f, size_t *i, const size_t s, flexarr *attribs)
 {
-  hgrep_cstr_pair *ac = (hgrep_cstr_pair*)flexarr_inc(attribs);
+  reliq_cstr_pair *ac = (reliq_cstr_pair*)flexarr_inc(attribs);
   name_handle(f,i,s,&ac->f);
   while_is(isspace,f,*i,s);
   if (f[*i] != '=') {
@@ -310,15 +310,15 @@ attrib_handle(const char *f, size_t *i, const size_t s, flexarr *attribs)
   }
 }
 
-#ifdef HGREP_PHPTAGS
+#ifdef RELIQ_PHPTAGS
 static void
-phptag_handle(const char *f, size_t *i, const size_t s, hgrep_hnode *hgn)
+phptag_handle(const char *f, size_t *i, const size_t s, reliq_hnode *rqn)
 {
   (*i)++;
   while_is(isspace,f,*i,s);
-  name_handle(f,i,s,&hgn->tag);
-  hgn->insides.b = f+*i;
-  hgn->insides.s = 0;
+  name_handle(f,i,s,&rqn->tag);
+  rqn->insides.b = f+*i;
+  rqn->insides.s = 0;
 
   char *ending;
   for (; *i < s; (*i)++) {
@@ -327,7 +327,7 @@ phptag_handle(const char *f, size_t *i, const size_t s, hgrep_hnode *hgn)
       continue;
     }
     if (f[*i] == '?' && f[*i+1] == '>') {
-      hgn->insides.s = (*i)-1-(hgn->insides.b-f);
+      rqn->insides.s = (*i)-1-(rqn->insides.b-f);
       (*i)++;
       break;
     }
@@ -364,25 +364,25 @@ phptag_handle(const char *f, size_t *i, const size_t s, hgrep_hnode *hgn)
       }
     }
   }
-  hgn->all.s = (f+*i)-hgn->all.b+1;
+  rqn->all.s = (f+*i)-rqn->all.b+1;
 }
 #endif
 
 ulong
-html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, flexarr *nodes, hgrep *hg, hgrep_error **err)
+html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, flexarr *nodes, reliq *rq, reliq_error **err)
 {
   *err = NULL;
   ulong ret = 1;
-  hgrep_hnode *hgn = flexarr_inc(nodes);
-  memset(hgn,0,sizeof(hgrep_hnode));
-  hgn->lvl = lvl;
+  reliq_hnode *rqn = flexarr_inc(nodes);
+  memset(rqn,0,sizeof(reliq_hnode));
+  rqn->lvl = lvl;
   size_t index = nodes->size-1;
-  flexarr *a = (flexarr*)hg->attrib_buffer;
+  flexarr *a = (flexarr*)rq->attrib_buffer;
   size_t attrib_start = a->size;
   uchar foundend = 1;
 
-  hgn->all.b = f+*i;
-  hgn->all.s = 0;
+  rqn->all.b = f+*i;
+  rqn->all.s = 0;
   (*i)++;
   while_is(isspace,f,*i,s);
   if (f[*i] == '!') {
@@ -391,20 +391,20 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
     return 0;
   }
 
-  #ifdef HGREP_PHPTAGS
+  #ifdef RELIQ_PHPTAGS
   if (f[*i] == '?') {
-    phptag_handle(f,i,s,hgn);
+    phptag_handle(f,i,s,rqn);
     goto END;
   }
   #endif
 
-  name_handle(f,i,s,&hgn->tag);
+  name_handle(f,i,s,&rqn->tag);
   for (; *i < s && f[*i] != '>';) {
     while_is(isspace,f,*i,s);
     if (f[*i] == '/') {
       char *r = memchr(f+*i,'>',s-*i);
       if (r != NULL)
-        hgn->all.s = r-hgn->all.b+1;
+        rqn->all.s = r-rqn->all.b+1;
       goto END;
     }
 
@@ -422,28 +422,28 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
   #define search_array(x,y) for (uint _j = 0; _j < (uint)LENGTH(x); _j++) \
     if (strcomp(x[_j],y))
 
-  search_array(selfclosing_s,hgn->tag) {
-    hgn->all.s = f+*i-hgn->all.b+1;
+  search_array(selfclosing_s,rqn->tag) {
+    rqn->all.s = f+*i-rqn->all.b+1;
     goto END;
   }
 
   uchar script = 0;
-  search_array(script_s,hgn->tag) {
+  search_array(script_s,rqn->tag) {
     script = 1;
     break;
   }
 
-  #ifdef HGREP_AUTOCLOSING
+  #ifdef RELIQ_AUTOCLOSING
   uchar autoclosing = 0;
-  search_array(autoclosing_s,hgn->tag) {
+  search_array(autoclosing_s,rqn->tag) {
     autoclosing = 1;
     break;
   }
   #endif
 
   (*i)++;
-  hgn->insides.b = f+*i;
-  hgn->insides.s = *i;
+  rqn->insides.b = f+*i;
+  rqn->insides.s = *i;
   size_t tagend;
   while (*i < s) {
     if (f[*i] == '<') {
@@ -454,9 +454,9 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
         (*i)++;
         while_is(isspace,f,*i,s);
 
-        if (*i+hgn->tag.s < s && memcmp(hgn->tag.b,f+*i,hgn->tag.s) == 0) {
-          hgn->insides.s = tagend-hgn->insides.s;
-          *i += hgn->tag.s;
+        if (*i+rqn->tag.s < s && memcmp(rqn->tag.b,f+*i,rqn->tag.s) == 0) {
+          rqn->insides.s = tagend-rqn->insides.s;
+          *i += rqn->tag.s;
           char *ending = memchr(f+*i,'>',s-*i);
           if (!ending) {
             *i = s;
@@ -464,7 +464,7 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
             return 0;
           }
           *i = ending-f;
-          hgn->all.s = (f+*i+1)-hgn->all.b;
+          rqn->all.s = (f+*i+1)-rqn->all.b;
           goto END;
         }
 
@@ -473,8 +473,8 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
           continue;
         }
 
-        hgrep_cstr endname;
-        hgrep_hnode *nodesv = (hgrep_hnode*)nodes->v;
+        reliq_cstr endname;
+        reliq_hnode *nodesv = (reliq_hnode*)nodes->v;
         name_handle(f,i,s,&endname);
         if (!endname.s) {
           (*i)++;
@@ -488,7 +488,7 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
           }
           if (strcomp(nodesv[j].tag,endname)) {
             *i = tagend;
-            hgn->insides.s = *i-hgn->insides.s;
+            rqn->insides.s = *i-rqn->insides.s;
             ret = (ret&0xffffffff)+((ulong)(lvl-nodesv[j].lvl-1)<<32);
             goto END;
           }
@@ -501,31 +501,31 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
           comment_handle(f,i,s);
           continue;
         } else {
-          #ifdef HGREP_AUTOCLOSING
+          #ifdef RELIQ_AUTOCLOSING
           if (autoclosing) {
-            hgrep_cstr name;
+            reliq_cstr name;
 
             while_is(isspace,f,*i,s);
             name_handle(f,i,s,&name);
 
-            if (strcomp(hgn->tag,name)) {
+            if (strcomp(rqn->tag,name)) {
               *i = tagend-1;
-              hgn->insides.s = *i-hgn->insides.s+1;
-              hgn->all.s = (f+*i+1)-hgn->all.b;
+              rqn->insides.s = *i-rqn->insides.s+1;
+              rqn->all.s = (f+*i+1)-rqn->all.b;
               goto END;
             }
           }
           #endif
           *i = tagend;
-          ulong rettmp = html_struct_handle(f,i,s,lvl+1,nodes,hg,err);
+          ulong rettmp = html_struct_handle(f,i,s,lvl+1,nodes,rq,err);
           if (*err)
             goto END;
           ret += rettmp&0xffffffff;
-          hgn = &((hgrep_hnode*)nodes->v)[index];
+          rqn = &((reliq_hnode*)nodes->v)[index];
           if (rettmp>>32) {
             (*i)--;
-            hgn->insides.s = *i-hgn->insides.s+1;
-            hgn->all.s = (f+*i+1)-hgn->all.b;
+            rqn->insides.s = *i-rqn->insides.s+1;
+            rqn->all.s = (f+*i+1)-rqn->all.b;
             ret |= ((rettmp>>32)-1)<<32;
             goto END;
           }
@@ -538,24 +538,24 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
 
   END: ;
   if (*i >= s) {
-    hgn->all.s = s-(hgn->all.b-f)-1;
-  } else if (!hgn->all.s)
-    hgn->all.s = f+*i-hgn->all.b;
+    rqn->all.s = s-(rqn->all.b-f)-1;
+  } else if (!rqn->all.s)
+    rqn->all.s = f+*i-rqn->all.b;
   if (!foundend)
-    hgn->insides.s = hgn->all.s;
+    rqn->insides.s = rqn->all.s;
 
   size_t size = a->size-attrib_start;
-  hgn->attribsl = size;
-  hgn->child_count = ret-1;
-  if (hg->flags&HGREP_SAVE) {
-    hgn->attribs = size ?
+  rqn->attribsl = size;
+  rqn->child_count = ret-1;
+  if (rq->flags&RELIQ_SAVE) {
+    rqn->attribs = size ?
         memdup(a->v+(attrib_start*a->elsize),size*a->elsize)
         : NULL;
   } else {
-    hgn->attribs = a->v+(attrib_start*a->elsize);
-    hgrep_node const *expr = hg->expr;
-    if (expr && hgrep_match(hgn,expr)) {
-      *err = node_output(hgn,hg->nodef,hg->nodefl,hg->output,hg->data);
+    rqn->attribs = a->v+(attrib_start*a->elsize);
+    reliq_node const *expr = rq->expr;
+    if (expr && reliq_match(rqn,expr)) {
+      *err = node_output(rqn,rq->nodef,rq->nodefl,rq->output,rq->data);
     }
     flexarr_dec(nodes);
   }

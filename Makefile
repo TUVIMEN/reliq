@@ -2,13 +2,13 @@ VERSION = 2.2
 CC = gcc -std=c99
 CFLAGS = -O3 -march=native -Wall -Wextra -Wno-implicit-fallthrough -DVERSION=\"${VERSION}\"
 LDFLAGS =
-TARGET := hgrep
+TARGET := reliq
 
 O_PHPTAGS := 1 # support for <?php ?>
 O_AUTOCLOSING := 1 # support for autoclosing tags, without it some tests will fail (as intended)
 O_EDITING := 1 #support for editing
-O_LIB := 0 # compile libhgrep
-O_LINKED := 0 # link hgrep to libhgrep
+O_LIB := 0 # compile libreliq
+O_LINKED := 0 # link reliq to libreliq
 
 PREFIX ?= /usr
 MANPREFIX ?= ${PREFIX}/share/man
@@ -17,21 +17,21 @@ MANDIR = $(DESTDIR)${MANPREFIX}/man1
 LD_LIBRARY_PATH ?= ${PREFIX}/lib
 INCLUDE_PATH ?= ${PREFIX}/include
 
-SRC = src/main.c src/flexarr.c src/html.c src/hgrep.c src/ctype.c src/utils.c
-LIB_SRC = src/flexarr.c src/html.c src/hgrep.c src/ctype.c src/utils.c
+SRC = src/main.c src/flexarr.c src/html.c src/reliq.c src/ctype.c src/utils.c
+LIB_SRC = src/flexarr.c src/html.c src/reliq.c src/ctype.c src/utils.c
 
 ifeq ($(strip ${O_PHPTAGS}),1)
-	CFLAGS += -DHGREP_PHPTAGS
+	CFLAGS += -DRELIQ_PHPTAGS
 endif
 
 ifeq ($(strip ${O_AUTOCLOSING}),1)
-	CFLAGS += -DHGREP_AUTOCLOSING
+	CFLAGS += -DRELIQ_AUTOCLOSING
 endif
 
 ifeq ($(strip ${O_EDITING}),1)
 	SRC += src/edit.c
 	LIB_SRC += src/edit.c
-	CFLAGS += -DHGREP_EDITING
+	CFLAGS += -DRELIQ_EDITING
 endif
 
 ifeq ($(strip ${O_LIB}),1)
@@ -43,12 +43,12 @@ endif
 ifeq ($(strip ${O_LINKED}),1)
 	CFLAGS += -DLINKED
 	SRC = src/flexarr.c src/main.c
-	LDFLAGS += -lhgrep
+	LDFLAGS += -lreliq
 endif
 
 OBJ = ${SRC:.c=.o}
 
-all: options hgrep
+all: options reliq
 
 options:
 	@echo ${SRC}
@@ -65,9 +65,9 @@ lib: clean
 
 lib-install: lib
 	install -m755 lib${TARGET}.so ${LD_LIBRARY_PATH}
-	install -m644 src/hgrep.h ${INCLUDE_PATH}
+	install -m644 src/reliq.h ${INCLUDE_PATH}
 
-hgrep: ${OBJ}
+reliq: ${OBJ}
 	${CC} ${CFLAGS} ${LDFLAGS} $^ -o ${TARGET}
 	strip ${TARGET}
 
@@ -85,7 +85,7 @@ test-update: test
 
 dist: clean
 	mkdir -p ${TARGET}-${VERSION}
-	cp -r LICENSE Makefile README.md src hgrep.1 ${TARGET}-${VERSION}
+	cp -r LICENSE Makefile README.md src reliq.1 ${TARGET}-${VERSION}
 	tar -c ${TARGET}-${VERSION} | xz -e9 > ${TARGET}-${VERSION}.tar.xz
 	rm -rf ${TARGET}-${VERSION}
 

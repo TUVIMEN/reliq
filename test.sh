@@ -6,7 +6,7 @@ sed 's/\\/\\\\/g' "$1" | while read i
 do
     h="$(echo "$i" | cut -b 1-32)"
     f="$(echo "$i" | cut -b 34-)"
-    c="./hgrep $f $2"
+    c="./reliq $f $2"
     n="$(eval "$c" | md5sum | cut -d ' ' -f1)"
     if [ -n "$output" ]
     then

@@ -1,5 +1,5 @@
 /*
-    hgrep - html searching tool
+    reliq - html searching tool
     Copyright (C) 2020-2024 Dominik Stanisław Suchora <suchora.dominik7@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
@@ -19,7 +19,7 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-//hgrep_range flags
+//reliq_range flags
 #define R_RANGE 0x8
 #define R_NOTEMPTY 0x10
 #define R_INVERT 0x20
@@ -43,10 +43,10 @@ char special_character(const char c);
 char *delchar(char *src, const size_t pos, size_t *size);
 unsigned int get_dec(const char *src, size_t size, size_t *traversed);
 unsigned int number_handle(const char *src, size_t *pos, const size_t size);
-hgrep_error *get_quoted(char *src, size_t *i, size_t *size, const char delim, size_t *start, size_t *len);
+reliq_error *get_quoted(char *src, size_t *i, size_t *size, const char delim, size_t *start, size_t *len);
 void conv_special_characters(char *src, size_t *size);
-hgrep_error *range_comp(const char *src, size_t *pos, const size_t size, hgrep_range *range);
-unsigned char range_match(const uint matched, const hgrep_range *range, const size_t last);
-void range_free(hgrep_range *range);
+reliq_error *range_comp(const char *src, size_t *pos, const size_t size, reliq_range *range);
+unsigned char range_match(const uint matched, const reliq_range *range, const size_t last);
+void range_free(reliq_range *range);
 
 #endif

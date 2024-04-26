@@ -1,5 +1,5 @@
 /*
-    hgrep - html searching tool
+    reliq - html searching tool
     Copyright (C) 2020-2024 Dominik Stanisław Suchora <suchora.dominik7@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
@@ -40,7 +40,7 @@
 #endif
 
 #include "flexarr.h"
-#include "hgrep.h"
+#include "reliq.h"
 
 #define F_RECURSIVE 0x1
 #define F_FAST 0x2
@@ -53,7 +53,7 @@ typedef unsigned int uint;
 typedef unsigned long int ulong;
 
 char *argv0;
-hgrep_exprs exprs = {NULL,0};
+reliq_exprs exprs = {NULL,0};
 
 uint settings = 0;
 uchar hflags = 0;
@@ -74,7 +74,7 @@ die(const char *s, ...)
 }
 
 static void
-handle_hgrep_error(hgrep_error *err) {
+handle_reliq_error(reliq_error *err) {
   if (err == NULL)
     return;
 
@@ -119,13 +119,13 @@ expr_exec(char *f, size_t s, const uchar inpipe)
     return;
 
   if (settings&F_FAST) {
-    handle_hgrep_error(hgrep_efmatch(f,s,outfile,&exprs,inpipe ? unalloc_free : munmap));
+    handle_reliq_error(reliq_efmatch(f,s,outfile,&exprs,inpipe ? unalloc_free : munmap));
     return;
   }
 
-  hgrep hg = hgrep_init(f,s,outfile);
-  handle_hgrep_error(hgrep_ematch(&hg,&exprs,NULL,0,NULL,0));
-  hgrep_free(&hg);
+  reliq rq = reliq_init(f,s,outfile);
+  handle_reliq_error(reliq_ematch(&rq,&exprs,NULL,0,NULL,0));
+  reliq_free(&rq);
 }
 
 static void
@@ -200,7 +200,7 @@ load_expr_from_file(char *filename)
   size_t filel;
   pipe_to_str(fd,&file,&filel);
   close(fd);
-  handle_hgrep_error(hgrep_ecomp(file,filel,&exprs,hflags));
+  handle_reliq_error(reliq_ecomp(file,filel,&exprs,hflags));
   free(file);
 }
 
@@ -226,7 +226,7 @@ main(int argc, char **argv)
   while ((opt = getopt(argc,argv,"lo:f:HrRFvh")) != -1) {
     switch (opt) {
       case 'l':
-        handle_hgrep_error(hgrep_ecomp("| \"%n%A - %c/%l/%s/%p\\n\"",24,&exprs,hflags));
+        handle_reliq_error(reliq_ecomp("| \"%n%A - %c/%l/%s/%p\\n\"",24,&exprs,hflags));
         break;
       case 'o':
         outfile = fopen(optarg,"w");
@@ -245,7 +245,7 @@ main(int argc, char **argv)
   }
 
   if (!exprs.b && optind < argc) {
-    handle_hgrep_error(hgrep_ecomp(argv[optind],strlen(argv[optind]),&exprs,hflags));
+    handle_reliq_error(reliq_ecomp(argv[optind],strlen(argv[optind]),&exprs,hflags));
     optind++;
   }
   if (!exprs.b)
@@ -258,7 +258,7 @@ main(int argc, char **argv)
 
   if (outfile != stdout)
     fclose(outfile);
-  hgrep_efree(&exprs);
+  reliq_efree(&exprs);
 
   return 0;
 }
