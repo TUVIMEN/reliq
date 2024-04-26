@@ -19,15 +19,15 @@
 #ifndef HTML_H
 #define HTML_H
 
-struct fcollector_pattern {
-  const hgrep_epattern *p;
+struct fcollector_expr {
+  const hgrep_expr *e;
   size_t start;
   size_t end;
   unsigned short lvl;
   unsigned char isnodef;
 };
 
-hgrep_error *node_output(hgrep_node *hgn,
+hgrep_error *node_output(hgrep_hnode *hgn,
         #ifdef HGREP_EDITING
         const hgrep_format_func *format
         #else

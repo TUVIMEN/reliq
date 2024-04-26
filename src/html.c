@@ -59,7 +59,7 @@ const hgrep_str8 autoclosing_s[] = { //tags that don't need to be closed
 #endif
 
 hgrep_error *
-node_output(hgrep_node *hgn,
+node_output(hgrep_hnode *hgn,
         #ifdef HGREP_EDITING
         const hgrep_format_func *format
         #else
@@ -86,7 +86,7 @@ struct fcollector_out {
 
 #ifdef HGREP_EDITING
 void
-fcollector_rearrange_pre(struct fcollector_pattern *fcols, size_t start, size_t end, ushort lvl)
+fcollector_rearrange_pre(struct fcollector_expr *fcols, size_t start, size_t end, ushort lvl)
 {
   size_t i=start;
   while (start < end) {
@@ -94,7 +94,7 @@ fcollector_rearrange_pre(struct fcollector_pattern *fcols, size_t start, size_t 
       i++;
 
     if (i < end && i != start) {
-      struct fcollector_pattern t = fcols[i];
+      struct fcollector_expr t = fcols[i];
       for (size_t j = i-1;; j--) {
         fcols[j+1] = fcols[j];
         if (j == start)
@@ -113,11 +113,11 @@ fcollector_rearrange_pre(struct fcollector_pattern *fcols, size_t start, size_t 
 void
 fcollector_rearrange(flexarr *fcollector)
 {
-  fcollector_rearrange_pre((struct fcollector_pattern*)fcollector->v,0,fcollector->size,0);
+  fcollector_rearrange_pre((struct fcollector_expr*)fcollector->v,0,fcollector->size,0);
 }
 
 static hgrep_error *
-fcollector_out_end(flexarr *outs, const size_t pcurrent, struct fcollector_pattern *fcols, FILE *output, const char *data, FILE **fout)
+fcollector_out_end(flexarr *outs, const size_t pcurrent, struct fcollector_expr *fcols, FILE *output, const char *data, FILE **fout)
 {
   hgrep_error *err = NULL;
   START: ;
@@ -125,19 +125,22 @@ fcollector_out_end(flexarr *outs, const size_t pcurrent, struct fcollector_patte
     return err;
 
   struct fcollector_out *fcol_out_last = &((struct fcollector_out*)outs->v)[outs->size-1];
+  struct fcollector_expr *ecurrent = &fcols[fcol_out_last->current];
 
-  if (fcols[fcol_out_last->current].end != pcurrent)
+  if (ecurrent->end != pcurrent)
     return err;
 
-  hgrep_format_func *format = fcols[fcol_out_last->current].p->exprf;
-  size_t formatl = fcols[fcol_out_last->current].p->exprfl;
-  if (fcols[fcol_out_last->current].isnodef) {
-    format = fcols[fcol_out_last->current].p->nodef;
-    formatl = fcols[fcol_out_last->current].p->nodefl;
+  hgrep_expr const *hge = ecurrent->e;
+
+  hgrep_format_func *format = hge->exprf;
+  size_t formatl = hge->exprfl;
+  if (ecurrent->isnodef) {
+    format = hge->nodef;
+    formatl = hge->nodefl;
   }
   //fprintf(stderr,"fcollector out end pcurrent(%lu)\n",pcurrent);
 
-  FILE *tmp_out = (fcols[fcol_out_last->current].lvl == 0) ? output : ((struct fcollector_out*)outs->v)[outs->size-2].f;
+  FILE *tmp_out = (ecurrent->lvl == 0) ? output : ((struct fcollector_out*)outs->v)[outs->size-2].f;
   *fout = tmp_out;
 
   fclose(fcol_out_last->f);
@@ -156,15 +159,15 @@ fcollector_out_end(flexarr *outs, const size_t pcurrent, struct fcollector_patte
 #endif
 
 hgrep_error *
-nodes_output(hgrep *hg, flexarr *compressed_nodes, flexarr *pcollector
+nodes_output(hgrep *hg, flexarr *compressed_nodes, flexarr *ncollector
         #ifdef HGREP_EDITING
         , flexarr *fcollector
         #endif
         )
 {
   #ifdef HGREP_EDITING
-  //fprintf(stderr,"fcollector - size(%lu) compressed_nodes->size(%lu) pcollector->size(%lu)\n",fcollector->size,compressed_nodes->size,pcollector->size);
-  struct fcollector_pattern *fcols = (struct fcollector_pattern*)fcollector->v;
+  //fprintf(stderr,"fcollector - size(%lu) compressed_nodes->size(%lu) ncollector->size(%lu)\n",fcollector->size,compressed_nodes->size,ncollector->size);
+  struct fcollector_expr *fcols = (struct fcollector_expr*)fcollector->v;
   /*for (size_t j = 0; j < fcollector->size; j++)
     fprintf(stderr,"fcollector start(%lu) end(%lu) diff(%lu) lvl(%u)\n",fcols[j].start,fcols[j].end,(fcols[j].end+1)-fcols[j].start,fcols[j].lvl);*/
   if (fcollector->size) {
@@ -174,10 +177,10 @@ nodes_output(hgrep *hg, flexarr *compressed_nodes, flexarr *pcollector
         fprintf(stderr,"fcollector start(%lu) end(%lu) diff(%lu) lvl(%u)\n",fcols[j].start,fcols[j].end,(fcols[j].end+1)-fcols[j].start,fcols[j].lvl);*/
   }
   #endif
-  if (!pcollector->size)
+  if (!ncollector->size)
     return NULL;
   hgrep_error *err = NULL;
-  hgrep_cstr *pcol = (hgrep_cstr*)pcollector->v;
+  hgrep_cstr *pcol = (hgrep_cstr*)ncollector->v;
 
   FILE *out = hg->output;
   FILE *fout = out;
@@ -203,7 +206,7 @@ nodes_output(hgrep *hg, flexarr *compressed_nodes, flexarr *pcollector
 
       if (j >= compressed_nodes->size)
         break;
-      if (((hgrep_epattern*)pcol[pcurrent].b)->exprfl)
+      if (((hgrep_expr*)pcol[pcurrent].b)->exprfl)
         out = open_memstream(&ptr,&fsize);
     }
     #else
@@ -213,8 +216,8 @@ nodes_output(hgrep *hg, flexarr *compressed_nodes, flexarr *pcollector
 
     hgrep_compressed *x = &((hgrep_compressed*)compressed_nodes->v)[j];
     hg->nodes[x->id].lvl -= x->lvl;
-    err = node_output(&hg->nodes[x->id],((hgrep_epattern*)pcol[pcurrent].b)->nodef,
-      ((hgrep_epattern*)pcol[pcurrent].b)->nodefl,(out == hg->output) ? fout : out,hg->data);
+    err = node_output(&hg->nodes[x->id],((hgrep_expr*)pcol[pcurrent].b)->nodef,
+      ((hgrep_expr*)pcol[pcurrent].b)->nodefl,(out == hg->output) ? fout : out,hg->data);
     hg->nodes[x->id].lvl += x->lvl;
     if (err)
       return err;
@@ -225,8 +228,8 @@ nodes_output(hgrep *hg, flexarr *compressed_nodes, flexarr *pcollector
       if (out != hg->output) {
         fclose(out);
         err = format_exec(ptr,fsize,fout,NULL,
-          ((hgrep_epattern*)pcol[pcurrent].b)->exprf,
-          ((hgrep_epattern*)pcol[pcurrent].b)->exprfl,hg->data);
+          ((hgrep_expr*)pcol[pcurrent].b)->exprf,
+          ((hgrep_expr*)pcol[pcurrent].b)->exprfl,hg->data);
         free(ptr);
         if (err)
           return err;
@@ -309,7 +312,7 @@ attrib_handle(const char *f, size_t *i, const size_t s, flexarr *attribs)
 
 #ifdef HGREP_PHPTAGS
 static void
-phptag_handle(const char *f, size_t *i, const size_t s, hgrep_node *hgn)
+phptag_handle(const char *f, size_t *i, const size_t s, hgrep_hnode *hgn)
 {
   (*i)++;
   while_is(isspace,f,*i,s);
@@ -370,8 +373,8 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
 {
   *err = NULL;
   ulong ret = 1;
-  hgrep_node *hgn = flexarr_inc(nodes);
-  memset(hgn,0,sizeof(hgrep_node));
+  hgrep_hnode *hgn = flexarr_inc(nodes);
+  memset(hgn,0,sizeof(hgrep_hnode));
   hgn->lvl = lvl;
   size_t index = nodes->size-1;
   flexarr *a = (flexarr*)hg->attrib_buffer;
@@ -471,7 +474,7 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
         }
 
         hgrep_cstr endname;
-        hgrep_node *nodesv = (hgrep_node*)nodes->v;
+        hgrep_hnode *nodesv = (hgrep_hnode*)nodes->v;
         name_handle(f,i,s,&endname);
         if (!endname.s) {
           (*i)++;
@@ -518,7 +521,7 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
           if (*err)
             goto END;
           ret += rettmp&0xffffffff;
-          hgn = &((hgrep_node*)nodes->v)[index];
+          hgn = &((hgrep_hnode*)nodes->v)[index];
           if (rettmp>>32) {
             (*i)--;
             hgn->insides.s = *i-hgn->insides.s+1;
@@ -550,8 +553,8 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
         : NULL;
   } else {
     hgn->attribs = a->v+(attrib_start*a->elsize);
-    hgrep_pattern const *pattern = hg->pattern;
-    if (pattern && hgrep_match(hgn,pattern)) {
+    hgrep_node const *expr = hg->expr;
+    if (expr && hgrep_match(hgn,expr)) {
       *err = node_output(hgn,hg->nodef,hg->nodefl,hg->output,hg->data);
     }
     flexarr_dec(nodes);

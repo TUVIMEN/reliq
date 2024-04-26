@@ -272,14 +272,14 @@ conv_special_characters(char *src, size_t *size)
 }
 
 uchar
-ranges_match(const uint matched, const struct hgrep_range *ranges, const size_t rangesl, const size_t last)
+range_match(const uint matched, const hgrep_range *range, const size_t last)
 {
-  if (!rangesl)
+  if (!range || !range->s)
     return 1;
-  struct hgrep_range const *r;
+  struct hgrep_range_node const *r;
   uint x,y;
-  for (size_t i = 0; i < rangesl; i++) {
-    r = &ranges[i];
+  for (size_t i = 0; i < range->s; i++) {
+    r = &range->b[i];
     x = r->v[0];
     y = r->v[1];
     if (!(r->flags&R_RANGE)) {
@@ -304,32 +304,32 @@ ranges_match(const uint matched, const struct hgrep_range *ranges, const size_t 
 }
 
 static void
-range_comp(const char *src, const size_t size, struct hgrep_range *range)
+range_node_comp(const char *src, const size_t size, struct hgrep_range_node *node)
 {
-  memset(range->v,0,sizeof(struct hgrep_range));
+  memset(node->v,0,sizeof(struct hgrep_range_node));
   size_t pos = 0;
 
   for (int i = 0; i < 3; i++) {
     while_is(isspace,src,pos,size);
     if (i == 0 && pos < size && src[pos] == '!') {
-      range->flags |= R_INVERT; //invert
+      node->flags |= R_INVERT; //invert
       pos++;
       while_is(isspace,src,pos,size);
     }
     if (i == 1)
-      range->flags |= R_RANGE; //is a range
+      node->flags |= R_RANGE; //is a range
     if (pos < size && src[pos] == '-') {
       pos++;
       while_is(isspace,src,pos,size);
-      range->flags |= 1<<i; //starts from the end
-      range->flags |= R_NOTEMPTY; //not empty
+      node->flags |= 1<<i; //starts from the end
+      node->flags |= R_NOTEMPTY; //not empty
     }
     if (pos < size && isdigit(src[pos])) {
-      range->v[i] = number_handle(src,&pos,size);
+      node->v[i] = number_handle(src,&pos,size);
       while_is(isspace,src,pos,size);
-      range->flags |= R_NOTEMPTY; //not empty
+      node->flags |= R_NOTEMPTY; //not empty
     } else if (i == 1)
-      range->flags |= 1<<i;
+      node->flags |= 1<<i;
 
     while (pos < size && src[pos] == '!')
       pos++;
@@ -341,13 +341,13 @@ range_comp(const char *src, const size_t size, struct hgrep_range *range)
 }
 
 static hgrep_error *
-ranges_comp_pre(const char *src, size_t *pos, const size_t size, flexarr *ranges)
+range_comp_pre(const char *src, size_t *pos, const size_t size, flexarr *nodes)
 {
   if (*pos >= size || src[*pos] != '[')
     return NULL;
   (*pos)++;
   size_t end;
-  struct hgrep_range range;
+  struct hgrep_range_node node;
 
   while (*pos < size && src[*pos] != ']') {
     while_is(isspace,src,*pos,size);
@@ -359,9 +359,9 @@ ranges_comp_pre(const char *src, size_t *pos, const size_t size, flexarr *ranges
     if (src[end] != ',' && src[end] != ']')
       return hgrep_set_error(1,"range: char %u(0x%02x): not a number",end,src[end]);
 
-    range_comp(src+(*pos),end-(*pos),&range);
-    if (range.flags&(R_RANGE|R_NOTEMPTY))
-      memcpy(flexarr_inc(ranges),&range,sizeof(struct hgrep_range));
+    range_node_comp(src+(*pos),end-(*pos),&node);
+    if (node.flags&(R_RANGE|R_NOTEMPTY))
+      memcpy(flexarr_inc(nodes),&node,sizeof(struct hgrep_range_node));
     *pos = end+((src[end] == ',') ? 1 : 0);
   }
   if (*pos >= size || src[*pos] != ']') {
@@ -374,17 +374,28 @@ ranges_comp_pre(const char *src, size_t *pos, const size_t size, flexarr *ranges
 }
 
 hgrep_error *
-ranges_comp(const char *src, size_t *pos, const size_t size, struct hgrep_range **ranges, size_t *rangesl)
+range_comp(const char *src, size_t *pos, const size_t size, hgrep_range *range)
 {
+  if (!range)
+    return NULL;
   hgrep_error *err;
-  flexarr *r = flexarr_init(sizeof(struct hgrep_range),RANGES_INC);
+  flexarr *r = flexarr_init(sizeof(struct hgrep_range_node),RANGES_INC);
 
-  err = ranges_comp_pre(src,pos,size,r);
+  err = range_comp_pre(src,pos,size,r);
   if (err) {
     flexarr_free(r);
     return err;
   }
 
-  flexarr_conv(r,(void**)ranges,rangesl);
+  flexarr_conv(r,(void**)&range->b,&range->s);
   return NULL;
+}
+
+void
+range_free(hgrep_range *range)
+{
+  if (!range)
+    return;
+  if (range->s)
+    free(range->b);
 }

@@ -45,7 +45,8 @@ unsigned int get_dec(const char *src, size_t size, size_t *traversed);
 unsigned int number_handle(const char *src, size_t *pos, const size_t size);
 hgrep_error *get_quoted(char *src, size_t *i, size_t *size, const char delim, size_t *start, size_t *len);
 void conv_special_characters(char *src, size_t *size);
-unsigned char ranges_match(const uint matched, const struct hgrep_range *ranges, const size_t rangesl, const size_t last);
-hgrep_error *ranges_comp(const char *src, size_t *pos, const size_t size, struct hgrep_range **ranges, size_t *rangesl);
+hgrep_error *range_comp(const char *src, size_t *pos, const size_t size, hgrep_range *range);
+unsigned char range_match(const uint matched, const hgrep_range *range, const size_t last);
+void range_free(hgrep_range *range);
 
 #endif

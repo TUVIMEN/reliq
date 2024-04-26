@@ -21,6 +21,8 @@
 
 #define HGREP_SAVE 0x8
 
+#define HGREP_ERROR_MESSAGE_LENGTH 512
+
 typedef struct {
   void *arg[4];
   unsigned char flags;
@@ -47,7 +49,7 @@ typedef struct {
 } hgrep_cstr_pair;
 
 typedef struct {
-  char msg[512];
+  char msg[HGREP_ERROR_MESSAGE_LENGTH];
   int code;
 } hgrep_error;
 
@@ -59,54 +61,53 @@ typedef struct {
   unsigned int child_count;
   unsigned short attribsl;
   unsigned short lvl;
-} hgrep_node;
+} hgrep_hnode; //html node
 
-struct hgrep_range {
+struct hgrep_range_node {
   unsigned int v[3];
   unsigned char flags;
 };
+
+typedef struct {
+  struct hgrep_range_node *b;
+  size_t s;
+} hgrep_range;
 
 typedef struct {
   union {
     hgrep_str str;
     regex_t reg;
   } match;
-  struct hgrep_range *ranges;
-  size_t rangesl;
+  hgrep_range range;
   unsigned short flags;
-} hgrep_regex;
-
-typedef struct {
-  struct hgrep_range *b;
-  size_t s;
-} hgrep_list;
+} hgrep_pattern;
 
 struct hgrep_pattrib {
-  hgrep_regex r[2];
-  hgrep_list position;
+  hgrep_pattern r[2];
+  hgrep_range position;
   unsigned char flags;
 };
 
 typedef struct {
   union {
-    hgrep_regex r;
-    hgrep_list l;
+    hgrep_pattern pattern;
+    hgrep_range range;
   } match;
   unsigned short flags;
 } hgrep_hook;
 
 typedef struct {
-  hgrep_regex tag;
+  hgrep_pattern tag;
   struct hgrep_pattrib *attribs;
   size_t attribsl;
   hgrep_hook *hooks;
   size_t hooksl;
-  hgrep_list position;
+  hgrep_range position;
   unsigned char flags;
-} hgrep_pattern;
+} hgrep_node;
 
 typedef struct {
-  void *p;
+  void *e; //either points to hgrep_exprs or hgrep_node
   #ifdef HGREP_EDITING
   hgrep_format_func *nodef;
   hgrep_format_func *exprf;
@@ -118,12 +119,12 @@ typedef struct {
   size_t exprfl;
   #endif
   unsigned char istable;
-} hgrep_epattern;
+} hgrep_expr;
 
 typedef struct {
-  hgrep_epattern *b;
+  hgrep_expr *b;
   size_t s;
-} hgrep_epatterns;
+} hgrep_exprs;
 
 #pragma pack(push, 1)
 typedef struct {
@@ -135,8 +136,8 @@ typedef struct {
 typedef struct {
   char const *data;
   FILE *output;
-  hgrep_node *nodes;
-  hgrep_pattern const *pattern;
+  hgrep_hnode *nodes;
+  hgrep_node const *expr; //node passed to process at parsing
   #ifdef HGREP_EDITING
   hgrep_format_func *nodef;
   #else
@@ -150,22 +151,22 @@ typedef struct {
 } hgrep;
 
 hgrep hgrep_init(const char *ptr, const size_t size, FILE *output);
-hgrep_error *hgrep_fmatch(const char *ptr, const size_t size, FILE *output, const hgrep_pattern *pattern,
+hgrep_error *hgrep_fmatch(const char *ptr, const size_t size, FILE *output, const hgrep_node *node,
 #ifdef HGREP_EDITING
   hgrep_format_func *nodef,
 #else
   char *nodef,
 #endif
   size_t nodefl);
-hgrep_error *hgrep_efmatch(char *ptr, const size_t size, FILE *output, const hgrep_epatterns *epatterns, int (*freeptr)(void *ptr, size_t size));
-hgrep_error *hgrep_pcomp(const char *pattern, size_t size, hgrep_pattern *p);
-hgrep_error *hgrep_epcomp(const char *src, size_t size, hgrep_epatterns *epatterns, const unsigned char flags);
-int hgrep_match(const hgrep_node *hgn, const hgrep_pattern *p);
-hgrep_error *hgrep_ematch(hgrep *hg, const hgrep_epatterns *patterns, hgrep_compressed *source, size_t sourcel, hgrep_compressed *dest, size_t destl);
-void hgrep_printf(FILE *outfile, const char *format, const size_t formatl, const hgrep_node *hgn, const char *reference);
-void hgrep_print(FILE *outfile, const hgrep_node *hg);
-void hgrep_pfree(hgrep_pattern *p);
-void hgrep_epatterns_free(hgrep_epatterns *epatterns);
+hgrep_error *hgrep_efmatch(char *script, const size_t size, FILE *output, const hgrep_exprs *exprs, int (*freeptr)(void *ptr, size_t size));
+hgrep_error *hgrep_ncomp(const char *script, size_t size, hgrep_node *node);
+hgrep_error *hgrep_ecomp(const char *script, size_t size, hgrep_exprs *exprs, const unsigned char flags);
+int hgrep_match(const hgrep_hnode *hgn, const hgrep_node *node);
+hgrep_error *hgrep_ematch(hgrep *hg, const hgrep_exprs *expr, hgrep_compressed *source, size_t sourcel, hgrep_compressed *dest, size_t destl);
+void hgrep_printf(FILE *outfile, const char *format, const size_t formatl, const hgrep_hnode *hgn, const char *reference);
+void hgrep_print(FILE *outfile, const hgrep_hnode *hg);
+void hgrep_nfree(hgrep_node *node);
+void hgrep_efree(hgrep_exprs *expr);
 void hgrep_free(hgrep *hg);
 hgrep_error *hgrep_set_error(const int code, const char *fmt, ...);
 

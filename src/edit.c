@@ -56,7 +56,7 @@ const struct hgrep_format_function format_functions[] = {
 };
 
 hgrep_error *
-format_exec(char *input, size_t inputl, FILE *output, const hgrep_node *hgn, const hgrep_format_func *format, const size_t formatl, const char *reference)
+format_exec(char *input, size_t inputl, FILE *output, const hgrep_hnode *hgn, const hgrep_format_func *format, const size_t formatl, const char *reference)
 {
   if (hgn && (!formatl || (formatl == 1 && (format[0].flags&FORMAT_FUNC) == 0 && (!format[0].arg[0] || !((hgrep_cstr*)format[0].arg[0])->b)))) {
     hgrep_print(output,hgn);
@@ -126,8 +126,8 @@ format_get_func_args(hgrep_format_func *f, char *src, size_t *pos, size_t *size)
         f->flags |= (FORMAT_ARG0_ISSTR<<i);
       }
     } else if (src[*pos] == '[') {
-      hgrep_str *str = f->arg[i] = malloc(sizeof(hgrep_str));
-      err = ranges_comp(src,pos,*size,(struct hgrep_range**)&str->b,&str->s);
+      hgrep_str *str = f->arg[i] = malloc(sizeof(hgrep_range));
+      err = range_comp(src,pos,*size,(hgrep_range*)str);
       if (err)
         return err;
     }
@@ -204,8 +204,12 @@ format_free(hgrep_format_func *format, size_t formatl)
     for (size_t j = 0; j < 4; j++) {
       if (!format[i].arg[j])
         continue;
-      if (((hgrep_str*)format[i].arg[j])->b)
-        free(((hgrep_str*)format[i].arg[j])->b);
+
+      if (format[i].flags&(FORMAT_ARG0_ISSTR<<j)) {
+        if (((hgrep_str*)format[i].arg[j])->b)
+          free(((hgrep_str*)format[i].arg[j])->b);
+      } else
+        range_free((hgrep_range*)format[i].arg[j]);
       free(format[i].arg[j]);
     }
   }
@@ -1477,13 +1481,10 @@ hgrep_error *
 line_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
 {
   char delim = '\n';
-  struct hgrep_range *list = NULL;
-  size_t listl;
+  hgrep_range *range = NULL;
 
-  if (arg[0] && !(flag&FORMAT_ARG0_ISSTR)) {
-    list = (struct hgrep_range*)((hgrep_str*)arg[0])->b;
-    listl = ((hgrep_str*)arg[0])->s;
-  }
+  if (arg[0] && !(flag&FORMAT_ARG0_ISSTR))
+    range = (hgrep_range*)arg[0];
 
   if (arg[1] && flag&FORMAT_ARG1_ISSTR) {
     hgrep_str *str = (hgrep_str*)arg[1];
@@ -1494,7 +1495,7 @@ line_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsign
     }
   }
 
-  if (!list)
+  if (!range)
     return hgrep_set_error(0,"line: missing arguments");
 
   size_t saveptr=0,linecount=0,currentline=0;
@@ -1513,7 +1514,7 @@ line_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsign
     if (!line.b)
       break;
     currentline++;
-    if (ranges_match(currentline,list,listl,linecount))
+    if (range_match(currentline,range,linecount))
       fwrite(line.b,1,line.s,output);
   }
   return NULL;
@@ -1527,13 +1528,11 @@ cut_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigne
   char linedelim = '\n';
   hgrep_error *err;
 
-  struct hgrep_range *list = NULL;
-  size_t listl;
+  hgrep_range *range = NULL;
 
-  if (arg[0] && !(flag&FORMAT_ARG0_ISSTR)) {
-    list = (struct hgrep_range*)((hgrep_str*)arg[0])->b;
-    listl = ((hgrep_str*)arg[0])->s;
-  }
+  if (arg[0] && !(flag&FORMAT_ARG0_ISSTR))
+    range = (hgrep_range*)arg[0];
+
   if (arg[1] && flag&FORMAT_ARG1_ISSTR && ((hgrep_str*)arg[1])->b && ((hgrep_str*)arg[1])->s) {
     hgrep_str *str = (hgrep_str*)arg[1];
     err = tr_strrange(str->b,str->s,NULL,0,delim,NULL,0);
@@ -1561,7 +1560,7 @@ cut_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigne
     }
   }
 
-  if (!list)
+  if (!range)
     return hgrep_set_error(0,"cut: missing range argument");
 
   hgrep_cstr line;
@@ -1598,7 +1597,7 @@ cut_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigne
         }
 
         start = dend;
-        if (ranges_match(dcount+1,list,listl,-1)^complement) {
+        if (range_match(dcount+1,range,-1)^complement) {
           if (dprevendlength)
             fwrite(src+dprevend,1,1,output);
           if (dlength)
@@ -1612,7 +1611,7 @@ cut_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigne
       }
     } else {
       for (size_t i = start; i < end; i++) {
-        if (ranges_match(i+1-start,list,listl,end-start)^complement) {
+        if (range_match(i+1-start,range,end-start)^complement) {
           buf[bufcurrent++] = src[i];
           if (bufcurrent == bufsize) {
             fwrite(buf,1,bufcurrent,output);

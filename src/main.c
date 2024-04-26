@@ -53,7 +53,7 @@ typedef unsigned int uint;
 typedef unsigned long int ulong;
 
 char *argv0;
-hgrep_epatterns patterns = {NULL,0};
+hgrep_exprs exprs = {NULL,0};
 
 uint settings = 0;
 uchar hflags = 0;
@@ -113,18 +113,18 @@ unalloc_free(void *ptr, size_t size)
 }
 
 static void
-patterns_exec(char *f, size_t s, const uchar inpipe)
+expr_exec(char *f, size_t s, const uchar inpipe)
 {
   if (f == NULL || s == 0)
     return;
 
   if (settings&F_FAST) {
-    handle_hgrep_error(hgrep_efmatch(f,s,outfile,&patterns,inpipe ? unalloc_free : munmap));
+    handle_hgrep_error(hgrep_efmatch(f,s,outfile,&exprs,inpipe ? unalloc_free : munmap));
     return;
   }
 
   hgrep hg = hgrep_init(f,s,outfile);
-  handle_hgrep_error(hgrep_ematch(&hg,&patterns,NULL,0,NULL,0));
+  handle_hgrep_error(hgrep_ematch(&hg,&exprs,NULL,0,NULL,0));
   hgrep_free(&hg);
 }
 
@@ -153,7 +153,7 @@ file_handle(const char *f)
   if (f == NULL) {
     size_t size;
     pipe_to_str(0,&file,&size);
-    patterns_exec(file,size,1);
+    expr_exec(file,size,1);
     return;
   }
 
@@ -184,8 +184,24 @@ file_handle(const char *f)
     close(fd);
   } else {
     close(fd);
-    patterns_exec(file,st.st_size,0);
+    expr_exec(file,st.st_size,0);
   }
+}
+
+void
+load_expr_from_file(char *filename)
+{
+  if (!filename)
+    return;
+  int fd = open(filename,O_RDONLY);
+  if (fd == -1)
+    err(1,"%s",filename);
+  char *file;
+  size_t filel;
+  pipe_to_str(fd,&file,&filel);
+  close(fd);
+  handle_hgrep_error(hgrep_ecomp(file,filel,&exprs,hflags));
+  free(file);
 }
 
 int
@@ -210,25 +226,14 @@ main(int argc, char **argv)
   while ((opt = getopt(argc,argv,"lo:f:HrRFvh")) != -1) {
     switch (opt) {
       case 'l':
-        handle_hgrep_error(hgrep_epcomp("| \"%n%A - %c/%l/%s/%p\\n\"",24,&patterns,hflags));
+        handle_hgrep_error(hgrep_ecomp("| \"%n%A - %c/%l/%s/%p\\n\"",24,&exprs,hflags));
         break;
       case 'o':
         outfile = fopen(optarg,"w");
         if (outfile == NULL)
           err(1,"%s",optarg);
         break;
-      case 'f': {
-        int fd = open(optarg,O_RDONLY);
-        if (fd == -1)
-          err(1,"%s",optarg);
-        size_t s;
-        char *p;
-        pipe_to_str(fd,&p,&s);
-        close(fd);
-        handle_hgrep_error(hgrep_epcomp(p,s,&patterns,hflags));
-        free(p);
-        }
-        break;
+      case 'f': load_expr_from_file(optarg); break;
       case 'H': nftwflags &= ~FTW_PHYS; break;
       case 'r': settings |= F_RECURSIVE; break;
       case 'R': settings |= F_RECURSIVE; nftwflags &= ~FTW_PHYS; break;
@@ -239,11 +244,11 @@ main(int argc, char **argv)
     }
   }
 
-  if (!patterns.b && optind < argc) {
-    handle_hgrep_error(hgrep_epcomp(argv[optind],strlen(argv[optind]),&patterns,hflags));
+  if (!exprs.b && optind < argc) {
+    handle_hgrep_error(hgrep_ecomp(argv[optind],strlen(argv[optind]),&exprs,hflags));
     optind++;
   }
-  if (!patterns.b)
+  if (!exprs.b)
       return -1;
   int g = optind;
   for (; g < argc; g++)
@@ -251,8 +256,9 @@ main(int argc, char **argv)
   if (g-optind == 0)
     file_handle(NULL);
 
-  fclose(outfile);
-  hgrep_epatterns_free(&patterns);
+  if (outfile != stdout)
+    fclose(outfile);
+  hgrep_efree(&exprs);
 
   return 0;
 }

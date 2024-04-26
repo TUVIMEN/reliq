@@ -43,7 +43,7 @@ hgrep_error *echo_edit(char *src, size_t size, FILE *output, const void *arg[4],
 
 extern const struct hgrep_format_function format_functions[];
 
-hgrep_error *format_exec(char *input, size_t inputl, FILE *output, const hgrep_node *hgn, const hgrep_format_func *format, const size_t formatl, const char *reference);
+hgrep_error *format_exec(char *input, size_t inputl, FILE *output, const hgrep_hnode *hgn, const hgrep_format_func *format, const size_t formatl, const char *reference);
 void format_free(hgrep_format_func *format, size_t formatl);
 hgrep_error *format_get_funcs(flexarr *format, char *src, size_t *pos, size_t *size);
 
