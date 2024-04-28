@@ -194,7 +194,6 @@ nodes_output(reliq *rq, flexarr *compressed_nodes, flexarr *ncollector
   for (;; j++) {
     #ifdef RELIQ_EDITING
     if (compressed_nodes->size && g == 0) {
-
       while (fcurrent < fcollector->size && fcols[fcurrent].start == pcurrent) { // && fcols[fcurrent].lvl != 0
         //fprintf(stderr,"fcollector out start fcurrent(%lu) pcurrent(%lu)\n",fcurrent,pcurrent);
         struct fcollector_out *ff;
@@ -206,7 +205,7 @@ nodes_output(reliq *rq, flexarr *compressed_nodes, flexarr *ncollector
 
       if (j >= compressed_nodes->size)
         break;
-      if (((reliq_expr*)pcol[pcurrent].b)->exprfl)
+      if (pcol[pcurrent].b && ((reliq_expr*)pcol[pcurrent].b)->exprfl)
         out = open_memstream(&ptr,&fsize);
     }
     #else
@@ -214,18 +213,24 @@ nodes_output(reliq *rq, flexarr *compressed_nodes, flexarr *ncollector
       break;
     #endif
 
+    FILE *rout = (out == rq->output) ? fout : out;
+
     reliq_compressed *x = &((reliq_compressed*)compressed_nodes->v)[j];
-    rq->nodes[x->id].lvl -= x->lvl;
-    err = node_output(&rq->nodes[x->id],((reliq_expr*)pcol[pcurrent].b)->nodef,
-      ((reliq_expr*)pcol[pcurrent].b)->nodefl,(out == rq->output) ? fout : out,rq->data);
-    rq->nodes[x->id].lvl += x->lvl;
-    if (err)
-      return err;
+    if (x->id == (size_t)-1 && x->lvl == (ushort)-1) {
+      fputc('\n',rout);
+    } else if (pcol[pcurrent].b) {
+      rq->nodes[x->id].lvl -= x->lvl;
+      err = node_output(&rq->nodes[x->id],((reliq_expr*)pcol[pcurrent].b)->nodef,
+        ((reliq_expr*)pcol[pcurrent].b)->nodefl,rout,rq->data);
+      rq->nodes[x->id].lvl += x->lvl;
+      if (err)
+        return err;
+    }
 
     g++;
     if (pcol[pcurrent].s == g) {
       #ifdef RELIQ_EDITING
-      if (out != rq->output) {
+      if (pcol[pcurrent].b && out != rq->output) {
         fclose(out);
         err = format_exec(ptr,fsize,fout,NULL,
           ((reliq_expr*)pcol[pcurrent].b)->exprf,

@@ -43,6 +43,8 @@ typedef unsigned long int ulong;
 #define PATTERN_SIZE_INC (1<<8)
 #define PATTRIB_INC 8
 #define HOOK_INC 8
+#define NCOLLECTOR_INC (1<<8)
+#define FCOLLECTOR_INC (1<<5)
 
 #define UINT_TO_STR_MAX 32
 
@@ -51,7 +53,8 @@ typedef unsigned long int ulong;
 #define A_VAL_MATTERS 0x2
 
 //reliq_node flags
-#define P_EMPTY 0x4
+#define N_EMPTY 0x1 //ignore matching
+#define N_NEWLINE 0x2 //if does not match print a '\n'
 
 //reliq_match_function flags
 #define F_KINDS 0x7
@@ -281,16 +284,13 @@ reliq_regcomp(reliq_pattern *pattern, char *src, size_t *pos, size_t *size, cons
     }
   }
 
-  if (*pos < *size && src[*pos] == '*') {
-    if (*pos+1 < *size)
-      if (!isspace(src[*pos+1]) && src[*pos+1] != delim)
-        goto NOT_ALL;
+  if ((*pos+1 == *size || (*pos+1 < *size &&
+    (isspace(src[*pos+1]) || src[*pos+1] == delim)))
+    && src[*pos] == '*') {
     (*pos)++;
     pattern->flags |= RELIQ_PATTERN_ALL;
     return NULL;
   }
-
-  NOT_ALL: ;
 
   size_t start,len;
   err = get_quoted(src,pos,size,delim,&start,&len);
@@ -482,7 +482,7 @@ reliq_free_hooks(reliq_hook *hooks, const size_t hooksl)
 void
 reliq_nfree(reliq_node *node)
 {
-  if (node == NULL || node->flags&P_EMPTY)
+  if (node == NULL || node->flags&N_EMPTY)
     return;
 
   reliq_regfree(&node->tag);
@@ -565,7 +565,7 @@ reliq_match_hooks(const reliq_hnode *rqn, const reliq_hook *hooks, const size_t 
 int
 reliq_match(const reliq_hnode *rqn, const reliq_node *node)
 {
-  if (node->flags&P_EMPTY)
+  if (node->flags&N_EMPTY)
     return 1;
 
   if (!reliq_regexec(&node->tag,rqn->tag.b,rqn->tag.s))
@@ -922,8 +922,14 @@ reliq_ncomp(const char *script, size_t size, reliq_node *node)
   size_t pos=0;
   while_is(isspace,nscript,pos,size);
 
+  if (pos < size && nscript[pos] == '.' && (pos+1 >= size || (pos+1 < size && isspace(nscript[pos+1])))) {
+    node->flags |= N_NEWLINE;
+    pos++;
+    while_is(isspace,nscript,pos,size);
+  }
+
   if (pos >= size) {
-    node->flags |= P_EMPTY;
+    node->flags |= N_EMPTY;
     goto END;
   }
 
@@ -955,7 +961,7 @@ reliq_expr_print(flexarr *exprs, size_t tab)
   for (size_t i = 0; i < exprs->size; i++) {
     for (size_t j = 0; j < tab; j++)
       fputs("  ",stderr);
-    if (a[i].istable&1) {
+    if (a[i].istable&EXPR_TABLE) {
       fprintf(stderr,"%%x %d node(%u) expr(%u)\n",a[i].istable,a[i].nodefl,a[i].exprfl);
       reliq_expr_print((flexarr*)a[i].e,tab);
     } else {
@@ -1174,7 +1180,7 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, const uchar flags, reli
         || next == typeGroupEnd || exprl || hasexpr)) {
       expr.e = malloc(sizeof(reliq_node));
       if (!exprl) {
-        ((reliq_node*)expr.e)->flags |= P_EMPTY;
+        ((reliq_node*)expr.e)->flags |= N_EMPTY;
       } else if (next != typeGroupStart) {
         *err = reliq_ncomp(src+j,exprl,(reliq_node*)expr.e);
         if (*err)
@@ -1265,6 +1271,12 @@ dest_match_position(const reliq_range *range, flexarr *dest, const size_t start,
 }
 
 static void
+add_compressed_blank(flexarr *dest)
+{
+  memset(flexarr_inc(dest),-1,sizeof(reliq_compressed)); //set everything to -1
+}
+
+static void
 first_match(reliq *rq, reliq_node *node, flexarr *dest)
 {
   reliq_hnode *nodes = rq->nodes;
@@ -1279,7 +1291,6 @@ first_match(reliq *rq, reliq_node *node, flexarr *dest)
   if (node->position.s)
     dest_match_position(&node->position,dest,0,dest->size);
 }
-
 
 static void
 node_exec(reliq *rq, reliq_node *node, flexarr *source, flexarr *dest)
@@ -1324,13 +1335,13 @@ ncollector_check(flexarr *ncollector, size_t correctsize)
 }*/
 
 static void
-ncollector_add(flexarr *ncollector, flexarr *dest, flexarr *source, size_t startn, size_t lastn, const reliq_expr *lastformat, uchar istable)
+ncollector_add(flexarr *ncollector, flexarr *dest, flexarr *source, size_t startn, size_t lastn, const reliq_expr *lastnode, uchar istable, uchar useformat)
 {
   if (!source->size)
     return;
   size_t prevsize = dest->size;
   flexarr_add(dest,source);
-  if (!lastformat)
+  if (useformat && !lastnode)
     goto END;
   if (istable) {
     if (startn != lastn) { //truncate previously added, now useless ncollector
@@ -1340,7 +1351,7 @@ ncollector_add(flexarr *ncollector, flexarr *dest, flexarr *source, size_t start
     }
   } else {
     ncollector->size = startn;
-    *(reliq_cstr*)flexarr_inc(ncollector) = (reliq_cstr){(char const*)lastformat,dest->size-prevsize};
+    *(reliq_cstr*)flexarr_inc(ncollector) = (reliq_cstr){(char const*)lastnode,dest->size-prevsize};
   }
   END: ;
   source->size = 0;
@@ -1437,7 +1448,7 @@ reliq_ematch_pre(reliq *rq, const reliq_expr *exprs, size_t exprsl, flexarr *sou
   size_t startn = ncollector->size;
   size_t lastn = startn;
 
-  reliq_expr const *lastformat = NULL;
+  reliq_expr const *lastnode = NULL;
 
   for (size_t i = 0; i < exprsl; i++) {
     if (exprs[i].istable&EXPR_TABLE) {
@@ -1446,12 +1457,18 @@ reliq_ematch_pre(reliq *rq, const reliq_expr *exprs, size_t exprsl, flexarr *sou
         #ifdef RELIQ_EDITING
         ,fcollector
         #endif
-              );
+        );
       if (err)
         goto ERR;
     } else if (exprs[i].e) {
-      lastformat = &exprs[i];
-      node_exec(rq,(reliq_node*)exprs[i].e,buf[0],buf[1]);
+      lastnode = &exprs[i];
+      reliq_node *node = (reliq_node*)exprs[i].e;
+      node_exec(rq,node,buf[0],buf[1]);
+      if (node->flags&N_NEWLINE && buf[1]->size == 0) {
+        add_compressed_blank(buf[1]);
+        ncollector_add(ncollector,buf[2],buf[1],startn,lastn,NULL,exprs[i].istable,0);
+        break;
+      }
     }
 
     //fprintf(stderr,"ematch %p %lu %lu %lu %u %lu\n",exprs,startn,lastn,ncollector->size,(exprs[i].istable&EXPR_NEWBLOCK),exprs[i].exprfl);
@@ -1463,7 +1480,7 @@ reliq_ematch_pre(reliq *rq, const reliq_expr *exprs, size_t exprsl, flexarr *sou
 
     if ((exprs[i].istable&EXPR_TABLE &&
       !(exprs[i].istable&EXPR_NEWBLOCK)) || i == exprsl-1) {
-      ncollector_add(ncollector,buf[2],buf[1],startn,lastn,lastformat,exprs[i].istable);
+      ncollector_add(ncollector,buf[2],buf[1],startn,lastn,lastnode,exprs[i].istable,1);
       continue;
     }
     if (!buf[1]->size)
@@ -1498,6 +1515,7 @@ reliq_ematch_pre(reliq *rq, const reliq_expr *exprs, size_t exprsl, flexarr *sou
   flexarr_free(buf_unchanged[0]);
   flexarr_free(buf_unchanged[1]);
   flexarr_free(buf[2]);
+  buf[2] = NULL;
   return err;
 }
 
@@ -1519,9 +1537,9 @@ reliq_ematch(reliq *rq, const reliq_exprs *exprs, reliq_compressed *source, size
       fsource->asize = destl;
     }
     reliq_error *err;
-    flexarr *ncollector = flexarr_init(sizeof(reliq_cstr),32);
+    flexarr *ncollector = flexarr_init(sizeof(reliq_cstr),NCOLLECTOR_INC);
     #ifdef RELIQ_EDITING
-    flexarr *fcollector = flexarr_init(sizeof(struct fcollector_expr),16);
+    flexarr *fcollector = flexarr_init(sizeof(struct fcollector_expr),FCOLLECTOR_INC);
     #endif
     err = reliq_ematch_pre(rq,exprs->b,exprs->s,fsource,fdest,ncollector
         #ifdef RELIQ_EDITING
@@ -1596,7 +1614,7 @@ reliq_efmatch(char *script, size_t size, FILE *output, const reliq_exprs *exprs,
   for (size_t i = 0; i < first->size; i++) {
     output = (i == first->size-1) ? t : open_memstream(&nscript,&fsize);
 
-    if (((reliq_expr*)first->v)[i].istable&1)
+    if (((reliq_expr*)first->v)[i].istable&EXPR_TABLE)
       return reliq_set_error(1,"fast mode cannot run in non linear mode");
     reliq_error *err = reliq_fmatch(script,size,output,(reliq_node*)((reliq_expr*)first->v)[i].e,
       ((reliq_expr*)first->v)[i].nodef,((reliq_expr*)first->v)[i].nodefl);
