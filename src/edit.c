@@ -56,14 +56,14 @@ const struct reliq_format_function format_functions[] = {
 };
 
 reliq_error *
-format_exec(char *input, size_t inputl, FILE *output, const reliq_hnode *rqn, const reliq_format_func *format, const size_t formatl, const char *reference)
+format_exec(char *input, size_t inputl, FILE *output, const reliq_hnode *rqn, const reliq_hnode *parent, const reliq_format_func *format, const size_t formatl, const char *reference)
 {
   if (rqn && (!formatl || (formatl == 1 && (format[0].flags&FORMAT_FUNC) == 0 && (!format[0].arg[0] || !((reliq_cstr*)format[0].arg[0])->b)))) {
     reliq_print(output,rqn);
     return NULL;
   }
   if (rqn && formatl == 1 && (format[0].flags&FORMAT_FUNC) == 0 && format[0].arg[0] && ((reliq_cstr*)format[0].arg[0])->b) {
-    reliq_printf(output,((reliq_cstr*)format[0].arg[0])->b,((reliq_cstr*)format[0].arg[0])->s,rqn,reference);
+    reliq_printf(output,((reliq_cstr*)format[0].arg[0])->b,((reliq_cstr*)format[0].arg[0])->s,rqn,parent,reference);
     return NULL;
   }
 
@@ -75,7 +75,7 @@ format_exec(char *input, size_t inputl, FILE *output, const reliq_hnode *rqn, co
   for (size_t i = 0; i < formatl; i++) {
     out = (i == formatl-1) ? output : open_memstream(&ptr[1],&fsize[1]);
     if (rqn && i == 0 && (format[i].flags&FORMAT_FUNC) == 0) {
-      reliq_printf(out,((reliq_cstr*)format[i].arg[0])->b,((reliq_cstr*)format[i].arg[0])->s,rqn,reference);
+      reliq_printf(out,((reliq_cstr*)format[i].arg[0])->b,((reliq_cstr*)format[i].arg[0])->s,rqn,parent,reference);
     } else {
       if (i == 0) {
         if (rqn) {

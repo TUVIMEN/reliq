@@ -126,12 +126,10 @@ typedef struct {
   size_t s;
 } reliq_exprs;
 
-#pragma pack(push, 1)
 typedef struct {
   size_t id;
-  unsigned short lvl;
+  size_t parentid;
 } reliq_compressed;
-#pragma pack(pop)
 
 typedef struct {
   char const *data;
@@ -161,9 +159,9 @@ reliq_error *reliq_fmatch(const char *ptr, const size_t size, FILE *output, cons
 reliq_error *reliq_efmatch(char *script, const size_t size, FILE *output, const reliq_exprs *exprs, int (*freeptr)(void *ptr, size_t size));
 reliq_error *reliq_ncomp(const char *script, size_t size, reliq_node *node);
 reliq_error *reliq_ecomp(const char *script, size_t size, reliq_exprs *exprs, const unsigned char flags);
-int reliq_match(const reliq_hnode *rqn, const reliq_node *node);
+int reliq_match(const reliq_hnode *rqn, const reliq_hnode *parent, const reliq_node *node);
 reliq_error *reliq_ematch(reliq *rq, const reliq_exprs *expr, reliq_compressed *source, size_t sourcel, reliq_compressed *dest, size_t destl);
-void reliq_printf(FILE *outfile, const char *format, const size_t formatl, const reliq_hnode *rqn, const char *reference);
+void reliq_printf(FILE *outfile, const char *format, const size_t formatl, const reliq_hnode *rqn, const reliq_hnode *parent, const char *reference);
 void reliq_print(FILE *outfile, const reliq_hnode *rq);
 void reliq_nfree(reliq_node *node);
 void reliq_efree(reliq_exprs *expr);

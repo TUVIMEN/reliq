@@ -27,7 +27,7 @@ struct fcollector_expr {
   unsigned char isnodef;
 };
 
-reliq_error *node_output(reliq_hnode *rqn,
+reliq_error *node_output(reliq_hnode *rqn, reliq_hnode *parent,
         #ifdef RELIQ_EDITING
         const reliq_format_func *format
         #else

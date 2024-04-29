@@ -60,8 +60,9 @@ typedef unsigned long int ulong;
 
 #define F_ATTRIBUTES 0x1
 #define F_LEVEL 0x2
-#define F_CHILD_COUNT 0x3
-#define F_MATCH_INSIDES 0x4
+#define F_LEVEL_RELATIVE 0x3
+#define F_CHILD_COUNT 0x4
+#define F_MATCH_INSIDES 0x5
 
 #define F_RANGE 0x8
 #define F_PATTERN 0x10
@@ -106,11 +107,13 @@ struct reliq_match_function {
 const struct reliq_match_function match_functions[] = {
     {{"m",1},F_PATTERN|F_MATCH_INSIDES},
     {{"a",1},F_RANGE|F_ATTRIBUTES},
-    {{"l",1},F_RANGE|F_LEVEL},
+    {{"l",1},F_RANGE|F_LEVEL_RELATIVE},
+    {{"L",1},F_RANGE|F_LEVEL},
     {{"c",1},F_RANGE|F_CHILD_COUNT},
 
     {{"match",5},F_PATTERN|F_MATCH_INSIDES},
     {{"attributes",10},F_RANGE|F_ATTRIBUTES},
+    {{"levelrelative",13},F_RANGE|F_LEVEL_RELATIVE},
     {{"level",5},F_RANGE|F_LEVEL},
     {{"children",8},F_RANGE|F_CHILD_COUNT},
 };
@@ -531,7 +534,7 @@ pattrib_match(const reliq_hnode *rqn, const struct reliq_pattrib *attribs, size_
 }
 
 static int
-reliq_match_hooks(const reliq_hnode *rqn, const reliq_hook *hooks, const size_t hooksl)
+reliq_match_hooks(const reliq_hnode *rqn, const reliq_hnode *parent, const reliq_hook *hooks, const size_t hooksl)
 {
   for (size_t i = 0; i < hooksl; i++) {
     char const *src = NULL;
@@ -540,6 +543,9 @@ reliq_match_hooks(const reliq_hnode *rqn, const reliq_hook *hooks, const size_t 
     switch (hooks[i].flags&F_KINDS) {
       case F_ATTRIBUTES:
         srcl = rqn->attribsl;
+        break;
+      case F_LEVEL_RELATIVE:
+        srcl = (parent) ? rqn->lvl-parent->lvl : rqn->lvl;
         break;
       case F_LEVEL:
         srcl = rqn->lvl;
@@ -563,7 +569,7 @@ reliq_match_hooks(const reliq_hnode *rqn, const reliq_hook *hooks, const size_t 
 }
 
 int
-reliq_match(const reliq_hnode *rqn, const reliq_node *node)
+reliq_match(const reliq_hnode *rqn, const reliq_hnode *parent, const reliq_node *node)
 {
   if (node->flags&N_EMPTY)
     return 1;
@@ -571,7 +577,7 @@ reliq_match(const reliq_hnode *rqn, const reliq_node *node)
   if (!reliq_regexec(&node->tag,rqn->tag.b,rqn->tag.s))
     return 0;
 
-  if (!reliq_match_hooks(rqn,node->hooks,node->hooksl))
+  if (!reliq_match_hooks(rqn,parent,node->hooks,node->hooksl))
     return 0;
 
   if (!pattrib_match(rqn,node->attribs,node->attribsl))
@@ -631,7 +637,7 @@ print_attrib_value(const reliq_cstr_pair *attribs, const size_t attribsl, const 
 }
 
 void
-reliq_printf(FILE *outfile, const char *format, const size_t formatl, const reliq_hnode *rqn, const char *reference)
+reliq_printf(FILE *outfile, const char *format, const size_t formatl, const reliq_hnode *rqn, const reliq_hnode *parent, const char *reference)
 {
   size_t i = 0;
   char const *text;
@@ -668,7 +674,14 @@ reliq_printf(FILE *outfile, const char *format, const size_t formatl, const reli
         case 'i':
           trim = 1;
         case 'I': print_trimmed_if(&rqn->insides,trim,outfile); break;
-        case 'l': print_uint(rqn->lvl,outfile); break;
+        case 'l': {
+          ushort lvl = rqn->lvl;
+          if (parent)
+            lvl -= parent->lvl;
+          print_uint(lvl,outfile);
+          }
+          break;
+        case 'L': print_uint(rqn->lvl,outfile); break;
         case 's': print_uint(rqn->all.s,outfile); break;
         case 'c': print_uint(rqn->child_count,outfile); break;
         case 'p': print_uint(rqn->all.b-reference,outfile); break;
@@ -1296,9 +1309,9 @@ first_match(reliq *rq, reliq_node *node, flexarr *dest)
   reliq_hnode *nodes = rq->nodes;
   size_t nodesl = rq->nodesl;
   for (size_t i = 0; i < nodesl; i++) {
-    if (reliq_match(&nodes[i],node)) {
+    if (reliq_match(&nodes[i],NULL,node)) {
       reliq_compressed *x = (reliq_compressed*)flexarr_inc(dest);
-      x->lvl = 0;
+      x->parentid = -1;
       x->id = i;
     }
   }
@@ -1314,22 +1327,18 @@ node_exec(reliq *rq, reliq_node *node, flexarr *source, flexarr *dest)
     return;
   }
 
-  ushort lvl;
   reliq_hnode *nodes = rq->nodes;
   size_t current,n;
   for (size_t i = 0; i < source->size; i++) {
     current = ((reliq_compressed*)source->v)[i].id;
-    lvl = nodes[current].lvl;
     size_t prevdestsize = dest->size;
     for (size_t j = 0; j <= nodes[current].child_count; j++) {
       n = current+j;
-      nodes[n].lvl -= lvl;
-      if (reliq_match(&nodes[n],node)) {
+      if (reliq_match(&nodes[n],&nodes[current],node)) {
         reliq_compressed *x = (reliq_compressed*)flexarr_inc(dest);
-        x->lvl = lvl;
         x->id = n;
+        x->parentid = current;
       }
-      nodes[n].lvl += lvl;
     }
     if (node->position.s)
       dest_match_position(&node->position,dest,prevdestsize,dest->size);

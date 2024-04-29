@@ -43,7 +43,7 @@ reliq_error *echo_edit(char *src, size_t size, FILE *output, const void *arg[4],
 
 extern const struct reliq_format_function format_functions[];
 
-reliq_error *format_exec(char *input, size_t inputl, FILE *output, const reliq_hnode *rqn, const reliq_format_func *format, const size_t formatl, const char *reference);
+reliq_error *format_exec(char *input, size_t inputl, FILE *output, const reliq_hnode *rqn, const reliq_hnode *parent, const reliq_format_func *format, const size_t formatl, const char *reference);
 void format_free(reliq_format_func *format, size_t formatl);
 reliq_error *format_get_funcs(flexarr *format, char *src, size_t *pos, size_t *size);
 

@@ -197,7 +197,10 @@ Get tags with insides that match \fIPATTERN\fR, by default the matching of it wi
 .BR a ",  " attributes " " \fI[RANGE]\fR
 Get tags with attributes that are within the \fIRANGE\fR.
 .TP
-.BR l ",  " level " " \fI[RANGE]\fR
+.BR L ",  " level " " \fI[RANGE]\fR
+Get tags that are on level within \fIRANGE\fR.
+.TP
+.BR l ",  " levelrelative " " \fI[RANGE]\fR
 Get tags that are on level relative to parent within the \fIRANGE\fR.
 .TP
 .BR c ",  " children " " \fI[RANGE]\fR
@@ -252,6 +255,8 @@ Tag's insides, trimmed.
 .IP %I
 Tag's insides.
 .IP %l
+Tag's level relative to parent.
+.IP %L
 Tag's level.
 .IP %p
 Tag's position in current file.
