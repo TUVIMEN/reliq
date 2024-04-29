@@ -54,7 +54,6 @@ typedef unsigned long int ulong;
 
 //reliq_node flags
 #define N_EMPTY 0x1 //ignore matching
-#define N_NEWLINE 0x2 //if does not match print a '\n'
 
 //reliq_match_function flags
 #define F_KINDS 0x7
@@ -67,11 +66,12 @@ typedef unsigned long int ulong;
 #define F_RANGE 0x8
 #define F_PATTERN 0x10
 
-//reliq_expr flags
+//reliq_expr istable flags
 #define EXPR_TABLE 0x1
 #define EXPR_NEWBLOCK 0x2
 #define EXPR_NEWCHAIN 0x4
 #define EXPR_SINGULAR 0x8
+#define EXPR_OUTPROTECTED 0x10
 
 #define ATTRIB_INC (1<<3)
 #define RELIQ_NODES_INC (1<<13)
@@ -913,20 +913,16 @@ get_pattribs(char *src, size_t *size, struct reliq_pattrib **attrib, size_t *att
 reliq_error *
 reliq_ncomp(const char *script, size_t size, reliq_node *node)
 {
-  if (size == 0)
-    return NULL;
   reliq_error *err = NULL;
   memset(node,0,sizeof(reliq_node));
+  if (!size) {
+    node->flags |= N_EMPTY;
+    return NULL;
+  }
 
   char *nscript = memdup(script,size);
   size_t pos=0;
   while_is(isspace,nscript,pos,size);
-
-  if (pos < size && nscript[pos] == '.' && (pos+1 >= size || (pos+1 < size && isspace(nscript[pos+1])))) {
-    node->flags |= N_NEWLINE;
-    pos++;
-    while_is(isspace,nscript,pos,size);
-  }
 
   if (pos >= size) {
     node->flags |= N_EMPTY;
@@ -1027,7 +1023,7 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, const uchar flags, reli
   reliq_expr expr;
   char *src = memdup(csrc,s);
   size_t exprl;
-  size_t i = *pos;
+  size_t i=*pos,first_pos=*pos;
   enum {
     typePassed,
     typeNextNode,
@@ -1040,6 +1036,12 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, const uchar flags, reli
   while_is(isspace,src,*pos,s);
   for (size_t j; i < s; i++) {
     j = i;
+
+    if (next == typeNextNode) {
+      first_pos = j;
+      next = typePassed;
+    }
+
     uchar hasexpr=0,hasended=0;
     reliq_expr *new = NULL;
     exprl = 0;
@@ -1179,9 +1181,22 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, const uchar flags, reli
     if ((next != typeGroupEnd || src[j] != '}') && (next == typeGroupStart
         || next == typeGroupEnd || exprl || hasexpr)) {
       expr.e = malloc(sizeof(reliq_node));
+      expr.istable = 0;
+
       if (!exprl) {
         ((reliq_node*)expr.e)->flags |= N_EMPTY;
       } else if (next != typeGroupStart) {
+        //fprintf(stderr,"lllllllllll %lu %lu\n",j,first_pos);
+        if (j == first_pos) {
+          size_t g = j;
+          while_is(isspace,src,g,s);
+          if (((g+1 < s && isspace(src[g])) || g < s) && src[g] == '.') {
+            g++;
+            expr.istable |= EXPR_OUTPROTECTED;
+            exprl -= g-j;
+            j = g;
+          }
+        }
         *err = reliq_ncomp(src+j,exprl,(reliq_node*)expr.e);
         if (*err)
           goto EXIT1;
@@ -1192,7 +1207,7 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, const uchar flags, reli
     }
 
     if (next == typeGroupStart) {
-      new->istable = EXPR_TABLE|EXPR_NEWBLOCK;
+      new->istable |= EXPR_TABLE|EXPR_NEWBLOCK;
       next = typePassed;
       *pos = i;
       new->e = reliq_ecomp_pre(src,pos,s,flags,err);
@@ -1214,15 +1229,14 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, const uchar flags, reli
            goto REPEAT;
         }
       }
-    } else if (new)
-      new->istable = 0;
+    } /*else if (new)
+      new->istable = 0;*/
 
     if (next == typeNextNode) {
       NEXT_NODE: ;
-      next = typePassed;
       acurrent = (reliq_expr*)flexarr_inc(ret);
       acurrent->e = flexarr_init(sizeof(reliq_expr),PATTERN_SIZE_INC);
-      acurrent->istable = EXPR_TABLE|EXPR_NEWCHAIN;
+      acurrent->istable |= EXPR_TABLE|EXPR_NEWCHAIN;
     }
     if (next == typeGroupEnd)
       goto END_BRACKET;
@@ -1343,7 +1357,7 @@ ncollector_add(flexarr *ncollector, flexarr *dest, flexarr *source, size_t start
   flexarr_add(dest,source);
   if (useformat && !lastnode)
     goto END;
-  if (istable) {
+  if (istable&EXPR_TABLE) {
     if (startn != lastn) { //truncate previously added, now useless ncollector
       for (size_t i = lastn; i < ncollector->size; i++)
         ((reliq_cstr*)ncollector->v)[i-lastn] = ((reliq_cstr*)ncollector->v)[i];
@@ -1450,7 +1464,12 @@ reliq_ematch_pre(reliq *rq, const reliq_expr *exprs, size_t exprsl, flexarr *sou
 
   reliq_expr const *lastnode = NULL;
 
+  uchar outprotected = 0;
+
   for (size_t i = 0; i < exprsl; i++) {
+    if (exprs[i].istable&EXPR_OUTPROTECTED)
+      outprotected = 1;
+
     if (exprs[i].istable&EXPR_TABLE) {
       lastn = ncollector->size;
       err = reliq_ematch_table(rq,&exprs[i],buf[0],buf[1],ncollector
@@ -1464,7 +1483,8 @@ reliq_ematch_pre(reliq *rq, const reliq_expr *exprs, size_t exprsl, flexarr *sou
       lastnode = &exprs[i];
       reliq_node *node = (reliq_node*)exprs[i].e;
       node_exec(rq,node,buf[0],buf[1]);
-      if (node->flags&N_NEWLINE && buf[1]->size == 0) {
+
+      if (outprotected && buf[1]->size == 0) {
         add_compressed_blank(buf[1]);
         ncollector_add(ncollector,buf[2],buf[1],startn,lastn,NULL,exprs[i].istable,0);
         break;
