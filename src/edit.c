@@ -582,10 +582,11 @@ static reliq_error *
 sed_address_comp(const char *src, size_t *pos, size_t size, struct sed_address *address, int eflags)
 {
   reliq_error *err = sed_address_comp_pre(src,pos,size,address,eflags|REG_NOSUB);
-  if (err)
+  if (err) {
     sed_address_free(address);
-  err = sed_address_comp_reverse(src,pos,size,address);
-  return err;
+    return err;
+  }
+  return sed_address_comp_reverse(src,pos,size,address);
 }
 
 static int
@@ -770,6 +771,7 @@ sed_script_comp_pre(const char *src, size_t size, int eflags, flexarr **script)
   size_t pos = 0;
   *script = flexarr_init(sizeof(struct sed_expression),2<<4);
   struct sed_expression *sedexpr = (struct sed_expression*)flexarr_inc(*script);
+  sedexpr->address.flags = 0;
   sedexpr->arg1 = NULL;
   sedexpr->arg2 = NULL;
   struct sed_command *command;
@@ -803,6 +805,7 @@ sed_script_comp_pre(const char *src, size_t size, int eflags, flexarr **script)
       } else
         lvl++;
       sedexpr = (struct sed_expression*)flexarr_inc(*script);
+      sedexpr->address.flags = 0;
       pos++;
       continue;
     }
@@ -935,6 +938,7 @@ sed_script_comp_pre(const char *src, size_t size, int eflags, flexarr **script)
       }
     }
     sedexpr = (struct sed_expression*)flexarr_inc(*script);
+    sedexpr->address.flags = 0;
     sedexpr->arg1 = NULL;
     sedexpr->arg2 = NULL;
     if (pos >= size)
