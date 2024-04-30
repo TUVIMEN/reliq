@@ -78,26 +78,42 @@ typedef unsigned long int ulong;
 #define RELIQ_NODES_INC (1<<13)
 
 //reliq_pattern flags
-#define RELIQ_PATTERN_TRIM 0x2
-#define RELIQ_PATTERN_CASE_INSENSITIVE 0x4
-#define RELIQ_PATTERN_INVERT 0x8
+#define RELIQ_PATTERN_TRIM 0x1
+#define RELIQ_PATTERN_CASE_INSENSITIVE 0x2
+#define RELIQ_PATTERN_INVERT 0x4
 
-#define RELIQ_PATTERN_MATCH 0x70
+#define RELIQ_PATTERN_MATCH ( \
+        RELIQ_PATTERN_MATCH_FULL | \
+        RELIQ_PATTERN_MATCH_ALL | \
+        RELIQ_PATTERN_MATCH_BEGINNING | \
+        RELIQ_PATTERN_MATCH_ENDING \
+        )
 
-#define RELIQ_PATTERN_MATCH_FULL 0x10
-#define RELIQ_PATTERN_MATCH_ALL 0x20
-#define RELIQ_PATTERN_MATCH_WORD 0x30
-#define RELIQ_PATTERN_MATCH_BEGINNING 0x40
-#define RELIQ_PATTERN_MATCH_ENDING 0x50
+#define RELIQ_PATTERN_MATCH_FULL 0x8
+#define RELIQ_PATTERN_MATCH_ALL 0x10
+#define RELIQ_PATTERN_MATCH_BEGINNING 0x18
+#define RELIQ_PATTERN_MATCH_ENDING 0x20
 
-#define RELIQ_PATTERN_TYPE 0x180
+#define RELIQ_PATTERN_PASS ( \
+        RELIQ_PATTERN_PASS_WHOLE | \
+        RELIQ_PATTERN_PASS_WORD \
+        )
 
-#define RELIQ_PATTERN_TYPE_STR 0x80
-#define RELIQ_PATTERN_TYPE_BRE 0x100
-#define RELIQ_PATTERN_TYPE_ERE 0x180
+#define RELIQ_PATTERN_PASS_WHOLE 0x40
+#define RELIQ_PATTERN_PASS_WORD 0x80
 
-#define RELIQ_PATTERN_EMPTY 0x200
-#define RELIQ_PATTERN_ALL 0x400
+#define RELIQ_PATTERN_TYPE ( \
+        RELIQ_PATTERN_TYPE_STR | \
+        RELIQ_PATTERN_TYPE_BRE | \
+        RELIQ_PATTERN_TYPE_ERE \
+        )
+
+#define RELIQ_PATTERN_TYPE_STR 0x100
+#define RELIQ_PATTERN_TYPE_BRE 0x200
+#define RELIQ_PATTERN_TYPE_ERE 0x300
+
+#define RELIQ_PATTERN_EMPTY 0x400
+#define RELIQ_PATTERN_ALL 0x800
 
 struct reliq_match_function {
   reliq_str8 name;
@@ -141,18 +157,21 @@ reliq_regcomp_set_flags(ushort *flags, const char *src, const size_t len)
       case 'u':
           *flags &= ~RELIQ_PATTERN_TRIM;
           break;
+
       case 'i':
           *flags |= RELIQ_PATTERN_CASE_INSENSITIVE;
           break;
       case 'c':
           *flags &= ~RELIQ_PATTERN_CASE_INSENSITIVE;
           break;
+
       case 'v':
           *flags |= RELIQ_PATTERN_INVERT;
           break;
       case 'n':
           *flags &= ~RELIQ_PATTERN_INVERT;
           break;
+
       case 'a':
           *flags &= ~RELIQ_PATTERN_MATCH;
           *flags |= RELIQ_PATTERN_MATCH_ALL;
@@ -160,10 +179,6 @@ reliq_regcomp_set_flags(ushort *flags, const char *src, const size_t len)
       case 'f':
           *flags &= ~RELIQ_PATTERN_MATCH;
           *flags |= RELIQ_PATTERN_MATCH_FULL;
-          break;
-      case 'w':
-          *flags &= ~RELIQ_PATTERN_MATCH;
-          *flags |= RELIQ_PATTERN_MATCH_WORD;
           break;
       case 'b':
           *flags &= ~RELIQ_PATTERN_MATCH;
@@ -173,6 +188,16 @@ reliq_regcomp_set_flags(ushort *flags, const char *src, const size_t len)
           *flags &= ~RELIQ_PATTERN_MATCH;
           *flags |= RELIQ_PATTERN_MATCH_ENDING;
           break;
+
+      case 'W':
+          *flags &= ~RELIQ_PATTERN_PASS;
+          *flags |= RELIQ_PATTERN_PASS_WHOLE;
+          break;
+      case 'w':
+          *flags &= ~RELIQ_PATTERN_PASS;
+          *flags |= RELIQ_PATTERN_PASS_WORD;
+          break;
+
       case 's':
           *flags &= ~RELIQ_PATTERN_TYPE;
           *flags |= RELIQ_PATTERN_TYPE_STR;
@@ -197,7 +222,7 @@ static void
 reliq_regcomp_get_flags(reliq_pattern *pattern, const char *src, size_t *pos, const size_t size, const char *flags)
 {
   size_t p = *pos;
-  pattern->flags = RELIQ_PATTERN_TRIM|RELIQ_PATTERN_MATCH_FULL|RELIQ_PATTERN_TYPE_STR;
+  pattern->flags = RELIQ_PATTERN_TRIM|RELIQ_PATTERN_PASS_WHOLE|RELIQ_PATTERN_MATCH_FULL|RELIQ_PATTERN_TYPE_STR;
   pattern->range.s= 0;
 
   if (flags)
@@ -239,8 +264,7 @@ reliq_regcomp_add_pattern(reliq_pattern *pattern, const char *src, const size_t 
       regexflags |= REG_EXTENDED;
 
     size_t addedspace = 0;
-    uchar fullmatch =
-      (match == RELIQ_PATTERN_MATCH_FULL || match == RELIQ_PATTERN_MATCH_WORD) ? 1 : 0;
+    uchar fullmatch = (match == RELIQ_PATTERN_MATCH_FULL) ? 1 : 0;
 
     if (fullmatch)
       addedspace = 2;
@@ -304,42 +328,6 @@ reliq_regcomp(reliq_pattern *pattern, char *src, size_t *pos, size_t *size, cons
 }
 
 static int
-reliq_regexec_match_word(const reliq_pattern *pattern, reliq_cstr *str)
-{
-  ushort type = pattern->flags&RELIQ_PATTERN_TYPE;
-  uchar icase = pattern->flags&RELIQ_PATTERN_CASE_INSENSITIVE;
-  const char *ptr = str->b;
-  size_t plen = str->s;
-  char const *saveptr,*word;
-  size_t saveptrlen,wordlen;
-
-  while (1) {
-    memwordtok_r(ptr,plen,(void const**)&saveptr,&saveptrlen,(void const**)&word,&wordlen);
-    if (!word)
-      return 0;
-
-    if (type == RELIQ_PATTERN_TYPE_STR) {
-      if (pattern->match.str.s == wordlen) {
-        if (icase) {
-          if (memcasecmp(word,pattern->match.str.b,wordlen) == 0)
-            return 1;
-        } else if (memcmp(word,pattern->match.str.b,wordlen) == 0)
-          return 1;
-      }
-    } else {
-      regmatch_t pmatch;
-      pmatch.rm_so = 0;
-      pmatch.rm_eo = (int)wordlen;
-
-      if (regexec(&pattern->match.reg,word,1,&pmatch,REG_STARTEND) == 0)
-        return 1;
-    }
-
-    ptr = NULL;
-  }
-}
-
-static int
 reliq_regexec_match_str(const reliq_pattern *pattern, reliq_cstr *str)
 {
   reliq_pattern const *p = pattern;
@@ -393,8 +381,53 @@ reliq_regexec_match_str(const reliq_pattern *pattern, reliq_cstr *str)
 }
 
 static int
+reliq_regexec_match_pattern(const reliq_pattern *pattern, reliq_cstr *str)
+{
+  ushort type = pattern->flags&RELIQ_PATTERN_TYPE;
+  if (type == RELIQ_PATTERN_TYPE_STR) {
+    return reliq_regexec_match_str(pattern,str);
+  } else {
+    if (!str->s)
+      return 0;
+
+    regmatch_t pmatch;
+    pmatch.rm_so = 0;
+    pmatch.rm_eo = (int)str->s;
+
+    if (regexec(&pattern->match.reg,str->b,1,&pmatch,REG_STARTEND) == 0)
+      return 1;
+  }
+  return 0;
+}
+
+static int
+reliq_regexec_match_word(const reliq_pattern *pattern, reliq_cstr *str)
+{
+  const char *ptr = str->b;
+  size_t plen = str->s;
+  char const *saveptr,*word;
+  size_t saveptrlen,wordlen;
+
+  while (1) {
+    memwordtok_r(ptr,plen,(void const**)&saveptr,&saveptrlen,(void const**)&word,&wordlen);
+    if (!word)
+      return 0;
+
+    reliq_cstr t;
+    t.b = word;
+    t.s = wordlen;
+    if (reliq_regexec_match_pattern(pattern,&t))
+      return 1;
+
+    ptr = NULL;
+  }
+  return 0;
+}
+
+static int
 reliq_regexec(const reliq_pattern *pattern, const char *src, const size_t size)
 {
+  ushort pass = pattern->flags&RELIQ_PATTERN_PASS;
   uchar invert = (pattern->flags&RELIQ_PATTERN_INVERT) ? 1 : 0;
   if ((!range_match(size,&pattern->range,-1)))
     return invert;
@@ -405,31 +438,15 @@ reliq_regexec(const reliq_pattern *pattern, const char *src, const size_t size)
   if (pattern->flags&RELIQ_PATTERN_EMPTY)
     return (size == 0) ? !invert : invert;
 
-  ushort match = pattern->flags&RELIQ_PATTERN_MATCH,
-    type = pattern->flags&RELIQ_PATTERN_TYPE;
-
   reliq_cstr str = {src,size};
 
-  if (match == RELIQ_PATTERN_MATCH_WORD)
+  if (pass == RELIQ_PATTERN_PASS_WORD)
     return reliq_regexec_match_word(pattern,&str)^invert;
 
   if (pattern->flags&RELIQ_PATTERN_TRIM)
     memtrim((void const**)&str.b,&str.s,src,size);
 
-  if (type == RELIQ_PATTERN_TYPE_STR) {
-    return reliq_regexec_match_str(pattern,&str)^invert;
-  } else {
-    if (!str.s)
-      return invert;
-
-    regmatch_t pmatch;
-    pmatch.rm_so = 0;
-    pmatch.rm_eo = (int)str.s;
-
-    if (regexec(&pattern->match.reg,str.b,1,&pmatch,REG_STARTEND) == 0)
-      return !invert;
-  }
-  return invert;
+  return reliq_regexec_match_pattern(pattern,&str)^invert;
 }
 
 static void
@@ -788,7 +805,7 @@ match_function_handle(char *src, size_t *pos, size_t *size, flexarr *hooks)
     if (hook.flags&F_RANGE)
       return reliq_set_error(1,"hook \"%.*s\" expected list argument",(int)func_len,src+p);
 
-    err = reliq_regcomp(&hook.match.pattern,src,pos,size,' ',"ucas");
+    err = reliq_regcomp(&hook.match.pattern,src,pos,size,' ',"uWcas");
   }
   if (err)
     return err;
@@ -880,10 +897,10 @@ get_pattribs(char *src, size_t *size, struct reliq_pattrib **attrib, size_t *att
     if (shortcut == '.' || shortcut == '#') {
       char *t_name = (shortcut == '.') ? "class" : "id";
       size_t t_pos=0,t_size=(shortcut == '.' ? 5 : 2);
-      if ((err = reliq_regcomp(&pa.r[0],t_name,&t_pos,&t_size,' ',"ufsi")))
+      if ((err = reliq_regcomp(&pa.r[0],t_name,&t_pos,&t_size,' ',"uWsfi")))
         break;
 
-      if ((err = reliq_regcomp(&pa.r[1],src,&i,size,' ',"uws")))
+      if ((err = reliq_regcomp(&pa.r[1],src,&i,size,' ',"uwsf")))
         break;
       pa.flags |= A_VAL_MATTERS;
     } else {

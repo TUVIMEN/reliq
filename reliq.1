@@ -79,7 +79,7 @@ to '| "%t%I - %c/%l/%s/%p\\n"'.
 .SS PATTERN
 Consists of text that can be specified in ' and " brackets.
 
-It can be preceded by characters specifying the way of matching ended with '>' character. By default it's set to "tfncs".
+It can be preceded by characters specifying the way of matching ended with '>' character. By default it's set to "tWfncs".
 
 After '>' character a range might be specified, which will match the number of characters in matched string. In such case specifying text is not mandatory.
 
@@ -108,24 +108,26 @@ List of ways of matching:
 .nf
 \&
 .in +4m
-\fBt\fR - Match trimmed
-\fBu\fR - Match untrimmed
+\fBt\fR - Match \fIt\fRrimmed
+\fBu\fR - Match \fIu\fRntrimmed
 
-\fBc\fR - Be case sensitive
-\fBi\fR - Be case insensitive
+\fBc\fR - Be \fIc\fRase sensitive
+\fBi\fR - Be case \fIi\fRnsensitive
 
-\fBv\fR - Invert matching
-\fBn\fR - Match without invertion
+\fBv\fR - In\fIv\fRert matching
+\fBn\fR - Match \fIn\fRormally, without inversion
 
-\fBa\fR - Match if it occurs at any position
-\fBf\fR - Match if it fully matches
-\fBw\fR - Match if it matches any of the words in it
-\fBb\fR - Match if it matches at the begining
-\fBe\fR - Match if it matches at the end
+\fBa\fR - Match if it occurs at \fIa\fRny position
+\fBf\fR - Match if it \fIf\fRully matches
+\fBb\fR - Match if it matches at the \fIb\fRegining
+\fBe\fR - Match if it matches at the \fIe\fRnd
 
-\fBs\fR - Use string matching
-\fBB\fR - Use BRE matching
-\fBE\fR - Use ERE matching
+\fBw\fR - Match it to any of the \fIw\fRords in it
+\fBW\fR - Match it to the \fIW\fRhole thing
+
+\fBs\fR - Use \fIs\fRtring matching
+\fBB\fR - Use \fIB\fRRE matching
+\fBE\fR - Use \fIE\fRRE matching
 .in
 \&
 
@@ -139,8 +141,8 @@ Attribute name can be shortened to '.' or '#' (see below).
 \fBPATTERN\fR          - existing attribute
 \fB+PATTERN\fR         - existing attribute
 \fB-PATTERN\fR         - non existing attribute
-\fB.PATTERN\fR         - same as class=w>PATTERN
-\fB#PATTERN\fR         - same as id=w>PATTERN
+\fB.PATTERN\fR         - same as i>class=w>PATTERN
+\fB#PATTERN\fR         - same as i>id=w>PATTERN
 \fB[RANGE]PATTERN\fR   - existing attribute at position determined by RANGE
 \fB-[RANGE]PATTERN\fR
 \fB+.PATTERN\fR
@@ -192,7 +194,7 @@ List of implemented hooks:
 
 .TP
 .BR m ",  " match " " \fI"PATTERN"\fR
-Get tags with insides that match \fIPATTERN\fR, by default the matching of it will be set to "ucas".
+Get tags with insides that match \fIPATTERN\fR, by default the matching of it will be set to "uWcas".
 .TP
 .BR a ",  " attributes " " \fI[RANGE]\fR
 Get tags with attributes that are within the \fIRANGE\fR.
