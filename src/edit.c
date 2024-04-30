@@ -1018,8 +1018,6 @@ sed_pre_edit(char *src, size_t size, FILE *output, char *buffers[3], flexarr *sc
         prevdelim = src[lineend];
         hasdelim = 1;
       }
-      if (lineend+1 >= size)
-        islastline = 1;
 
       end = lineend;
 
@@ -1033,6 +1031,9 @@ sed_pre_edit(char *src, size_t size, FILE *output, char *buffers[3], flexarr *sc
       if (end-start)
         memcpy(patternsp+offset,src+start,end-start);
     }
+
+    if (lineend+1 >= size)
+      islastline = 1;
 
     appendnextline = 0;
 
