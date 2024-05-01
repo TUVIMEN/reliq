@@ -1077,22 +1077,22 @@ sed_pre_edit(char *src, size_t size, FILE *output, char *buffers[3], flexarr *sc
           break;
         case 'D': {
             size_t i = 0;
-            while (i < end && patternsp[i] != linedelim)
+            while (i < patternspl && patternsp[i] != linedelim)
               i++;
-            if (i == end || patternsp[i] != linedelim) {
+            if (i == patternspl || patternsp[i] != linedelim) {
               patternspl = 0;
               cycle = 0;
               goto NEXT;
             }
             i++;
-            memcpy(buffersp,patternsp+i,end-i);
-            memcpy(patternsp,buffersp,end-i);
-            patternspl = end-i;
+            patternspl -= i;
+            memcpy(buffersp,patternsp+i,patternspl);
+            memcpy(patternsp,buffersp,patternspl);
           }
           break;
         case 'P':
           offset = 0;
-          while (offset < end && patternsp[offset] != linedelim)
+          while (offset < patternspl && patternsp[offset] != linedelim)
             offset++;
         case 'p':
           if (scriptv[cycle].name == 'p') {
