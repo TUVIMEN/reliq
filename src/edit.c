@@ -469,8 +469,11 @@ sed_address_comp_regex(const char *src, size_t *pos, size_t size, regex_t *preg,
     regex_delim = src[++(*pos)];
   (*pos)++;
   size_t regex_end = *pos;
-  while (regex_end < size && src[regex_end] != regex_delim)
+  while (regex_end < size && src[regex_end] != regex_delim) {
+    if (src[regex_end] == '\\')
+      regex_end++;
     regex_end++;
+  }
   if (regex_end >= size || src[regex_end] != regex_delim)
     return reliq_set_error(1,"sed: char %u: unterminated address regex",*pos);
   if (regex_end == *pos)
