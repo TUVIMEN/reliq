@@ -416,16 +416,18 @@ tr_strrange(const char *src1, const size_t size1, const char *src2, const size_t
           break;
         last = r;
       }
-    }
-    for (ushort i = 0; i < 256; i++) {
-      if (arr[(uchar)i]) {
-        arr[(uchar)i] = 0;
-      } else {
-        arr[(uchar)i] = last;
-        if (arr_enabled)
-          arr_enabled[(uchar)i] = 1;
+      for (ushort i = 0; i < 256; i++) {
+        if (arr[(uchar)i]) {
+          arr[(uchar)i] = 0;
+        } else {
+          arr[(uchar)i] = last;
+          if (arr_enabled)
+            arr_enabled[(uchar)i] = 1;
+        }
       }
-    }
+    } else
+      for (ushort i = 0; i < 256; i++)
+        arr[(uchar)i] = !arr[(uchar)i];
   }
   return NULL;
 }
