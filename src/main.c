@@ -78,6 +78,8 @@ handle_reliq_error(reliq_error *err) {
   if (err == NULL)
     return;
 
+  fputs("reliq: ",stderr);
+
   fputs(err->msg,stderr);
   fputc('\n',stderr);
 
