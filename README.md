@@ -60,7 +60,7 @@ Get 'tr' and 'td' inside 'table' tag.
 
 Get a tsv list of us presidents
 
-    curl 'https://www.loc.gov/rr/print/list/057_chron.html' | ./reliq 'table border=1; tr; { td; * c@[0] | "%i\t" } | tr "\n" echo "" "\n"'
+    curl 'https://www.loc.gov/rr/print/list/057_chron.html' | reliq 'table border=1; tr; { td; * c@[0] | "%i\t" } | tr "\n" echo "" "\n"'
 
 Get some help
 
