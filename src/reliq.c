@@ -1645,7 +1645,7 @@ reliq_fmatch(const char *ptr, const size_t size, FILE *output, const reliq_node 
 }
 
 reliq_error *
-reliq_efmatch(char *script, size_t size, FILE *output, const reliq_exprs *exprs, int (*freeptr)(void *ptr, size_t size))
+reliq_efmatch(char *ptr, size_t size, FILE *output, const reliq_exprs *exprs, int (*freeptr)(void *ptr, size_t size))
 {
   if (exprs->s == 0)
     return NULL;
@@ -1653,23 +1653,23 @@ reliq_efmatch(char *script, size_t size, FILE *output, const reliq_exprs *exprs,
     return reliq_set_error(1,"fast mode cannot run in non linear mode");
 
   FILE *t = output;
-  char *nscript;
+  char *nptr;
   size_t fsize;
 
   flexarr *first = (flexarr*)exprs->b[0].e;
   for (size_t i = 0; i < first->size; i++) {
-    output = (i == first->size-1) ? t : open_memstream(&nscript,&fsize);
+    output = (i == first->size-1) ? t : open_memstream(&nptr,&fsize);
 
     if (((reliq_expr*)first->v)[i].istable&EXPR_TABLE)
       return reliq_set_error(1,"fast mode cannot run in non linear mode");
-    reliq_error *err = reliq_fmatch(script,size,output,(reliq_node*)((reliq_expr*)first->v)[i].e,
+    reliq_error *err = reliq_fmatch(ptr,size,output,(reliq_node*)((reliq_expr*)first->v)[i].e,
       ((reliq_expr*)first->v)[i].nodef,((reliq_expr*)first->v)[i].nodefl);
     fflush(output);
 
     if (i == 0) {
-      (*freeptr)(script,size);
+      (*freeptr)(ptr,size);
     } else
-      free(script);
+      free(ptr);
 
     if (i != first->size-1)
       fclose(output);
@@ -1677,7 +1677,7 @@ reliq_efmatch(char *script, size_t size, FILE *output, const reliq_exprs *exprs,
     if (err)
       return err;
 
-    script = nscript;
+    ptr = nptr;
     size = fsize;
   }
   return NULL;

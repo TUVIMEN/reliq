@@ -156,7 +156,7 @@ reliq_error *reliq_fmatch(const char *ptr, const size_t size, FILE *output, cons
   char *nodef,
 #endif
   size_t nodefl);
-reliq_error *reliq_efmatch(char *script, const size_t size, FILE *output, const reliq_exprs *exprs, int (*freeptr)(void *ptr, size_t size));
+reliq_error *reliq_efmatch(char *ptr, const size_t size, FILE *output, const reliq_exprs *exprs, int (*freeptr)(void *ptr, size_t size));
 reliq_error *reliq_ncomp(const char *script, size_t size, reliq_node *node);
 reliq_error *reliq_ecomp(const char *script, size_t size, reliq_exprs *exprs, const unsigned char flags);
 int reliq_match(const reliq_hnode *rqn, const reliq_hnode *parent, const reliq_node *node);
