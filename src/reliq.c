@@ -1667,7 +1667,8 @@ reliq_efmatch(char *ptr, size_t size, FILE *output, const reliq_exprs *exprs, in
     fflush(output);
 
     if (i == 0) {
-      (*freeptr)(ptr,size);
+      if (freeptr)
+        (*freeptr)(ptr,size);
     } else
       free(ptr);
 
