@@ -1037,7 +1037,7 @@ reliq_efree(reliq_exprs *exprs)
 }
 
 static flexarr *
-reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, const uchar flags, reliq_error **err)
+reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, reliq_error **err)
 {
   if (s == 0)
     return NULL;
@@ -1240,7 +1240,7 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, const uchar flags, reli
       new->istable |= EXPR_TABLE|EXPR_NEWBLOCK;
       next = typePassed;
       *pos = i;
-      new->e = reliq_ecomp_pre(src,pos,s,flags,err);
+      new->e = reliq_ecomp_pre(src,pos,s,err);
       if (*err)
         goto EXIT1;
       i = *pos;
@@ -1288,10 +1288,10 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, const uchar flags, reli
 }
 
 reliq_error *
-reliq_ecomp(const char *src, size_t size, reliq_exprs *exprs, const uchar flags)
+reliq_ecomp(const char *src, size_t size, reliq_exprs *exprs)
 {
   reliq_error *err = NULL;
-  flexarr *ret = reliq_ecomp_pre(src,NULL,size,flags,&err);
+  flexarr *ret = reliq_ecomp_pre(src,NULL,size,&err);
   if (ret) {
     //reliq_expr_print(ret,0);
     flexarr_conv(ret,(void**)&exprs->b,&exprs->s);

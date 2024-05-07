@@ -56,7 +56,6 @@ char *argv0;
 reliq_exprs exprs = {NULL,0};
 
 uint settings = 0;
-uchar hflags = 0;
 int nftwflags = FTW_PHYS;
 FILE* outfile;
 
@@ -202,7 +201,7 @@ load_expr_from_file(char *filename)
   size_t filel;
   pipe_to_str(fd,&file,&filel);
   close(fd);
-  handle_reliq_error(reliq_ecomp(file,filel,&exprs,hflags));
+  handle_reliq_error(reliq_ecomp(file,filel,&exprs));
   free(file);
 }
 
@@ -228,7 +227,7 @@ main(int argc, char **argv)
   while ((opt = getopt(argc,argv,"lo:f:HrRFvh")) != -1) {
     switch (opt) {
       case 'l':
-        handle_reliq_error(reliq_ecomp("| \"%n%A - %c/%l/%s/%p\\n\"",24,&exprs,hflags));
+        handle_reliq_error(reliq_ecomp("| \"%n%A - %c/%l/%s/%p\\n\"",24,&exprs));
         break;
       case 'o':
         outfile = fopen(optarg,"w");
@@ -247,7 +246,7 @@ main(int argc, char **argv)
   }
 
   if (!exprs.b && optind < argc) {
-    handle_reliq_error(reliq_ecomp(argv[optind],strlen(argv[optind]),&exprs,hflags));
+    handle_reliq_error(reliq_ecomp(argv[optind],strlen(argv[optind]),&exprs));
     optind++;
   }
   if (!exprs.b)
