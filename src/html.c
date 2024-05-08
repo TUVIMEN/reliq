@@ -557,9 +557,8 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
   } else {
     rqn->attribs = a->v+(attrib_start*a->elsize);
     reliq_node const *expr = rq->expr;
-    if (expr && reliq_match(rqn,NULL,expr)) {
+    if (expr && reliq_match(rqn,NULL,expr))
       *err = node_output(rqn,NULL,rq->nodef,rq->nodefl,rq->output,rq->data);
-    }
     flexarr_dec(nodes);
   }
   a->size = attrib_start;

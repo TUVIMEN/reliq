@@ -120,12 +120,13 @@ expr_exec(char *f, size_t s, const uchar inpipe)
     return;
 
   if (settings&F_FAST) {
-    handle_reliq_error(reliq_efmatch(f,s,outfile,&exprs,inpipe ? unalloc_free : munmap));
+    handle_reliq_error(reliq_fexec_file(f,s,outfile,&exprs,inpipe ? unalloc_free : munmap));
     return;
   }
 
-  reliq rq = reliq_init(f,s,outfile);
-  handle_reliq_error(reliq_ematch(&rq,&exprs,NULL,0,NULL,0));
+  reliq rq = reliq_init(f,s);
+  handle_reliq_error(reliq_exec_file(&rq,outfile,&exprs));
+
   reliq_free(&rq);
 }
 
