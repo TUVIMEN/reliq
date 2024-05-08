@@ -73,7 +73,7 @@ Follow all symbolic links, unlike
 .B \-l
 set
 .IR PATTERN
-to '| "%t%I - %c/%l/%s/%p\\n"'.
+to '| "%n%A - children(%c) lvl(%L) size(%s) pos(%p)\\n"'.
 
 .SH SYNTAX
 .SS PATTERN
@@ -224,7 +224,7 @@ Any specified range will match the position of results.
 .SS TAG_FORMAT
 It has to be specified in '"' or '\\'' quotes.
 
-If format is not specified it will be set to "%t\\n".
+If format is not specified it will be set to "%C\\n".
 
 Prints output according to \fBFORMAT\fR interpreting '\e' escapes and `%' directives. The escapes and directives are:
 .RS
@@ -248,14 +248,16 @@ ASCII NUL.
 A literal backslash (`\e').
 .IP %%
 A literal percent sign.
-.IP %t
-Whole tag.
 .IP %n
 Tag's name.
 .IP %i
 Tag's insides, trimmed.
 .IP %I
 Tag's insides.
+.IP %t
+Tag's text.
+.IP %T
+Tag's text, recursive.
 .IP %l
 Tag's level relative to parent.
 .IP %L
@@ -266,6 +268,8 @@ Tag's position in current file.
 Tag's size.
 .IP %c
 Tag's children count.
+.IP %C
+Contents of tag.
 .IP %a
 All of the tag's attributes, trimmed.
 .IP %A
@@ -309,9 +313,7 @@ Lines are separated by \fIDELIM\fR (by default '\\n').
 .IP
 Trim whitespaces at the beginning and end of the whole input.
 
-Input can be split by
-.IR DELIM
-and trimmed separatedly.
+Input can be split by \fIDELIM\fR and trimmed separatedly.
 .TP
 
 .B sort \fI"FLAGS"\fR \fI"DELIM"\fR

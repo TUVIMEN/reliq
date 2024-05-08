@@ -653,8 +653,33 @@ print_attrib_value(const reliq_cstr_pair *attribs, const size_t attribsl, const 
   }
 }
 
+static void
+print_text(const reliq_hnode *nodes, const reliq_hnode *hnode, FILE *outfile, uchar recursive)
+{
+  char const *start = hnode->insides.b;
+  size_t id=hnode-nodes,end;
+
+  for (size_t i = 1; i <= hnode->child_count; i++) {
+    const reliq_hnode *n = &nodes[id+i];
+
+    end = n->all.b-start;
+    if (end)
+      fwrite(start,1,end,outfile);
+
+    if (recursive)
+      print_text(nodes,n,outfile,recursive);
+
+    i += n->child_count;
+    start = n->all.b+n->all.s;
+  }
+
+  end = hnode->insides.s-(start-hnode->insides.b);
+  if (end)
+    fwrite(start,1,end,outfile);
+}
+
 void
-reliq_printf(FILE *outfile, const char *format, const size_t formatl, const reliq_hnode *hnode, const reliq_hnode *parent, const char *reference)
+reliq_printf(FILE *outfile, const char *format, const size_t formatl, const reliq_hnode *hnode, const reliq_hnode *parent, const reliq *rq)
 {
   size_t i = 0;
   char const *text;
@@ -686,11 +711,11 @@ reliq_printf(FILE *outfile, const char *format, const size_t formatl, const reli
 
       switch (format[i++]) {
         case '%': fputc('%',outfile); break;
-        case 't': fwrite(hnode->all.b,1,hnode->all.s,outfile); break;
-        case 'n': fwrite(hnode->tag.b,1,hnode->tag.s,outfile); break;
         case 'i':
           trim = 1;
         case 'I': print_trimmed_if(&hnode->insides,trim,outfile); break;
+        case 't': print_text(rq->nodes,hnode,outfile,0); break;
+        case 'T': print_text(rq->nodes,hnode,outfile,1); break;
         case 'l': {
           ushort lvl = hnode->lvl;
           if (parent)
@@ -699,9 +724,6 @@ reliq_printf(FILE *outfile, const char *format, const size_t formatl, const reli
           }
           break;
         case 'L': print_uint(hnode->lvl,outfile); break;
-        case 's': print_uint(hnode->all.s,outfile); break;
-        case 'c': print_uint(hnode->child_count,outfile); break;
-        case 'p': print_uint(hnode->all.b-reference,outfile); break;
         case 'a':
           trim = 1;
         case 'A': print_attribs(hnode,trim,outfile); break;
@@ -710,6 +732,11 @@ reliq_printf(FILE *outfile, const char *format, const size_t formatl, const reli
         case 'V':
           print_attrib_value(hnode->attribs,hnode->attribsl,text,textl,num,trim,outfile);
           break;
+        case 's': print_uint(hnode->all.s,outfile); break;
+        case 'c': print_uint(hnode->child_count,outfile); break;
+        case 'C': fwrite(hnode->all.b,1,hnode->all.s,outfile); break;
+        case 'p': print_uint(hnode->all.b-rq->data,outfile); break;
+        case 'n': fwrite(hnode->tag.b,1,hnode->tag.s,outfile); break;
       }
       continue;
     }

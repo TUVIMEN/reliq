@@ -59,20 +59,20 @@ const reliq_str8 autoclosing_s[] = { //tags that don't need to be closed
 #endif
 
 reliq_error *
-node_output(reliq_hnode *rqn, reliq_hnode *parent,
+node_output(reliq_hnode *hnode, reliq_hnode *parent,
         #ifdef RELIQ_EDITING
         const reliq_format_func *format
         #else
         const char *format
         #endif
-        , const size_t formatl, FILE *output, const char *reference) {
+        , const size_t formatl, FILE *output, const reliq *rq) {
   #ifdef RELIQ_EDITING
-  return format_exec(NULL,0,output,rqn,parent,format,formatl,reference);
+  return format_exec(NULL,0,output,hnode,parent,format,formatl,rq);
   #else
   if (format) {
-    reliq_printf(output,format,formatl,rqn,parent,reference);
+    reliq_printf(output,format,formatl,hnode,parent,rq);
   } else
-    reliq_print(output,rqn);
+    reliq_print(output,hnode);
   return NULL;
   #endif
 }
@@ -117,7 +117,7 @@ fcollector_rearrange(flexarr *fcollector)
 }
 
 static reliq_error *
-fcollector_out_end(flexarr *outs, const size_t pcurrent, struct fcollector_expr *fcols, FILE *output, const char *data, FILE **fout)
+fcollector_out_end(flexarr *outs, const size_t pcurrent, struct fcollector_expr *fcols, reliq *rq, FILE **fout)
 {
   reliq_error *err = NULL;
   START: ;
@@ -140,13 +140,13 @@ fcollector_out_end(flexarr *outs, const size_t pcurrent, struct fcollector_expr 
   }
   //fprintf(stderr,"fcollector out end pcurrent(%lu)\n",pcurrent);
 
-  FILE *tmp_out = (ecurrent->lvl == 0) ? output : ((struct fcollector_out*)outs->v)[outs->size-2].f;
+  FILE *tmp_out = (ecurrent->lvl == 0) ? rq->output : ((struct fcollector_out*)outs->v)[outs->size-2].f;
   *fout = tmp_out;
 
   fclose(fcol_out_last->f);
   /*fprintf(stderr,"%.*s\n",fcol_out_last->s,fcol_out_last->v);
   fprintf(stderr,"fcollector end\n\n");*/
-  err = format_exec(fcol_out_last->v,fcol_out_last->s,tmp_out,NULL,NULL,format,formatl,data);
+  err = format_exec(fcol_out_last->v,fcol_out_last->s,tmp_out,NULL,NULL,format,formatl,rq);
   free(fcol_out_last->v);
 
   flexarr_dec(outs);
@@ -220,7 +220,7 @@ nodes_output(reliq *rq, flexarr *compressed_nodes, flexarr *ncollector
       fputc('\n',rout);
     } else if (pcol[pcurrent].b) {
       err = node_output(&rq->nodes[x->id],x->parentid == (size_t)-1 ? NULL : &rq->nodes[x->parentid],((reliq_expr*)pcol[pcurrent].b)->nodef,
-        ((reliq_expr*)pcol[pcurrent].b)->nodefl,rout,rq->data);
+        ((reliq_expr*)pcol[pcurrent].b)->nodefl,rout,rq);
       if (err)
         return err;
     }
@@ -232,14 +232,14 @@ nodes_output(reliq *rq, flexarr *compressed_nodes, flexarr *ncollector
         fclose(out);
         err = format_exec(ptr,fsize,fout,NULL,NULL,
           ((reliq_expr*)pcol[pcurrent].b)->exprf,
-          ((reliq_expr*)pcol[pcurrent].b)->exprfl,rq->data);
+          ((reliq_expr*)pcol[pcurrent].b)->exprfl,rq);
         free(ptr);
         if (err)
           return err;
         out = rq->output;
       }
 
-      err = fcollector_out_end(outs,pcurrent,fcols,rq->output,rq->data,&fout);
+      err = fcollector_out_end(outs,pcurrent,fcols,rq,&fout);
       if (err)
         return err;
       #endif
@@ -558,7 +558,7 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
     rqn->attribs = a->v+(attrib_start*a->elsize);
     reliq_node const *expr = rq->expr;
     if (expr && reliq_match(rqn,NULL,expr))
-      *err = node_output(rqn,NULL,rq->nodef,rq->nodefl,rq->output,rq->data);
+      *err = node_output(rqn,NULL,rq->nodef,rq->nodefl,rq->output,rq);
     flexarr_dec(nodes);
   }
   a->size = attrib_start;

@@ -56,14 +56,14 @@ const struct reliq_format_function format_functions[] = {
 };
 
 reliq_error *
-format_exec(char *input, size_t inputl, FILE *output, const reliq_hnode *rqn, const reliq_hnode *parent, const reliq_format_func *format, const size_t formatl, const char *reference)
+format_exec(char *input, size_t inputl, FILE *output, const reliq_hnode *hnode, const reliq_hnode *parent, const reliq_format_func *format, const size_t formatl, const reliq *rq)
 {
-  if (rqn && (!formatl || (formatl == 1 && (format[0].flags&FORMAT_FUNC) == 0 && (!format[0].arg[0] || !((reliq_cstr*)format[0].arg[0])->b)))) {
-    reliq_print(output,rqn);
+  if (hnode && (!formatl || (formatl == 1 && (format[0].flags&FORMAT_FUNC) == 0 && (!format[0].arg[0] || !((reliq_cstr*)format[0].arg[0])->b)))) {
+    reliq_print(output,hnode);
     return NULL;
   }
-  if (rqn && formatl == 1 && (format[0].flags&FORMAT_FUNC) == 0 && format[0].arg[0] && ((reliq_cstr*)format[0].arg[0])->b) {
-    reliq_printf(output,((reliq_cstr*)format[0].arg[0])->b,((reliq_cstr*)format[0].arg[0])->s,rqn,parent,reference);
+  if (hnode && formatl == 1 && (format[0].flags&FORMAT_FUNC) == 0 && format[0].arg[0] && ((reliq_cstr*)format[0].arg[0])->b) {
+    reliq_printf(output,((reliq_cstr*)format[0].arg[0])->b,((reliq_cstr*)format[0].arg[0])->s,hnode,parent,rq);
     return NULL;
   }
 
@@ -74,13 +74,13 @@ format_exec(char *input, size_t inputl, FILE *output, const reliq_hnode *rqn, co
 
   for (size_t i = 0; i < formatl; i++) {
     out = (i == formatl-1) ? output : open_memstream(&ptr[1],&fsize[1]);
-    if (rqn && i == 0 && (format[i].flags&FORMAT_FUNC) == 0) {
-      reliq_printf(out,((reliq_cstr*)format[i].arg[0])->b,((reliq_cstr*)format[i].arg[0])->s,rqn,parent,reference);
+    if (hnode && i == 0 && (format[i].flags&FORMAT_FUNC) == 0) {
+      reliq_printf(out,((reliq_cstr*)format[i].arg[0])->b,((reliq_cstr*)format[i].arg[0])->s,hnode,parent,rq);
     } else {
       if (i == 0) {
-        if (rqn) {
+        if (hnode) {
           FILE *t = open_memstream(&ptr[0],&fsize[0]);
-          reliq_print(t,rqn);
+          reliq_print(t,hnode);
           fclose(t);
         } else {
           ptr[0] = input;
@@ -96,7 +96,7 @@ format_exec(char *input, size_t inputl, FILE *output, const reliq_hnode *rqn, co
 
     if (i != formatl-1)
       fclose(out);
-    if (i != 0 || (rqn && (format[i].flags&FORMAT_FUNC) != 0))
+    if (i != 0 || (hnode && (format[i].flags&FORMAT_FUNC) != 0))
       free(ptr[0]);
     ptr[0] = ptr[1];
     fsize[0] = fsize[1];

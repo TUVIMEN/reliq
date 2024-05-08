@@ -80,8 +80,9 @@ test: clean all
 	@[ ${O_EDITING} -eq 1 ] && ./test.sh test/editing.csv test/editing.html || true
 
 test-update: test
-	@./test.sh test.csv test.html update
-	@[ ${O_PHPTAGS} -eq 1 ] && ./test.sh test-php.csv test.php update || true
+	@./test.sh test/1.csv test/1.html update
+	@[ ${O_PHPTAGS} -eq 1 ] && ./test.sh test/php.csv test/php.php update || true
+	@[ ${O_EDITING} -eq 1 ] && ./test.sh test/editing.csv test/editing.html update || true
 
 dist: clean
 	mkdir -p ${TARGET}-${VERSION}

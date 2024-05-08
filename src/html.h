@@ -27,13 +27,13 @@ struct fcollector_expr {
   unsigned char isnodef;
 };
 
-reliq_error *node_output(reliq_hnode *rqn, reliq_hnode *parent,
+reliq_error *node_output(reliq_hnode *hnode, reliq_hnode *parent,
         #ifdef RELIQ_EDITING
         const reliq_format_func *format
         #else
         const char *format
         #endif
-        , const size_t formatl, FILE *output, const char *reference);
+        , const size_t formatl, FILE *output, const reliq *rq);
 reliq_error *nodes_output(reliq *rq, flexarr *compressed_nodes, flexarr *pcollector
         #ifdef RELIQ_EDITING
         , flexarr *fcollector

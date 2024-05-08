@@ -185,7 +185,7 @@ reliq_error *reliq_exec_file(reliq *rq, FILE *output, const reliq_exprs *exprs);
 reliq_error *reliq_exec_str(reliq *rq, char **str, size_t *strl, const reliq_exprs *exprs);
 reliq_error *reliq_exec(reliq *rq, reliq_compressed **nodes, size_t *nodesl, const reliq_exprs *exprs);
 
-void reliq_printf(FILE *outfile, const char *format, const size_t formatl, const reliq_hnode *hnode, const reliq_hnode *parent, const char *reference);
+void reliq_printf(FILE *outfile, const char *format, const size_t formatl, const reliq_hnode *hnode, const reliq_hnode *parent, const reliq *rq);
 void reliq_print(FILE *outfile, const reliq_hnode *hnode);
 
 void reliq_nfree(reliq_node *node);

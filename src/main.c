@@ -228,7 +228,7 @@ main(int argc, char **argv)
   while ((opt = getopt(argc,argv,"lo:f:HrRFvh")) != -1) {
     switch (opt) {
       case 'l':
-        handle_reliq_error(reliq_ecomp("| \"%n%A - %c/%l/%s/%p\\n\"",24,&exprs));
+        handle_reliq_error(reliq_ecomp("| \"%n%A - children(%c) lvl(%L) size(%s) pos(%p)\\n\"",50,&exprs));
         break;
       case 'o':
         outfile = fopen(optarg,"w");
