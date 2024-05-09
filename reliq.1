@@ -91,15 +91,15 @@ If unquoted text is set to a single '*' character matching of text will be ommit
 \fBTEXT\fR
 \fB"TEXT"\fR
 \fB'TEXT'\fR
-\fB[a-z]>TEXT\fR
-\fB[a-z]>[RANGE]TEXT\fR
-\fB>[RANGE]"TEXT"\fR
 \fB>'TEXT'\fR
-\fB>TEXT\fR
-\fB*\fR
-\fB>*\fR
-\fB>[RANGE]\fR
-\fB>[RANGE]*\fR
+\fB>TEXT\fR             - match TEXT, same as above
+\fB[a-z]>TEXT\fR        - match TEXT depending on options
+\fB[a-z]>[RANGE]TEXT\fR
+\fB*\fR                 - match to everything
+\fB>*\fR                - same as above
+\fB>[RANGE]"TEXT"\fR
+\fB>[RANGE]\fR          - match length of pattern
+\fB>[RANGE]*\fR         - same as above
 .in
 \&
 
@@ -211,13 +211,14 @@ Get tags with number of children that is within the \fIRANGE\fR.
 .SS TAG
 At the begining each \fBTAG\fR must contain \fBPATTERN\fR of html tag and that can be followed by a number of \fBATTRIBUTE\fRs and \fBHOOK\fRs.
 
-Any specified range will match the position of results.
+Range separated by spaces will match the position of results relative to parent nodes, or if specified before tag \fBPATTERN\fR absolute to all results.
 
 .nf
 \&
 .in +4m
 \fBPATTERN\fR
-\fBPATTERN ATTRIBUTE... HOOK... [RANGE]\fR
+\fBPATTERN ATTRIBUTE... HOOK... [RANGE]\fR - match RANGE to results relative to parent nodes
+\fB[RANGE] PATTERN\fR - match RANGE to results
 .in
 \&
 

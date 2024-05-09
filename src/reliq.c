@@ -54,6 +54,7 @@ typedef unsigned long int ulong;
 
 //reliq_node flags
 #define N_EMPTY 0x1 //ignore matching
+#define N_POSITION_ABSOLUTE 0x2
 
 //reliq_match_function flags
 #define F_KINDS 0x7
@@ -908,6 +909,10 @@ get_pattribs(char *src, size_t *size, struct reliq_pattrib **attrib, size_t *att
       if (err)
         break;
       if (!isattrib && (i >= *size || isspace(src[i]))) {
+        if (range->s) {
+          err = reliq_set_error(1,"node: position already declared");
+          break;
+        }
         memcpy(range,&pa.position,sizeof(*range));
         tofree = 0;
         continue;
@@ -979,17 +984,26 @@ reliq_ncomp(const char *script, size_t size, reliq_node *node)
 
   char *nscript = memdup(script,size);
   size_t pos=0;
-  while_is(isspace,nscript,pos,size);
 
-  if (pos >= size) {
-    node->flags |= N_EMPTY;
-    goto END;
+  for (size_t i=0; ; i++) { //execute 2 times but stop midway
+    while_is(isspace,nscript,pos,size);
+    if (pos >= size) {
+      node->flags |= N_EMPTY;
+      goto END;
+    }
+    if (i)
+      break;
+
+    if (nscript[pos] == '[') {
+      err = range_comp(nscript,&pos,size,&node->position);
+      if (err)
+          return err;
+      node->flags |= N_POSITION_ABSOLUTE;
+    }
   }
 
-  if ((err = reliq_regcomp(&node->tag,nscript,&pos,&size,' ',NULL))) { //!
-    //fprintf(stderr,"reliq_regcomp went wrong\n");
+  if ((err = reliq_regcomp(&node->tag,nscript,&pos,&size,' ',NULL)))
     goto END;
-  }
 
   size_t s = size-pos;
   err = get_pattribs(nscript+pos,&s,&node->attribs,&node->attribsl,&node->hooks,&node->hooksl,&node->position);
@@ -1384,9 +1398,11 @@ node_exec(reliq *rq, reliq_node *node, flexarr *source, flexarr *dest)
         x->parentid = current;
       }
     }
-    if (node->position.s)
+    if (!(node->flags&N_POSITION_ABSOLUTE) && node->position.s)
       dest_match_position(&node->position,dest,prevdestsize,dest->size);
   }
+  if (node->flags&N_POSITION_ABSOLUTE && node->position.s)
+    dest_match_position(&node->position,dest,0,dest->size);
 }
 
 /*static reliq_error *
@@ -1703,26 +1719,46 @@ reliq_fmatch_str(const char *ptr, const size_t size, char **str, size_t *strl, c
   return err;
 }
 
+static reliq_error *
+exprs_check_chain(const reliq_exprs *exprs)
+{
+  if (exprs->s > 1)
+    goto ERR;
+
+  flexarr *chain = exprs->b[0].e;
+  reliq_expr *chainv = (reliq_expr*)chain->v;
+
+  for (size_t i = 0; i < chain->size; i++)
+    if (chainv[i].flags&EXPR_TABLE)
+      goto ERR;
+
+  return NULL;
+  ERR: ;
+  return reliq_set_error(1,"expression is not a chain");
+}
+
 reliq_error *
 reliq_fexec_file(char *ptr, size_t size, FILE *output, const reliq_exprs *exprs, int (*freeptr)(void *ptr, size_t size))
 {
   if (exprs->s == 0)
     return NULL;
-  if (exprs->s > 1)
-    return reliq_set_error(1,"fast mode cannot run in non linear mode");
+  reliq_error *err = exprs_check_chain(exprs);
+  if (err)
+    return err;
 
-  FILE *t = output;
+  FILE *destination = output;
   char *nptr;
   size_t fsize;
 
-  flexarr *first = (flexarr*)exprs->b[0].e;
-  for (size_t i = 0; i < first->size; i++) {
-    output = (i == first->size-1) ? t : open_memstream(&nptr,&fsize);
+  flexarr *chain = (flexarr*)exprs->b[0].e;
+  reliq_expr *chainv = (reliq_expr*)chain->v;
 
-    if (((reliq_expr*)first->v)[i].flags&EXPR_TABLE)
-      return reliq_set_error(1,"fast mode cannot run in non linear mode");
-    reliq_error *err = reliq_fmatch_file(ptr,size,output,(reliq_node*)((reliq_expr*)first->v)[i].e,
-      ((reliq_expr*)first->v)[i].nodef,((reliq_expr*)first->v)[i].nodefl);
+  for (size_t i = 0; i < chain->size; i++) {
+    output = (i == chain->size-1) ? destination : open_memstream(&nptr,&fsize);
+
+    err = reliq_fmatch_file(ptr,size,output,(reliq_node*)chainv[i].e,
+      chainv[i].nodef,chainv[i].nodefl);
+
     fflush(output);
 
     if (i == 0) {
@@ -1731,7 +1767,7 @@ reliq_fexec_file(char *ptr, size_t size, FILE *output, const reliq_exprs *exprs,
     } else
       free(ptr);
 
-    if (i != first->size-1)
+    if (i != chain->size-1)
       fclose(output);
 
     if (err)
