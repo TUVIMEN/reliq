@@ -1079,7 +1079,7 @@ sed_pre_edit(char *src, size_t size, FILE *output, char *buffers[3], flexarr *sc
             size_t i = 0;
             while (i < patternspl && patternsp[i] != linedelim)
               i++;
-            if (i == patternspl || patternsp[i] != linedelim) {
+            if (i >= patternspl || patternsp[i] != linedelim) {
               patternspl = 0;
               cycle = 0;
               goto NEXT;
@@ -1110,9 +1110,8 @@ sed_pre_edit(char *src, size_t size, FILE *output, char *buffers[3], flexarr *sc
           goto NEXT_PRINT;
           break;
         case 'n':
-          patternspl = 0;
           cycle++;
-          goto NEXT;
+          goto NEXT_PRINT;
           break;
         case 'z':
           patternspl = 0;
@@ -1239,6 +1238,8 @@ sed_pre_edit(char *src, size_t size, FILE *output, char *buffers[3], flexarr *sc
       }
       patternspl = 0;
     }
+    if (lineend >= size)
+      break;
 
     NEXT: ;
     if (hasdelim)
