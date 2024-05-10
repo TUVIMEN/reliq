@@ -366,7 +366,7 @@ range_comp_pre(const char *src, size_t *pos, const size_t size, flexarr *nodes)
   }
   if (*pos >= size || src[*pos] != ']') {
     ERR: ;
-    return reliq_set_error(1,"range: char %d: unprecedented end of range",*pos);
+    return reliq_set_error(1,"range: char %lu: unprecedented end of range",*pos);
   }
   (*pos)++;
 

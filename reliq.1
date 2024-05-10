@@ -40,7 +40,7 @@ and exit.
 .SS "Pattern Syntax"
 .TP
 .BR \-F
-Enter fast and low memory consumption mode, in which use of multiple output patterns is forbidden.
+Enter fast and low memory consumption mode in which pattern is a chained expression, meaning that it's made only of \fBTAG\fRs separated with ';'.
 
 .SS "Matching Control"
 .TP
@@ -180,13 +180,14 @@ Specifying three values additionally matches only values of which modulo of thir
 .in
 \&
 .SS HOOK
-Begins with a name of function followed by '@' and ended with argument which can be a \fBRANGE\fR or \fBPATTERN\fR.
+Begins with a name of function followed by '@' and ended with argument which can be a \fBRANGE\fR, \fBEXPRESSION\fR or \fBPATTERN\fR.
 
 .nf
 \&
 .in +4m
 \fBNAME@PATTERN\fR
 \fBNAME@[RANGE]\fR
+\fBNAME@"EXPRESSION"\fR
 .in
 \&
 
@@ -207,6 +208,9 @@ Get tags that are on level relative to parent within the \fIRANGE\fR.
 .TP
 .BR c ",  " children " " \fI[RANGE]\fR
 Get tags with number of children that is within the \fIRANGE\fR.
+.TP
+.BR C ",  " childmatch " " \fI"EXPRESSION"\fR
+Get tags in which chained \fIEXPRESSION\fR (see \fB-F\fR option) matches at least one of its children.
 
 .SS TAG
 At the begining each \fBTAG\fR must contain \fBPATTERN\fR of html tag and that can be followed by a number of \fBATTRIBUTE\fRs and \fBHOOK\fRs.

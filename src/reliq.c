@@ -56,7 +56,7 @@ typedef unsigned long int ulong;
 #define N_EMPTY 0x1 //ignore matching
 #define N_POSITION_ABSOLUTE 0x2
 
-//reliq_match_function flags
+//reliq_match_hook flags
 #define F_KINDS 0x7
 
 #define F_ATTRIBUTES 0x1
@@ -64,9 +64,11 @@ typedef unsigned long int ulong;
 #define F_LEVEL_RELATIVE 0x3
 #define F_CHILD_COUNT 0x4
 #define F_MATCH_INSIDES 0x5
+#define F_CHILD_MATCH 0x6
 
 #define F_RANGE 0x8
 #define F_PATTERN 0x10
+#define F_EXPRS 0x20
 
 //reliq_expr istable flags
 #define EXPR_TABLE 0x1
@@ -116,23 +118,32 @@ typedef unsigned long int ulong;
 #define RELIQ_PATTERN_EMPTY 0x400
 #define RELIQ_PATTERN_ALL 0x800
 
-struct reliq_match_function {
+static reliq_error *reliq_exec_pre(const reliq *rq, const reliq_expr *exprs, size_t exprsl, flexarr *source, flexarr *dest, flexarr **out, flexarr *ncollector
+    #ifdef RELIQ_EDITING
+    , flexarr *fcollector
+    #endif
+    );
+reliq_error *reliq_exec_r(reliq *rq, FILE *output, reliq_compressed **outnodes, size_t *outnodesl, const reliq_exprs *exprs);
+
+struct reliq_match_hook {
   reliq_str8 name;
   ushort flags;
 };
 
-const struct reliq_match_function match_functions[] = {
+const struct reliq_match_hook match_hooks[] = {
     {{"m",1},F_PATTERN|F_MATCH_INSIDES},
     {{"a",1},F_RANGE|F_ATTRIBUTES},
     {{"l",1},F_RANGE|F_LEVEL_RELATIVE},
     {{"L",1},F_RANGE|F_LEVEL},
     {{"c",1},F_RANGE|F_CHILD_COUNT},
+    {{"C",1},F_EXPRS|F_CHILD_MATCH},
 
     {{"match",5},F_PATTERN|F_MATCH_INSIDES},
     {{"attributes",10},F_RANGE|F_ATTRIBUTES},
     {{"levelrelative",13},F_RANGE|F_LEVEL_RELATIVE},
     {{"level",5},F_RANGE|F_LEVEL},
     {{"children",8},F_RANGE|F_CHILD_COUNT},
+    {{"childmatch",10},F_EXPRS|F_CHILD_MATCH},
 };
 
 reliq_error *
@@ -285,14 +296,30 @@ reliq_regcomp_add_pattern(reliq_pattern *pattern, const char *src, const size_t 
       tmp[p++] = '$';
     tmp[p] = 0;
 
-    /*int ret =
-    if (ret) //check for compiling error */
-    //fprintf(stderr,"regcomp %s\n",tmp);
-    regcomp(&pattern->match.reg,tmp,regexflags); //!
-      //fprintf(stderr,"kkkkkkkkkkk\n");
+    int r = regcomp(&pattern->match.reg,tmp,regexflags);
     free(tmp);
+    if (r != 0)
+      return reliq_set_error(1,"pattern: regcomp: could not compile pattern");
   }
   return NULL;
+}
+
+static void
+reliq_regfree(reliq_pattern *pattern)
+{
+  if (!pattern)
+    return;
+
+  range_free(&pattern->range);
+
+  if (pattern->flags&RELIQ_PATTERN_EMPTY || pattern->flags&RELIQ_PATTERN_ALL)
+    return;
+
+  if ((pattern->flags&RELIQ_PATTERN_TYPE) == RELIQ_PATTERN_TYPE_STR) {
+    if (pattern->match.str.b)
+      free(pattern->match.str.b);
+  } else
+    regfree(&pattern->match.reg);
 }
 
 static reliq_error *
@@ -323,9 +350,14 @@ reliq_regcomp(reliq_pattern *pattern, char *src, size_t *pos, size_t *size, cons
   size_t start,len;
   err = get_quoted(src,pos,size,delim,&start,&len);
   if (err)
-    return err;
+    goto ERR;
 
-  return reliq_regcomp_add_pattern(pattern,src+start,len);
+  err = reliq_regcomp_add_pattern(pattern,src+start,len);
+  if (err) {
+    ERR: ;
+    reliq_regfree(pattern);
+  }
+  return err;
 }
 
 static int
@@ -451,24 +483,6 @@ reliq_regexec(const reliq_pattern *pattern, const char *src, const size_t size)
 }
 
 static void
-reliq_regfree(reliq_pattern *pattern)
-{
-  if (!pattern)
-    return;
-
-  range_free(&pattern->range);
-
-  if (pattern->flags&RELIQ_PATTERN_EMPTY || pattern->flags&RELIQ_PATTERN_ALL)
-    return;
-
-  if ((pattern->flags&RELIQ_PATTERN_TYPE) == RELIQ_PATTERN_TYPE_STR) {
-    if (pattern->match.str.b)
-      free(pattern->match.str.b);
-  } else
-    regfree(&pattern->match.reg);
-}
-
-static void
 pattrib_free(struct reliq_pattrib *attrib) {
   if (!attrib)
     return;
@@ -494,7 +508,9 @@ reliq_free_hooks(reliq_hook *hooks, const size_t hooksl)
   for (size_t i = 0; i < hooksl; i++) {
     if (hooks[i].flags&F_RANGE) {
       range_free(&hooks[i].match.range);
-    } else
+    } if (hooks[i].flags&F_EXPRS) {
+      reliq_efree(&hooks[i].match.exprs);
+    } else if (hooks[i].flags&F_PATTERN)
       reliq_regfree(&hooks[i].match.pattern);
   }
   free(hooks);
@@ -557,8 +573,9 @@ reliq_match_hooks(const reliq_hnode *hnode, const reliq_hnode *parent, const rel
   for (size_t i = 0; i < hooksl; i++) {
     char const *src = NULL;
     size_t srcl = 0;
+    uchar flags = hooks[i].flags;
 
-    switch (hooks[i].flags&F_KINDS) {
+    switch (flags&F_KINDS) {
       case F_ATTRIBUTES:
         srcl = hnode->attribsl;
         break;
@@ -577,11 +594,25 @@ reliq_match_hooks(const reliq_hnode *hnode, const reliq_hnode *parent, const rel
         break;
     }
 
-    if (hooks[i].flags&F_RANGE) {
+    if (flags&F_RANGE) {
       if (!range_match(srcl,&hooks[i].match.range,-1))
         return 0;
-    } else if (!reliq_regexec(&hooks[i].match.pattern,src,srcl))
-      return 0;
+    } else if (flags&F_PATTERN) {
+      if (!reliq_regexec(&hooks[i].match.pattern,src,srcl))
+        return 0;
+    } else if ((flags&F_KINDS) == F_CHILD_MATCH && flags&F_EXPRS) {
+      reliq r;
+      memset(&r,0,sizeof(reliq));
+      r.nodes = (reliq_hnode*)hnode;
+      r.nodesl = hnode->child_count+1;
+
+      size_t compressedl = 0;
+      reliq_error *err = reliq_exec_r(&r,NULL,NULL,&compressedl,&hooks[i].match.exprs);
+      if (err)
+        free(err);
+      if (err || !compressedl)
+        return 0;
+    }
   }
   return 1;
 }
@@ -595,10 +626,10 @@ reliq_match(const reliq_hnode *hnode, const reliq_hnode *parent, const reliq_nod
   if (!reliq_regexec(&node->tag,hnode->tag.b,hnode->tag.s))
     return 0;
 
-  if (!reliq_match_hooks(hnode,parent,node->hooks,node->hooksl))
+  if (!pattrib_match(hnode,node->attribs,node->attribsl))
     return 0;
 
-  if (!pattrib_match(hnode,node->attribs,node->attribsl))
+  if (!reliq_match_hooks(hnode,parent,node->hooks,node->hooksl))
     return 0;
 
   return 1;
@@ -790,10 +821,30 @@ format_comp(char *src, size_t *pos, size_t *size,
 }
 
 static reliq_error *
-match_function_handle(char *src, size_t *pos, size_t *size, flexarr *hooks)
+exprs_check_chain(const reliq_exprs *exprs)
+{
+  if (exprs->s > 1)
+    goto ERR;
+
+  flexarr *chain = exprs->b[0].e;
+  reliq_expr *chainv = (reliq_expr*)chain->v;
+
+  for (size_t i = 0; i < chain->size; i++)
+    if (chainv[i].flags&EXPR_TABLE)
+      goto ERR;
+
+  return NULL;
+  ERR: ;
+  return reliq_set_error(1,"expression is not a chain");
+}
+
+static reliq_error *
+match_hook_handle(char *src, size_t *pos, size_t *size, flexarr *hooks)
 {
   reliq_error *err;
   size_t p = *pos;
+
+  while_is(isalpha,src,*pos,*size);
 
   while (*pos < *size && isalpha(src[*pos]))
     (*pos)++;
@@ -810,8 +861,8 @@ match_function_handle(char *src, size_t *pos, size_t *size, flexarr *hooks)
 
   char found = 0;
   size_t i = 0;
-  for (; i < LENGTH(match_functions); i++) {
-    if (memcomp(match_functions[i].name.b,src+p,match_functions[i].name.s,func_len)) {
+  for (; i < LENGTH(match_hooks); i++) {
+    if (memcomp(match_hooks[i].name.b,src+p,match_hooks[i].name.s,func_len)) {
       found = 1;
       break;
     }
@@ -819,28 +870,46 @@ match_function_handle(char *src, size_t *pos, size_t *size, flexarr *hooks)
   if (!found)
     return reliq_set_error(1,"hook \"%.*s\" does not exists",(int)func_len,src+p);
 
-  uchar islist = 0;
   reliq_hook hook;
-  hook.flags = match_functions[i].flags;
+  hook.flags = match_hooks[i].flags;
 
   if (src[*pos] == '[') {
     if (hook.flags&F_PATTERN)
-      return reliq_set_error(1,"hook \"%.*s\" expected regex argument",(int)func_len,src+p);
+      return reliq_set_error(1,"hook \"%.*s\" expected pattern argument",(int)func_len,src+p);
+    if (hook.flags&F_EXPRS)
+      return reliq_set_error(1,"hook \"%.*s\" expected node argument",(int)func_len,src+p);
 
-    islist = 1;
     err = range_comp(src,pos,*size,&hook.match.range);
+    if (err)
+      return err;
   } else {
     if (hook.flags&F_RANGE)
       return reliq_set_error(1,"hook \"%.*s\" expected list argument",(int)func_len,src+p);
-
-    err = reliq_regcomp(&hook.match.pattern,src,pos,size,' ',"uWcas");
-  }
-  if (err)
-    return err;
-
-  if (!islist && !hook.match.pattern.range.s && hook.match.pattern.flags&RELIQ_PATTERN_ALL) { //ignore if it matches everything
-    reliq_regfree(&hook.match.pattern);
-    return NULL;
+    if (hook.flags&F_EXPRS) {
+      if (src[*pos] != '"' && src[*pos] != '\'')
+        return reliq_set_error(1,"hook \"%.*s\" expected node argument",(int)func_len,src+p);
+      char tf = src[*pos];
+      size_t start,len;
+      err = get_quoted(src,pos,size,tf,&start,&len);
+      if (err)
+        return err;
+      err = reliq_ecomp(src+start,len,&hook.match.exprs);
+      if (err)
+        return err;
+      err = exprs_check_chain(&hook.match.exprs);
+      if (err) {
+        reliq_efree(&hook.match.exprs);
+        return err;
+      }
+    } else {
+      err = reliq_regcomp(&hook.match.pattern,src,pos,size,' ',"uWcas");
+      if (err)
+        return err;
+      if (!hook.match.pattern.range.s && hook.match.pattern.flags&RELIQ_PATTERN_ALL) { //ignore if it matches everything
+        reliq_regfree(&hook.match.pattern);
+        return NULL;
+      }
+    }
   }
 
   memcpy(flexarr_inc(hooks),&hook,sizeof(hook));
@@ -869,7 +938,7 @@ get_pattribs(char *src, size_t *size, struct reliq_pattrib **attrib, size_t *att
 
     if (isalpha(src[i])) {
       size_t prev = i;
-      err = match_function_handle(src,&i,size,phooks);
+      err = match_hook_handle(src,&i,size,phooks);
       if (err)
         break;
       if (i != prev) {
@@ -1159,8 +1228,10 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, reliq_error **err)
           i++;
           if (i < s)
             continue;
-        } else
-          goto PASS;
+        } else {
+          *err = reliq_set_error(1,"string: could not find the end of %c quote",tf);
+          goto EXIT1;
+        }
       }
       if (src[i] == '[') {
         i++;
@@ -1170,8 +1241,10 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, reliq_error **err)
           i++;
           if (i < s)
             continue;
-        } else
-          goto PASS;
+        } else {
+          *err = reliq_set_error(1,"range: char %lu: unprecedented end of range",i);
+          goto EXIT1;
+        }
       }
 
       if (src[i] == ',' || src[i] == ';' || src[i] == '{' || src[i] == '}') {
@@ -1198,7 +1271,6 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, reliq_error **err)
         exprl = i-j;
     }
 
-    PASS: ;
     if (j+exprl > s)
       exprl = s-j;
     if (i > s)
@@ -1362,7 +1434,7 @@ add_compressed_blank(flexarr *dest)
 }
 
 static void
-first_match(reliq *rq, reliq_node *node, flexarr *dest)
+first_match(const reliq *rq, reliq_node *node, flexarr *dest)
 {
   reliq_hnode *nodes = rq->nodes;
   size_t nodesl = rq->nodesl;
@@ -1378,7 +1450,7 @@ first_match(reliq *rq, reliq_node *node, flexarr *dest)
 }
 
 static void
-node_exec(reliq *rq, reliq_node *node, flexarr *source, flexarr *dest)
+node_exec(const reliq *rq, reliq_node *node, flexarr *source, flexarr *dest)
 {
   if (source->size == 0) {
     first_match(rq,node,dest);
@@ -1454,14 +1526,8 @@ fcollector_add(const size_t lastn, const uchar isnodef, const reliq_expr *expr, 
 }
 #endif
 
-static reliq_error *reliq_exec_pre(reliq *rq, const reliq_expr *exprs, size_t exprsl, flexarr *source, flexarr *dest, flexarr **out, flexarr *ncollector
-    #ifdef RELIQ_EDITING
-    , flexarr *fcollector
-    #endif
-    );
-
 static reliq_error *
-reliq_exec_table(reliq *rq, const reliq_expr *expr, flexarr *source, flexarr *dest, flexarr **out, flexarr *ncollector
+reliq_exec_table(const reliq *rq, const reliq_expr *expr, flexarr *source, flexarr *dest, flexarr **out, flexarr *ncollector
     #ifdef RELIQ_EDITING
     , flexarr *fcollector
     #endif
@@ -1506,7 +1572,7 @@ reliq_exec_table(reliq *rq, const reliq_expr *expr, flexarr *source, flexarr *de
 }
 
 static reliq_error *
-reliq_exec_pre(reliq *rq, const reliq_expr *exprs, size_t exprsl, flexarr *source, flexarr *dest, flexarr **out, flexarr *ncollector
+reliq_exec_pre(const reliq *rq, const reliq_expr *exprs, size_t exprsl, flexarr *source, flexarr *dest, flexarr **out, flexarr *ncollector
     #ifdef RELIQ_EDITING
     , flexarr *fcollector
     #endif
@@ -1628,8 +1694,14 @@ reliq_exec_r(reliq *rq, FILE *output, reliq_compressed **outnodes, size_t *outno
         ,fcollector
         #endif
         );
-    if (!output && compressed)
-      flexarr_conv(compressed,(void**)outnodes,outnodesl);
+    if (!output && compressed) {
+      if (outnodes) {
+        flexarr_conv(compressed,(void**)outnodes,outnodesl);
+      } else {
+        *outnodesl = compressed->size;
+        free(compressed);
+      }
+    }
 
     flexarr_free(ncollector);
     #ifdef RELIQ_EDITING
@@ -1675,8 +1747,8 @@ reliq_analyze(const char *ptr, const size_t size, flexarr *nodes, reliq *rq)
   return NULL;
 }
 
-reliq_error *
-reliq_fmatch_file(const char *ptr, const size_t size, FILE *output, const reliq_node *node,
+static reliq_error *
+reliq_fmatch(const char *ptr, const size_t size, FILE *output, const reliq_node *node,
 #ifdef RELIQ_EDITING
   reliq_format_func *nodef,
 #else
@@ -1705,39 +1777,6 @@ reliq_fmatch_file(const char *ptr, const size_t size, FILE *output, const reliq_
 }
 
 reliq_error *
-reliq_fmatch_str(const char *ptr, const size_t size, char **str, size_t *strl, const reliq_node *node,
-#ifdef RELIQ_EDITING
-  reliq_format_func *nodef,
-#else
-  char *nodef,
-#endif
-  size_t nodefl)
-{
-  FILE *output = open_memstream(str,strl);
-  reliq_error *err = reliq_fmatch_file(ptr,size,output,node,nodef,nodefl);
-  fclose(output);
-  return err;
-}
-
-static reliq_error *
-exprs_check_chain(const reliq_exprs *exprs)
-{
-  if (exprs->s > 1)
-    goto ERR;
-
-  flexarr *chain = exprs->b[0].e;
-  reliq_expr *chainv = (reliq_expr*)chain->v;
-
-  for (size_t i = 0; i < chain->size; i++)
-    if (chainv[i].flags&EXPR_TABLE)
-      goto ERR;
-
-  return NULL;
-  ERR: ;
-  return reliq_set_error(1,"expression is not a chain");
-}
-
-reliq_error *
 reliq_fexec_file(char *ptr, size_t size, FILE *output, const reliq_exprs *exprs, int (*freeptr)(void *ptr, size_t size))
 {
   if (exprs->s == 0)
@@ -1756,7 +1795,7 @@ reliq_fexec_file(char *ptr, size_t size, FILE *output, const reliq_exprs *exprs,
   for (size_t i = 0; i < chain->size; i++) {
     output = (i == chain->size-1) ? destination : open_memstream(&nptr,&fsize);
 
-    err = reliq_fmatch_file(ptr,size,output,(reliq_node*)chainv[i].e,
+    err = reliq_fmatch(ptr,size,output,(reliq_node*)chainv[i].e,
       chainv[i].nodef,chainv[i].nodefl);
 
     fflush(output);

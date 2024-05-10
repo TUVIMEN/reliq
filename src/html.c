@@ -59,7 +59,7 @@ const reliq_str8 autoclosing_s[] = { //tags that don't need to be closed
 #endif
 
 reliq_error *
-node_output(reliq_hnode *hnode, reliq_hnode *parent,
+node_output(const reliq_hnode *hnode, const reliq_hnode *parent,
         #ifdef RELIQ_EDITING
         const reliq_format_func *format
         #else
@@ -117,7 +117,7 @@ fcollector_rearrange(flexarr *fcollector)
 }
 
 static reliq_error *
-fcollector_out_end(flexarr *outs, const size_t pcurrent, struct fcollector_expr *fcols, reliq *rq, FILE **fout)
+fcollector_out_end(flexarr *outs, const size_t pcurrent, struct fcollector_expr *fcols, const reliq *rq, FILE **fout)
 {
   reliq_error *err = NULL;
   START: ;
@@ -159,7 +159,7 @@ fcollector_out_end(flexarr *outs, const size_t pcurrent, struct fcollector_expr 
 #endif
 
 reliq_error *
-nodes_output(reliq *rq, flexarr *compressed_nodes, flexarr *ncollector
+nodes_output(const reliq *rq, flexarr *compressed_nodes, flexarr *ncollector
         #ifdef RELIQ_EDITING
         , flexarr *fcollector
         #endif
@@ -315,13 +315,13 @@ attrib_handle(const char *f, size_t *i, const size_t s, flexarr *attribs)
 
 #ifdef RELIQ_PHPTAGS
 static void
-phptag_handle(const char *f, size_t *i, const size_t s, reliq_hnode *rqn)
+phptag_handle(const char *f, size_t *i, const size_t s, reliq_hnode *hnode)
 {
   (*i)++;
   while_is(isspace,f,*i,s);
-  name_handle(f,i,s,&rqn->tag);
-  rqn->insides.b = f+*i;
-  rqn->insides.s = 0;
+  name_handle(f,i,s,&hnode->tag);
+  hnode->insides.b = f+*i;
+  hnode->insides.s = 0;
 
   char *ending;
   for (; *i < s; (*i)++) {
@@ -330,7 +330,7 @@ phptag_handle(const char *f, size_t *i, const size_t s, reliq_hnode *rqn)
       continue;
     }
     if (f[*i] == '?' && f[*i+1] == '>') {
-      rqn->insides.s = (*i)-1-(rqn->insides.b-f);
+      hnode->insides.s = (*i)-1-(hnode->insides.b-f);
       (*i)++;
       break;
     }
@@ -367,7 +367,7 @@ phptag_handle(const char *f, size_t *i, const size_t s, reliq_hnode *rqn)
       }
     }
   }
-  rqn->all.s = (f+*i)-rqn->all.b+1;
+  hnode->all.s = (f+*i)-hnode->all.b+1;
 }
 #endif
 
@@ -376,16 +376,16 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
 {
   *err = NULL;
   ulong ret = 1;
-  reliq_hnode *rqn = flexarr_inc(nodes);
-  memset(rqn,0,sizeof(reliq_hnode));
-  rqn->lvl = lvl;
+  reliq_hnode *hnode = flexarr_inc(nodes);
+  memset(hnode,0,sizeof(reliq_hnode));
+  hnode->lvl = lvl;
   size_t index = nodes->size-1;
   flexarr *a = (flexarr*)rq->attrib_buffer;
   size_t attrib_start = a->size;
   uchar foundend = 1;
 
-  rqn->all.b = f+*i;
-  rqn->all.s = 0;
+  hnode->all.b = f+*i;
+  hnode->all.s = 0;
   (*i)++;
   while_is(isspace,f,*i,s);
   if (f[*i] == '!') {
@@ -396,18 +396,18 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
 
   #ifdef RELIQ_PHPTAGS
   if (f[*i] == '?') {
-    phptag_handle(f,i,s,rqn);
+    phptag_handle(f,i,s,hnode);
     goto END;
   }
   #endif
 
-  name_handle(f,i,s,&rqn->tag);
+  name_handle(f,i,s,&hnode->tag);
   for (; *i < s && f[*i] != '>';) {
     while_is(isspace,f,*i,s);
     if (f[*i] == '/') {
       char *r = memchr(f+*i,'>',s-*i);
       if (r != NULL)
-        rqn->all.s = r-rqn->all.b+1;
+        hnode->all.s = r-hnode->all.b+1;
       goto END;
     }
 
@@ -425,28 +425,28 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
   #define search_array(x,y) for (uint _j = 0; _j < (uint)LENGTH(x); _j++) \
     if (strcomp(x[_j],y))
 
-  search_array(selfclosing_s,rqn->tag) {
-    rqn->all.s = f+*i-rqn->all.b+1;
+  search_array(selfclosing_s,hnode->tag) {
+    hnode->all.s = f+*i-hnode->all.b+1;
     goto END;
   }
 
   uchar script = 0;
-  search_array(script_s,rqn->tag) {
+  search_array(script_s,hnode->tag) {
     script = 1;
     break;
   }
 
   #ifdef RELIQ_AUTOCLOSING
   uchar autoclosing = 0;
-  search_array(autoclosing_s,rqn->tag) {
+  search_array(autoclosing_s,hnode->tag) {
     autoclosing = 1;
     break;
   }
   #endif
 
   (*i)++;
-  rqn->insides.b = f+*i;
-  rqn->insides.s = *i;
+  hnode->insides.b = f+*i;
+  hnode->insides.s = *i;
   size_t tagend;
   while (*i < s) {
     if (f[*i] == '<') {
@@ -457,9 +457,9 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
         (*i)++;
         while_is(isspace,f,*i,s);
 
-        if (*i+rqn->tag.s < s && memcmp(rqn->tag.b,f+*i,rqn->tag.s) == 0) {
-          rqn->insides.s = tagend-rqn->insides.s;
-          *i += rqn->tag.s;
+        if (*i+hnode->tag.s < s && memcmp(hnode->tag.b,f+*i,hnode->tag.s) == 0) {
+          hnode->insides.s = tagend-hnode->insides.s;
+          *i += hnode->tag.s;
           char *ending = memchr(f+*i,'>',s-*i);
           if (!ending) {
             *i = s;
@@ -467,7 +467,7 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
             return 0;
           }
           *i = ending-f;
-          rqn->all.s = (f+*i+1)-rqn->all.b;
+          hnode->all.s = (f+*i+1)-hnode->all.b;
           goto END;
         }
 
@@ -491,7 +491,7 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
           }
           if (strcomp(nodesv[j].tag,endname)) {
             *i = tagend;
-            rqn->insides.s = *i-rqn->insides.s;
+            hnode->insides.s = *i-hnode->insides.s;
             ret = (ret&0xffffffff)+((ulong)(lvl-nodesv[j].lvl-1)<<32);
             goto END;
           }
@@ -511,10 +511,10 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
             while_is(isspace,f,*i,s);
             name_handle(f,i,s,&name);
 
-            if (strcomp(rqn->tag,name)) {
+            if (strcomp(hnode->tag,name)) {
               *i = tagend-1;
-              rqn->insides.s = *i-rqn->insides.s+1;
-              rqn->all.s = (f+*i+1)-rqn->all.b;
+              hnode->insides.s = *i-hnode->insides.s+1;
+              hnode->all.s = (f+*i+1)-hnode->all.b;
               goto END;
             }
           }
@@ -524,11 +524,11 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
           if (*err)
             goto END;
           ret += rettmp&0xffffffff;
-          rqn = &((reliq_hnode*)nodes->v)[index];
+          hnode = &((reliq_hnode*)nodes->v)[index];
           if (rettmp>>32) {
             (*i)--;
-            rqn->insides.s = *i-rqn->insides.s+1;
-            rqn->all.s = (f+*i+1)-rqn->all.b;
+            hnode->insides.s = *i-hnode->insides.s+1;
+            hnode->all.s = (f+*i+1)-hnode->all.b;
             ret |= ((rettmp>>32)-1)<<32;
             goto END;
           }
@@ -541,24 +541,24 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
 
   END: ;
   if (*i >= s) {
-    rqn->all.s = s-(rqn->all.b-f)-1;
-  } else if (!rqn->all.s)
-    rqn->all.s = f+*i-rqn->all.b;
+    hnode->all.s = s-(hnode->all.b-f)-1;
+  } else if (!hnode->all.s)
+    hnode->all.s = f+*i-hnode->all.b;
   if (!foundend)
-    rqn->insides.s = rqn->all.s;
+    hnode->insides.s = hnode->all.s;
 
   size_t size = a->size-attrib_start;
-  rqn->attribsl = size;
-  rqn->child_count = ret-1;
+  hnode->attribsl = size;
+  hnode->child_count = ret-1;
   if (rq->flags&RELIQ_SAVE) {
-    rqn->attribs = size ?
+    hnode->attribs = size ?
         memdup(a->v+(attrib_start*a->elsize),size*a->elsize)
         : NULL;
   } else {
-    rqn->attribs = a->v+(attrib_start*a->elsize);
+    hnode->attribs = a->v+(attrib_start*a->elsize);
     reliq_node const *expr = rq->expr;
-    if (expr && reliq_match(rqn,NULL,expr))
-      *err = node_output(rqn,NULL,rq->nodef,rq->nodefl,rq->output,rq);
+    if (expr && reliq_match(hnode,NULL,expr))
+      *err = node_output(hnode,NULL,rq->nodef,rq->nodefl,rq->output,rq);
     flexarr_dec(nodes);
   }
   a->size = attrib_start;

@@ -89,25 +89,6 @@ struct reliq_pattrib {
 };
 
 typedef struct {
-  union {
-    reliq_pattern pattern;
-    reliq_range range;
-  } match;
-  unsigned short flags;
-} reliq_hook;
-
-typedef struct {
-  reliq_pattern tag;
-  reliq_range position;
-  struct reliq_pattrib *attribs;
-  reliq_hook *hooks;
-
-  size_t hooksl;
-  size_t attribsl;
-  unsigned char flags;
-} reliq_node;
-
-typedef struct {
   void *e; //either points to reliq_exprs or reliq_node
   #ifdef RELIQ_EDITING
   reliq_format_func *nodef;
@@ -126,6 +107,26 @@ typedef struct {
   reliq_expr *b;
   size_t s;
 } reliq_exprs;
+
+typedef struct {
+  union {
+    reliq_exprs exprs;
+    reliq_pattern pattern;
+    reliq_range range;
+  } match;
+  unsigned char flags;
+} reliq_hook;
+
+typedef struct {
+  reliq_pattern tag;
+  reliq_range position;
+  struct reliq_pattrib *attribs;
+  reliq_hook *hooks;
+
+  size_t hooksl;
+  size_t attribsl;
+  unsigned char flags;
+} reliq_node;
 
 typedef struct {
   size_t id;
@@ -155,28 +156,13 @@ typedef struct {
 
 reliq reliq_init(const char *ptr, const size_t size);
 
-int reliq_match(const reliq_hnode *hnode, const reliq_hnode *parent, const reliq_node *node);
-
 reliq_error *reliq_ncomp(const char *script, size_t size, reliq_node *node);
 reliq_error *reliq_ecomp(const char *script, size_t size, reliq_exprs *exprs);
 
-reliq_error *reliq_fmatch_file(const char *ptr, const size_t size, FILE *output, const reliq_node *node,
-#ifdef RELIQ_EDITING
-  reliq_format_func *nodef,
-#else
-  char *nodef,
-#endif
-  size_t nodefl);
-reliq_error *reliq_fmatch_str(const char *ptr, const size_t size, char **str, size_t *strl, const reliq_node *node,
-#ifdef RELIQ_EDITING
-  reliq_format_func *nodef,
-#else
-  char *nodef,
-#endif
-  size_t nodefl);
-
 reliq reliq_from_compressed(const reliq_compressed *compressed, const size_t compressedl, const reliq *rq);
 reliq reliq_from_compressed_independent(const reliq_compressed *compressed, const size_t compressedl, char **ptr, size_t *size, const reliq *rq);
+
+int reliq_match(const reliq_hnode *hnode, const reliq_hnode *parent, const reliq_node *node);
 
 reliq_error *reliq_fexec_file(char *ptr, const size_t size, FILE *output, const reliq_exprs *exprs, int (*freeptr)(void *ptr, size_t size));
 reliq_error *reliq_fexec_str(char *ptr, const size_t size, char **str, size_t *strl, const reliq_exprs *exprs, int (*freeptr)(void *ptr, size_t size));
