@@ -296,22 +296,24 @@ range_match(const uint matched, const reliq_range *range, const size_t last)
         y = last-r->v[1];
       }
       if (matched >= x && matched <= y)
-        if (r->v[2] < 2 || matched%r->v[2] == 0)
+        if (r->v[2] < 2 || (matched+r->v[3])%r->v[2] == 0)
           return r->flags&R_INVERT ? 0 : 1;
     }
   }
   return r->flags&R_INVERT ? 1 : 0;
 }
 
-static void
+static reliq_error *
 range_node_comp(const char *src, const size_t size, struct reliq_range_node *node)
 {
   memset(node->v,0,sizeof(struct reliq_range_node));
   size_t pos = 0;
 
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < 4; i++) {
     while_is(isspace,src,pos,size);
-    if (i == 0 && pos < size && src[pos] == '!') {
+    if (pos < size && src[pos] == '!') {
+      if (i != 0)
+        return reliq_set_error(1,"range: '!' character in the middle of fields");
       node->flags |= R_INVERT; //invert
       pos++;
       while_is(isspace,src,pos,size);
@@ -319,6 +321,8 @@ range_node_comp(const char *src, const size_t size, struct reliq_range_node *nod
     if (i == 1)
       node->flags |= R_RANGE; //is a range
     if (pos < size && src[pos] == '-') {
+      if (i > 1)
+        return reliq_set_error(1,"range: negative value specified for field that doesn't support it");
       pos++;
       while_is(isspace,src,pos,size);
       node->flags |= 1<<i; //starts from the end
@@ -331,13 +335,15 @@ range_node_comp(const char *src, const size_t size, struct reliq_range_node *nod
     } else if (i == 1)
       node->flags |= 1<<i;
 
-    while (pos < size && src[pos] == '!')
-      pos++;
-
-    if (pos >= size || src[pos] != ':')
+    if (pos >= size)
       break;
+    if (src[pos] != ':')
+      return reliq_set_error(1,"range: bad syntax, expected ':' separator");
     pos++;
   }
+  if (pos != size)
+    return reliq_set_error(1,"range: too many fields specified");
+  return NULL;
 }
 
 static reliq_error *
@@ -355,17 +361,20 @@ range_comp_pre(const char *src, size_t *pos, const size_t size, flexarr *nodes)
     while (end < size && (isspace(src[end]) || isdigit(src[end]) || src[end] == ':' || src[end] == '-' || src[end] == '!') && src[end] != ',')
       end++;
     if (end >= size)
-      goto ERR;
+      goto END_OF_RANGE;
     if (src[end] != ',' && src[end] != ']')
       return reliq_set_error(1,"range: char %u(0x%02x): not a number",end,src[end]);
 
-    range_node_comp(src+(*pos),end-(*pos),&node);
+    reliq_error *err = range_node_comp(src+(*pos),end-(*pos),&node);
+    if (err)
+      return err;
+
     if (node.flags&(R_RANGE|R_NOTEMPTY))
       memcpy(flexarr_inc(nodes),&node,sizeof(struct reliq_range_node));
     *pos = end+((src[end] == ',') ? 1 : 0);
   }
   if (*pos >= size || src[*pos] != ']') {
-    ERR: ;
+    END_OF_RANGE: ;
     return reliq_set_error(1,"range: char %lu: unprecedented end of range",*pos);
   }
   (*pos)++;

@@ -64,7 +64,7 @@ typedef struct {
 } reliq_hnode; //html node
 
 struct reliq_range_node {
-  unsigned int v[3];
+  unsigned int v[4];
   unsigned char flags;
 };
 

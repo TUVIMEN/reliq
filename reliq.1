@@ -168,7 +168,7 @@ Specifying only one value equals to matching only to that value.
 
 Specifying two values equals to matching range between and of them.
 
-Specifying three values additionally matches only values of which modulo of third value is equal to 0.
+Specifying three values additionally matches only values of which modulo of third value is equal to 0. Forth value is an offset to value from which modulo is calculated from.
 
 .nf
 \&
@@ -178,8 +178,10 @@ Specifying three values additionally matches only values of which modulo of thir
 \fB[-]\fR                   - match to last value subtracted by 0
 \fB[-x]\fR                  - match to last value subtracted by x
 \fB[:-y]\fR                 - match to range from 0 to y'th value from end
-\fB[::z]\fR                 - match to values from which modulo of z is equal to 0
-\fB[x:y:z]\fR               - match to range from x to y from which modulo of z is equal to 0
+\fB[::w]\fR                 - match to values from which modulo of w is equal to 0
+\fB[x:y:w]\fR               - match to range from x to y from which modulo of w is equal to 0
+\fB[x:y:w:z]\fR             - match to range from x to y with value increased by z from which modulo of w is equal to 0
+\fB[::2:1]\fR               - match to uneven values (assuming that the minimal value is 0)
 .in
 \&
 .SS HOOK
