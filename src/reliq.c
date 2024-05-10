@@ -1418,7 +1418,7 @@ dest_match_position(const reliq_range *range, flexarr *dest, const size_t start,
   reliq_compressed *x = (reliq_compressed*)dest->v;
   size_t found = start;
   for (size_t i = start; i < end; i++) {
-    if (!range_match(i-start,range,end-start))
+    if (!range_match(i-start,range,end-start-1))
       continue;
     if (found != i)
       x[found] = x[i];
