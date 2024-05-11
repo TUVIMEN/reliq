@@ -239,8 +239,7 @@ nodes_output(const reliq *rq, flexarr *compressed_nodes, flexarr *ncollector
         out = rq->output;
       }
 
-      err = fcollector_out_end(outs,pcurrent,fcols,rq,&fout);
-      if (err)
+      if ((err = fcollector_out_end(outs,pcurrent,fcols,rq,&fout)))
         return err;
       #endif
 

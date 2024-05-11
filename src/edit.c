@@ -115,8 +115,7 @@ format_get_func_args(reliq_format_func *f, char *src, size_t *pos, size_t *size)
 
     if (src[*pos] == '"' || src[*pos] == '\'') {
       size_t start,len;
-      err = get_quoted(src,pos,size,' ',&start,&len);
-      if (err)
+      if ((err = get_quoted(src,pos,size,' ',&start,&len)))
         return err;
 
       if (len) {
@@ -127,8 +126,7 @@ format_get_func_args(reliq_format_func *f, char *src, size_t *pos, size_t *size)
       }
     } else if (src[*pos] == '[') {
       reliq_str *str = f->arg[i] = malloc(sizeof(reliq_range));
-      err = range_comp(src,pos,*size,(reliq_range*)str);
-      if (err)
+      if ((err = range_comp(src,pos,*size,(reliq_range*)str)))
         return err;
     }
 
@@ -517,8 +515,7 @@ sed_address_comp_pre(const char *src, size_t *pos, size_t size, struct sed_addre
     sed_address_comp_number(src,pos,size,&address->num[0]);
     address->flags |= SED_A_NUM1;
   } else if (src[*pos] == '\\' || src[*pos] == '/') {
-    err = sed_address_comp_regex(src,pos,size,&address->reg[0],eflags);
-    if (err)
+    if ((err = sed_address_comp_regex(src,pos,size,&address->reg[0],eflags)))
       return err;
     address->flags |= SED_A_REG1;
   } else if (src[*pos] == '$') {
@@ -785,8 +782,7 @@ sed_script_comp_pre(const char *src, size_t size, int eflags, flexarr **script)
     while (pos < size && (isspace(src[pos]) || src[pos] == ';'))
       pos++;
     size_t addrdiff = pos;
-    err = sed_address_comp(src,&pos,size,&sedexpr->address,eflags);
-    if (err)
+    if ((err = sed_address_comp(src,&pos,size,&sedexpr->address,eflags)))
       return err;
     while_is(isspace,src,pos,size);
     if (pos >= size) {
@@ -981,8 +977,7 @@ static reliq_error *
 sed_script_comp(const char *src, size_t size, int eflags, flexarr **script)
 {
   reliq_error *err;
-  err = sed_script_comp_pre(src,size,eflags,script);
-  if (err) {
+  if ((err = sed_script_comp_pre(src,size,eflags,script))) {
     sed_script_free(*script);
     *script = NULL;
     return err;
@@ -1288,8 +1283,7 @@ sed_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigne
 
   if (arg[0] && flag&FORMAT_ARG0_ISSTR && ((reliq_str*)arg[0])->b && ((reliq_str*)arg[0])->s) {
     reliq_str *str = (reliq_str*)arg[0];
-    err = sed_script_comp(str->b,str->s,extendedregex ? REG_EXTENDED : 0,&script);
-    if (err)
+    if ((err = sed_script_comp(str->b,str->s,extendedregex ? REG_EXTENDED : 0,&script)))
       return err;
   }
   if (script == NULL)
@@ -1546,8 +1540,7 @@ cut_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigne
 
   if (arg[1] && flag&FORMAT_ARG1_ISSTR && ((reliq_str*)arg[1])->b && ((reliq_str*)arg[1])->s) {
     reliq_str *str = (reliq_str*)arg[1];
-    err = tr_strrange(str->b,str->s,NULL,0,delim,NULL,0);
-    if (err)
+    if ((err = tr_strrange(str->b,str->s,NULL,0,delim,NULL,0)))
       return err;
     delimited = 1;
   }
@@ -1684,8 +1677,7 @@ tr_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned
   size_t bufcurrent = 0;
 
   if (string[0] && !string[1]) {
-    err = tr_strrange(string[0]->b,string[0]->s,NULL,0,array,NULL,complement);
-    if (err)
+    if ((err = tr_strrange(string[0]->b,string[0]->s,NULL,0,array,NULL,complement)))
       return err;
     for (size_t i = 0; i < size; i++) {
       if (!array[(uchar)src[i]]) {
@@ -1704,8 +1696,7 @@ tr_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned
   }
 
   uchar array_enabled[256] = {0};
-  err = tr_strrange(string[0]->b,string[0]->s,string[1]->b,string[1]->s,array,array_enabled,complement);
-  if (err)
+  if ((err = tr_strrange(string[0]->b,string[0]->s,string[1]->b,string[1]->s,array,array_enabled,complement)))
     return err;
 
   for (size_t i = 0; i < size; i++) {

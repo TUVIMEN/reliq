@@ -117,16 +117,20 @@ typedef struct {
   unsigned char flags;
 } reliq_hook;
 
-typedef struct {
+typedef struct reliq_node reliq_node;
+struct reliq_node {
   reliq_pattern tag;
   reliq_range position;
+  reliq_range siblings_preceding;
+  reliq_range siblings_subsequent;
   struct reliq_pattrib *attribs;
   reliq_hook *hooks;
+  reliq_node *node;
 
   size_t hooksl;
   size_t attribsl;
   unsigned char flags;
-} reliq_node;
+};
 
 typedef struct {
   size_t id;

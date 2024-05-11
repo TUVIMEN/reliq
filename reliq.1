@@ -222,12 +222,16 @@ At the begining each \fBTAG\fR must contain \fBPATTERN\fR of html tag and that c
 
 Range separated by spaces will match the position of results relative to parent nodes, or if specified before tag \fBPATTERN\fR absolute to all results.
 
+\fBTAG\fRs separated by '~' match siblings. Range before '~' specifies preceding position of the matched sibling from the first tag, range after does the same, but for the subsequent siblings. As of now position range for results has to specified around the first tag and not after the '~' character.
+
 .nf
 \&
 .in +4m
 \fBPATTERN\fR
 \fBPATTERN ATTRIBUTE... HOOK... [RANGE]\fR - match RANGE to results relative to parent nodes
 \fB[RANGE] PATTERN\fR - match RANGE to results
+\fBTAG1 [POSITION] ~ TAG2\fR - get TAG2 matched to POSITION that is a sibling of TAG1
+\fBTAG1 [PRECEDING]~[SUBSEQUENT] TAG2\fR - get TAG2 with preceding and subsequent position matched from TAG1.
 .in
 \&
 

@@ -43,6 +43,8 @@ typedef unsigned long int ulong;
 #define PATTERN_SIZE_INC (1<<8)
 #define PATTRIB_INC 8
 #define HOOK_INC 8
+#define FORMAT_INC 8
+#define SIBLINGS_INC (1<<7)
 #define NCOLLECTOR_INC (1<<8)
 #define FCOLLECTOR_INC (1<<5)
 
@@ -330,8 +332,7 @@ reliq_regcomp(reliq_pattern *pattern, char *src, size_t *pos, size_t *size, cons
   reliq_regcomp_get_flags(pattern,src,pos,*size,flags);
 
   if (*pos && *pos < *size && src[*pos-1] == '>' && src[*pos] == '[') {
-    err = range_comp(src,pos,*size,&pattern->range);
-    if (err)
+    if ((err = range_comp(src,pos,*size,&pattern->range)))
       return err;
     if (*pos >= *size || src[*pos] == delim || isspace(src[*pos])) {
       pattern->flags |= RELIQ_PATTERN_ALL;
@@ -348,8 +349,7 @@ reliq_regcomp(reliq_pattern *pattern, char *src, size_t *pos, size_t *size, cons
   }
 
   size_t start,len;
-  err = get_quoted(src,pos,size,delim,&start,&len);
-  if (err)
+  if ((err = get_quoted(src,pos,size,delim,&start,&len)))
     goto ERR;
 
   err = reliq_regcomp_add_pattern(pattern,src+start,len);
@@ -519,16 +519,32 @@ reliq_free_hooks(reliq_hook *hooks, const size_t hooksl)
 void
 reliq_nfree(reliq_node *node)
 {
-  if (node == NULL || node->flags&N_EMPTY)
+  uchar isconstant = 1;
+  REPEAT: ;
+  if (node == NULL)
     return;
 
-  reliq_regfree(&node->tag);
-
-  pattribs_free(node->attribs,node->attribsl);
-
-  reliq_free_hooks(node->hooks,node->hooksl);
-
   range_free(&node->position);
+
+  if (node->flags&N_EMPTY) {
+    if (!isconstant)
+      free(node);
+    return;
+  }
+
+  reliq_regfree(&node->tag);
+  pattribs_free(node->attribs,node->attribsl);
+  reliq_free_hooks(node->hooks,node->hooksl);
+  range_free(&node->siblings_preceding);
+  range_free(&node->siblings_subsequent);
+
+  isconstant = 0;
+  reliq_node *t = node->node;
+  if (!isconstant)
+    free(node);
+  node = t;
+  if (node)
+    goto REPEAT;
 }
 
 void
@@ -633,6 +649,66 @@ reliq_match(const reliq_hnode *hnode, const reliq_hnode *parent, const reliq_nod
     return 0;
 
   return 1;
+}
+
+static void
+reliq_match_siblings(const reliq_hnode *nodes, const size_t nodesl, const size_t id, size_t parentid, reliq_node const *node, flexarr *dest)
+{
+  reliq_hnode const *parent_passed = parentid == (size_t)-1 ? NULL : &nodes[parentid];
+  int r = reliq_match(&nodes[id],parent_passed,node);
+  if (!r)
+    return;
+  if (!node->node) {
+    *(reliq_compressed*)flexarr_inc(dest) = (reliq_compressed){id,parentid};
+    return;
+  }
+  if (parentid == id)
+    return;
+
+  REPEAT: ;
+  if (!node->node)
+    return;
+
+  uchar passall = 0;
+  if (!node->siblings_preceding.b && !node->siblings_subsequent.b)
+    passall = 1;
+  ushort lvl = nodes[id].lvl;
+  uchar islast = !(node->node && node->node->node);
+
+  if (id > 0 && (passall || node->siblings_preceding.b)) {
+    for (size_t i=id-1,found=0; nodes[i].lvl >= lvl; i--) {
+      if (nodes[i].lvl == lvl && reliq_match(&nodes[i],parent_passed,node->node)) {
+        if (passall || range_match(found,&node->siblings_preceding,-1)) {
+          if (!islast) {
+            node = node->node;
+            goto REPEAT;
+          }
+          *(reliq_compressed*)flexarr_inc(dest) = (reliq_compressed){i,parentid};
+        }
+        found++;
+      }
+
+      if (!i)
+        break;
+    }
+  }
+
+  if (id+1 < nodesl && (passall || node->siblings_subsequent.b)) {
+    for (size_t i=id,found=0; i < nodesl && nodes[i].lvl == lvl; i++) {
+      if (i != id && reliq_match(&nodes[i],parent_passed,node->node)) {
+        if (passall || range_match(found,&node->siblings_subsequent,-1)) {
+          if (!islast) {
+            node = node->node;
+            goto REPEAT;
+          }
+          *(reliq_compressed*)flexarr_inc(dest) = (reliq_compressed){i,parentid};
+        }
+        found++;
+      }
+
+      i += nodes[i].child_count;
+    }
+  }
 }
 
 static void
@@ -802,8 +878,7 @@ format_comp(char *src, size_t *pos, size_t *size,
     return NULL;
 
   size_t start,len;
-  err = get_quoted(src,pos,size,' ',&start,&len);
-  if (err)
+  if ((err = get_quoted(src,pos,size,' ',&start,&len)))
     return err;
 
   if (len) {
@@ -811,7 +886,7 @@ format_comp(char *src, size_t *pos, size_t *size,
     *formatl = len;
   }
   #else
-  flexarr *f = flexarr_init(sizeof(reliq_format_func),8);
+  flexarr *f = flexarr_init(sizeof(reliq_format_func),FORMAT_INC);
   err = format_get_funcs(f,src,pos,size);
   flexarr_conv(f,(void**)format,formatl);
   if (err)
@@ -879,8 +954,7 @@ match_hook_handle(char *src, size_t *pos, size_t *size, flexarr *hooks)
     if (hook.flags&F_EXPRS)
       return reliq_set_error(1,"hook \"%.*s\" expected node argument",(int)func_len,src+p);
 
-    err = range_comp(src,pos,*size,&hook.match.range);
-    if (err)
+    if ((err = range_comp(src,pos,*size,&hook.match.range)))
       return err;
   } else {
     if (hook.flags&F_RANGE)
@@ -890,20 +964,16 @@ match_hook_handle(char *src, size_t *pos, size_t *size, flexarr *hooks)
         return reliq_set_error(1,"hook \"%.*s\" expected node argument",(int)func_len,src+p);
       char tf = src[*pos];
       size_t start,len;
-      err = get_quoted(src,pos,size,tf,&start,&len);
-      if (err)
+      if ((err = get_quoted(src,pos,size,tf,&start,&len)))
         return err;
-      err = reliq_ecomp(src+start,len,&hook.match.exprs);
-      if (err)
+      if ((err = reliq_ecomp(src+start,len,&hook.match.exprs)))
         return err;
-      err = exprs_check_chain(&hook.match.exprs);
-      if (err) {
+      if ((err = exprs_check_chain(&hook.match.exprs))) {
         reliq_efree(&hook.match.exprs);
         return err;
       }
     } else {
-      err = reliq_regcomp(&hook.match.pattern,src,pos,size,' ',"uWcas");
-      if (err)
+      if ((err = reliq_regcomp(&hook.match.pattern,src,pos,size,' ',"uWcas")))
         return err;
       if (!hook.match.pattern.range.s && hook.match.pattern.flags&RELIQ_PATTERN_ALL) { //ignore if it matches everything
         reliq_regfree(&hook.match.pattern);
@@ -917,8 +987,9 @@ match_hook_handle(char *src, size_t *pos, size_t *size, flexarr *hooks)
 }
 
 static reliq_error *
-get_pattribs(char *src, size_t *size, struct reliq_pattrib **attrib, size_t *attribl, reliq_hook **hooks, size_t *hooksl, reliq_range *range)
+get_pattribs(char *src, size_t *pos, size_t *size, struct reliq_pattrib **attrib, size_t *attribl, reliq_hook **hooks, size_t *hooksl, reliq_range *position, reliq_range *sibling_preceding, reliq_range *sibling_subsequent, uchar *siblings)
 {
+  *siblings = 0;
   reliq_error *err = NULL;
   struct reliq_pattrib pa;
   flexarr *pattrib = flexarr_init(sizeof(struct reliq_pattrib),PATTRIB_INC);
@@ -926,7 +997,8 @@ get_pattribs(char *src, size_t *size, struct reliq_pattrib **attrib, size_t *att
 
   uchar tofree = 0;
 
-  for (size_t i = 0; i < *size;) {
+  size_t i = *pos;
+  while (i < *size) {
     while_is(isspace,src,i,*size);
     if (i >= *size)
       break;
@@ -938,14 +1010,32 @@ get_pattribs(char *src, size_t *size, struct reliq_pattrib **attrib, size_t *att
 
     if (isalpha(src[i])) {
       size_t prev = i;
-      err = match_hook_handle(src,&i,size,phooks);
-      if (err)
+      if ((err = match_hook_handle(src,&i,size,phooks)))
         break;
       if (i != prev) {
         tofree = 0;
         continue;
       }
     }
+
+    if (src[i] == '~') {
+      SIBLING_SUBSEQUENT: ;
+      *siblings = 1;
+      tofree = 0;
+      i++;
+      if (i >= *size || !isspace(src[i]))
+        break;
+      if (src[i] == '[') {
+        char *bracket_end = memchr(src+i,']',*size-i);
+        if (!bracket_end || ((size_t)(bracket_end-src+1) != *size && !isspace(bracket_end[1])))
+          goto SIBLINGS_SKIP;
+      }
+
+      err = range_comp(src,&i,*size,sibling_subsequent);
+      break;
+      SIBLINGS_SKIP: ;
+    } else if (i+1 < *size && src[i] == '\\' && src[i+1] == '~')
+      i++;
 
     if (src[i] == '+') {
       isattrib = 1;
@@ -957,7 +1047,7 @@ get_pattribs(char *src, size_t *size, struct reliq_pattrib **attrib, size_t *att
       isset = -1;
       pa.flags &= ~A_INVERT;
       i++;
-    } else if (src[i] == '\\' && (src[i+1] == '+' || src[i+1] == '-'))
+    } else if (i+1 < *size && src[i] == '\\' && (src[i+1] == '+' || src[i+1] == '-'))
       i++;
 
     char shortcut = 0;
@@ -966,7 +1056,7 @@ get_pattribs(char *src, size_t *size, struct reliq_pattrib **attrib, size_t *att
 
     if (src[i] == '.' || src[i] == '#') {
       shortcut = src[i++];
-    } else if (src[i] == '\\' && (src[i+1] == '.' || src[i+1] == '#'))
+    } else if (i+1 < *size && src[i] == '\\' && (src[i+1] == '.' || src[i+1] == '#'))
       i++;
 
     while_is(isspace,src,i,*size);
@@ -974,19 +1064,24 @@ get_pattribs(char *src, size_t *size, struct reliq_pattrib **attrib, size_t *att
       break;
 
     if (src[i] == '[') {
-      err = range_comp(src,&i,*size,&pa.position);
-      if (err)
+      if ((err = range_comp(src,&i,*size,&pa.position)))
         break;
-      if (!isattrib && (i >= *size || isspace(src[i]))) {
-        if (range->s) {
-          err = reliq_set_error(1,"node: position already declared");
-          break;
+      if (!isattrib) {
+        if (i >= *size || isspace(src[i])) {
+          if (position->s) {
+            err = reliq_set_error(1,"node: position already declared");
+            break;
+          }
+          memcpy(position,&pa.position,sizeof(reliq_range));
+          tofree = 0;
+          continue;
         }
-        memcpy(range,&pa.position,sizeof(*range));
-        tofree = 0;
-        continue;
+        if (src[i] == '~') {
+          memcpy(sibling_preceding,&pa.position,sizeof(reliq_range));
+          goto SIBLING_SUBSEQUENT;
+        }
       }
-    } else if (src[i] == '\\' && src[i+1] == '[')
+    } else if (i+1 < *size && src[i] == '\\' && src[i+1] == '[')
       i++;
 
     if (i >= *size)
@@ -1038,6 +1133,7 @@ get_pattribs(char *src, size_t *size, struct reliq_pattrib **attrib, size_t *att
 
   flexarr_conv(pattrib,(void**)attrib,attribl);
   flexarr_conv(phooks,(void**)hooks,hooksl);
+  *pos = i;
   return err;
 }
 
@@ -1045,14 +1141,21 @@ reliq_error *
 reliq_ncomp(const char *script, size_t size, reliq_node *node)
 {
   reliq_error *err = NULL;
+  reliq_node *parentnode = node;
+  size_t pos=0;
+  char *nscript = NULL;
+  if (size)
+    nscript = memdup(script,size);
+
+  REPEAT:;
+
   memset(node,0,sizeof(reliq_node));
-  if (!size) {
+  if (pos >= size) {
     node->flags |= N_EMPTY;
+    if (pos)
+      goto END_FREE;
     return NULL;
   }
-
-  char *nscript = memdup(script,size);
-  size_t pos=0;
 
   for (size_t i=0; ; i++) { //execute 2 times but stop midway
     while_is(isspace,nscript,pos,size);
@@ -1064,9 +1167,8 @@ reliq_ncomp(const char *script, size_t size, reliq_node *node)
       break;
 
     if (nscript[pos] == '[') {
-      err = range_comp(nscript,&pos,size,&node->position);
-      if (err)
-          return err;
+      if ((err = range_comp(nscript,&pos,size,&node->position)))
+        goto END;
       node->flags |= N_POSITION_ABSOLUTE;
     }
   }
@@ -1074,13 +1176,20 @@ reliq_ncomp(const char *script, size_t size, reliq_node *node)
   if ((err = reliq_regcomp(&node->tag,nscript,&pos,&size,' ',NULL)))
     goto END;
 
-  size_t s = size-pos;
-  err = get_pattribs(nscript+pos,&s,&node->attribs,&node->attribsl,&node->hooks,&node->hooksl,&node->position);
-  size = s+pos;
+  uchar siblings;
+  err = get_pattribs(nscript,&pos,&size,&node->attribs,&node->attribsl,&node->hooks,&node->hooksl,&node->position,&node->siblings_preceding,&node->siblings_subsequent,&siblings);
+
+  if (!err && pos < size && siblings) {
+    node = node->node = malloc(sizeof(reliq_node));
+    goto REPEAT;
+  }
 
   END: ;
-  if (err)
-    reliq_nfree(node);
+  if (err) {
+    END_FREE:;
+    reliq_nfree(parentnode);
+  }
+
   free(nscript);
   return err;
 }
@@ -1436,15 +1545,10 @@ add_compressed_blank(flexarr *dest)
 static void
 first_match(const reliq *rq, reliq_node *node, flexarr *dest)
 {
-  reliq_hnode *nodes = rq->nodes;
   size_t nodesl = rq->nodesl;
-  for (size_t i = 0; i < nodesl; i++) {
-    if (reliq_match(&nodes[i],NULL,node)) {
-      reliq_compressed *x = (reliq_compressed*)flexarr_inc(dest);
-      x->parentid = -1;
-      x->id = i;
-    }
-  }
+  for (size_t i = 0; i < nodesl; i++)
+    reliq_match_siblings(rq->nodes,rq->nodesl,i,-1,node,dest);
+
   if (node->position.s)
     dest_match_position(&node->position,dest,0,dest->size);
 }
@@ -1458,18 +1562,13 @@ node_exec(const reliq *rq, reliq_node *node, flexarr *source, flexarr *dest)
   }
 
   reliq_hnode *nodes = rq->nodes;
-  size_t current,n;
+  size_t current;
   for (size_t i = 0; i < source->size; i++) {
     current = ((reliq_compressed*)source->v)[i].id;
     size_t prevdestsize = dest->size;
-    for (size_t j = 0; j <= nodes[current].child_count; j++) {
-      n = current+j;
-      if (reliq_match(&nodes[n],&nodes[current],node)) {
-        reliq_compressed *x = (reliq_compressed*)flexarr_inc(dest);
-        x->id = n;
-        x->parentid = current;
-      }
-    }
+    for (size_t j = 0; j <= nodes[current].child_count; j++)
+      reliq_match_siblings(rq->nodes,rq->nodesl,current+j,current,node,dest);
+
     if (!(node->flags&N_POSITION_ABSOLUTE) && node->position.s)
       dest_match_position(&node->position,dest,prevdestsize,dest->size);
   }
@@ -1548,12 +1647,11 @@ reliq_exec_table(const reliq *rq, const reliq_expr *expr, flexarr *source, flexa
       #ifdef RELIQ_EDITING
       size_t lastn = ncollector->size;
       #endif
-      err = reliq_exec_pre(rq,exprsv,exprsl,in,dest,out,ncollector
+      if ((err = reliq_exec_pre(rq,exprsv,exprsl,in,dest,out,ncollector
         #ifdef RELIQ_EDITING
         ,fcollector
         #endif
-        );
-      if (err)
+        )))
         break;
       #ifdef RELIQ_EDITING
       if (ncollector->size-lastn)
@@ -1607,12 +1705,11 @@ reliq_exec_pre(const reliq *rq, const reliq_expr *exprs, size_t exprsl, flexarr 
 
     if (exprs[i].flags&EXPR_TABLE) {
       lastn = ncollector->size;
-      err = reliq_exec_table(rq,&exprs[i],buf[0],buf[1],out,ncollector
+      if ((err = reliq_exec_table(rq,&exprs[i],buf[0],buf[1],out,ncollector
         #ifdef RELIQ_EDITING
         ,fcollector
         #endif
-        );
-      if (err)
+        )))
         goto ERR;
     } else if (exprs[i].e) {
       lastnode = &exprs[i];
@@ -1648,17 +1745,15 @@ reliq_exec_pre(const reliq *rq, const reliq_expr *exprs, size_t exprsl, flexarr 
   }
 
   if (!dest) {
-    /*err = ncollector_check(ncollector,buf[2]->size);
-    if (err) //just for debugging
-      goto ERR;*/
+    /*if ((err = ncollector_check(ncollector,buf[2]->size)))
+      goto ERR; //just for debugging*/
 
     if (rq->output) {
-      err = nodes_output(rq,buf[2],ncollector
+      if ((err = nodes_output(rq,buf[2],ncollector
           #ifdef RELIQ_EDITING
           ,fcollector
           #endif
-          );
-      if (err)
+          )))
         goto ERR;
       flexarr_free(buf[2]);
     } else
@@ -1781,8 +1876,8 @@ reliq_fexec_file(char *ptr, size_t size, FILE *output, const reliq_exprs *exprs,
 {
   if (exprs->s == 0)
     return NULL;
-  reliq_error *err = exprs_check_chain(exprs);
-  if (err)
+  reliq_error *err;
+  if ((err = exprs_check_chain(exprs)))
     return err;
 
   FILE *destination = output;
