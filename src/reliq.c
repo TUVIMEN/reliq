@@ -1023,7 +1023,7 @@ get_pattribs(char *src, size_t *pos, size_t *size, struct reliq_pattrib **attrib
       *siblings = 1;
       tofree = 0;
       i++;
-      if (i >= *size || !isspace(src[i]))
+      if (i >= *size || isspace(src[i]))
         break;
       if (src[i] == '[') {
         char *bracket_end = memchr(src+i,']',*size-i);
