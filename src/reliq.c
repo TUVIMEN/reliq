@@ -44,7 +44,6 @@ typedef unsigned long int ulong;
 #define PATTRIB_INC 8
 #define HOOK_INC 8
 #define FORMAT_INC 8
-#define SIBLINGS_INC (1<<7)
 #define NCOLLECTOR_INC (1<<8)
 #define FCOLLECTOR_INC (1<<5)
 
@@ -1636,7 +1635,7 @@ reliq_exec_table(const reliq *rq, const reliq_expr *expr, flexarr *source, flexa
   reliq_expr *exprsv = (reliq_expr*)exprs->v;
   size_t exprsl = exprs->size;
 
-  if (source->size && expr->flags&EXPR_SINGULAR && expr->nodefl) {
+  if (source->size && expr->flags&EXPR_SINGULAR) {
     reliq_error *err = NULL;
     flexarr *in = flexarr_init(sizeof(reliq_compressed),1);
     reliq_compressed *inv = (reliq_compressed*)flexarr_inc(in);
@@ -1654,7 +1653,7 @@ reliq_exec_table(const reliq *rq, const reliq_expr *expr, flexarr *source, flexa
         )))
         break;
       #ifdef RELIQ_EDITING
-      if (ncollector->size-lastn)
+      if (ncollector->size-lastn && expr->nodefl)
         fcollector_add(lastn,1,expr,ncollector,fcollector);
       #endif
     }
