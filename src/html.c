@@ -25,7 +25,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <regex.h>
-#include <stdarg.h>
 
 typedef unsigned char uchar;
 typedef unsigned short ushort;
@@ -37,6 +36,7 @@ typedef unsigned long int ulong;
 #include "ctype.h"
 #include "utils.h"
 #include "edit.h"
+#include "output.h"
 #include "html.h"
 
 const reliq_str8 selfclosing_s[] = { //tags that don't end with </tag>
@@ -57,198 +57,6 @@ const reliq_str8 autoclosing_s[] = { //tags that don't need to be closed
   {"caption",7},{"colgroup",8},{"option",6},{"optgroup",8}
 };
 #endif
-
-reliq_error *
-node_output(const reliq_hnode *hnode, const reliq_hnode *parent,
-        #ifdef RELIQ_EDITING
-        const reliq_format_func *format
-        #else
-        const char *format
-        #endif
-        , const size_t formatl, FILE *output, const reliq *rq) {
-  #ifdef RELIQ_EDITING
-  return format_exec(NULL,0,output,hnode,parent,format,formatl,rq);
-  #else
-  if (format) {
-    reliq_printf(output,format,formatl,hnode,parent,rq);
-  } else
-    reliq_print(output,hnode);
-  return NULL;
-  #endif
-}
-
-struct fcollector_out {
-  FILE *f;
-  char *v;
-  size_t s;
-  size_t current;
-};
-
-#ifdef RELIQ_EDITING
-void
-fcollector_rearrange_pre(struct fcollector_expr *fcols, size_t start, size_t end, ushort lvl)
-{
-  size_t i=start;
-  while (start < end) {
-    while (i < end && fcols[i].lvl != lvl)
-      i++;
-
-    if (i < end && i != start) {
-      struct fcollector_expr t = fcols[i];
-      for (size_t j = i-1;; j--) {
-        fcols[j+1] = fcols[j];
-        if (j == start)
-          break;
-      }
-      fcols[start] = t;
-
-      if (i-start > 1)
-        fcollector_rearrange_pre(fcols,start+1,i+1,lvl+1);
-    }
-
-    start = ++i;
-  }
-}
-
-void
-fcollector_rearrange(flexarr *fcollector)
-{
-  fcollector_rearrange_pre((struct fcollector_expr*)fcollector->v,0,fcollector->size,0);
-}
-
-static reliq_error *
-fcollector_out_end(flexarr *outs, const size_t pcurrent, struct fcollector_expr *fcols, const reliq *rq, FILE **fout)
-{
-  reliq_error *err = NULL;
-  START: ;
-  if (!outs->size)
-    return err;
-
-  struct fcollector_out *fcol_out_last = &((struct fcollector_out*)outs->v)[outs->size-1];
-  struct fcollector_expr *ecurrent = &fcols[fcol_out_last->current];
-
-  if (ecurrent->end != pcurrent)
-    return err;
-
-  reliq_expr const *rqe = ecurrent->e;
-
-  reliq_format_func *format = rqe->exprf;
-  size_t formatl = rqe->exprfl;
-  if (ecurrent->isnodef) {
-    format = rqe->nodef;
-    formatl = rqe->nodefl;
-  }
-  //fprintf(stderr,"fcollector out end pcurrent(%lu)\n",pcurrent);
-
-  FILE *tmp_out = (ecurrent->lvl == 0) ? rq->output : ((struct fcollector_out*)outs->v)[outs->size-2].f;
-  *fout = tmp_out;
-
-  fclose(fcol_out_last->f);
-  /*fprintf(stderr,"%.*s\n",fcol_out_last->s,fcol_out_last->v);
-  fprintf(stderr,"fcollector end\n\n");*/
-  err = format_exec(fcol_out_last->v,fcol_out_last->s,tmp_out,NULL,NULL,format,formatl,rq);
-  free(fcol_out_last->v);
-
-  flexarr_dec(outs);
-
-  if (err)
-    return err;
-
-  goto START;
-}
-#endif
-
-reliq_error *
-nodes_output(const reliq *rq, flexarr *compressed_nodes, flexarr *ncollector
-        #ifdef RELIQ_EDITING
-        , flexarr *fcollector
-        #endif
-        )
-{
-  #ifdef RELIQ_EDITING
-  //fprintf(stderr,"fcollector - size(%lu) compressed_nodes->size(%lu) ncollector->size(%lu)\n",fcollector->size,compressed_nodes->size,ncollector->size);
-  struct fcollector_expr *fcols = (struct fcollector_expr*)fcollector->v;
-  /*for (size_t j = 0; j < fcollector->size; j++)
-    fprintf(stderr,"fcollector start(%lu) end(%lu) diff(%lu) lvl(%u)\n",fcols[j].start,fcols[j].end,(fcols[j].end+1)-fcols[j].start,fcols[j].lvl);*/
-  if (fcollector->size) {
-      fcollector_rearrange(fcollector);
-      /*fprintf(stderr,"fcollector rearrangement\n");
-      for (size_t j = 0; j < fcollector->size; j++)
-        fprintf(stderr,"fcollector start(%lu) end(%lu) diff(%lu) lvl(%u)\n",fcols[j].start,fcols[j].end,(fcols[j].end+1)-fcols[j].start,fcols[j].lvl);*/
-  }
-  #endif
-  if (!ncollector->size)
-    return NULL;
-  reliq_error *err = NULL;
-  reliq_cstr *pcol = (reliq_cstr*)ncollector->v;
-
-  FILE *out = rq->output;
-  FILE *fout = out;
-  size_t j=0,pcurrent=0,g=0;
-  #ifdef RELIQ_EDITING
-  flexarr *outs = flexarr_init(sizeof(struct fcollector_out),16);
-  size_t fcurrent=0;
-  size_t fsize;
-  char *ptr;
-  #endif
-  for (;; j++) {
-    #ifdef RELIQ_EDITING
-    if (compressed_nodes->size && g == 0) {
-      while (fcurrent < fcollector->size && fcols[fcurrent].start == pcurrent) { // && fcols[fcurrent].lvl != 0
-        //fprintf(stderr,"fcollector out start fcurrent(%lu) pcurrent(%lu)\n",fcurrent,pcurrent);
-        struct fcollector_out *ff;
-        ff = (struct fcollector_out*)flexarr_inc(outs);
-        ff->f = open_memstream(&ff->v,&ff->s);
-        ff->current = fcurrent++;
-        fout = ff->f;
-      }
-
-      if (j >= compressed_nodes->size)
-        break;
-      if (pcol[pcurrent].b && ((reliq_expr*)pcol[pcurrent].b)->exprfl)
-        out = open_memstream(&ptr,&fsize);
-    }
-    #else
-    if (j >= compressed_nodes->size)
-      break;
-    #endif
-
-    FILE *rout = (out == rq->output) ? fout : out;
-
-    reliq_compressed *x = &((reliq_compressed*)compressed_nodes->v)[j];
-    if (x->id == (size_t)-1 && x->parentid == (size_t)-1) {
-      fputc('\n',rout);
-    } else if (pcol[pcurrent].b) {
-      err = node_output(&rq->nodes[x->id],x->parentid == (size_t)-1 ? NULL : &rq->nodes[x->parentid],((reliq_expr*)pcol[pcurrent].b)->nodef,
-        ((reliq_expr*)pcol[pcurrent].b)->nodefl,rout,rq);
-      if (err)
-        return err;
-    }
-
-    g++;
-    if (pcol[pcurrent].s == g) {
-      #ifdef RELIQ_EDITING
-      if (pcol[pcurrent].b && out != rq->output) {
-        fclose(out);
-        err = format_exec(ptr,fsize,fout,NULL,NULL,
-          ((reliq_expr*)pcol[pcurrent].b)->exprf,
-          ((reliq_expr*)pcol[pcurrent].b)->exprfl,rq);
-        free(ptr);
-        if (err)
-          return err;
-        out = rq->output;
-      }
-
-      if ((err = fcollector_out_end(outs,pcurrent,fcols,rq,&fout)))
-        return err;
-      #endif
-
-      g = 0;
-      pcurrent++;
-    }
-  }
-  return NULL;
-}
 
 static void
 comment_handle(const char *f, size_t *i, const size_t s)

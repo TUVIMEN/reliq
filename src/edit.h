@@ -20,7 +20,7 @@
 #define EDIT_H
 
 //reliq_format_func flags
-#define FORMAT_FUNC 0xf
+#define FORMAT_FUNC         0xf
 #define FORMAT_ARG0_ISSTR   0x10
 #define FORMAT_ARG1_ISSTR   0x20
 #define FORMAT_ARG2_ISSTR   0x40

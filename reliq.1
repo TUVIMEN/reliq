@@ -16,7 +16,7 @@ searches for
 .I PATTERNS
 in each
 .IR FILE .
-Typically 
+Typically
 .I PATTERNS
 should be quoted when reliq is used in shell command.
 .PP
@@ -103,7 +103,7 @@ If unquoted text is set to a single '*' character matching of text will be ommit
 .in
 \&
 
-List of ways of matching:
+Matching options:
 
 .nf
 \&
@@ -432,7 +432,7 @@ Consists of \fBNODE\fRs separated by ',' and grouped in '{' '}' brackets (which 
 .in
 \&
 
-.SS OUTPUT
+.SS OUTPUT_FORMAT
 
 Is changed based on output \fBFORMAT\fR and can be specified only to the last \fBEXPRESSION\fRs, or if they are children of groups having \fBFORMAT\fR.
 
@@ -454,6 +454,64 @@ Groups with format after '|' will execute their \fBEXPRESSION\fRs for each eleme
 \fBNODE1; { NODE1 | FORMAT, NODE2 / FORMAT } | FORMAT / FORMAT\fR - process results of GROUP one by one, and then as a whole
 .in
 \&
+
+.SS OUTPUT_FIELD
+
+Accumulates output and prints it in json format.
+
+Begins before \fBEXPRESSION\fR, starts with '.' character and is followed by name, which can be defined as [A-Za-z0-9_-]+.
+
+If field doesn't have a name it will be a protected field i.e. if the \fBEXPRESSION\fR matches nothing a newline will be printed.
+
+To specify type of field the name has to be followed by '.' and type name.
+
+Only the first letter of type matters (e.g. \fI.n\fR and \fI.number\fR are equivalent), but type name can consist only of alphanumeric characters.
+
+List of types:
+    \fI.s\fR             string
+
+    \fI.b\fR             boolean value, returns true only if input starts with 'y', 'Y', 't', 'T' otherwise return false
+
+    \fI.n\fR             number, return the first found floating point number, if none found returns 0
+
+    \fI.i\fR             integer, return the first found integer number, if none found returns 0
+
+    \fI.u\fR             unsigned integer, return the first non negative integer number, if none found returns 0
+
+    \fI.a\fR             array, of strings, delimited by '\\n'
+
+    \fI.a("\\t")\fR       array of strings, delimited by the first character in the string, i.e. '\\t'
+
+    \fI.a.type\fR        array of type, delimited by '\\n'
+
+    \fI.a("-").type\fR   array of type, delimited by the first character in the string
+
+Examples:
+
+    if field doesn't return to a field is globally available, and even if \fBdiv .author\fR is not found the fields will be printed.
+    \fB.title h2, div .author; { .image img, .bolded b }\fR
+    \fI{"title":"...","image":"...","bolded":"..."}\fR
+
+    if field has fields as an input it is an object.
+    \fB.title h2, .author div .author; { .image img, .bolded b }\fR
+    \fI{"title":"...","author":{"image":"...","bolded":"..."}}\fR
+
+    if field has fields as an input it returns an object.
+    \fB.author div .author; { .image img, .bolded b }\fR
+    \fI{"title":"...","author":{"image":"...","bolded":"..."}}\fR
+
+    if field has fields as an input and expressions without fields, first it prints out result of expressions, and then prints the object.
+    \fBdiv .author; { .image img, .bolded b, a }\fR
+    \fI<a objects>\fR
+    \fI{"author":{"image":"...","bolded":"..."}}\fR
+
+    since it has no field to return to as an array it creates incorrect json objects with repeating fields.
+    \fBdiv .author; { .images img, .bolded b } |\fR
+    \fI{"images":"...","bolded":"...","images":"...","bolded":"..."}\fR
+
+    blocks ended with '|' character are treated as arrays. If such block has no input, it returns "[]".
+    \fB.authors div .author; { .images img, .bolded b } |\fR
+    \fI{"authors":[{"images":"...","bolded":"..."}]}\fR
 
 .SH EXAMPLES
 Get tags 'a' with attribute 'href' at position 0 of value ending with '.org', from result of matching tags 'div' with attribute 'id', and without attribute 'class', from file 'index.html'.

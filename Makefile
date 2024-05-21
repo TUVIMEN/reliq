@@ -17,8 +17,8 @@ MANDIR = $(DESTDIR)${MANPREFIX}/man1
 LD_LIBRARY_PATH ?= ${PREFIX}/lib
 INCLUDE_PATH ?= ${PREFIX}/include
 
-SRC = src/main.c src/flexarr.c src/html.c src/reliq.c src/ctype.c src/utils.c
-LIB_SRC = src/flexarr.c src/html.c src/reliq.c src/ctype.c src/utils.c
+SRC = src/main.c src/flexarr.c src/html.c src/reliq.c src/ctype.c src/utils.c src/output.c
+LIB_SRC = src/flexarr.c src/html.c src/reliq.c src/ctype.c src/utils.c src/output.c
 
 ifeq ($(strip ${O_PHPTAGS}),1)
 	CFLAGS += -DRELIQ_PHPTAGS
@@ -78,11 +78,15 @@ test: clean all
 	@./test.sh test/1.csv test/1.html
 	@[ ${O_PHPTAGS} -eq 1 ] && ./test.sh test/php.csv test/php.php || true
 	@[ ${O_EDITING} -eq 1 ] && ./test.sh test/editing.csv test/editing.html || true
+	@[ ${O_EDITING} -eq 1 ] && ./test.sh test/editing-output.csv test/editing-output.html || true
+	@./test.sh test/output.csv test/output.html || true
 
 test-update: test
 	@./test.sh test/1.csv test/1.html update
 	@[ ${O_PHPTAGS} -eq 1 ] && ./test.sh test/php.csv test/php.php update || true
 	@[ ${O_EDITING} -eq 1 ] && ./test.sh test/editing.csv test/editing.html update || true
+	@[ ${O_EDITING} -eq 1 ] && ./test.sh test/editing-output.csv test/editing-output.html update || true
+	@./test.sh test/output.csv test/output.html update || true
 
 dist: clean
 	mkdir -p ${TARGET}-${VERSION}

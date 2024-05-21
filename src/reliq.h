@@ -89,6 +89,15 @@ struct reliq_pattrib {
 };
 
 typedef struct {
+  reliq_str name;
+  char type;
+  char arr_delim;
+  char arr_type;
+  unsigned char isset;
+} reliq_output_field;
+
+typedef struct {
+  reliq_output_field outfield;
   void *e; //either points to reliq_exprs or reliq_node
   #ifdef RELIQ_EDITING
   reliq_format_func *nodef;
@@ -100,6 +109,7 @@ typedef struct {
   #ifdef RELIQ_EDITING
   size_t exprfl;
   #endif
+  ushort childfields;
   unsigned char flags;
 } reliq_expr;
 
@@ -133,8 +143,8 @@ struct reliq_node {
 };
 
 typedef struct {
-  size_t id;
-  size_t parentid;
+  reliq_hnode *hnode;
+  reliq_hnode *parent;
 } reliq_compressed;
 
 typedef struct {
@@ -164,7 +174,7 @@ reliq_error *reliq_ncomp(const char *script, size_t size, reliq_node *node);
 reliq_error *reliq_ecomp(const char *script, size_t size, reliq_exprs *exprs);
 
 reliq reliq_from_compressed(const reliq_compressed *compressed, const size_t compressedl, const reliq *rq);
-reliq reliq_from_compressed_independent(const reliq_compressed *compressed, const size_t compressedl, char **ptr, size_t *size, const reliq *rq);
+reliq reliq_from_compressed_independent(const reliq_compressed *compressed, const size_t compressedl, char **ptr, size_t *size);
 
 int reliq_match(const reliq_hnode *hnode, const reliq_hnode *parent, const reliq_node *node);
 
