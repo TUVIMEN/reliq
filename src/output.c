@@ -356,10 +356,9 @@ outfields_print_pre(struct outfield **fields, size_t *pos, const size_t size, co
       field->f = NULL;
 
       outfields_value_print(out,field->o,field->v,field->s);
-      if (field->s) {
+      if (field->v)
         free(field->v);
-        field->s = 0;
-      }
+      field->s = 0;
     }
     if (field->code == 2 || field->code == 3) {
       (*pos)++;
@@ -454,7 +453,8 @@ nodes_output(const reliq *rq, flexarr *compressed_nodes, flexarr *ncollector
 
       if (j >= compressed_nodes->size)
         break;
-      if (ncol[ncurrent].b && ((reliq_expr*)ncol[ncurrent].b)->exprfl)
+
+      if (ncurrent < ncollector->size && ncol[ncurrent].b && ((reliq_expr*)ncol[ncurrent].b)->exprfl)
         out = open_memstream(&ptr,&fsize);
     }
     #endif
@@ -498,16 +498,13 @@ nodes_output(const reliq *rq, flexarr *compressed_nodes, flexarr *ncollector
           if (fieldlvl)
             fieldlvl--;
           field_ended = 1;
-
-          if (prevcode == 4 && g+1 == ncol[ncurrent].s)
-            j++;
           break;
       }
       ushort prevcode_r = prevcode;
       prevcode = code;
       if (code != 0 && code != 1 && ((prevcode_r != 1 && prevcode_r != 4) || code != 5))
         continue;
-    } else if (ncol[ncurrent].b) {
+    } else if (ncurrent < ncollector->size && ncol[ncurrent].b) {
       err = node_output(x->hnode,x->parent,((reliq_expr*)ncol[ncurrent].b)->nodef,
         ((reliq_expr*)ncol[ncurrent].b)->nodefl,rout,rq);
       if (err)
@@ -552,8 +549,14 @@ nodes_output(const reliq *rq, flexarr *compressed_nodes, flexarr *ncollector
 
   END: ;
   #ifdef RELIQ_EDITING
-  for (size_t i = 0; i < outs->size; i++)
-    free(((struct fcollector_out**)outs->v)[i]);
+  struct fcollector_out **outsv = (struct fcollector_out**)outs->v;
+  for (size_t i = 0; i < outs->size; i++) {
+    fprintf(stderr,"kkkkkkkkkkkkkkkkkkkkkkkkkk\n");
+    fclose(outsv[i]->f);
+    if (outsv[i]->s)
+      free(outsv[i]->v);
+    free(outsv[i]);
+  }
   flexarr_free(outs);
   #endif
 

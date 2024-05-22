@@ -19,7 +19,8 @@
 #ifndef RELIQ_H
 #define RELIQ_H
 
-#define RELIQ_SAVE 0x8
+#define RELIQ_SAVE 0x1
+#define RELIQ_IMMUTABLE 0x2
 
 #define RELIQ_ERROR_MESSAGE_LENGTH 512
 

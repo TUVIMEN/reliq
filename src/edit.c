@@ -38,7 +38,7 @@ typedef unsigned long int ulong;
 #include "utils.h"
 #include "edit.h"
 
-#define MAX_PATTERN_SPACE (1<<24)
+#define SED_MAX_PATTERN_SPACE (1<<20)
 
 const struct reliq_format_function format_functions[] = {
     //{{"htmldecode",10},htmldecode_edit},
@@ -1022,7 +1022,7 @@ sed_pre_edit(char *src, size_t size, FILE *output, char *buffers[3], flexarr *sc
 
       if (appendnextline)
         offset = patternspl;
-      if ((end-start)+offset >= MAX_PATTERN_SPACE) {
+      if ((end-start)+offset >= SED_MAX_PATTERN_SPACE) {
         BIGLINE: ;
         return reliq_set_error(1,"sed: line too big to process");
       }
@@ -1049,7 +1049,7 @@ sed_pre_edit(char *src, size_t size, FILE *output, char *buffers[3], flexarr *sc
       }
       switch (scriptv[cycle].name) {
         case 'H':
-          if (patternspl+holdspl > MAX_PATTERN_SPACE)
+          if (patternspl+holdspl > SED_MAX_PATTERN_SPACE)
             goto BIGLINE;
           offset = holdspl;
         case 'h':
@@ -1057,7 +1057,7 @@ sed_pre_edit(char *src, size_t size, FILE *output, char *buffers[3], flexarr *sc
           holdspl = patternspl+offset;
           break;
         case 'G':
-          if (patternspl+holdspl > MAX_PATTERN_SPACE)
+          if (patternspl+holdspl > SED_MAX_PATTERN_SPACE)
             goto BIGLINE;
           offset = patternspl;
         case 'g':
@@ -1183,7 +1183,7 @@ sed_pre_edit(char *src, size_t size, FILE *output, char *buffers[3], flexarr *sc
                   c = arg.b[i]-'0';
                   if (pmatch[(uchar)c].rm_so == -1 || pmatch[(uchar)c].rm_eo == -1)
                     continue;
-                  if (bufferspl+(pmatch[(uchar)c].rm_eo-pmatch[(uchar)c].rm_so) >= MAX_PATTERN_SPACE)
+                  if (bufferspl+(pmatch[(uchar)c].rm_eo-pmatch[(uchar)c].rm_so) >= SED_MAX_PATTERN_SPACE)
                     goto BIGLINE;
                   for (int j = pmatch[(uchar)c].rm_so; j < pmatch[(uchar)c].rm_eo; j++)
                     buffersp[bufferspl++] = patternsp[j];
@@ -1195,7 +1195,7 @@ sed_pre_edit(char *src, size_t size, FILE *output, char *buffers[3], flexarr *sc
           }
           after = bufferspl;
           if (patternspl-pmatch[0].rm_eo) {
-            if (bufferspl+(patternspl-pmatch[0].rm_eo) >= MAX_PATTERN_SPACE)
+            if (bufferspl+(patternspl-pmatch[0].rm_eo) >= SED_MAX_PATTERN_SPACE)
               goto BIGLINE;
             memcpy(buffersp+bufferspl,patternsp+pmatch[0].rm_eo,patternspl-pmatch[0].rm_eo);
             bufferspl += patternspl-pmatch[0].rm_eo;
@@ -1221,7 +1221,7 @@ sed_pre_edit(char *src, size_t size, FILE *output, char *buffers[3], flexarr *sc
 
     NEXT_PRINT: ;
     if (appendnextline) {
-      if (hasdelim && patternspl < MAX_PATTERN_SPACE)
+      if (hasdelim && patternspl < SED_MAX_PATTERN_SPACE)
         patternsp[patternspl++] = prevdelim;
     } else {
       if (!silent) {
@@ -1290,7 +1290,7 @@ sed_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigne
 
   char *buffers[3];
   for (size_t i = 0; i < 3; i++)
-    buffers[i] = malloc(MAX_PATTERN_SPACE);
+    buffers[i] = malloc(SED_MAX_PATTERN_SPACE);
 
   err = sed_pre_edit(src,size,output,buffers,script,linedelim,silent);
 

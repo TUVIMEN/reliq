@@ -51,7 +51,7 @@ flexarr_dec(flexarr *f)
 }
 
 void *
-flexarr_set(flexarr *f, const size_t s)
+flexarr_set(flexarr *f, const size_t s) //set number of allocated elements to s
 {
   if (f->size >= s || f->asize >= s)
     return NULL;
@@ -63,7 +63,7 @@ flexarr_set(flexarr *f, const size_t s)
 }
 
 void *
-flexarr_alloc(flexarr *f, const size_t s)
+flexarr_alloc(flexarr *f, const size_t s) //allocate additional s amount of elements
 {
   if (s == 0 || f->asize-f->size >= s)
     return f->v;
@@ -75,7 +75,7 @@ flexarr_alloc(flexarr *f, const size_t s)
 }
 
 void *
-flexarr_add(flexarr *dst, const flexarr *src)
+flexarr_add(flexarr *dst, const flexarr *src) //append contents of src to dst
 {
   if (dst->size+src->size > dst->asize)
     if (flexarr_alloc(dst,src->size) == NULL)
@@ -86,7 +86,7 @@ flexarr_add(flexarr *dst, const flexarr *src)
 }
 
 void *
-flexarr_clearb(flexarr *f)
+flexarr_clearb(flexarr *f) //clear buffer
 {
   if (f->size == f->asize || !f->v)
       return NULL;
@@ -97,13 +97,15 @@ flexarr_clearb(flexarr *f)
 }
 
 void
-flexarr_conv(flexarr *f, void **v, size_t *s)
+flexarr_conv(flexarr *f, void **v, size_t *s) //convert from flexarr to normal array
 {
   flexarr_clearb(f);
-  *v = f->v;
   *s = f->size;
-  if (!f->size && f->v)
+  if (!f->size && f->v) {
     free(f->v);
+    f->v = NULL;
+  }
+  *v = f->v;
   free(f);
 }
 
