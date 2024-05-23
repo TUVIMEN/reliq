@@ -27,6 +27,15 @@ struct fcollector_expr {
   unsigned char isnodef;
 };
 
+enum outfieldCode {
+  ofUnnamed,
+  ofNamed,
+  ofBlock,
+  ofArray,
+  ofNoFieldsBlock,
+  ofBlockEnd
+};
+
 reliq_error *node_output(const reliq_hnode *hnode, const reliq_hnode *parent,
         #ifdef RELIQ_EDITING
         const reliq_format_func *format

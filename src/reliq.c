@@ -1795,7 +1795,7 @@ fcollector_add(const size_t lastn, const uchar isnodef, const reliq_expr *expr, 
 #endif
 
 static void
-add_compressed_blank(flexarr *dest, const ulong val1, const void *val2)
+add_compressed_blank(flexarr *dest, const enum outfieldCode val1, const void *val2)
 {
   reliq_compressed *x = flexarr_inc(dest);
   x->hnode = (reliq_hnode *const)val1;
@@ -1816,7 +1816,7 @@ reliq_exec_table(const reliq *rq, const reliq_expr *expr, const reliq_output_fie
 
   if (expr->flags&EXPR_SINGULAR) {
     if (named)
-      add_compressed_blank(dest,expr->childfields ? 3 : 4,named);
+      add_compressed_blank(dest,expr->childfields ? ofArray : ofNoFieldsBlock,named);
     if (!source->size)
       goto END;
 
@@ -1832,7 +1832,7 @@ reliq_exec_table(const reliq *rq, const reliq_expr *expr, const reliq_output_fie
       size_t lastn = ncollector->size;
       #endif
       if (named && expr->childfields)
-        add_compressed_blank(dest,2,NULL);
+        add_compressed_blank(dest,ofBlock,NULL);
       if ((err = reliq_exec_pre(rq,exprsv,exprsl,in,dest,out,0,isempty,ncollector
         #ifdef RELIQ_EDITING
         ,fcollector
@@ -1840,10 +1840,10 @@ reliq_exec_table(const reliq *rq, const reliq_expr *expr, const reliq_output_fie
         )))
         break;
       if (named && expr->childfields)
-        add_compressed_blank(dest,5,NULL);
+        add_compressed_blank(dest,ofBlockEnd,NULL);
       #ifdef RELIQ_EDITING
       if (ncollector->size-lastn && expr->nodefl)
-        fcollector_add(lastn,1,expr,ncollector,fcollector);
+        fcollector_add(lastn,ofNamed,expr,ncollector,fcollector);
       #endif
     }
 
@@ -1852,7 +1852,7 @@ reliq_exec_table(const reliq *rq, const reliq_expr *expr, const reliq_output_fie
   }
 
   if (named)
-    add_compressed_blank(dest,expr->childfields ? 2 : 4,named);
+    add_compressed_blank(dest,expr->childfields ? ofBlock : ofNoFieldsBlock,named);
 
   err = reliq_exec_pre(rq,exprsv,exprsl,source,dest,out,childfields+expr->childfields,isempty,ncollector
     #ifdef RELIQ_EDITING
@@ -1862,7 +1862,7 @@ reliq_exec_table(const reliq *rq, const reliq_expr *expr, const reliq_output_fie
 
   END: ;
   if (named)
-    add_compressed_blank(dest,5,NULL);
+    add_compressed_blank(dest,ofBlockEnd,NULL);
   return err;
 }
 
@@ -1923,16 +1923,16 @@ reliq_exec_pre(const reliq *rq, const reliq_expr *exprs, size_t exprsl, flexarr 
       lastnode = &exprs[i];
       reliq_node *node = (reliq_node*)exprs[i].e;
       if (outnamed)
-        add_compressed_blank(buf[1],1,outnamed);
+        add_compressed_blank(buf[1],ofNamed,outnamed);
 
       if (!isempty)
         node_exec(rq,node,buf[0],buf[1]);
 
       if (outnamed)
-        add_compressed_blank(buf[1],5,NULL);
+        add_compressed_blank(buf[1],ofBlockEnd,NULL);
 
       if (outprotected && buf[1]->size == 0) {
-        add_compressed_blank(buf[1],0,NULL);
+        add_compressed_blank(buf[1],ofUnnamed,NULL);
         ncollector_add(ncollector,buf[2],buf[1],startn,lastn,NULL,exprs[i].flags,0,0);
         break;
       }

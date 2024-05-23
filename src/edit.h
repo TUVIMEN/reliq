@@ -31,7 +31,6 @@ struct reliq_format_function {
   reliq_error *(*func)(char*,size_t,FILE*,const void*[4],const unsigned char);
 };
 
-//reliq_error *htmldecode_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag);
 reliq_error *trim_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag);
 reliq_error *tr_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag);
 reliq_error *cut_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag);

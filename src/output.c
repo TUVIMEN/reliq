@@ -435,7 +435,8 @@ nodes_output(const reliq *rq, flexarr *compressed_nodes, flexarr *ncollector
   flexarr *outfields = flexarr_init(sizeof(struct outfield*),OUTFIELDS_INC);
   ushort fieldlvl = 0;
   FILE **oout = NULL; //outfields output
-  ushort prevcode = 0;
+  enum outfieldCode prevcode = ofUnnamed;
+  size_t prev_j = j;
   ushort field_ended = 0;
 
   for (;; j++) {
@@ -467,22 +468,30 @@ nodes_output(const reliq *rq, flexarr *compressed_nodes, flexarr *ncollector
 
     reliq_compressed *x = &((reliq_compressed*)compressed_nodes->v)[j];
     if ((void*)x->hnode < (void*)10) {
-      ulong code = (ulong)x->hnode;
+      enum outfieldCode code = (enum outfieldCode)x->hnode;
       struct outfield *field,**field_pre;
+
+      /*the if ends in hard to manage ways so these values are assigned before it ends
+        and copied variables are used*/
+      const enum outfieldCode prevcode_r = prevcode;
+      prevcode = code;
+      const size_t prev_j_r = prev_j;
+      prev_j = j;
+
       switch (code) {
-        case 0:
+        case ofUnnamed:
           fputc('\n',rout);
           break;
-        case 2:
-        case 3:
-        case 4:
-        case 1:
+        case ofBlock:
+        case ofArray:
+        case ofNoFieldsBlock:
+        case ofNamed:
           field_pre = flexarr_inc(outfields);
           *field_pre = malloc(sizeof(struct outfield));
           field = *field_pre;
           field->s = 0;
           field->f = NULL;
-          if (code == 1 || code == 4) {
+          if (code == ofNamed || code == ofNoFieldsBlock) {
             field->f = open_memstream(&field->v,&field->s);
             oout = &field->f;
           }
@@ -494,16 +503,21 @@ nodes_output(const reliq *rq, flexarr *compressed_nodes, flexarr *ncollector
             field->o = NULL;
           fieldlvl++;
           break;
-        case 5:
+        case ofBlockEnd:
           if (fieldlvl)
             fieldlvl--;
           field_ended = 1;
+
+          if ((prevcode_r == ofNoFieldsBlock || prevcode_r == ofArray || prevcode_r == ofBlock) && j-prev_j_r == ofNamed)
+            goto NCOLLECTOR_END; //j-prev_j_r is 1 meaning that block was immedietly ended, and so it has to end
+
+          if (g == 0) //the first node in ncol[ncurrent] was ending block, so the previous one did not free oout
+            goto FIELD_ENDED_FREE_OOUT;
           break;
       }
-      ushort prevcode_r = prevcode;
-      prevcode = code;
-      if (code != 0 && code != 1 && ((prevcode_r != 1 && prevcode_r != 4) || code != 5))
-        continue;
+
+      if (code != ofUnnamed && code != ofNamed && (prevcode_r != ofNamed || code != ofBlockEnd))
+         continue;
     } else if (ncurrent < ncollector->size && ncol[ncurrent].b) {
       err = node_output(x->hnode,x->parent,((reliq_expr*)ncol[ncurrent].b)->nodef,
         ((reliq_expr*)ncol[ncurrent].b)->nodefl,rout,rq);
@@ -513,6 +527,7 @@ nodes_output(const reliq *rq, flexarr *compressed_nodes, flexarr *ncollector
 
     g++;
     if (ncurrent < ncollector->size && ncol[ncurrent].s == g) {
+      NCOLLECTOR_END: ;
       #ifdef RELIQ_EDITING
       if (ncol[ncurrent].b && out != rq->output) {
         fclose(out);
@@ -531,7 +546,11 @@ nodes_output(const reliq *rq, flexarr *compressed_nodes, flexarr *ncollector
         fout = rq->output;
       #endif
 
+      g = 0;
+      ncurrent++;
+
       if (field_ended) {
+        FIELD_ENDED_FREE_OOUT: ;
         if (oout) {
           fclose(*oout);
           *oout = NULL;
@@ -539,9 +558,6 @@ nodes_output(const reliq *rq, flexarr *compressed_nodes, flexarr *ncollector
         }
         field_ended = 0;
       }
-
-      g = 0;
-      ncurrent++;
     }
   }
 

@@ -41,7 +41,6 @@ typedef unsigned long int ulong;
 #define SED_MAX_PATTERN_SPACE (1<<20)
 
 const struct reliq_format_function format_functions[] = {
-    //{{"htmldecode",10},htmldecode_edit},
     {{"trim",4},trim_edit},
     {{"tr",2},tr_edit},
     {{"cut",3},cut_edit},
@@ -50,8 +49,6 @@ const struct reliq_format_function format_functions[] = {
     {{"sort",4},sort_edit},
     {{"uniq",4},uniq_edit},
     {{"echo",4},echo_edit},
-    /*{{"match",5},NULL},
-    {{"error",5},NULL},*/
 };
 
 reliq_error *
