@@ -567,7 +567,6 @@ nodes_output(const reliq *rq, flexarr *compressed_nodes, flexarr *ncollector
   #ifdef RELIQ_EDITING
   struct fcollector_out **outsv = (struct fcollector_out**)outs->v;
   for (size_t i = 0; i < outs->size; i++) {
-    fprintf(stderr,"kkkkkkkkkkkkkkkkkkkkkkkkkk\n");
     fclose(outsv[i]->f);
     if (outsv[i]->s)
       free(outsv[i]->v);
