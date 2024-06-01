@@ -53,7 +53,7 @@ typedef unsigned int uint;
 typedef unsigned long int ulong;
 
 char *argv0;
-reliq_exprs exprs = {NULL,0};
+reliq_exprs exprs = {0};
 
 uint settings = 0;
 int nftwflags = FTW_PHYS;
@@ -119,15 +119,29 @@ expr_exec(char *f, size_t s, const uchar inpipe)
   if (f == NULL || s == 0)
     return;
 
+  reliq_error *err;
+
   if (settings&F_FAST) {
-    handle_reliq_error(reliq_fexec_file(f,s,outfile,&exprs,inpipe ? unalloc_free : munmap));
+    err = reliq_fexec_file(f,s,outfile,&exprs,inpipe ? unalloc_free : munmap);
+    if (err)
+      goto ERR;
     return;
   }
 
   reliq rq = reliq_init(f,s);
-  handle_reliq_error(reliq_exec_file(&rq,outfile,&exprs));
+  err = reliq_exec_file(&rq,outfile,&exprs);
 
   reliq_free(&rq);
+  ERR: ;
+  if (inpipe) {
+    free(f);
+  } else
+    munmap(f,s);
+
+  if (err) {
+    reliq_efree(&exprs);
+    handle_reliq_error(err);
+  }
 }
 
 static void
@@ -181,7 +195,7 @@ file_handle(const char *f)
   }
 
   file = mmap(NULL,st.st_size,PROT_READ|PROT_WRITE,MAP_PRIVATE,fd,0);
-  if (file == NULL) {
+  if (file == MAP_FAILED) {
     warn("%s",f);
     close(fd);
   } else {
@@ -202,8 +216,9 @@ load_expr_from_file(char *filename)
   size_t filel;
   pipe_to_str(fd,&file,&filel);
   close(fd);
-  handle_reliq_error(reliq_ecomp(file,filel,&exprs));
+  reliq_error *err = reliq_ecomp(file,filel,&exprs);
   free(file);
+  handle_reliq_error(err);
 }
 
 int

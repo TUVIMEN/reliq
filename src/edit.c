@@ -807,7 +807,8 @@ sed_script_comp_pre(const char *src, size_t size, int eflags, flexarr **script)
       continue;
     }
     pos++;
-    while_is(isspace,src,pos,size);
+    while (pos < size && src[pos] != '\n' && isspace(src[pos]))
+      pos++;
 
     char const *argstart = src+pos;
     if (command->flags&SC_ONLY_NEWLINE) {
@@ -1173,16 +1174,25 @@ sed_pre_edit(char *src, size_t size, FILE *output, char *buffers[3], flexarr *sc
             reliq_cstr arg = scriptv[cycle].arg;
             for (size_t i = 0; i < arg.s; i++) {
               char c = arg.b[i];
-              if (i+1 < arg.s && arg.b[i] == '\\') {
-                i++;
-                c = special_character(arg.b[i]);
-                if (isdigit(arg.b[i])) {
-                  c = arg.b[i]-'0';
+              if (c == '&' || (i+1 < arg.s && c == '\\')) {
+                char unchanged_c = '0';
+                if (c == '\\') {
+                  c = special_character(arg.b[++i]);
+                  unchanged_c = arg.b[i];
+                }
+
+                if (isdigit(unchanged_c)) {
+                  c = unchanged_c-'0';
                   if (pmatch[(uchar)c].rm_so == -1 || pmatch[(uchar)c].rm_eo == -1)
                     continue;
                   if (bufferspl+(pmatch[(uchar)c].rm_eo-pmatch[(uchar)c].rm_so) >= SED_MAX_PATTERN_SPACE)
                     goto BIGLINE;
-                  for (int j = pmatch[(uchar)c].rm_so; j < pmatch[(uchar)c].rm_eo; j++)
+                  int loop_start=pmatch[(uchar)c].rm_so,loop_end=pmatch[(uchar)c].rm_eo;
+                  if (c) { //shift by after if not \0
+                    loop_start += after;
+                    loop_end += after;
+                  }
+                  for (int j = loop_start; j < loop_end; j++)
                     buffersp[bufferspl++] = patternsp[j];
                   continue;
                 }
