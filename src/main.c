@@ -31,7 +31,7 @@
 #include <sys/mman.h>
 #include <regex.h>
 #include <ftw.h>
-#include <err.h>
+#include <errno.h>
 
 #ifdef LINKED
 #include <ctype.h>
@@ -57,7 +57,8 @@ reliq_exprs exprs = {0};
 
 uint settings = 0;
 int nftwflags = FTW_PHYS;
-FILE* outfile;
+FILE *outfile;
+FILE *errfile;
 
 static int nftw_func(const char *fpath, const struct stat *sb, int typeflag, struct FTW *ftwbuf);
 
@@ -66,10 +67,39 @@ die(const char *s, ...)
 {
   va_list ap;
   va_start(ap,s);
-  vfprintf(stderr,s,ap);
+  vfprintf(errfile,s,ap);
   va_end(ap);
-  fputc('\n',stderr);
+  fputc('\n',errfile);
   exit(1);
+}
+
+static void
+xerrno_print(const char *s, va_list args)
+{
+  int e = errno;
+  fputs(argv0,errfile);
+  fputs(": ",errfile);
+  vfprintf(errfile,s,args);
+  fputs(": ",errfile);
+  fputs(strerror(e),errfile);
+  fputc('\n',errfile);
+}
+
+static void
+xwarn(const char *s, ...) {
+  va_list ap;
+  va_start(ap,s);
+  xerrno_print(s,ap);
+  va_end(ap);
+}
+
+static void
+xerr(int eval, const char *s, ...) {
+  va_list ap;
+  va_start(ap,s);
+  xerrno_print(s,ap);
+  va_end(ap);
+  exit(eval);
 }
 
 static void
@@ -77,10 +107,11 @@ handle_reliq_error(reliq_error *err) {
   if (err == NULL)
     return;
 
-  fputs("reliq: ",stderr);
+  fputs(argv0,errfile);
+  fputs(": ",errfile);
 
-  fputs(err->msg,stderr);
-  fputc('\n',stderr);
+  fputs(err->msg,errfile);
+  fputc('\n',errfile);
 
   int c = err->code;
   free(err);
@@ -96,6 +127,7 @@ usage()
       "Options:\n"\
       "  -l\t\t\tlist structure of FILE\n"\
       "  -o FILE\t\tchange output to a FILE instead of stdout\n"\
+      "  -e FILE\t\tchange output of errors to a FILE instead of stderr\n"\
       "  -f FILE\t\tobtain PATTERNS from FILE\n"\
       "  -H\t\t\tfollow symlinks\n"\
       "  -r\t\t\tread all files under each directory, recursively\n"\
@@ -174,12 +206,12 @@ file_handle(const char *f)
   }
 
   if ((fd = open(f,O_RDONLY)) == -1) {
-    warn("%s",f);
+    xwarn("%s",f);
     return;
   }
 
   if (fstat(fd,&st) == -1) {
-    warn("%s",f);
+    xwarn("%s",f);
     close(fd);
     return;
   }
@@ -188,15 +220,15 @@ file_handle(const char *f)
     close(fd);
     if (settings&F_RECURSIVE) {
       if (nftw(f,nftw_func,16,nftwflags) == -1)
-        warn("%s",f);
+        xwarn("%s",f);
     } else
-      fprintf(stderr,"%s: -R not specified: omitting directory '%s'\n",argv0,f);
+      fprintf(errfile,"%s: -R not specified: omitting directory '%s'\n",argv0,f);
     return;
   }
 
   file = mmap(NULL,st.st_size,PROT_READ|PROT_WRITE,MAP_PRIVATE,fd,0);
   if (file == MAP_FAILED) {
-    warn("%s",f);
+    xwarn("%s",f);
     close(fd);
   } else {
     close(fd);
@@ -211,7 +243,7 @@ load_expr_from_file(char *filename)
     return;
   int fd = open(filename,O_RDONLY);
   if (fd == -1)
-    err(1,"%s",filename);
+    xerr(1,"%s",filename);
   char *file;
   size_t filel;
   pipe_to_str(fd,&file,&filel);
@@ -239,8 +271,9 @@ main(int argc, char **argv)
 
   int opt;
   outfile = stdout;
+  errfile = stderr;
 
-  while ((opt = getopt(argc,argv,"lo:f:HrRFvh")) != -1) {
+  while ((opt = getopt(argc,argv,"lo:e:f:HrRFvh")) != -1) {
     switch (opt) {
       case 'l':
         handle_reliq_error(reliq_ecomp("| \"%n%A - children(%c) lvl(%L) size(%s) pos(%p)\\n\"",50,&exprs));
@@ -248,7 +281,14 @@ main(int argc, char **argv)
       case 'o':
         outfile = fopen(optarg,"w");
         if (outfile == NULL)
-          err(1,"%s",optarg);
+          xerr(1,"%s",optarg);
+        break;
+      case 'e':
+        errfile = fopen(optarg,"w");
+        if (errfile == NULL) {
+          errfile = stderr;
+          xerr(1,"%s",optarg);
+        }
         break;
       case 'f': load_expr_from_file(optarg); break;
       case 'H': nftwflags &= ~FTW_PHYS; break;
