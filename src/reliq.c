@@ -551,9 +551,8 @@ reliq_free(reliq *rq)
 {
     if (rq == NULL)
       return;
-    if (!(rq->flags&RELIQ_IMMUTABLE))
-      for (size_t i = 0; i < rq->nodesl; i++)
-        free(rq->nodes[i].attribs);
+    for (size_t i = 0; i < rq->nodesl; i++)
+      free(rq->nodes[i].attribs);
     if (rq->nodesl)
       free(rq->nodes);
 }
@@ -2229,7 +2228,7 @@ reliq_from_compressed(const reliq_compressed *compressed, const size_t compresse
 {
   reliq t;
   t.expr = NULL;
-  t.flags = RELIQ_SAVE|RELIQ_IMMUTABLE;
+  t.flags = RELIQ_SAVE;
   t.output = NULL;
   t.data = rq->data;
   t.size = rq->size;
@@ -2248,6 +2247,11 @@ reliq_from_compressed(const reliq_compressed *compressed, const size_t compresse
     for (size_t j = 0; j <= current->child_count; j++) {
       new = (reliq_hnode*)flexarr_inc(nodes);
       memcpy(new,current+j,sizeof(reliq_hnode));
+
+      new->attribs = NULL;
+      if ((current+j)->attribsl)
+        new->attribs = memdup((current+j)->attribs,sizeof(reliq_cstr_pair)*(current+j)->attribsl);
+
       new->lvl -= lvl;
     }
   }
