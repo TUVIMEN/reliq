@@ -901,6 +901,8 @@ format_comp(char *src, size_t *pos, size_t *size,
 static reliq_error *
 exprs_check_chain(const reliq_exprs *exprs)
 {
+  if (!exprs->s)
+    return NULL;
   if (exprs->s > 1)
     goto ERR;
 
@@ -1281,7 +1283,7 @@ reliq_output_type_get(const char *src, size_t *pos, const size_t s, uchar arrayp
   while (*pos < s && isalnum(src[*pos]))
     (*pos)++;
   *typel = *pos-(*type-src);
-  if (*pos < s && (!isspace(src[*pos]) && (!arraypossible || (**type == 'a' && src[*pos] != '(' && src[*pos] != '.'))))
+  if (*pos < s && !isspace(src[*pos]) && !(arraypossible && (**type == 'a' && (src[*pos] == '(' || src[*pos] == '.'))))
     return reliq_set_error(1,"output field: unexpected character in type 0x%02x",src[*pos]);
   return NULL;
 }

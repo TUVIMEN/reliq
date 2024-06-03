@@ -102,10 +102,11 @@ format_exec(char *input, size_t inputl, FILE *output, const reliq_hnode *hnode, 
 }
 
 static reliq_error *
-format_get_func_args(reliq_format_func *f, char *src, size_t *pos, size_t *size)
+format_get_func_args(reliq_format_func *f, char *src, size_t *pos, size_t *size, size_t *argcount)
 {
   reliq_error *err;
-  for (size_t i = 0; *pos < *size; i++) {
+  size_t i = 0;
+  for (; *pos < *size; i++) {
     if (i >= 4)
       return reliq_set_error(1,"too many arguments passed to a function");
 
@@ -136,9 +137,11 @@ format_get_func_args(reliq_format_func *f, char *src, size_t *pos, size_t *size)
     if (src[*pos] != '[' && src[*pos] != '"' && src[*pos] != '\'') {
       if (isalnum(src[*pos]) || src[*pos] == '/' || src[*pos] == '|')
           break;
+      *argcount = i+1;
       return reliq_set_error(1,"bad argument at %lu(0x%02x)",*pos,src[*pos]);
     }
   }
+  *argcount = i+1;
   return NULL;
 }
 
@@ -167,7 +170,8 @@ format_get_funcs(flexarr *format, char *src, size_t *pos, size_t *size)
     memset(f,0,sizeof(reliq_format_func));
 
     while_is(isspace,src,*pos,*size);
-    reliq_error *err = format_get_func_args(f,src,pos,size);
+    size_t argcount = 0;
+    reliq_error *err = format_get_func_args(f,src,pos,size,&argcount);
     if (err)
       return err;
 
@@ -183,7 +187,7 @@ format_get_funcs(flexarr *format, char *src, size_t *pos, size_t *size)
       if (!found)
         return reliq_set_error(1,"format function does not exist: \"%.*s\"",fnamel,fname);
       f->flags |= i+1;
-    } else if (format->size > 1)
+    } else if (argcount > 1)
       return reliq_set_error(1,"printf defined two times in format");
   }
   return NULL;
@@ -1267,33 +1271,46 @@ sed_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigne
 
   char linedelim = '\n';
 
-  if (arg[1] && flag&FORMAT_ARG1_ISSTR && ((reliq_str*)arg[1])->b && ((reliq_str*)arg[1])->s) {
-    reliq_str *str = (reliq_str*)arg[1];
-    for (size_t i = 0; i < str->s; i++) {
-      if (str->b[i] == 'E') {
-        extendedregex = 1;
-      } else if (str->b[i] == 'z') {
-        linedelim = '\0';
-      } else if (str->b[i] == 'n')
-        silent = 1;
-    }
+  if (arg[1]) {
+    if (flag&FORMAT_ARG1_ISSTR) {
+      if (((reliq_str*)arg[1])->b && ((reliq_str*)arg[1])->s) {
+        reliq_str *str = (reliq_str*)arg[1];
+        for (size_t i = 0; i < str->s; i++) {
+          if (str->b[i] == 'E') {
+            extendedregex = 1;
+          } else if (str->b[i] == 'z') {
+            linedelim = '\0';
+          } else if (str->b[i] == 'n')
+            silent = 1;
+        }
+      }
+    } else
+      return reliq_set_error(1,"%s: arg %d: incorrect type of argument, expected string","sed",2);
   }
-  if (arg[2] && flag&FORMAT_ARG2_ISSTR) {
-    reliq_str *str = (reliq_str*)arg[2];
-    if (str->b && str->s) {
-      linedelim = *str->b;
-      if (linedelim == '\\' && str->s > 1)
-        linedelim = special_character(str->b[1]);
-    }
+  if (arg[2]) {
+    if (flag&FORMAT_ARG2_ISSTR) {
+      reliq_str *str = (reliq_str*)arg[2];
+      if (str->b && str->s) {
+        linedelim = *str->b;
+        if (linedelim == '\\' && str->s > 1)
+          linedelim = special_character(str->b[1]);
+      }
+    } else
+      return reliq_set_error(1,"%s: arg %d: incorrect type of argument, expected string","sed",3);
   }
 
-  if (arg[0] && flag&FORMAT_ARG0_ISSTR && ((reliq_str*)arg[0])->b && ((reliq_str*)arg[0])->s) {
-    reliq_str *str = (reliq_str*)arg[0];
-    if ((err = sed_script_comp(str->b,str->s,extendedregex ? REG_EXTENDED : 0,&script)))
-      return err;
+  if (arg[0]) {
+    if (flag&FORMAT_ARG0_ISSTR) {
+      if (((reliq_str*)arg[0])->b && ((reliq_str*)arg[0])->s) {
+        reliq_str *str = (reliq_str*)arg[0];
+        if ((err = sed_script_comp(str->b,str->s,extendedregex ? REG_EXTENDED : 0,&script)))
+          return err;
+      }
+    } else
+      return reliq_set_error(1,"%s: arg %d: incorrect type of argument, expected string","sed",1);
   }
   if (script == NULL)
-    return reliq_set_error(0,"sed: missing script argument");
+    return reliq_set_error(1,"sed: missing script argument");
 
   char *buffers[3];
   for (size_t i = 0; i < 3; i++)
@@ -1350,13 +1367,23 @@ echo_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsign
 {
   reliq_str *str[2] = {NULL};
 
-  if (arg[0] && flag&FORMAT_ARG0_ISSTR && ((reliq_str*)arg[0])->b && ((reliq_str*)arg[0])->s)
-    str[0] = (reliq_str*)arg[0];
-  if (arg[1] && flag&FORMAT_ARG1_ISSTR && ((reliq_str*)arg[1])->b && ((reliq_str*)arg[1])->s)
-    str[1] = (reliq_str*)arg[1];
+  if (arg[0]) {
+    if (flag&FORMAT_ARG0_ISSTR) {
+      if (((reliq_str*)arg[0])->b && ((reliq_str*)arg[0])->s)
+        str[0] = (reliq_str*)arg[0];
+    } else
+      return reliq_set_error(1,"%s: arg %d: incorrect type of argument, expected string","echo",1);
+  }
+  if (arg[1]) {
+    if (flag&FORMAT_ARG1_ISSTR) {
+      if (((reliq_str*)arg[1])->b && ((reliq_str*)arg[1])->s) 
+        str[1] = (reliq_str*)arg[1];
+    } else
+      return reliq_set_error(1,"%s: arg %d: incorrect type of argument, expected string","echo",2);
+  }
 
   if (!str[0] && !str[1])
-    return reliq_set_error(0,"echo: missing arguments");
+    return reliq_set_error(1,"echo: missing arguments");
 
   if (str[0] && str[0]->s)
     echo_edit_print(str[0],output);
@@ -1372,13 +1399,16 @@ uniq_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsign
 {
   char delim = '\n';
 
-  if (arg[0] && flag&FORMAT_ARG0_ISSTR) {
-    reliq_str *str = (reliq_str*)arg[0];
-    if (str->b && str->s) {
-      delim = *str->b;
-      if (delim == '\\' && str->s > 1)
-        delim = special_character(str->b[1]);
-    }
+  if (arg[0]) {
+    if (flag&FORMAT_ARG0_ISSTR) {
+      reliq_str *str = (reliq_str*)arg[0];
+      if (str->b && str->s) {
+        delim = *str->b;
+        if (delim == '\\' && str->s > 1)
+          delim = special_character(str->b[1]);
+      }
+    } else
+      return reliq_set_error(1,"%s: arg %d: incorrect type of argument, expected string","uniq",1);
   }
 
   reliq_cstr line,previous;
@@ -1421,18 +1451,21 @@ sort_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsign
   char delim = '\n';
   uchar reverse=0,unique=0; //,natural=0,icase=0;
 
-  if (arg[0] && flag&FORMAT_ARG0_ISSTR && ((reliq_str*)arg[0])->b) {
-    reliq_str *str = (reliq_str*)arg[0];
-    for (size_t i = 0; i < str->s; i++) {
-      if (str->b[i] == 'r') {
-        reverse = 1;
-      } /* else if (str->b[i] == 'n') {
-        natural = 1;
-      } else if (str->b[i] == 'i') {
-        icase = 1;
-      } */ else if (str->b[i] == 'u')
-        unique = 1;
-    }
+  if (arg[0]) {
+    if (flag&FORMAT_ARG0_ISSTR && ((reliq_str*)arg[0])->b) {
+      reliq_str *str = (reliq_str*)arg[0];
+      for (size_t i = 0; i < str->s; i++) {
+        if (str->b[i] == 'r') {
+          reverse = 1;
+        } /* else if (str->b[i] == 'n') {
+          natural = 1;
+        } else if (str->b[i] == 'i') {
+          icase = 1;
+        } */ else if (str->b[i] == 'u')
+          unique = 1;
+      }
+    } else
+      return reliq_set_error(1,"%s: arg %d: incorrect type of argument, expected string","sort",1);
   }
 
   if (arg[1] && flag&FORMAT_ARG1_ISSTR) {
@@ -1441,7 +1474,8 @@ sort_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsign
       delim = *str->b;
       if (delim == '\\' && str->s > 1)
         delim = special_character(str->b[1]);
-    }
+    } else
+      return reliq_set_error(1,"%s: arg %d: incorrect type of argument, expected string","sort",2);
   }
 
   flexarr *lines = flexarr_init(sizeof(reliq_cstr),(1<<10));
@@ -1494,20 +1528,26 @@ line_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsign
   char delim = '\n';
   reliq_range *range = NULL;
 
-  if (arg[0] && !(flag&FORMAT_ARG0_ISSTR))
+  if (arg[0]) {
+    if (flag&FORMAT_ARG0_ISSTR)
+      return reliq_set_error(1,"%s: arg %d: incorrect type of argument, expected range","line",1);
     range = (reliq_range*)arg[0];
+  }
 
-  if (arg[1] && flag&FORMAT_ARG1_ISSTR) {
-    reliq_str *str = (reliq_str*)arg[1];
-    if (str->b && str->s) {
-      delim = *str->b;
-      if (delim == '\\' && str->s > 1)
-        delim = special_character(str->b[1]);
-    }
+  if (arg[1]) {
+    if (flag&FORMAT_ARG1_ISSTR) {
+      reliq_str *str = (reliq_str*)arg[1];
+      if (str->b && str->s) {
+        delim = *str->b;
+        if (delim == '\\' && str->s > 1)
+          delim = special_character(str->b[1]);
+      }
+    } else
+      return reliq_set_error(1,"%s: arg %d: incorrect type of argument, expected string","line",2);
   }
 
   if (!range)
-    return reliq_set_error(0,"line: missing arguments");
+    return reliq_set_error(1,"line: missing arguments");
 
   size_t saveptr=0,linecount=0,currentline=0;
   reliq_cstr line;
@@ -1541,37 +1581,53 @@ cut_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigne
 
   reliq_range *range = NULL;
 
-  if (arg[0] && !(flag&FORMAT_ARG0_ISSTR))
+  if (arg[0]) {
+    if (flag&FORMAT_ARG0_ISSTR)
+      reliq_set_error(1,"%s: arg %d: incorrect type of argument, expected range","cut",1);
     range = (reliq_range*)arg[0];
+  }
 
-  if (arg[1] && flag&FORMAT_ARG1_ISSTR && ((reliq_str*)arg[1])->b && ((reliq_str*)arg[1])->s) {
-    reliq_str *str = (reliq_str*)arg[1];
-    if ((err = tr_strrange(str->b,str->s,NULL,0,delim,NULL,0)))
-      return err;
-    delimited = 1;
+  if (arg[1]) {
+    if (flag&FORMAT_ARG1_ISSTR) {
+      if (((reliq_str*)arg[1])->b && ((reliq_str*)arg[1])->s) {
+        reliq_str *str = (reliq_str*)arg[1];
+        if ((err = tr_strrange(str->b,str->s,NULL,0,delim,NULL,0)))
+          return err;
+        delimited = 1;
+      }
+    } else
+      return reliq_set_error(1,"%s: arg %d: incorrect type of argument, expected string","cut",2);
   }
-  if (arg[2] && flag&FORMAT_ARG2_ISSTR && ((reliq_str*)arg[2])->b) {
-    reliq_str *str = (reliq_str*)arg[2];
-    for (size_t i = 0; i < str->s; i++) {
-        if (str->b[i] == 's') {
-          onlydelimited = 1;
-        } else if (str->b[i] == 'c') {
-          complement = 1;
-        } else if (str->b[i] == 'z')
-          linedelim = '\0';
-    }
+  if (arg[2]) {
+    if (flag&FORMAT_ARG2_ISSTR) {
+      if (((reliq_str*)arg[2])->b) {
+        reliq_str *str = (reliq_str*)arg[2];
+        for (size_t i = 0; i < str->s; i++) {
+          if (str->b[i] == 's') {
+            onlydelimited = 1;
+          } else if (str->b[i] == 'c') {
+            complement = 1;
+          } else if (str->b[i] == 'z')
+            linedelim = '\0';
+        }
+      }
+    } else
+      return reliq_set_error(1,"%s: arg %d: incorrect type of argument, expected string","cut",3);
   }
-  if (arg[3] && flag&FORMAT_ARG3_ISSTR) {
-    reliq_str *str = (reliq_str*)arg[3];
-    if (str->b && str->s) {
-      linedelim = *str->b;
-      if (linedelim == '\\' && str->s > 1)
-        linedelim = special_character(str->b[1]);
-    }
+  if (arg[3]) {
+    if (flag&FORMAT_ARG3_ISSTR) {
+      reliq_str *str = (reliq_str*)arg[3];
+      if (str->b && str->s) {
+        linedelim = *str->b;
+        if (linedelim == '\\' && str->s > 1)
+          linedelim = special_character(str->b[1]);
+      }
+    } else
+        return reliq_set_error(1,"%s: arg %d: incorrect type of argument, expected string","cut",4);
   }
 
   if (!range)
-    return reliq_set_error(0,"cut: missing range argument");
+    return reliq_set_error(1,"cut: missing range argument");
 
   reliq_cstr line;
   size_t saveptr = 0;
@@ -1661,22 +1717,37 @@ tr_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned
   uchar complement=0,squeeze=0;
   reliq_error *err;
 
-  if (arg[0] && flag&FORMAT_ARG0_ISSTR && ((reliq_str*)arg[0])->b && ((reliq_str*)arg[0])->s)
-    string[0] = (reliq_str*)arg[0];
-  if (arg[1] && flag&FORMAT_ARG1_ISSTR && ((reliq_str*)arg[1])->b && ((reliq_str*)arg[1])->s)
-    string[1] = (reliq_str*)arg[1];
-  if (arg[2] && flag&FORMAT_ARG2_ISSTR && ((reliq_str*)arg[2])->b) {
-    reliq_str *str = (reliq_str*)arg[2];
-    for (size_t i = 0; i < str->s; i++) {
-        if (str->b[i] == 's') {
-          squeeze = 1;
-        } else if (str->b[i] == 'c')
-          complement = 1;
-    }
+  if (arg[0]) {
+    if (flag&FORMAT_ARG0_ISSTR) {
+      if (((reliq_str*)arg[0])->b && ((reliq_str*)arg[0])->s)
+        string[0] = (reliq_str*)arg[0];
+    } else
+      return reliq_set_error(1,"%s: arg %d: incorrect type of argument, expected string","tr",1);
+  }
+  if (arg[1]) {
+    if (flag&FORMAT_ARG1_ISSTR) {
+      if (((reliq_str*)arg[1])->b && ((reliq_str*)arg[1])->s)
+        string[1] = (reliq_str*)arg[1];
+    } else
+      return reliq_set_error(1,"%s: arg %d: incorrect type of argument, expected string","tr",2);
+  }
+  if (arg[2]) {
+    if (flag&FORMAT_ARG2_ISSTR) {
+      if (((reliq_str*)arg[2])->b) {
+        reliq_str *str = (reliq_str*)arg[2];
+        for (size_t i = 0; i < str->s; i++) {
+            if (str->b[i] == 's') {
+              squeeze = 1;
+            } else if (str->b[i] == 'c')
+              complement = 1;
+        }
+      }
+    } else
+      return reliq_set_error(1,"%s: arg %d: incorrect type of argument, expected string","tr",3);
   }
 
   if (!string[0])
-    return reliq_set_error(0,"tr: missing arguments");
+    return reliq_set_error(1,"tr: missing arguments");
 
   const size_t bufsize = 8192;
   char buf[bufsize];

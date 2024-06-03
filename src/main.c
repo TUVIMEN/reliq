@@ -265,13 +265,13 @@ nftw_func(const char *fpath, const struct stat *sb, int typeflag, struct FTW *ft
 int
 main(int argc, char **argv)
 {
-  argv0 = argv[0];
-  if (argc < 2)
-    usage();
-
   int opt;
   outfile = stdout;
   errfile = stderr;
+
+  argv0 = argv[0];
+  if (argc < 2)
+    usage();
 
   while ((opt = getopt(argc,argv,"lo:e:f:HrRFvh")) != -1) {
     switch (opt) {
