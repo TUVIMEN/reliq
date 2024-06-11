@@ -109,7 +109,7 @@ typedef struct {
   #ifdef RELIQ_EDITING
   size_t exprfl;
   #endif
-  ushort childfields;
+  unsigned short childfields;
   unsigned char flags;
 } reliq_expr;
 
