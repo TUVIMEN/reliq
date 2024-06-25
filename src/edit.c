@@ -779,8 +779,10 @@ sed_script_comp_pre(const char *src, size_t size, int eflags, flexarr **script)
   struct sed_command *command;
   ushort lvl = 0;
   while (pos < size) {
+    sedexpr->name = '\0';
     while (pos < size && (isspace(src[pos]) || src[pos] == ';'))
       pos++;
+
     size_t addrdiff = pos;
     if ((err = sed_address_comp(src,&pos,size,&sedexpr->address,eflags)))
       return err;
@@ -1376,7 +1378,7 @@ echo_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsign
   }
   if (arg[1]) {
     if (flag&FORMAT_ARG1_ISSTR) {
-      if (((reliq_str*)arg[1])->b && ((reliq_str*)arg[1])->s) 
+      if (((reliq_str*)arg[1])->b && ((reliq_str*)arg[1])->s)
         str[1] = (reliq_str*)arg[1];
     } else
       return reliq_set_error(1,"%s: arg %d: incorrect type of argument, expected string","echo",2);
