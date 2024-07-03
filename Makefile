@@ -1,8 +1,10 @@
-VERSION = 2.3
+VERSION = 2.4
 CC = gcc -std=c99
-CFLAGS = -O3 -march=native -Wall -Wextra -Wno-implicit-fallthrough -DVERSION=\"${VERSION}\"
+CFLAGS = -O3 -march=native -Wall -Wextra -Wno-implicit-fallthrough
 LDFLAGS =
-TARGET := reliq
+TARGET = reliq
+
+CFLAGS_D = ${CFLAGS} -DVERSION=\"${VERSION}\"
 
 O_PHPTAGS := 1 # support for <?php ?>
 O_AUTOCLOSING := 1 # support for autoclosing tags, without it some tests will fail (as intended)
@@ -21,27 +23,27 @@ SRC = src/main.c src/flexarr.c src/html.c src/reliq.c src/ctype.c src/utils.c sr
 LIB_SRC = src/flexarr.c src/html.c src/reliq.c src/ctype.c src/utils.c src/output.c
 
 ifeq ($(strip ${O_PHPTAGS}),1)
-	CFLAGS += -DRELIQ_PHPTAGS
+	CFLAGS_D += -DRELIQ_PHPTAGS
 endif
 
 ifeq ($(strip ${O_AUTOCLOSING}),1)
-	CFLAGS += -DRELIQ_AUTOCLOSING
+	CFLAGS_D += -DRELIQ_AUTOCLOSING
 endif
 
 ifeq ($(strip ${O_EDITING}),1)
 	SRC += src/edit.c
 	LIB_SRC += src/edit.c
-	CFLAGS += -DRELIQ_EDITING
+	CFLAGS_D += -DRELIQ_EDITING
 endif
 
 ifeq ($(strip ${O_LIB}),1)
 	SRC = ${LIB_SRC}
 	LDFLAGS = -shared
-	CFLAGS += -fPIC
+	CFLAGS_D += -fPIC
 endif
 
 ifeq ($(strip ${O_LINKED}),1)
-	CFLAGS += -DLINKED
+	CFLAGS_D += -DLINKED
 	SRC = src/flexarr.c src/main.c
 	LDFLAGS += -lreliq
 endif
@@ -53,7 +55,7 @@ all: options reliq
 options:
 	@echo ${SRC}
 	@echo ${TARGET} build options:
-	@echo "CFLAGS   = ${CFLAGS}"
+	@echo "CFLAGS   = ${CFLAGS_D}"
 	@echo "LDFLAGS  = ${LDFLAGS}"
 	@echo "CC       = ${CC}"
 
@@ -68,11 +70,11 @@ lib-install: lib
 	install -m644 src/reliq.h ${INCLUDE_PATH}
 
 reliq: ${OBJ}
-	${CC} ${CFLAGS} ${LDFLAGS} $^ -o ${TARGET}
+	${CC} ${CFLAGS_D} ${LDFLAGS} $^ -o ${TARGET}
 	strip ${TARGET}
 
 %.o: %.c
-	${CC} ${CFLAGS} -c $< -o $@
+	${CC} ${CFLAGS_D} -c $< -o $@
 
 test: clean all
 	@./test.sh test/1.csv test/1.html
