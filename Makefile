@@ -44,7 +44,7 @@ endif
 
 ifeq ($(strip ${O_LINKED}),1)
 	CFLAGS_D += -DLINKED
-	SRC = src/flexarr.c src/main.c
+	SRC = src/main.c
 	LDFLAGS += -lreliq
 endif
 
