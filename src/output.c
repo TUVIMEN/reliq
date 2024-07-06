@@ -24,7 +24,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <regex.h>
 
 typedef unsigned char uchar;
 typedef unsigned short ushort;
@@ -35,7 +34,6 @@ typedef unsigned long int ulong;
 #include "flexarr.h"
 #include "ctype.h"
 #include "edit.h"
-#include "utils.h"
 #include "output.h"
 
 #define FCOLLECTOR_OUT_INC (1<<4)

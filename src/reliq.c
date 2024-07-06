@@ -153,7 +153,7 @@ reliq_set_error(const int code, const char *fmt, ...)
   va_list ap;
   va_start(ap,fmt);
   reliq_error *err = malloc(sizeof(reliq_error));
-  vsnprintf(err->msg,LENGTH(err->msg),fmt,ap);
+  vsnprintf(err->msg,RELIQ_ERROR_MESSAGE_LENGTH,fmt,ap);
   err->code = code;
   va_end(ap);
   return err;
@@ -793,7 +793,7 @@ void
 reliq_printf(FILE *outfile, const char *format, const size_t formatl, const reliq_hnode *hnode, const reliq_hnode *parent, const reliq *rq)
 {
   size_t i = 0;
-  char const *text;
+  char const *text=NULL;
   size_t textl=0;
   int num = -1;
   while (i < formatl) {
@@ -2105,7 +2105,7 @@ reliq_fexec_file(char *ptr, size_t size, FILE *output, const reliq_exprs *exprs,
     return err;
 
   FILE *destination = output;
-  char *nptr;
+  char *nptr = NULL;
   size_t fsize;
 
   flexarr *chain = (flexarr*)exprs->b[0].e;

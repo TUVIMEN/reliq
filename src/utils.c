@@ -22,9 +22,7 @@
 #define _XOPEN_SOURCE 600
 
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
-#include <regex.h>
 
 typedef unsigned char uchar;
 typedef unsigned short ushort;

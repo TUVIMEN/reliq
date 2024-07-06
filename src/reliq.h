@@ -19,6 +19,11 @@
 #ifndef RELIQ_H
 #define RELIQ_H
 
+#include <stddef.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <regex.h>
+
 #define RELIQ_SAVE 0x1
 
 #define RELIQ_ERROR_MESSAGE_LENGTH 512

@@ -29,7 +29,6 @@
 #include <string.h>
 #include <stdarg.h>
 #include <sys/mman.h>
-#include <regex.h>
 #include <ftw.h>
 #include <errno.h>
 
