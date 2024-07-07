@@ -1443,8 +1443,12 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, ushort *childfields, re
         exprl = (i-j)-nodef.s-((nodef.b) ? 1 : 0);
         continue;
       }
-      if ((i == j || (i && isspace(src[i-1]))) && !exprf.b &&
-        ((src[i] == '|' && !nodef.b) || src[i] == '/')) {
+      if ((i == j || (i && isspace(src[i-1]))) &&
+        (src[i] == '|' || src[i] == '/')) {
+        if ((src[i] == '|' && nodef.b) || (src[i] == '/' && exprf.b)) {
+          *err = reliq_set_error(1,"%lu: format '%c' cannot be specified twice",i,src[i]);
+          goto EXIT;
+        }
         if (i == j)
           hasexpr = 1;
         if (src[i] == '|') {

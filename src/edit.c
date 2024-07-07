@@ -157,6 +157,9 @@ format_get_funcs(flexarr *format, char *src, size_t *pos, size_t *size)
     if (*pos >= *size)
       break;
 
+    if (src[*pos] == '|' || src[*pos] == '/')
+        return NULL;
+
     if (isalnum(src[*pos])) {
       fname = src+*pos;
       while_is(isalnum,src,*pos,*size);
