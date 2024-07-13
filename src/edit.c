@@ -1000,14 +1000,18 @@ sed_pre_edit(char *src, size_t size, FILE *output, char *buffers[3], flexarr *sc
   size_t patternspl=0,bufferspl=0,holdspl=0;
 
   size_t line=0,lineend;
-  char prevdelim = 0;
-  uchar islastline,appendnextline=0,successfulsub=0,hasdelim;
+  uchar islastline,appendnextline=0,successfulsub=0;
+
+  uchar patternsp_delim=0,
+    buffersp_delim=0,
+    holdsp_delim=0;
+
   uint linenumber = 0;
   struct sed_expression *scriptv = (struct sed_expression*)script->v;
   size_t cycle = 0;
 
   while (1) {
-    hasdelim = 0;
+    patternsp_delim = 0;
     if (line < size) {
       linenumber++;
     } else if (cycle == 0)
@@ -1020,10 +1024,8 @@ sed_pre_edit(char *src, size_t size, FILE *output, char *buffers[3], flexarr *sc
     if (lineend < size) {
       while (lineend < size && src[lineend] != linedelim)
         lineend++;
-      if (src[lineend] == linedelim) {
-        prevdelim = src[lineend];
-        hasdelim = 1;
-      }
+      if (src[lineend] == linedelim)
+        patternsp_delim = 1;
 
       end = lineend;
 
@@ -1054,22 +1056,29 @@ sed_pre_edit(char *src, size_t size, FILE *output, char *buffers[3], flexarr *sc
         }
         continue;
       }
+
+      offset = 0;
+
       switch (scriptv[cycle].name) {
         case 'H':
-          if (patternspl+holdspl > SED_MAX_PATTERN_SPACE)
+          offset = holdspl+1;
+          if (offset+patternspl > SED_MAX_PATTERN_SPACE)
             goto BIGLINE;
-          offset = holdspl;
+          holdsp[holdspl] = linedelim;
         case 'h':
           memcpy(holdsp+offset,patternsp,patternspl);
           holdspl = patternspl+offset;
+          holdsp_delim = patternsp_delim;
           break;
         case 'G':
-          if (patternspl+holdspl > SED_MAX_PATTERN_SPACE)
+          offset = patternspl+1;
+          if (offset+holdspl > SED_MAX_PATTERN_SPACE)
             goto BIGLINE;
-          offset = patternspl;
+          patternsp[patternspl] = linedelim;
         case 'g':
           memcpy(patternsp+offset,holdsp,holdspl);
           patternspl = holdspl+offset;
+          patternsp_delim = holdsp_delim;
           break;
         case 'd':
           patternspl = 0;
@@ -1102,8 +1111,8 @@ sed_pre_edit(char *src, size_t size, FILE *output, char *buffers[3], flexarr *sc
           }
           if (offset)
             fwrite(patternsp,1,offset,output);
-          if (!silent || hasdelim)
-            fputc(prevdelim,output);
+          if (!silent || patternsp_delim)
+            fputc(linedelim,output);
           break;
         case 'N':
           appendnextline = 1;
@@ -1124,13 +1133,16 @@ sed_pre_edit(char *src, size_t size, FILE *output, char *buffers[3], flexarr *sc
           bufferspl = patternspl;
           patternspl = holdspl;
           holdspl = bufferspl;
-          bufferspl = 0;
+
+          buffersp_delim = patternsp_delim;
+          patternsp_delim = holdsp_delim;
+          holdsp_delim = buffersp_delim;
           break;
         case 'q':
           goto END;
           break;
         case '=':
-          fprintf(output,"%u%c",linenumber,prevdelim);
+          fprintf(output,"%u%c",linenumber,linedelim);
           break;
         case 't':
           if (!successfulsub)
@@ -1237,14 +1249,14 @@ sed_pre_edit(char *src, size_t size, FILE *output, char *buffers[3], flexarr *sc
 
     NEXT_PRINT: ;
     if (appendnextline) {
-      if (hasdelim && patternspl < SED_MAX_PATTERN_SPACE)
-        patternsp[patternspl++] = prevdelim;
+      if (patternsp_delim && patternspl < SED_MAX_PATTERN_SPACE)
+        patternsp[patternspl++] = linedelim;
     } else {
       if (!silent) {
         if (patternspl)
           fwrite(patternsp,1,patternspl,output);
-        if (hasdelim)
-          fputc(prevdelim,output);
+        if (patternsp_delim)
+          fputc(linedelim,output);
       }
       patternspl = 0;
     }
@@ -1252,7 +1264,7 @@ sed_pre_edit(char *src, size_t size, FILE *output, char *buffers[3], flexarr *sc
       break;
 
     NEXT: ;
-    if (hasdelim)
+    if (patternsp_delim)
       lineend++;
     line = lineend;
   }
@@ -1260,8 +1272,8 @@ sed_pre_edit(char *src, size_t size, FILE *output, char *buffers[3], flexarr *sc
   END: ;
   if (!silent && patternspl) {
     fwrite(patternsp,1,patternspl,output);
-    if (hasdelim)
-      fputc(prevdelim,output);
+    if (patternsp_delim)
+      fputc(linedelim,output);
   }
 
   return NULL;

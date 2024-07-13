@@ -90,6 +90,7 @@ flexarr_clearb(flexarr *f) //clear buffer
 {
   if (f->size == f->asize || !f->v)
       return NULL;
+  f->asize = f->size;
   void *v = realloc(f->v,f->size*f->elsize);
   if (v == NULL)
     return NULL;
