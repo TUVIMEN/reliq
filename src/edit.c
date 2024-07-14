@@ -470,7 +470,7 @@ sed_address_comp_regex(const char *src, size_t *pos, size_t size, regex_t *preg,
     regex_delim = src[++(*pos)];
   (*pos)++;
   size_t regex_end = *pos;
-  while (regex_end < size && src[regex_end] != regex_delim) {
+  while (regex_end < size && src[regex_end] != regex_delim && src[regex_end] != '\n') {
     if (src[regex_end] == '\\')
       regex_end++;
     regex_end++;
@@ -718,6 +718,7 @@ sed_expression_free(struct sed_expression *e)
 #define SC_ARG 0x2
 #define SC_ARG_OPTIONAL 0x4
 #define SC_NOADDRESS 0x8
+#define SC_ESCAPE_NEWLINE 0x10
 
 struct sed_command {
   char name;
@@ -728,10 +729,10 @@ struct sed_command {
   {'#',SC_ONLY_NEWLINE|SC_NOADDRESS|SC_ARG},
   {':',SC_ARG|SC_NOADDRESS},
   {'=',0},
-  {'a',SC_ARG|SC_ONLY_NEWLINE},
-  {'i',SC_ARG|SC_ONLY_NEWLINE},
+  {'a',SC_ARG|SC_ONLY_NEWLINE|SC_ESCAPE_NEWLINE},
+  {'i',SC_ARG|SC_ONLY_NEWLINE|SC_ESCAPE_NEWLINE},
   {'q',0},
-  {'c',SC_ARG|SC_ONLY_NEWLINE},
+  {'c',SC_ARG|SC_ONLY_NEWLINE|SC_ESCAPE_NEWLINE},
   {'z',0},
   {'d',0},
   {'D',0},
@@ -767,6 +768,217 @@ sed_script_free(flexarr *script)
   for (size_t i = 0; i < script->size; i++)
     sed_expression_free(&((struct sed_expression*)script->v)[i]);
   flexarr_free(script);
+}
+
+static reliq_error *
+sed_UNTERMINATED(const size_t pos, const char name, const char foundchar)
+{
+  return reliq_set_error(1,name == ':' ? "sed: char %u: \"%c\" lacks a label" :
+    "sed: char %u: unterminated `%c' command",pos,foundchar);
+}
+
+static reliq_error *
+sed_DIFFERENT_LENGHTS(const size_t pos, const char name)
+{
+  return reliq_set_error(1,"sed: char %u: strings for `%c' command are different lenghts",pos,name);
+}
+
+static reliq_error *
+sed_EXTRACHARS(const size_t pos)
+{
+  return reliq_set_error(1,"sed: char %u: extra characters after command",pos);
+}
+
+static void
+sed_comp_onlynewline(const char *src, size_t *pos, const size_t size, const ushort flags)
+{
+  size_t p = *pos;
+  if (flags&SC_ESCAPE_NEWLINE) {
+    while (p < size && src[p] != '\n') {
+      if (src[p] == '\\')
+        p++;
+      p++;
+    }
+  } else while (p < size && src[p] != '\n')
+    p++;
+  *pos = p;
+}
+
+static reliq_error *
+sed_comp_sy_arg(const char *src, size_t *pos, const size_t size, const char argdelim, const char name, const char foundchar, reliq_cstr *result, size_t *realsize)
+{
+  reliq_error *err = NULL;
+  size_t p = (*pos)+1;
+  const char *res = src+p;
+  size_t resl=0,real=0;
+
+  while (p < size && src[p] != argdelim && src[p] != '\n') {
+    if (src[p] == '\\')
+      p++;
+    p++;
+    real++;
+  }
+  resl = p-(res-src);
+  if (p >= size || src[p] != argdelim) {
+    err = sed_UNTERMINATED(p,name,foundchar);
+    goto END;
+  }
+
+  END: ;
+  *pos = p;
+  result->b = res;
+  result->s = resl;
+  *realsize = real;
+
+  return err;
+}
+
+static reliq_error *
+sed_comp_y(const size_t pos, const char name, struct sed_expression *sedexpr, reliq_cstr *second, reliq_cstr *third, const size_t realfirstlen, const size_t realsecondlen)
+{
+  if (third->s)
+    return sed_EXTRACHARS(pos);
+
+  if (realfirstlen != realsecondlen)
+    return sed_DIFFERENT_LENGHTS(pos,name);
+
+  sedexpr->arg1 = malloc(256*sizeof(char));
+  sedexpr->arg2 = malloc(256*sizeof(uchar));
+
+  for (size_t i = 0; i < sedexpr->arg.s; i++) {
+    uchar specialchar = 0;
+    if (sedexpr->arg.b[i] == '\\') {
+      specialchar = 1;
+      i++;
+    }
+    ((uchar*)sedexpr->arg2)[(uchar)sedexpr->arg.b[i]] = 1;
+    ((char*)sedexpr->arg1)[(uchar)sedexpr->arg.b[i]] =
+        specialchar ? special_character(second->b[i]) : second->b[i];
+  }
+  return NULL;
+}
+
+static reliq_error *
+sed_comp_s_flags(const char *src, const size_t size, const size_t pos, int *eflags, ulong *args)
+{
+  ulong arg2 = 0;
+  for (size_t i = 0; i < size; i++) {
+    if (src[i] == 'i') {
+      if (arg2&SED_EXPRESSION_S_ICASE)
+        goto S_ARG_REPEAT;
+      arg2 |= SED_EXPRESSION_S_ICASE;
+      *eflags |= REG_ICASE;
+    } else if (src[i] == 'g') {
+      if (arg2&SED_EXPRESSION_S_GLOBAL)
+        goto S_ARG_REPEAT;
+      arg2 |= SED_EXPRESSION_S_GLOBAL;
+    } else if (src[i] == 'p') {
+      if (arg2&SED_EXPRESSION_S_PRINT) {
+        S_ARG_REPEAT: ;
+        return reliq_set_error(1,"sed: char %u: multiple `%c' options to `s' command",pos,src[i]);
+      }
+      arg2 |= SED_EXPRESSION_S_PRINT;
+    } else if (isdigit(src[i])) {
+      if (arg2&SED_EXPRESSION_S_NUMBER)
+        return reliq_set_error(1,"sed: char %u: multiple number options to `s' command",pos);
+      uint c = number_handle(src,&i,size);
+      if (!c)
+        return reliq_set_error(1,"sed: char %u: number option to `s' may not be zero",pos);
+      arg2 |= c&SED_EXPRESSION_S_NUMBER;
+    } else if (!isspace(src[i]))
+      return reliq_set_error(1,"sed: char %u: unknown option to `s'",pos);
+  }
+  *args = arg2;
+  return NULL;
+}
+
+static reliq_error *
+sed_comp_s(const char *src, const size_t pos, int eflags, struct sed_expression *sedexpr, reliq_cstr *second, reliq_cstr *third)
+{
+  reliq_error *err = NULL;
+  char tmp[REGEX_PATTERN_SIZE];
+
+  if (sedexpr->arg.s >= REGEX_PATTERN_SIZE-1)
+    return reliq_set_error(1,"sed: `s' pattern is too big");
+
+  if ((err = sed_comp_s_flags(third->b,third->s,pos,&eflags,(ulong*)(void*)&sedexpr->arg2)))
+    return err;
+
+  size_t len = sedexpr->arg.s;
+  memcpy(tmp,sedexpr->arg.b,sedexpr->arg.s);
+  conv_special_characters(tmp,&len);
+  tmp[len] = 0;
+
+  sedexpr->arg1 = malloc(sizeof(regex_t));
+  if (regcomp(sedexpr->arg1,tmp,eflags)) {
+    free(sedexpr->arg1);
+    sedexpr->arg1 = NULL;
+    return reliq_set_error(1,"sed: char %u: couldn't compile regex",sedexpr->arg.b-src);
+  }
+
+  sedexpr->arg = *second;
+  return err;
+}
+
+static reliq_error *
+sed_comp_sy(const char *src, size_t *pos, const size_t size, const char name, int eflags, struct sed_expression *sedexpr)
+{
+  reliq_error *err = NULL;
+  size_t p = *pos;
+  size_t realfirstlen = 0;
+  char argdelim = src[p];
+
+  if ((err = sed_comp_sy_arg(src,&p,size,argdelim,name,sedexpr->name,&sedexpr->arg,&realfirstlen)))
+    goto END;
+
+  if (!sedexpr->arg.s) {
+    if (name == 'y') {
+      err = sed_DIFFERENT_LENGHTS(p,name);
+    } else
+      err = reliq_set_error(1,"sed: char %u: no previous regular expression",p);
+    goto END;
+  }
+
+  reliq_cstr second,third;
+  size_t realsecondlen = 0;
+
+  if ((err = sed_comp_sy_arg(src,&p,size,argdelim,name,sedexpr->name,&second,&realsecondlen)))
+    goto END;
+
+  third.b = src+(++p);
+  while (p < size && src[p] != '\n' && src[p] != '#' && src[p] != ';' && src[p] != '}')
+    p++;
+  third.s = p-(third.b-src);
+
+  if (name == 'y') {
+    err = sed_comp_y(p,name,sedexpr,&second,&third,realfirstlen,realsecondlen);
+  } else
+    err = sed_comp_s(src,p,eflags,sedexpr,&second,&third);
+
+  END:
+  *pos = p;
+  return err;
+}
+
+static reliq_error *
+sed_comp_check_labels(flexarr *script)
+{
+  struct sed_expression *scriptv = (struct sed_expression*)script->v;
+  for (size_t i = 0; i < script->size; i++) {
+    if ((scriptv[i].name == 'b' || scriptv[i].name == 't' || scriptv[i].name == 'T') && scriptv[i].arg.s) {
+      uchar found = 0;
+      for (size_t j = 0; j < script->size; j++) {
+        if (scriptv[j].name == ':' &&
+          strcomp(scriptv[i].arg,scriptv[j].arg)) {
+          found = 1;
+          break;
+        }
+      }
+      if (!found)
+        return reliq_set_error(1,"sed: can't find label for jump to `%.*s'",scriptv[i].arg.s,scriptv[i].arg.b);
+    }
+  }
+  return NULL;
 }
 
 static reliq_error *
@@ -821,104 +1033,10 @@ sed_script_comp_pre(const char *src, size_t size, int eflags, flexarr **script)
 
     char const *argstart = src+pos;
     if (command->flags&SC_ONLY_NEWLINE) {
-      while (pos < size && src[pos] != '\n')
-        pos++;
+      sed_comp_onlynewline(src,&pos,size,command->flags);
     } else if (command->name == 's' || command->name == 'y') {
-      char argdelim = src[pos++];
-      sedexpr->arg.b = src+pos;
-      while (pos < size && src[pos] != argdelim && src[pos] != '\n') {
-        if (pos+1 < size && src[pos] == '\\' && (src[pos+1] == '\\' || src[pos+1] == argdelim))
-          pos++;
-        pos++;
-      }
-      if (pos >= size || src[pos] != argdelim)
-        goto UNTERMINATED;
-      sedexpr->arg.s = pos-(sedexpr->arg.b-src);
-      if (!sedexpr->arg.s) {
-        if (command->name == 'y')
-          goto DIFFERENT_LENGHTS;
-        return reliq_set_error(1,"sed: char %u: no previous regular expression",pos);
-      }
-      reliq_cstr second,third;
-      second.b = src+(++pos);
-      while (pos < size && src[pos] != argdelim && src[pos] != '\n') {
-        if (pos+1 < size && src[pos] == '\\' && (src[pos+1] == '\\' || src[pos+1] == argdelim))
-          pos++;
-        pos++;
-      }
-      if (pos >= size || src[pos] != argdelim)
-        goto UNTERMINATED;
-      second.s = pos-(second.b-src);
-
-      third.b = src+(++pos);
-      while (pos < size && src[pos] != '\n' && src[pos] != '#' && src[pos] != ';' && src[pos] != '}')
-        pos++;
-      third.s = pos-(third.b-src);
-
-      if (command->name == 'y') {
-        if (third.s)
-          goto EXTRACHARS;
-        if (sedexpr->arg.s != second.s) {
-          DIFFERENT_LENGHTS: ;
-          return reliq_set_error(1,"sed: char %u: strings for `%c' command are different lenghts",pos,command->name);
-        }
-        sedexpr->arg1 = malloc(256*sizeof(char));
-        sedexpr->arg2 = malloc(256*sizeof(uchar));
-        for (size_t i = 0; i < sedexpr->arg.s; i++) {
-          if (i+1 < sedexpr->arg.s && sedexpr->arg.b[i] == '\\' && sedexpr->arg.b[i+1] == argdelim)
-            i++;
-          ((uchar*)sedexpr->arg2)[(uchar)sedexpr->arg.b[i]] = 1;
-          ((char*)sedexpr->arg1)[(uchar)sedexpr->arg.b[i]] = second.b[i];
-        }
-      } else {
-        char tmp[REGEX_PATTERN_SIZE];
-        if (sedexpr->arg.s >= REGEX_PATTERN_SIZE-1)
-          return reliq_set_error(1,"sed: `s' pattern is too big");
-
-        ulong arg2 = 0;
-        for (size_t i = 0; i < third.s; i++) {
-          if (third.b[i] == 'i') {
-            if (arg2&SED_EXPRESSION_S_ICASE)
-              goto S_ARG_REPEAT;
-            arg2 |= SED_EXPRESSION_S_ICASE;
-            eflags |= REG_ICASE;
-          } else if (third.b[i] == 'g') {
-            if (arg2&SED_EXPRESSION_S_GLOBAL)
-              goto S_ARG_REPEAT;
-            arg2 |= SED_EXPRESSION_S_GLOBAL;
-          } else if (third.b[i] == 'p') {
-            if (arg2&SED_EXPRESSION_S_PRINT) {
-              S_ARG_REPEAT: ;
-              return reliq_set_error(1,"sed: char %u: multiple `%c' options to `s' command",pos,third.b[i]);
-            }
-            arg2 |= SED_EXPRESSION_S_PRINT;
-          } else if (isdigit(third.b[i])) {
-            if (arg2&SED_EXPRESSION_S_NUMBER)
-              return reliq_set_error(1,"sed: char %u: multiple number options to `s' command",pos);
-            uint c = number_handle(third.b,&i,third.s);
-            if (!c)
-              return reliq_set_error(1,"sed: char %u: number option to `s' may not be zero",pos);
-            arg2 |= c&SED_EXPRESSION_S_NUMBER;
-          } else if (!isspace(third.b[i]))
-            return reliq_set_error(1,"sed: char %u: unknown option to `s'",pos);
-        }
-
-        sedexpr->arg2 = (void*)(ulong)arg2; //XD
-
-        size_t len = sedexpr->arg.s;
-        memcpy(tmp,sedexpr->arg.b,sedexpr->arg.s);
-        conv_special_characters(tmp,&len);
-        tmp[len] = 0;
-
-        sedexpr->arg1 = malloc(sizeof(regex_t));
-        if (regcomp(sedexpr->arg1,tmp,eflags)) {
-          free(sedexpr->arg1);
-          sedexpr->arg1 = NULL;
-          return reliq_set_error(1,"sed: char %u: couldn't compile regex",sedexpr->arg.b-src);
-        }
-
-        sedexpr->arg = second;
-      }
+      if ((err = sed_comp_sy(src,&pos,size,command->name,eflags,sedexpr)))
+        return err;
     } else if (command->name == ':') {
       while (pos < size && src[pos] != '\n' && src[pos] != '#' && src[pos] != ';' && src[pos] != '}' && !isspace(src[pos]))
         pos++;
@@ -933,15 +1051,10 @@ sed_script_comp_pre(const char *src, size_t size, int eflags, flexarr **script)
       sedexpr->arg.b = argstart;
       sedexpr->arg.s = argend-(argstart-src);
       if (command->name != '#') {
-        if (!sedexpr->arg.s && command->flags&SC_ARG && !(command->flags&SC_ARG_OPTIONAL)) {
-          UNTERMINATED: ;
-          return reliq_set_error(1,command->name == ':' ? "sed: char %u: \"%c\" lacks a label" :
-            "sed: char %u: unterminated `%c' command",pos,sedexpr->name);
-        }
-        if (sedexpr->arg.s && !(command->flags&SC_ARG)) {
-          EXTRACHARS: ;
-          return reliq_set_error(1,"sed: char %u: extra characters after command",pos);
-        }
+        if (!sedexpr->arg.s && command->flags&SC_ARG && !(command->flags&SC_ARG_OPTIONAL))
+          return sed_UNTERMINATED(pos,command->name,sedexpr->name);
+        if (sedexpr->arg.s && !(command->flags&SC_ARG))
+          return sed_EXTRACHARS(pos);
       }
     }
     sedexpr = (struct sed_expression*)flexarr_inc(*script);
@@ -961,34 +1074,19 @@ sed_script_comp_pre(const char *src, size_t size, int eflags, flexarr **script)
   if (lvl)
     return reliq_set_error(1,"sed: char %u: unmatched `{'",pos);
   flexarr_dec(*script);
-  struct sed_expression *scriptv = (struct sed_expression*)(*script)->v;
-  for (size_t i = 0; i < (*script)->size; i++) {
-    if ((scriptv[i].name == 'b' || scriptv[i].name == 't' || scriptv[i].name == 'T') && scriptv[i].arg.s) {
-      uchar found = 0;
-      for (size_t j = 0; j < (*script)->size; j++) {
-        if (scriptv[j].name == ':' &&
-          strcomp(scriptv[i].arg,scriptv[j].arg)) {
-          found = 1;
-          break;
-        }
-      }
-      if (!found)
-        return reliq_set_error(1,"sed: can't find label for jump to `%.*s'",scriptv[i].arg.s,scriptv[i].arg.b);
-    }
-  }
-  return NULL;
+
+  return sed_comp_check_labels(*script);
 }
 
 static reliq_error *
 sed_script_comp(const char *src, size_t size, int eflags, flexarr **script)
 {
-  reliq_error *err;
+  reliq_error *err = NULL;
   if ((err = sed_script_comp_pre(src,size,eflags,script))) {
     sed_script_free(*script);
     *script = NULL;
-    return err;
   }
-  return NULL;
+  return err;
 }
 
 static reliq_error *
