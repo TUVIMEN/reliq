@@ -482,8 +482,12 @@ sed_address_comp_regex(const char *src, size_t *pos, size_t size, regex_t *preg,
   char tmp[REGEX_PATTERN_SIZE];
   if (regex_end-*pos >= REGEX_PATTERN_SIZE-1)
     return reliq_set_error(1,"sed: char %u: regex is too long",regex_end);
-  memcpy(tmp,src+*pos,regex_end-*pos);
-  tmp[regex_end-*pos] = 0;
+
+  size_t len = regex_end-*pos;
+  memcpy(tmp,src+*pos,len);
+  conv_special_characters(tmp,&len);
+  tmp[len] = 0;
+
   *pos = regex_end+1;
   if (regcomp(preg,tmp,eflags))
     return reliq_set_error(1,"sed: char %u: couldn't compile regex",regex_end);
