@@ -1009,6 +1009,7 @@ sed_script_comp_pre(const char *src, size_t size, int eflags, flexarr **script)
     if (pos >= size) {
       if (pos-addrdiff)
         return reliq_set_error(1,"sed: char %lu: missing command",pos);
+      sed_expression_free(sedexpr);
       break;
     }
     command = sed_get_command(src[pos]);
@@ -1151,7 +1152,7 @@ sed_pre_edit(char *src, size_t size, FILE *output, char *buffers[3], flexarr *sc
       if (!sed_address_exec(patternsp,patternspl,linenumber,islastline,&scriptv[cycle].address)) {
         if (scriptv[cycle].name == '{') {
           uint lvl = scriptv[++cycle].lvl;
-          while (cycle+1 < script->size && lvl >= scriptv[cycle+1].lvl)
+          while (cycle+1 < script->size && lvl <= scriptv[cycle+1].lvl)
             cycle++;
           if (cycle < script->size)
             cycle--;
