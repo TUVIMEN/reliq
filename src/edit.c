@@ -476,12 +476,12 @@ sed_address_comp_regex(const char *src, size_t *pos, size_t size, regex_t *preg,
     regex_end++;
   }
   if (regex_end >= size || src[regex_end] != regex_delim)
-    return reliq_set_error(1,"sed: char %u: unterminated address regex",*pos);
+    return reliq_set_error(1,"sed: char %lu: unterminated address regex",*pos);
   if (regex_end == *pos)
-    return reliq_set_error(1,"sed: char %u: no previous regular expression",*pos);
+    return reliq_set_error(1,"sed: char %lu: no previous regular expression",*pos);
   char tmp[REGEX_PATTERN_SIZE];
   if (regex_end-*pos >= REGEX_PATTERN_SIZE-1)
-    return reliq_set_error(1,"sed: char %u: regex is too long",regex_end);
+    return reliq_set_error(1,"sed: char %lu: regex is too long",regex_end);
 
   size_t len = regex_end-*pos;
   memcpy(tmp,src+*pos,len);
@@ -490,7 +490,7 @@ sed_address_comp_regex(const char *src, size_t *pos, size_t size, regex_t *preg,
 
   *pos = regex_end+1;
   if (regcomp(preg,tmp,eflags))
-    return reliq_set_error(1,"sed: char %u: couldn't compile regex",regex_end);
+    return reliq_set_error(1,"sed: char %lu: couldn't compile regex",regex_end);
   return NULL;
 }
 
@@ -504,7 +504,7 @@ sed_address_comp_reverse(const char *src, size_t *pos, size_t size, struct sed_a
   }
   if (address->flags&SED_A_NUM1 && address->num[0] == 0) {
     if (!(address->flags&SED_A_REG2))
-      return reliq_set_error(1,"sed: char %u: invalid use of line address 0",*pos);
+      return reliq_set_error(1,"sed: char %lu: invalid use of line address 0",*pos);
     address->flags |= SED_A_CHECKFIRST;
   }
   return NULL;
@@ -777,20 +777,20 @@ sed_script_free(flexarr *script)
 static reliq_error *
 sed_UNTERMINATED(const size_t pos, const char name, const char foundchar)
 {
-  return reliq_set_error(1,name == ':' ? "sed: char %u: \"%c\" lacks a label" :
-    "sed: char %u: unterminated `%c' command",pos,foundchar);
+  return reliq_set_error(1,name == ':' ? "sed: char %lu: \"%c\" lacks a label" :
+    "sed: char %lu: unterminated `%c' command",pos,foundchar);
 }
 
 static reliq_error *
 sed_DIFFERENT_LENGHTS(const size_t pos, const char name)
 {
-  return reliq_set_error(1,"sed: char %u: strings for `%c' command are different lenghts",pos,name);
+  return reliq_set_error(1,"sed: char %lu: strings for `%c' command are different lenghts",pos,name);
 }
 
 static reliq_error *
 sed_EXTRACHARS(const size_t pos)
 {
-  return reliq_set_error(1,"sed: char %u: extra characters after command",pos);
+  return reliq_set_error(1,"sed: char %lu: extra characters after command",pos);
 }
 
 static void
@@ -879,18 +879,18 @@ sed_comp_s_flags(const char *src, const size_t size, const size_t pos, int *efla
     } else if (src[i] == 'p') {
       if (arg2&SED_EXPRESSION_S_PRINT) {
         S_ARG_REPEAT: ;
-        return reliq_set_error(1,"sed: char %u: multiple `%c' options to `s' command",pos,src[i]);
+        return reliq_set_error(1,"sed: char %lu: multiple `%c' options to `s' command",pos,src[i]);
       }
       arg2 |= SED_EXPRESSION_S_PRINT;
     } else if (isdigit(src[i])) {
       if (arg2&SED_EXPRESSION_S_NUMBER)
-        return reliq_set_error(1,"sed: char %u: multiple number options to `s' command",pos);
+        return reliq_set_error(1,"sed: char %lu: multiple number options to `s' command",pos);
       uint c = number_handle(src,&i,size);
       if (!c)
-        return reliq_set_error(1,"sed: char %u: number option to `s' may not be zero",pos);
+        return reliq_set_error(1,"sed: char %lu: number option to `s' may not be zero",pos);
       arg2 |= c&SED_EXPRESSION_S_NUMBER;
     } else if (!isspace(src[i]))
-      return reliq_set_error(1,"sed: char %u: unknown option to `s'",pos);
+      return reliq_set_error(1,"sed: char %lu: unknown option to `s'",pos);
   }
   *args = arg2;
   return NULL;
@@ -917,7 +917,7 @@ sed_comp_s(const char *src, const size_t pos, int eflags, struct sed_expression 
   if (regcomp(sedexpr->arg1,tmp,eflags)) {
     free(sedexpr->arg1);
     sedexpr->arg1 = NULL;
-    return reliq_set_error(1,"sed: char %u: couldn't compile regex",sedexpr->arg.b-src);
+    return reliq_set_error(1,"sed: char %lu: couldn't compile regex",sedexpr->arg.b-src);
   }
 
   sedexpr->arg = *second;
@@ -939,7 +939,7 @@ sed_comp_sy(const char *src, size_t *pos, const size_t size, const char name, in
     if (name == 'y') {
       err = sed_DIFFERENT_LENGHTS(p,name);
     } else
-      err = reliq_set_error(1,"sed: char %u: no previous regular expression",p);
+      err = reliq_set_error(1,"sed: char %lu: no previous regular expression",p);
     goto END;
   }
 
@@ -1008,21 +1008,21 @@ sed_script_comp_pre(const char *src, size_t size, int eflags, flexarr **script)
     while_is(isspace,src,pos,size);
     if (pos >= size) {
       if (pos-addrdiff)
-        return reliq_set_error(1,"sed: char %u: missing command");
-      return NULL;
+        return reliq_set_error(1,"sed: char %lu: missing command",pos);
+      break;
     }
     command = sed_get_command(src[pos]);
     if (!command)
-      return reliq_set_error(1,"sed: char %u: unknown command: `%c'",pos,src[pos]);
+      return reliq_set_error(1,"sed: char %lu: unknown command: `%c'",pos,src[pos]);
     if (command->flags&SC_NOADDRESS && sedexpr->address.flags)
-      return reliq_set_error(1,"sed: char %u: %c doesn't want any addresses",pos,src[pos]);
+      return reliq_set_error(1,"sed: char %lu: %c doesn't want any addresses",pos,src[pos]);
     sedexpr->name = src[pos];
     sedexpr->lvl = lvl;
     if (sedexpr->name == '{' || sedexpr->name == '}') {
       if (sedexpr->name == '}') {
         CLOSING_BRACKET: ;
         if (!lvl)
-          return reliq_set_error(1,"sed: char %u: unexpected `}'",pos);
+          return reliq_set_error(1,"sed: char %lu: unexpected `}'",pos);
         lvl--;
       } else
         lvl++;
@@ -1076,7 +1076,7 @@ sed_script_comp_pre(const char *src, size_t size, int eflags, flexarr **script)
   /*if (sedexpr->arg1) //random solution for it giving segfault
     sed_expression_free(sedexpr);*/
   if (lvl)
-    return reliq_set_error(1,"sed: char %u: unmatched `{'",pos);
+    return reliq_set_error(1,"sed: char %lu: unmatched `{'",pos);
   flexarr_dec(*script);
 
   return sed_comp_check_labels(*script);
