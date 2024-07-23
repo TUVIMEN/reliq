@@ -278,7 +278,7 @@ main(int argc, char **argv)
       case 'r': settings |= F_RECURSIVE; break;
       case 'R': settings |= F_RECURSIVE; nftwflags &= ~FTW_PHYS; break;
       case 'F': settings |= F_FAST; break;
-      case 'v': die(VERSION); break;
+      case 'v': die(RELIQ_VERSION); break;
       case 'h': usage(); break;
       default: exit(1);
     }

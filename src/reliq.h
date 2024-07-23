@@ -24,6 +24,8 @@
 #include <stdio.h>
 #include <regex.h>
 
+//#RELIQ_COMPILE_FLAGS
+
 #define RELIQ_SAVE 0x1
 
 #define RELIQ_ERROR_MESSAGE_LENGTH 512

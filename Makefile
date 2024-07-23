@@ -4,7 +4,7 @@ CFLAGS = -O3 -march=native -Wall -Wextra -Wno-implicit-fallthrough
 LDFLAGS =
 TARGET = reliq
 
-CFLAGS_D = ${CFLAGS} -DVERSION=\"${VERSION}\"
+CFLAGS_D = -DRELIQ_VERSION=\"${VERSION}\"
 
 O_PHPTAGS := 1 # support for <?php ?>
 O_AUTOCLOSING := 1 # support for autoclosing tags, without it some tests will fail (as intended)
@@ -48,6 +48,8 @@ ifeq ($(strip ${O_LINKED}),1)
 	LDFLAGS += -lreliq
 endif
 
+CFLAGS_ALL = ${CFLAGS} ${CFLAGS_D}
+
 OBJ = ${SRC:.c=.o}
 
 all: options reliq
@@ -55,26 +57,30 @@ all: options reliq
 options:
 	@echo ${SRC}
 	@echo ${TARGET} build options:
-	@echo "CFLAGS   = ${CFLAGS_D}"
+	@echo "CFLAGS   = ${CFLAGS_ALL}"
 	@echo "LDFLAGS  = ${LDFLAGS}"
 	@echo "CC       = ${CC}"
 
-linked: lib lib-install
-	@make O_LINKED=1
+reliq_h:
+	@cat <(echo ${CFLAGS_D}) src/reliq.h | sed '1{s/ /\n/g; s/-D/#define /g; h; d}; /^\/\/#RELIQ_COMPILE_FLAGS/{s/.*//;G;D}' > reliq.h
 
-lib: clean
+
+lib: clean reliq_h
 	@make O_LIB=1 TARGET=lib${TARGET}.so
 
 lib-install: lib
 	install -m755 lib${TARGET}.so ${LD_LIBRARY_PATH}
-	install -m644 src/reliq.h ${INCLUDE_PATH}
+	install -m644 reliq.h ${INCLUDE_PATH}
+
+linked: lib lib-install
+	@make O_LINKED=1
 
 reliq: ${OBJ}
-	${CC} ${CFLAGS_D} ${LDFLAGS} $^ -o ${TARGET}
+	${CC} ${CFLAGS_ALL} ${LDFLAGS} $^ -o ${TARGET}
 	strip ${TARGET}
 
 %.o: %.c
-	${CC} ${CFLAGS_D} -c $< -o $@
+	${CC} ${CFLAGS_ALL} -c $< -o $@
 
 test: clean all
 	@./test.sh test/1.csv test/1.html
@@ -103,7 +109,7 @@ dist: clean
 	rm -rf ${TARGET}-${VERSION}
 
 clean:
-	rm -f ${TARGET} lib${TARGET}.so ${OBJ} ${TARGET}-${VERSION}.tar.xz
+	rm -f ${TARGET} lib${TARGET}.so ${OBJ} reliq.h ${TARGET}-${VERSION}.tar.xz
 
 install: all
 	mkdir -p ${BINDIR}
