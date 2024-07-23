@@ -546,15 +546,18 @@ reliq_nfree(reliq_node *node)
     goto REPEAT;
 }
 
-void
+int
 reliq_free(reliq *rq)
 {
     if (rq == NULL)
-      return;
+      return -1;
     for (size_t i = 0; i < rq->nodesl; i++)
       free(rq->nodes[i].attribs);
     if (rq->nodesl)
       free(rq->nodes);
+    if (rq->freedata)
+        return (*rq->freedata)((void*)rq->data,rq->datal);
+    return 0;
 }
 
 static int
@@ -2068,7 +2071,7 @@ reliq_analyze(const char *ptr, const size_t size, flexarr *nodes, reliq *rq)
 }
 
 static reliq_error *
-reliq_fmatch(const char *ptr, const size_t size, FILE *output, const reliq_node *node,
+reliq_fmatch(const char *data, const size_t size, FILE *output, const reliq_node *node,
 #ifdef RELIQ_EDITING
   reliq_format_func *nodef,
 #else
@@ -2077,8 +2080,8 @@ reliq_fmatch(const char *ptr, const size_t size, FILE *output, const reliq_node 
   size_t nodefl)
 {
   reliq t;
-  t.data = ptr;
-  t.size = size;
+  t.data = data;
+  t.datal = size;
   t.expr = node;
   t.nodef = nodef;
   t.nodefl = nodefl;
@@ -2092,7 +2095,7 @@ reliq_fmatch(const char *ptr, const size_t size, FILE *output, const reliq_node 
   flexarr *nodes = flexarr_init(sizeof(reliq_hnode),RELIQ_NODES_INC);
   t.attrib_buffer = (void*)flexarr_init(sizeof(reliq_cstr_pair),ATTRIB_INC);
 
-  reliq_error *err = reliq_analyze(ptr,size,nodes,&t);
+  reliq_error *err = reliq_analyze(data,size,nodes,&t);
 
   flexarr_free(nodes);
   flexarr_free((flexarr*)t.attrib_buffer);
@@ -2100,16 +2103,17 @@ reliq_fmatch(const char *ptr, const size_t size, FILE *output, const reliq_node 
 }
 
 reliq_error *
-reliq_fexec_file(char *ptr, size_t size, FILE *output, const reliq_exprs *exprs, int (*freeptr)(void *ptr, size_t size))
+reliq_fexec_file(char *data, size_t size, FILE *output, const reliq_exprs *exprs, int (*freedata)(void *addr, size_t len))
 {
+  reliq_error *err = NULL;
+  uchar was_unallocated = 0;
   if (exprs->s == 0)
-    return NULL;
-  reliq_error *err;
+    goto END;
   if ((err = exprs_check_chain(exprs)))
-    return err;
+    goto END;
 
   FILE *destination = output;
-  char *nptr = NULL;
+  char *ptr=data,*nptr = NULL;
   size_t fsize;
 
   flexarr *chain = (flexarr*)exprs->b[0].e;
@@ -2124,10 +2128,11 @@ reliq_fexec_file(char *ptr, size_t size, FILE *output, const reliq_exprs *exprs,
     fflush(output);
 
     if (i == 0) {
-      if (freeptr)
-        (*freeptr)(ptr,size);
+      if (freedata)
+        (*freedata)(data,size);
+      was_unallocated = 1;
     } else
-      free(ptr);
+      free(data);
 
     if (i != chain->size-1)
       fclose(output);
@@ -2138,14 +2143,18 @@ reliq_fexec_file(char *ptr, size_t size, FILE *output, const reliq_exprs *exprs,
     ptr = nptr;
     size = fsize;
   }
-  return NULL;
+
+  END: ;
+  if (!was_unallocated && freedata)
+    (*freedata)(data,size);
+  return err;
 }
 
 reliq_error *
-reliq_fexec_str(char *ptr, size_t size, char **str, size_t *strl, const reliq_exprs *exprs, int (*freeptr)(void *ptr, size_t size))
+reliq_fexec_str(char *data, size_t size, char **str, size_t *strl, const reliq_exprs *exprs, int (*freedata)(void *data, size_t len))
 {
   FILE *output = open_memstream(str,strl);
-  reliq_error *err = reliq_fexec_file(ptr,size,output,exprs,freeptr);
+  reliq_error *err = reliq_fexec_file(data,size,output,exprs,freedata);
   fclose(output);
   return err;
 }
@@ -2180,16 +2189,17 @@ reliq_hnode_shift_finalize(reliq_hnode *node, char *ref)
 }
 
 reliq
-reliq_from_compressed_independent(const reliq_compressed *compressed, const size_t compressedl, char **ptr, size_t *size)
+reliq_from_compressed_independent(const reliq_compressed *compressed, const size_t compressedl)
 {
   reliq t;
   t.expr = NULL;
   t.flags = RELIQ_SAVE;
   t.output = NULL;
 
-  size_t pos=0;
+  char *ptr;
+  size_t pos=0,size;
   ushort lvl;
-  FILE *out = open_memstream(ptr,size);
+  FILE *out = open_memstream(&ptr,&size);
   flexarr *nodes = flexarr_init(sizeof(reliq_hnode),RELIQ_NODES_INC);
   reliq_hnode *current,*new;
 
@@ -2221,11 +2231,12 @@ reliq_from_compressed_independent(const reliq_compressed *compressed, const size
   fclose(out);
 
   for (size_t i = 0; i < nodes->size; i++)
-    reliq_hnode_shift_finalize(&((reliq_hnode*)nodes->v)[i],*ptr);
+    reliq_hnode_shift_finalize(&((reliq_hnode*)nodes->v)[i],ptr);
 
   flexarr_conv(nodes,(void**)&t.nodes,&t.nodesl);
-  t.data = *ptr;
-  t.size = *size;
+  t.freedata = reliq_std_free;
+  t.data = ptr;
+  t.datal = size;
   return t;
 }
 
@@ -2237,7 +2248,7 @@ reliq_from_compressed(const reliq_compressed *compressed, const size_t compresse
   t.flags = RELIQ_SAVE;
   t.output = NULL;
   t.data = rq->data;
-  t.size = rq->size;
+  t.datal = rq->datal;
 
   ushort lvl;
   flexarr *nodes = flexarr_init(sizeof(reliq_hnode),RELIQ_NODES_INC);
@@ -2266,20 +2277,30 @@ reliq_from_compressed(const reliq_compressed *compressed, const size_t compresse
   return t;
 }
 
+int
+reliq_std_free(void *addr, size_t len)
+{
+    free(addr);
+    return 0;
+}
+
 reliq
-reliq_init(const char *ptr, const size_t size)
+reliq_init(const char *data, const size_t size, int (*freedata)(void *addr, size_t len))
 {
   reliq t;
-  t.data = ptr;
-  t.size = size;
+  t.data = data;
+  t.datal = size;
+  t.freedata = freedata;
   t.expr = NULL;
   t.flags = RELIQ_SAVE;
   t.output = NULL;
+  t.nodef = NULL;
+  t.nodefl = 0;
 
   flexarr *nodes = flexarr_init(sizeof(reliq_hnode),RELIQ_NODES_INC);
   t.attrib_buffer = (void*)flexarr_init(sizeof(reliq_cstr_pair),ATTRIB_INC);
 
-  reliq_analyze(ptr,size,nodes,&t);
+  reliq_analyze(data,size,nodes,&t);
 
   flexarr_conv(nodes,(void**)&t.nodes,&t.nodesl);
   flexarr_free((flexarr*)t.attrib_buffer);

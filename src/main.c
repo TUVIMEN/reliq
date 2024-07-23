@@ -130,13 +130,6 @@ usage()
       "When FILE isn't specified, FILE will become standard input.",argv0,argv0,argv0);
 }
 
-static int
-unalloc_free(void *ptr, size_t size)
-{
-  free(ptr);
-  return 0;
-}
-
 static void
 expr_exec(char *f, size_t s, const uchar inpipe)
 {
@@ -145,22 +138,20 @@ expr_exec(char *f, size_t s, const uchar inpipe)
 
   reliq_error *err;
 
+  void *freedata = inpipe ? reliq_std_free : munmap;
+
   if (settings&F_FAST) {
-    err = reliq_fexec_file(f,s,outfile,&exprs,inpipe ? unalloc_free : munmap);
+    err = reliq_fexec_file(f,s,outfile,&exprs,freedata);
     if (err)
       goto ERR;
     return;
   }
 
-  reliq rq = reliq_init(f,s);
+  reliq rq = reliq_init(f,s,freedata);
   err = reliq_exec_file(&rq,outfile,&exprs);
 
   reliq_free(&rq);
   ERR: ;
-  if (inpipe) {
-    free(f);
-  } else
-    munmap(f,s);
 
   if (err) {
     reliq_efree(&exprs);

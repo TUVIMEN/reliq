@@ -154,6 +154,7 @@ typedef struct {
 
 typedef struct {
   char const *data;
+  int (*freedata)(void *addr, size_t len);
   reliq_hnode *nodes;
 
   FILE *output;
@@ -169,22 +170,22 @@ typedef struct {
   size_t nodefl; //format used for output at parsing
 
   size_t nodesl;
-  size_t size; //length of data
+  size_t datal; //length of data
   unsigned char flags;
 } reliq;
 
-reliq reliq_init(const char *ptr, const size_t size);
+reliq reliq_init(const char *ptr, const size_t size, int (*freedata)(void *addr, size_t len));
 
 reliq_error *reliq_ncomp(const char *script, size_t size, reliq_node *node);
 reliq_error *reliq_ecomp(const char *script, size_t size, reliq_exprs *exprs);
 
 reliq reliq_from_compressed(const reliq_compressed *compressed, const size_t compressedl, const reliq *rq);
-reliq reliq_from_compressed_independent(const reliq_compressed *compressed, const size_t compressedl, char **ptr, size_t *size);
+reliq reliq_from_compressed_independent(const reliq_compressed *compressed, const size_t compressedl);
 
 int reliq_match(const reliq_hnode *hnode, const reliq_hnode *parent, const reliq_node *node);
 
-reliq_error *reliq_fexec_file(char *ptr, const size_t size, FILE *output, const reliq_exprs *exprs, int (*freeptr)(void *ptr, size_t size));
-reliq_error *reliq_fexec_str(char *ptr, const size_t size, char **str, size_t *strl, const reliq_exprs *exprs, int (*freeptr)(void *ptr, size_t size));
+reliq_error *reliq_fexec_file(char *data, const size_t size, FILE *output, const reliq_exprs *exprs, int (*freedata)(void *addr, size_t len));
+reliq_error *reliq_fexec_str(char *data, const size_t size, char **str, size_t *strl, const reliq_exprs *exprs, int (*freedata)(void *addr, size_t len));
 
 reliq_error *reliq_exec_file(reliq *rq, FILE *output, const reliq_exprs *exprs);
 reliq_error *reliq_exec_str(reliq *rq, char **str, size_t *strl, const reliq_exprs *exprs);
@@ -193,9 +194,10 @@ reliq_error *reliq_exec(reliq *rq, reliq_compressed **nodes, size_t *nodesl, con
 void reliq_printf(FILE *outfile, const char *format, const size_t formatl, const reliq_hnode *hnode, const reliq_hnode *parent, const reliq *rq);
 void reliq_print(FILE *outfile, const reliq_hnode *hnode);
 
+int reliq_std_free(void *addr, size_t len);
 void reliq_nfree(reliq_node *node);
 void reliq_efree(reliq_exprs *expr);
-void reliq_free(reliq *rq);
+int reliq_free(reliq *rq);
 
 reliq_error *reliq_set_error(const int code, const char *fmt, ...);
 
