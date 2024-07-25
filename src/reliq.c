@@ -2241,6 +2241,7 @@ reliq_from_compressed(const reliq_compressed *compressed, const size_t compresse
   t.expr = NULL;
   t.flags = RELIQ_SAVE;
   t.output = NULL;
+  t.freedata = NULL;
   t.data = rq->data;
   t.datal = rq->datal;
 
