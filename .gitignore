@@ -1,3 +1,4 @@
 *.o
 *.so
 reliq
+./reliq.h

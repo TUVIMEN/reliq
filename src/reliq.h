@@ -176,7 +176,7 @@ typedef struct {
   unsigned char flags;
 } reliq;
 
-reliq reliq_init(const char *ptr, const size_t size, int (*freedata)(void *addr, size_t len));
+reliq reliq_init(const char *data, const size_t size, int (*freedata)(void *addr, size_t len));
 
 reliq_error *reliq_ncomp(const char *script, size_t size, reliq_node *node);
 reliq_error *reliq_ecomp(const char *script, size_t size, reliq_exprs *exprs);

@@ -27,7 +27,11 @@
 #define REGEX_PATTERN_SIZE (1<<9)
 
 #define while_is(w,x,y,z) while ((y) < (z) && w((x)[(y)])) {(y)++;}
+#define while_isnt(w,x,y,z) while ((y) < (z) && !w((x)[(y)])) {(y)++;}
 #define LENGTH(x) (sizeof(x)/(sizeof(*x)))
+
+#define goto_seterr(x,...) { err = reliq_set_error(__VA_ARGS__); goto x; }
+#define goto_seterr_p(x,...) { *err = reliq_set_error(__VA_ARGS__); goto x; }
 
 #define memcomp(w,x,y,z) ((y) == (z) && memcmp(w,x,y) == 0)
 #define strcomp(x,y) memcomp(x.b,y.b,x.s,y.s)

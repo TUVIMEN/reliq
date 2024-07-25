@@ -924,74 +924,76 @@ exprs_check_chain(const reliq_exprs *exprs)
 static reliq_error *
 match_hook_handle(char *src, size_t *pos, size_t *size, flexarr *hooks)
 {
-  reliq_error *err;
-  size_t p = *pos;
+  reliq_error *err = NULL;
+  size_t p=*pos,s=*size;
+  const size_t prevpos = p;
+  const char *func_name = src+p;
 
-  while_is(isalpha,src,*pos,*size);
+  while_is(isalpha,src,p,s);
 
-  while (*pos < *size && isalpha(src[*pos]))
-    (*pos)++;
+  size_t func_len = p-prevpos;
 
-  size_t func_len = *pos-p;
-
-  if (!func_len || src[*pos] != '@') {
-    *pos = p;
-    return NULL;
+  if (p >= s || !func_len || src[p] != '@') {
+    p = prevpos;
+    goto END;
   }
-  if (*pos+1 >= *size)
-    return reliq_set_error(1,"hook \"%.*s\" expected argument",func_len,src+p);
-  (*pos)++;
+  if (p+1 >= s)
+    goto_seterr(END,1,"hook \"%.*s\" expected argument",func_len,func_name);
+  p++;
 
   char found = 0;
   size_t i = 0;
   for (; i < LENGTH(match_hooks); i++) {
-    if (memcomp(match_hooks[i].name.b,src+p,match_hooks[i].name.s,func_len)) {
+    if (memcomp(match_hooks[i].name.b,func_name,match_hooks[i].name.s,func_len)) {
       found = 1;
       break;
     }
   }
   if (!found)
-    return reliq_set_error(1,"hook \"%.*s\" does not exists",(int)func_len,src+p);
+    goto_seterr(END,1,"hook \"%.*s\" does not exists",(int)func_len,func_name);
 
   reliq_hook hook = (reliq_hook){0};
   hook.flags = match_hooks[i].flags;
 
-  if (src[*pos] == '[') {
+  if (src[p] == '[') {
     if (hook.flags&F_PATTERN)
-      return reliq_set_error(1,"hook \"%.*s\" expected pattern argument",(int)func_len,src+p);
+      goto_seterr(END,1,"hook \"%.*s\" expected pattern argument",(int)func_len,func_name);
     if (hook.flags&F_EXPRS)
-      return reliq_set_error(1,"hook \"%.*s\" expected node argument",(int)func_len,src+p);
+      goto_seterr(END,1,"hook \"%.*s\" expected node argument",(int)func_len,func_name);
 
-    if ((err = range_comp(src,pos,*size,&hook.match.range)))
-      return err;
+    if ((err = range_comp(src,&p,s,&hook.match.range)))
+      goto END;
   } else {
     if (hook.flags&F_RANGE)
-      return reliq_set_error(1,"hook \"%.*s\" expected list argument",(int)func_len,src+p);
+      goto_seterr(END,1,"hook \"%.*s\" expected list argument",(int)func_len,func_name);
     if (hook.flags&F_EXPRS) {
-      if (src[*pos] != '"' && src[*pos] != '\'')
-        return reliq_set_error(1,"hook \"%.*s\" expected node argument",(int)func_len,src+p);
-      char tf = src[*pos];
+      if (src[p] != '"' && src[p] != '\'')
+        goto_seterr(END,1,"hook \"%.*s\" expected node argument",(int)func_len,func_name);
+      char tf = src[p];
       size_t start,len;
-      if ((err = get_quoted(src,pos,size,tf,&start,&len)))
-        return err;
+      if ((err = get_quoted(src,&p,&s,tf,&start,&len)))
+        goto END;
       if ((err = reliq_ecomp(src+start,len,&hook.match.exprs)))
-        return err;
+        goto END;
       if ((err = exprs_check_chain(&hook.match.exprs))) {
         reliq_efree(&hook.match.exprs);
-        return err;
+        goto END;
       }
     } else {
-      if ((err = reliq_regcomp(&hook.match.pattern,src,pos,size,' ',"uWcas")))
-        return err;
+      if ((err = reliq_regcomp(&hook.match.pattern,src,&p,&s,' ',"uWcas")))
+        goto END;
       if (!hook.match.pattern.range.s && hook.match.pattern.flags&RELIQ_PATTERN_ALL) { //ignore if it matches everything
         reliq_regfree(&hook.match.pattern);
-        return NULL;
+        goto END;
       }
     }
   }
 
   memcpy(flexarr_inc(hooks),&hook,sizeof(hook));
-  return NULL;
+  END:
+  *size = s;
+  *pos = p;
+  return err;
 }
 
 static reliq_error *
@@ -1006,9 +1008,10 @@ get_pattribs(char *src, size_t *pos, size_t *size, struct reliq_pattrib **attrib
   uchar tofree = 0;
 
   size_t i = *pos;
-  while (i < *size) {
-    while_is(isspace,src,i,*size);
-    if (i >= *size)
+  size_t s = *size;
+  while (i < s) {
+    while_is(isspace,src,i,s);
+    if (i >= s)
       break;
 
     memset(&pa,0,sizeof(struct reliq_pattrib));
@@ -1018,7 +1021,7 @@ get_pattribs(char *src, size_t *pos, size_t *size, struct reliq_pattrib **attrib
 
     if (isalpha(src[i])) {
       size_t prev = i;
-      if ((err = match_hook_handle(src,&i,size,phooks)))
+      if ((err = match_hook_handle(src,&i,&s,phooks)))
         break;
       if (i != prev) {
         tofree = 0;
@@ -1031,18 +1034,18 @@ get_pattribs(char *src, size_t *pos, size_t *size, struct reliq_pattrib **attrib
       *siblings = 1;
       tofree = 0;
       i++;
-      if (i >= *size || isspace(src[i]))
+      if (i >= s|| isspace(src[i]))
         break;
       if (src[i] == '[') {
-        char *bracket_end = memchr(src+i,']',*size-i);
-        if (!bracket_end || ((size_t)(bracket_end-src+1) != *size && !isspace(bracket_end[1])))
+        char *bracket_end = memchr(src+i,']',s-i);
+        if (!bracket_end || ((size_t)(bracket_end-src+1) != s && !isspace(bracket_end[1])))
           goto SIBLINGS_SKIP;
       }
 
-      err = range_comp(src,&i,*size,sibling_subsequent);
+      err = range_comp(src,&i,s,sibling_subsequent);
       break;
       SIBLINGS_SKIP: ;
-    } else if (i+1 < *size && src[i] == '\\' && src[i+1] == '~')
+    } else if (i+1 < s && src[i] == '\\' && src[i+1] == '~')
       i++;
 
     if (src[i] == '+') {
@@ -1055,27 +1058,27 @@ get_pattribs(char *src, size_t *pos, size_t *size, struct reliq_pattrib **attrib
       isset = -1;
       pa.flags &= ~A_INVERT;
       i++;
-    } else if (i+1 < *size && src[i] == '\\' && (src[i+1] == '+' || src[i+1] == '-'))
+    } else if (i+1 < s && src[i] == '\\' && (src[i+1] == '+' || src[i+1] == '-'))
       i++;
 
     char shortcut = 0;
-    if (i >= *size)
+    if (i >= s)
       break;
 
     if (src[i] == '.' || src[i] == '#') {
       shortcut = src[i++];
-    } else if (i+1 < *size && src[i] == '\\' && (src[i+1] == '.' || src[i+1] == '#'))
+    } else if (i+1 < s && src[i] == '\\' && (src[i+1] == '.' || src[i+1] == '#'))
       i++;
 
-    while_is(isspace,src,i,*size);
-    if (i >= *size)
+    while_is(isspace,src,i,s);
+    if (i >= s)
       break;
 
     if (src[i] == '[') {
-      if ((err = range_comp(src,&i,*size,&pa.position)))
+      if ((err = range_comp(src,&i,s,&pa.position)))
         break;
       if (!isattrib) {
-        if (i >= *size || isspace(src[i])) {
+        if (i >= s || isspace(src[i])) {
           if (position->s) {
             err = reliq_set_error(1,"node: position already declared");
             break;
@@ -1089,10 +1092,10 @@ get_pattribs(char *src, size_t *pos, size_t *size, struct reliq_pattrib **attrib
           goto SIBLING_SUBSEQUENT;
         }
       }
-    } else if (i+1 < *size && src[i] == '\\' && src[i+1] == '[')
+    } else if (i+1 < s && src[i] == '\\' && src[i+1] == '[')
       i++;
 
-    if (i >= *size)
+    if (i >= s)
       break;
 
     if (isset == 0)
@@ -1104,23 +1107,23 @@ get_pattribs(char *src, size_t *pos, size_t *size, struct reliq_pattrib **attrib
       if ((err = reliq_regcomp(&pa.r[0],t_name,&t_pos,&t_size,' ',"uWsfi")))
         break;
 
-      if ((err = reliq_regcomp(&pa.r[1],src,&i,size,' ',"uwsf")))
+      if ((err = reliq_regcomp(&pa.r[1],src,&i,&s,' ',"uwsf")))
         break;
       pa.flags |= A_VAL_MATTERS;
     } else {
-      if ((err = reliq_regcomp(&pa.r[0],src,&i,size,'=',NULL))) //!
+      if ((err = reliq_regcomp(&pa.r[0],src,&i,&s,'=',NULL))) //!
         break;
 
-      while_is(isspace,src,i,*size);
-      if (i >= *size)
-        goto ADD;
+      while_is(isspace,src,i,s);
+      if (i >= s)
+        goto ADD_SKIP;
       if (src[i] == '=') {
         i++;
-        while_is(isspace,src,i,*size);
-        if (i >= *size)
+        while_is(isspace,src,i,s);
+        if (i >= s)
           break;
 
-        if ((err = reliq_regcomp(&pa.r[1],src,&i,size,' ',NULL)))
+        if ((err = reliq_regcomp(&pa.r[1],src,&i,&s,' ',NULL)))
           break;
         pa.flags |= A_VAL_MATTERS;
       } else {
@@ -1129,8 +1132,7 @@ get_pattribs(char *src, size_t *pos, size_t *size, struct reliq_pattrib **attrib
       }
     }
 
-    ADD: ;
-    if (src[i] != '+' && src[i] != '-')
+    if (i < s && src[i] != '+' && src[i] != '-')
       i++;
     ADD_SKIP: ;
     memcpy(flexarr_inc(pattrib),&pa,sizeof(struct reliq_pattrib));
@@ -1142,6 +1144,7 @@ get_pattribs(char *src, size_t *pos, size_t *size, struct reliq_pattrib **attrib
   flexarr_conv(pattrib,(void**)attrib,attribl);
   flexarr_conv(phooks,(void**)hooks,hooksl);
   *pos = i;
+  *size = s;
   return err;
 }
 
@@ -1448,10 +1451,9 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, ushort *childfields, re
       }
       if ((i == j || (i && isspace(src[i-1]))) &&
         (src[i] == '|' || src[i] == '/')) {
-        if ((src[i] == '|' && nodef.b) || (src[i] == '/' && exprf.b)) {
-          *err = reliq_set_error(1,"%lu: format '%c' cannot be specified twice",i,src[i]);
-          goto EXIT;
-        }
+        if ((src[i] == '|' && nodef.b) || (src[i] == '/' && exprf.b))
+          goto_seterr_p(EXIT,1,"%lu: format '%c' cannot be specified twice",i,src[i]);
+
         if (i == j)
           hasexpr = 1;
         if (src[i] == '|') {
@@ -1475,10 +1477,8 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, ushort *childfields, re
           i++;
           if (i < s)
             continue;
-        } else {
-          *err = reliq_set_error(1,"string: could not find the end of %c quote",tf);
-          goto EXIT;
-        }
+        } else
+          goto_seterr_p(EXIT,1,"string: could not find the end of %c quote",tf);
       }
       if (i < s && src[i] == '[') {
         i++;
@@ -1488,10 +1488,8 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, ushort *childfields, re
           i++;
           if (i < s)
             continue;
-        } else {
-          *err = reliq_set_error(1,"range: char %lu: unprecedented end of range",i);
-          goto EXIT;
-        }
+        } else
+          goto_seterr_p(EXIT,1,"range: char %lu: unprecedented end of range",i);
       }
 
       if (i < s && (src[i] == ',' || src[i] == ';' || src[i] == '{' || src[i] == '}')) {
@@ -1548,10 +1546,8 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, ushort *childfields, re
         new->flags |= EXPR_SINGULAR;
         new->nodef = expr.nodef;
         new->nodefl = expr.nodefl;
-        if (new->childfields && expr.nodefl) {
-          *err = reliq_set_error(1,"illegal assignment of node format to block with fields");
-          goto EXIT;
-        }
+        if (new->childfields && expr.nodefl)
+          goto_seterr_p(EXIT,1,"illegal assignment of node format to block with fields");
       }
     }
     #ifdef RELIQ_EDITING
@@ -1564,10 +1560,8 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, ushort *childfields, re
       if (hasended) {
         new->exprf = expr.exprf;
         new->exprfl = expr.exprfl;
-        if (new->childfields) {
-          *err = reliq_set_error(1,"illegal assignment of expression format to block with fields");
-          goto EXIT;
-        }
+        if (new->childfields)
+          goto_seterr_p(EXIT,1,"illegal assignment of expression format to block with fields");
       }
     }
     #endif
@@ -2055,14 +2049,14 @@ reliq_exec_str(reliq *rq, char **str, size_t *strl, const reliq_exprs *exprs)
 }
 
 static reliq_error *
-reliq_analyze(const char *ptr, const size_t size, flexarr *nodes, reliq *rq)
+reliq_analyze(const char *data, const size_t size, flexarr *nodes, reliq *rq)
 {
   reliq_error *err;
   for (size_t i = 0; i < size; i++) {
-    while (i < size && ptr[i] != '<')
+    while (i < size && data[i] != '<')
         i++;
-    while (i < size && ptr[i] == '<') {
-      html_struct_handle(ptr,&i,size,0,nodes,rq,&err);
+    while (i < size && data[i] == '<') {
+      html_struct_handle(data,&i,size,0,nodes,rq,&err);
       if (err)
         return err;
     }

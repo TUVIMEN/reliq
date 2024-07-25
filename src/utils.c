@@ -36,9 +36,6 @@ typedef unsigned long int ulong;
 
 #define RANGES_INC (1<<4)
 
-#define while_is(w,x,y,z) while ((y) < (z) && w((x)[(y)])) {(y)++;}
-#define while_isnt(w,x,y,z) while ((y) < (z) && !w((x)[(y)])) {(y)++;}
-
 void
 strrev(char *v, size_t size)
 {

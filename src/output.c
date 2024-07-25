@@ -453,8 +453,13 @@ nodes_output(const reliq *rq, flexarr *compressed_nodes, flexarr *ncollector
       if (j >= compressed_nodes->size)
         break;
 
-      if (ncurrent < ncollector->size && ncol[ncurrent].b && ((reliq_expr*)ncol[ncurrent].b)->exprfl)
+      if (ncurrent < ncollector->size && ncol[ncurrent].b && ((reliq_expr*)ncol[ncurrent].b)->exprfl) {
+        if (out != rq->output && out) {
+            fclose(out);
+            free(ptr);
+        }
         out = open_memstream(&ptr,&fsize);
+      }
     }
     #endif
     if (j >= compressed_nodes->size)
@@ -529,6 +534,7 @@ nodes_output(const reliq *rq, flexarr *compressed_nodes, flexarr *ncollector
       #ifdef RELIQ_EDITING
       if (ncol[ncurrent].b && out != rq->output) {
         fclose(out);
+        out = NULL;
         err = format_exec(ptr,fsize,(oout && fout == rq->output) ? *oout : fout,NULL,NULL,
           ((reliq_expr*)ncol[ncurrent].b)->exprf,
           ((reliq_expr*)ncol[ncurrent].b)->exprfl,rq);

@@ -268,7 +268,7 @@ will return
 
 Note that `,` was separated by space from `|`. Formats can be specified only when `|` or `/` is separated from both sides with whitespaces. You cannot write `li |tr "\n"` or `p/tr "a-z" "A-Z"`, when format is empty that space is still required.
 
-If field name is followed by another `.` with alphanumeric string it will have different type. Types are described in manual. The most used ones are `.u` and `.a`.
+If field name is followed by another `.` with alphanumeric string it will have different type. Types are described in the manual. The most used ones are `.u` and `.a`.
 
 `.u` finds first unsigned integer e.g. on `is -2849.4 kg` will return `2849`.
 
