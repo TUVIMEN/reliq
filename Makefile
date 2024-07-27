@@ -68,7 +68,10 @@ reliq_h:
 lib: clean reliq_h
 	@make O_LIB=1 TARGET=lib${TARGET}.so
 
-lib-install: lib
+install-pc:
+	sed "s/#VERSION#/${VERSION}/g;s|#PREFIX#|${PREFIX}|g;s/#CFLAGS_D#/${CFLAGS_D}/g" reliq.pc > $$(pkg-config --variable pc_path pkg-config | cut -d: -f1)/reliq.pc
+
+lib-install: lib install-pc
 	install -m755 lib${TARGET}.so ${LD_LIBRARY_PATH}
 	install -m644 reliq.h ${INCLUDE_PATH}
 

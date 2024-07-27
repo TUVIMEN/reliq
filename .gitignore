@@ -1,4 +1,4 @@
 *.o
 *.so
-reliq
-./reliq.h
+/reliq
+/reliq.h
