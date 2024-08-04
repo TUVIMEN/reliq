@@ -164,6 +164,8 @@ typedef struct {
 
   void *attrib_buffer; //used as temporary buffer for attribs
 
+  reliq_hnode const *parent;
+
   #ifdef RELIQ_EDITING
   reliq_format_func *nodef;
   #else

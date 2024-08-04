@@ -623,6 +623,7 @@ reliq_match_hooks(const reliq_hnode *hnode, const reliq_hnode *parent, const rel
       memset(&r,0,sizeof(reliq));
       r.nodes = (reliq_hnode*)hnode;
       r.nodesl = hnode->child_count+1;
+      r.parent = hnode;
 
       size_t compressedl = 0;
       reliq_error *err = reliq_exec_r(&r,NULL,NULL,&compressedl,&hooks[i].match.exprs);
@@ -654,13 +655,13 @@ reliq_match(const reliq_hnode *hnode, const reliq_hnode *parent, const reliq_nod
 }
 
 static void
-reliq_match_siblings(const reliq_hnode *nodes, const size_t nodesl, reliq_hnode *hnode, reliq_hnode *parent, reliq_node const *node, flexarr *dest)
+reliq_match_siblings(const reliq_hnode *nodes, const size_t nodesl, reliq_hnode *hnode, reliq_hnode const *parent, reliq_node const *node, flexarr *dest)
 {
   int r = reliq_match(hnode,parent,node);
   if (!r)
     return;
   if (!node->node) {
-    *(reliq_compressed*)flexarr_inc(dest) = (reliq_compressed){hnode,parent};
+    *(reliq_compressed*)flexarr_inc(dest) = (reliq_compressed){hnode,(reliq_hnode *const)parent};
     return;
   }
   if (parent == hnode)
@@ -686,7 +687,7 @@ reliq_match_siblings(const reliq_hnode *nodes, const size_t nodesl, reliq_hnode 
           }
           reliq_compressed *x = (reliq_compressed*)flexarr_inc(dest);
           x->hnode = (reliq_hnode *const)nodes+i;
-          x->parent = parent;
+          x->parent = (reliq_hnode *const)parent;
         }
         found++;
       }
@@ -707,7 +708,7 @@ reliq_match_siblings(const reliq_hnode *nodes, const size_t nodesl, reliq_hnode 
           }
           reliq_compressed *x = (reliq_compressed*)flexarr_inc(dest);
           x->hnode = (reliq_hnode *const)nodes+i;
-          x->parent = parent;
+          x->parent = (reliq_hnode *const)parent;
         }
         found++;
       }
@@ -1717,7 +1718,7 @@ node_exec_first(const reliq *rq, reliq_node *node, flexarr *dest)
 {
   size_t nodesl = rq->nodesl;
   for (size_t i = 0; i < nodesl; i++)
-    reliq_match_siblings(rq->nodes,rq->nodesl,rq->nodes+i,NULL,node,dest);
+    reliq_match_siblings(rq->nodes,rq->nodesl,rq->nodes+i,rq->parent,node,dest);
 
   if (node->position.s)
     dest_match_position(&node->position,dest,0,dest->size);
@@ -2085,6 +2086,7 @@ reliq_fmatch(const char *data, const size_t size, FILE *output, const reliq_node
   t.output = output;
   t.nodes = NULL;
   t.nodesl = 0;
+  t.parent = NULL;
 
   flexarr *nodes = flexarr_init(sizeof(reliq_hnode),RELIQ_NODES_INC);
   t.attrib_buffer = (void*)flexarr_init(sizeof(reliq_cstr_pair),ATTRIB_INC);
@@ -2189,6 +2191,7 @@ reliq_from_compressed_independent(const reliq_compressed *compressed, const size
   t.expr = NULL;
   t.flags = RELIQ_SAVE;
   t.output = NULL;
+  t.parent = NULL;
 
   char *ptr;
   size_t pos=0,size;
@@ -2244,6 +2247,7 @@ reliq_from_compressed(const reliq_compressed *compressed, const size_t compresse
   t.freedata = NULL;
   t.data = rq->data;
   t.datal = rq->datal;
+  t.parent = NULL;
 
   ushort lvl;
   flexarr *nodes = flexarr_init(sizeof(reliq_hnode),RELIQ_NODES_INC);
@@ -2291,6 +2295,7 @@ reliq_init(const char *data, const size_t size, int (*freedata)(void *addr, size
   t.output = NULL;
   t.nodef = NULL;
   t.nodefl = 0;
+  t.parent = NULL;
 
   flexarr *nodes = flexarr_init(sizeof(reliq_hnode),RELIQ_NODES_INC);
   t.attrib_buffer = (void*)flexarr_init(sizeof(reliq_cstr_pair),ATTRIB_INC);
