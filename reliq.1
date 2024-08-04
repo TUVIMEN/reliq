@@ -138,7 +138,7 @@ Matching options:
 \&
 
 .SS ATTRIBUTE_NAME
-Attribute's name \fBPATTERN\fR. Starting by '+' or '-' will reliably assure that it will be treated as attribute, but in most cases can be omitted. '-' signifies its negation. It can be followed by \fB[RANGE]\fR which matches attribute's position in tag.
+Attribute's name \fBPATTERN\fR. Starting by '+' or '-' will ensure that it will be treated as attribute, but in most cases can be omitted. '-' signifies its negation. It can be followed by \fB[RANGE]\fR which matches attribute's position in tag.
 
 Attribute name can be shortened to '.' or '#' (see below).
 .nf
@@ -191,7 +191,9 @@ Specifying three values additionally matches only values of which modulo of thir
 .in
 \&
 .SS HOOK
-Begins with a name of function followed by '@' and ended with argument which can be a \fBRANGE\fR, \fBEXPRESSION\fR or \fBPATTERN\fR.
+Begins with a name of function followed by '@' and ended with argument which can be a \fBRANGE\fR, \fBEXPRESSION\fR, \fBPATTERN\fR or nothing.
+
+Hook name can be preceded with '+' or '-' character. If it's '-' matching of hook will be inverted.
 
 .nf
 \&
@@ -199,6 +201,9 @@ Begins with a name of function followed by '@' and ended with argument which can
 \fBNAME@PATTERN\fR
 \fBNAME@[RANGE]\fR
 \fBNAME@"EXPRESSION"\fR
+\fBNAME@\fR
+\fB+NAME@[RANGE]\fB
+\fB-NAME@"EXPRESSION"\fR
 .in
 \&
 
@@ -222,6 +227,15 @@ Get tags with number of children that is within the \fIRANGE\fR.
 .TP
 .BR C ",  " childmatch " " \fI"EXPRESSION"\fR
 Get tags in which chained \fIEXPRESSION\fR (see \fB-F\fR option) matches at least one of its children.
+.TP
+.BR self
+same as \fBl@[0]\fR
+.TP
+.BR child
+same as \fBl@[1]\fR
+.TP
+.BR descendant
+same as \fBl@[1:]\fR
 
 .SS TAG
 At the begining each \fBTAG\fR must contain \fBPATTERN\fR of html tag and that can be followed by a number of \fBATTRIBUTE\fRs and \fBHOOK\fRs.

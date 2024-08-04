@@ -50,6 +50,16 @@ Get hyperlinks ending with `/[0-9]+.html`
 
     reliq 'a href=Ee>/[0-9]+\.html | "%(href)a\n"' index.html
 
+Get links that are not at 1 level, both are equivalent
+
+    reliq 'a href l@[!0] | "(href)v\n"' index.html
+    reliq 'a href -l@[0] | "(href)v\n"' index.html
+
+Get `li` tag that does not start with `Views:`, both are equivalent
+
+    reliq 'li m@bv>"Views:"' index.html
+    reliq 'li -m@b>"Views:"' index.html
+
 Get `ul` tags and html inside `i` tags that are inside `p` tags.
 
     reliq 'ul, p; i | "%i\n"' index.html
