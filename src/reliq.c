@@ -59,7 +59,7 @@ typedef unsigned long int ulong;
 #define N_POSITION_ABSOLUTE 0x2
 
 //reliq_match_hook flags
-#define F_KINDS 0x7
+#define F_KINDS 0xf
 
 #define F_ATTRIBUTES 0x1
 #define F_LEVEL 0x2
@@ -67,10 +67,14 @@ typedef unsigned long int ulong;
 #define F_CHILD_COUNT 0x4
 #define F_MATCH_INSIDES 0x5
 #define F_CHILD_MATCH 0x6
+#define F_SELF 0x7
+#define F_CHILD 0x8
+#define F_DESCENDANT 0x9
 
-#define F_RANGE 0x8
-#define F_PATTERN 0x10
-#define F_EXPRS 0x20
+#define F_RANGE 0x10
+#define F_PATTERN 0x20
+#define F_EXPRS 0x40
+#define F_NOARG 0x80
 
 //reliq_expr istable flags
 #define EXPR_TABLE 0x1
@@ -145,6 +149,9 @@ const struct reliq_match_hook match_hooks[] = {
     {{"level",5},F_RANGE|F_LEVEL},
     {{"children",8},F_RANGE|F_CHILD_COUNT},
     {{"childmatch",10},F_EXPRS|F_CHILD_MATCH},
+    {{"self",4},F_SELF|F_NOARG},
+    {{"child",5},F_CHILD|F_NOARG},
+    {{"descendant",10},F_DESCENDANT|F_NOARG},
 };
 
 reliq_error *
@@ -922,6 +929,20 @@ exprs_check_chain(const reliq_exprs *exprs)
   return reliq_set_error(1,"expression is not a chain");
 }
 
+static const char *
+match_hook_unexpected_argument(const uchar flags)
+{
+    if (flags&F_PATTERN)
+      return "hook \"%.*s\" expected pattern argument";
+    if (flags&F_EXPRS)
+      return "hook \"%.*s\" expected node argument";
+    if (flags&F_RANGE)
+      return "hook \"%.*s\" expected list argument";
+    if (flags&F_NOARG)
+      return "hook \"%.*s\" unexpected argument";
+    return NULL;
+}
+
 static reliq_error *
 match_hook_handle(char *src, size_t *pos, size_t *size, flexarr *hooks)
 {
@@ -938,8 +959,6 @@ match_hook_handle(char *src, size_t *pos, size_t *size, flexarr *hooks)
     p = prevpos;
     goto END;
   }
-  if (p+1 >= s)
-    goto_seterr(END,1,"hook \"%.*s\" expected argument",func_len,func_name);
   p++;
 
   char found = 0;
@@ -956,37 +975,67 @@ match_hook_handle(char *src, size_t *pos, size_t *size, flexarr *hooks)
   reliq_hook hook = (reliq_hook){0};
   hook.flags = match_hooks[i].flags;
 
-  if (src[p] == '[') {
-    if (hook.flags&F_PATTERN)
-      goto_seterr(END,1,"hook \"%.*s\" expected pattern argument",(int)func_len,func_name);
-    if (hook.flags&F_EXPRS)
-      goto_seterr(END,1,"hook \"%.*s\" expected node argument",(int)func_len,func_name);
+  #define HOOK_EXPECT(x) if (!(hook.flags&(x))) \
+      goto_seterr(END,1,match_hook_unexpected_argument(hook.flags),(int)func_len,func_name)
 
+  char firstchar = 0;
+  if (p >= s) {
+    if (!(hook.flags&F_NOARG))
+      goto_seterr(END,1,"hook \"%.*s\" expected argument",func_len,func_name);
+  } else
+    firstchar = src[p];
+
+  if (!firstchar || isspace(firstchar)) {
+    HOOK_EXPECT(F_NOARG);
+
+    uchar kind = hook.flags&F_KINDS;
+    char *arg = NULL;
+    size_t argl;
+    size_t argpos = 0;
+
+    switch (kind) {
+      case F_SELF:
+        arg = "[0]";
+        argl = 3;
+      case F_CHILD:
+        if (!arg) {
+          arg = "[1]";
+          argl = 3;
+        }
+      case F_DESCENDANT:
+        if (!arg) {
+          arg = "[1:]";
+          argl = 4;
+        }
+        hook.flags = F_LEVEL_RELATIVE|F_RANGE;
+        if ((err = range_comp(arg,&argpos,argl,&hook.match.range)))
+          goto END;
+        break;
+    }
+  } else if (src[p] == '[') {
+    HOOK_EXPECT(F_RANGE);
     if ((err = range_comp(src,&p,s,&hook.match.range)))
       goto END;
+  } else if (hook.flags&F_EXPRS) {
+     if (src[p] != '"' && src[p] != '\'')
+       goto_seterr(END,1,match_hook_unexpected_argument(hook.flags),(int)func_len,func_name);
+     char tf = src[p];
+     size_t start,len;
+     if ((err = get_quoted(src,&p,&s,tf,&start,&len)))
+       goto END;
+     if ((err = reliq_ecomp(src+start,len,&hook.match.exprs)))
+       goto END;
+     if ((err = exprs_check_chain(&hook.match.exprs))) {
+       reliq_efree(&hook.match.exprs);
+       goto END;
+     }
   } else {
-    if (hook.flags&F_RANGE)
-      goto_seterr(END,1,"hook \"%.*s\" expected list argument",(int)func_len,func_name);
-    if (hook.flags&F_EXPRS) {
-      if (src[p] != '"' && src[p] != '\'')
-        goto_seterr(END,1,"hook \"%.*s\" expected node argument",(int)func_len,func_name);
-      char tf = src[p];
-      size_t start,len;
-      if ((err = get_quoted(src,&p,&s,tf,&start,&len)))
-        goto END;
-      if ((err = reliq_ecomp(src+start,len,&hook.match.exprs)))
-        goto END;
-      if ((err = exprs_check_chain(&hook.match.exprs))) {
-        reliq_efree(&hook.match.exprs);
-        goto END;
-      }
-    } else {
-      if ((err = reliq_regcomp(&hook.match.pattern,src,&p,&s,' ',"uWcas")))
-        goto END;
-      if (!hook.match.pattern.range.s && hook.match.pattern.flags&RELIQ_PATTERN_ALL) { //ignore if it matches everything
-        reliq_regfree(&hook.match.pattern);
-        goto END;
-      }
+    HOOK_EXPECT(F_PATTERN);
+    if ((err = reliq_regcomp(&hook.match.pattern,src,&p,&s,' ',"uWcas")))
+      goto END;
+    if (!hook.match.pattern.range.s && hook.match.pattern.flags&RELIQ_PATTERN_ALL) { //ignore if it matches everything
+      reliq_regfree(&hook.match.pattern);
+      goto END;
     }
   }
 
