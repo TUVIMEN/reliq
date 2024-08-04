@@ -131,7 +131,7 @@ typedef struct {
     reliq_pattern pattern;
     reliq_range range;
   } match;
-  unsigned char flags;
+  unsigned short flags;
 } reliq_hook;
 
 typedef struct reliq_node reliq_node;

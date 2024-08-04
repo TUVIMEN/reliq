@@ -76,6 +76,8 @@ typedef unsigned long int ulong;
 #define F_EXPRS 0x40
 #define F_NOARG 0x80
 
+#define F_INVERT 0x100
+
 //reliq_expr istable flags
 #define EXPR_TABLE 0x1
 #define EXPR_NEWBLOCK 0x2
@@ -586,7 +588,7 @@ pattrib_match(const reliq_hnode *hnode, const struct reliq_pattrib *attribs, siz
       found = 1;
       break;
     }
-    if (((attribs[i].flags&A_INVERT)==A_INVERT)^found)
+    if (((attribs[i].flags&A_INVERT)!=A_INVERT)^found)
       return 0;
   }
   return 1;
@@ -598,7 +600,8 @@ reliq_match_hooks(const reliq_hnode *hnode, const reliq_hnode *parent, const rel
   for (size_t i = 0; i < hooksl; i++) {
     char const *src = NULL;
     size_t srcl = 0;
-    uchar flags = hooks[i].flags;
+    ushort flags = hooks[i].flags;
+    const uchar invert = (flags&F_INVERT) ? 1 : 0;
 
     switch (flags&F_KINDS) {
       case F_ATTRIBUTES:
@@ -620,10 +623,10 @@ reliq_match_hooks(const reliq_hnode *hnode, const reliq_hnode *parent, const rel
     }
 
     if (flags&F_RANGE) {
-      if (!range_match(srcl,&hooks[i].match.range,-1))
+      if ((!range_match(srcl,&hooks[i].match.range,-1))^invert)
         return 0;
     } else if (flags&F_PATTERN) {
-      if (!reliq_regexec(&hooks[i].match.pattern,src,srcl))
+      if ((!reliq_regexec(&hooks[i].match.pattern,src,srcl))^invert)
         return 0;
     } else if ((flags&F_KINDS) == F_CHILD_MATCH && flags&F_EXPRS) {
       reliq r;
@@ -636,7 +639,7 @@ reliq_match_hooks(const reliq_hnode *hnode, const reliq_hnode *parent, const rel
       reliq_error *err = reliq_exec_r(&r,NULL,NULL,&compressedl,&hooks[i].match.exprs);
       if (err)
         free(err);
-      if (err || !compressedl)
+      if ((err || !compressedl)^invert)
         return 0;
     }
   }
@@ -930,7 +933,7 @@ exprs_check_chain(const reliq_exprs *exprs)
 }
 
 static const char *
-match_hook_unexpected_argument(const uchar flags)
+match_hook_unexpected_argument(const ushort flags)
 {
     if (flags&F_PATTERN)
       return "hook \"%.*s\" expected pattern argument";
@@ -944,7 +947,7 @@ match_hook_unexpected_argument(const uchar flags)
 }
 
 static reliq_error *
-match_hook_handle(char *src, size_t *pos, size_t *size, flexarr *hooks)
+match_hook_handle(char *src, size_t *pos, size_t *size, flexarr *hooks, const uchar invert)
 {
   reliq_error *err = NULL;
   size_t p=*pos,s=*size;
@@ -1039,6 +1042,8 @@ match_hook_handle(char *src, size_t *pos, size_t *size, flexarr *hooks)
     }
   }
 
+  if (invert)
+    hook.flags |= F_INVERT;
   memcpy(flexarr_inc(hooks),&hook,sizeof(hook));
   END:
   *size = s;
@@ -1065,19 +1070,7 @@ get_pattribs(char *src, size_t *pos, size_t *size, struct reliq_pattrib **attrib
       break;
 
     memset(&pa,0,sizeof(struct reliq_pattrib));
-    char isset = 0;
-    uchar isattrib = 0;
     tofree = 1;
-
-    if (isalpha(src[i])) {
-      size_t prev = i;
-      if ((err = match_hook_handle(src,&i,&s,phooks)))
-        break;
-      if (i != prev) {
-        tofree = 0;
-        continue;
-      }
-    }
 
     if (src[i] == '~') {
       SIBLING_SUBSEQUENT: ;
@@ -1099,17 +1092,23 @@ get_pattribs(char *src, size_t *pos, size_t *size, struct reliq_pattrib **attrib
       i++;
 
     if (src[i] == '+') {
-      isattrib = 1;
-      pa.flags |= A_INVERT;
-      isset = 1;
+      pa.flags &= ~A_INVERT;
       i++;
     } else if (src[i] == '-') {
-      isattrib = 1;
-      isset = -1;
-      pa.flags &= ~A_INVERT;
+      pa.flags |= A_INVERT;
       i++;
     } else if (i+1 < s && src[i] == '\\' && (src[i+1] == '+' || src[i+1] == '-'))
       i++;
+
+    if (isalpha(src[i])) {
+      size_t prev = i;
+      if ((err = match_hook_handle(src,&i,&s,phooks,pa.flags&A_INVERT)))
+        break;
+      if (i != prev) {
+        tofree = 0;
+        continue;
+      }
+    }
 
     char shortcut = 0;
     if (i >= s)
@@ -1127,29 +1126,24 @@ get_pattribs(char *src, size_t *pos, size_t *size, struct reliq_pattrib **attrib
     if (src[i] == '[') {
       if ((err = range_comp(src,&i,s,&pa.position)))
         break;
-      if (!isattrib) {
-        if (i >= s || isspace(src[i])) {
-          if (position->s) {
-            err = reliq_set_error(1,"node: position already declared");
-            break;
-          }
-          memcpy(position,&pa.position,sizeof(reliq_range));
-          tofree = 0;
-          continue;
+      if (i >= s || isspace(src[i])) {
+        if (position->s) {
+          err = reliq_set_error(1,"node: position already declared");
+          break;
         }
-        if (src[i] == '~') {
-          memcpy(sibling_preceding,&pa.position,sizeof(reliq_range));
-          goto SIBLING_SUBSEQUENT;
-        }
+        memcpy(position,&pa.position,sizeof(reliq_range));
+        tofree = 0;
+        continue;
+      }
+      if (src[i] == '~') {
+        memcpy(sibling_preceding,&pa.position,sizeof(reliq_range));
+        goto SIBLING_SUBSEQUENT;
       }
     } else if (i+1 < s && src[i] == '\\' && src[i+1] == '[')
       i++;
 
     if (i >= s)
       break;
-
-    if (isset == 0)
-      pa.flags |= A_INVERT;
 
     if (shortcut == '.' || shortcut == '#') {
       char *t_name = (shortcut == '.') ? "class" : "id";
