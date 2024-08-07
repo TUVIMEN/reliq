@@ -227,7 +227,7 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
   }
 
   #define search_array(x,y) for (uint _j = 0; _j < (uint)LENGTH(x); _j++) \
-    if (strcomp(x[_j],y))
+    if (strcasecomp(x[_j],y))
 
   search_array(selfclosing_s,hnode->tag) {
     hnode->all.s = f+*i-hnode->all.b+1;
@@ -261,7 +261,7 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
         (*i)++;
         while_is(isspace,f,*i,s);
 
-        if (*i+hnode->tag.s < s && memcmp(hnode->tag.b,f+*i,hnode->tag.s) == 0) {
+        if (*i+hnode->tag.s < s && memcasecmp(hnode->tag.b,f+*i,hnode->tag.s) == 0) {
           hnode->insides.s = tagend-hnode->insides.s;
           *i += hnode->tag.s;
           char *ending = memchr(f+*i,'>',s-*i);
@@ -293,7 +293,7 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
               break;
             continue;
           }
-          if (strcomp(nodesv[j].tag,endname)) {
+          if (strcasecomp(nodesv[j].tag,endname)) {
             *i = tagend;
             hnode->insides.s = *i-hnode->insides.s;
             ret = (ret&0xffffffff)+((ulong)(lvl-nodesv[j].lvl-1)<<32);
@@ -315,7 +315,7 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
             while_is(isspace,f,*i,s);
             name_handle(f,i,s,&name);
 
-            if (strcomp(hnode->tag,name)) {
+            if (strcasecomp(hnode->tag,name)) {
               *i = tagend-1;
               hnode->insides.s = *i-hnode->insides.s+1;
               hnode->all.s = (f+*i+1)-hnode->all.b;

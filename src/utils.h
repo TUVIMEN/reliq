@@ -34,7 +34,9 @@
 #define goto_seterr_p(x,...) { *err = reliq_set_error(__VA_ARGS__); goto x; }
 
 #define memcomp(w,x,y,z) ((y) == (z) && memcmp(w,x,y) == 0)
+#define memcasecomp(w,x,y,z) ((y) == (z) && memcasecmp(w,x,y) == 0)
 #define strcomp(x,y) memcomp(x.b,y.b,x.s,y.s)
+#define strcasecomp(x,y) memcasecomp(x.b,y.b,x.s,y.s)
 
 void strrev(char *v, size_t size);
 void uint_to_str(char *dest, size_t *destl, const size_t max_destl, unsigned long num);
