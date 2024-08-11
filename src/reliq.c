@@ -264,8 +264,18 @@ reliq_regcomp_get_flags(reliq_pattern *pattern, const char *src, size_t *pos, co
   return;
 }
 
+static uchar
+strclass_attrib(char c)
+{
+  if (isalnum(c))
+    return 1;
+  if (c == '_' || c == '-' || c == ':')
+    return 1;
+  return 0;
+}
+
 static reliq_error *
-reliq_regcomp_add_pattern(reliq_pattern *pattern, const char *src, const size_t size)
+reliq_regcomp_add_pattern(reliq_pattern *pattern, const char *src, const size_t size, uchar (*checkstrclass)(char))
 {
   ushort match = pattern->flags&RELIQ_PATTERN_MATCH,
     type = pattern->flags&RELIQ_PATTERN_TYPE;
@@ -276,6 +286,10 @@ reliq_regcomp_add_pattern(reliq_pattern *pattern, const char *src, const size_t 
   }
 
   if (type == RELIQ_PATTERN_TYPE_STR) {
+    if (checkstrclass)
+      for (size_t i = 0; i < size; i++)
+        if (!checkstrclass(src[i]))
+          return reliq_set_error(1,"pattern %lu: '%c' is a character impossible to find in searched field",i,src[i]);
     pattern->match.str.b = memdup(src,size);
     pattern->match.str.s = size;
   } else {
@@ -333,7 +347,7 @@ reliq_regfree(reliq_pattern *pattern)
 }
 
 static reliq_error *
-reliq_regcomp(reliq_pattern *pattern, char *src, size_t *pos, size_t *size, const char delim, const char *flags)
+reliq_regcomp(reliq_pattern *pattern, char *src, size_t *pos, size_t *size, const char delim, const char *flags, uchar (*checkstrclass)(char))
 {
   reliq_error *err;
 
@@ -360,7 +374,7 @@ reliq_regcomp(reliq_pattern *pattern, char *src, size_t *pos, size_t *size, cons
   if ((err = get_quoted(src,pos,size,delim,&start,&len)))
     goto ERR;
 
-  err = reliq_regcomp_add_pattern(pattern,src+start,len);
+  err = reliq_regcomp_add_pattern(pattern,src+start,len,checkstrclass);
   if (err) {
     ERR: ;
     reliq_regfree(pattern);
@@ -1034,7 +1048,7 @@ match_hook_handle(char *src, size_t *pos, size_t *size, flexarr *hooks, const uc
      }
   } else {
     HOOK_EXPECT(F_PATTERN);
-    if ((err = reliq_regcomp(&hook.match.pattern,src,&p,&s,' ',"uWcas")))
+    if ((err = reliq_regcomp(&hook.match.pattern,src,&p,&s,' ',"uWcas",NULL)))
       goto END;
     if (!hook.match.pattern.range.s && hook.match.pattern.flags&RELIQ_PATTERN_ALL) { //ignore if it matches everything
       reliq_regfree(&hook.match.pattern);
@@ -1148,14 +1162,14 @@ get_pattribs(char *src, size_t *pos, size_t *size, struct reliq_pattrib **attrib
     if (shortcut == '.' || shortcut == '#') {
       char *t_name = (shortcut == '.') ? "class" : "id";
       size_t t_pos=0,t_size=(shortcut == '.' ? 5 : 2);
-      if ((err = reliq_regcomp(&pa.r[0],t_name,&t_pos,&t_size,' ',"uWsfi")))
+      if ((err = reliq_regcomp(&pa.r[0],t_name,&t_pos,&t_size,' ',"uWsfi",strclass_attrib)))
         break;
 
-      if ((err = reliq_regcomp(&pa.r[1],src,&i,&s,' ',"uwsf")))
+      if ((err = reliq_regcomp(&pa.r[1],src,&i,&s,' ',"uwsf",NULL)))
         break;
       pa.flags |= A_VAL_MATTERS;
     } else {
-      if ((err = reliq_regcomp(&pa.r[0],src,&i,&s,'=',NULL))) //!
+      if ((err = reliq_regcomp(&pa.r[0],src,&i,&s,'=',NULL,strclass_attrib))) //!
         break;
 
       while_is(isspace,src,i,s);
@@ -1167,7 +1181,7 @@ get_pattribs(char *src, size_t *pos, size_t *size, struct reliq_pattrib **attrib
         if (i >= s)
           break;
 
-        if ((err = reliq_regcomp(&pa.r[1],src,&i,&s,' ',NULL)))
+        if ((err = reliq_regcomp(&pa.r[1],src,&i,&s,' ',NULL,NULL)))
           break;
         pa.flags |= A_VAL_MATTERS;
       } else {
@@ -1230,7 +1244,7 @@ reliq_ncomp(const char *script, size_t size, reliq_node *node)
     }
   }
 
-  if ((err = reliq_regcomp(&node->tag,nscript,&pos,&size,' ',NULL)))
+  if ((err = reliq_regcomp(&node->tag,nscript,&pos,&size,' ',NULL,strclass_attrib)))
     goto END;
 
   uchar siblings;
