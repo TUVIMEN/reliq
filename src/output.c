@@ -308,28 +308,28 @@ static void
 outfields_value_print(FILE *out, const reliq_output_field *field, const char *value, const size_t valuel)
 {
   switch (field->type) {
-      case 's':
-        outfields_str_print(out,value,valuel);
-        break;
-      case 'n':
-        outfields_num_print(out,value,valuel,OUTFIELDS_NUM_FLOAT);
-        break;
-      case 'i':
-        outfields_num_print(out,value,valuel,OUTFIELDS_NUM_INT);
-        break;
-      case 'u':
-        outfields_num_print(out,value,valuel,OUTFIELDS_NUM_UNSIGNED);
-        break;
-      case 'b':
-        outfields_bool_print(out,value,valuel);
-        break;
-      case 'a':
-        outfields_array_print(out,field,value,valuel);
-        break;
-      default:
-        fputs("null",out);
-        break;
-    }
+    case 's':
+      outfields_str_print(out,value,valuel);
+      break;
+    case 'n':
+      outfields_num_print(out,value,valuel,OUTFIELDS_NUM_FLOAT);
+      break;
+    case 'i':
+      outfields_num_print(out,value,valuel,OUTFIELDS_NUM_INT);
+      break;
+    case 'u':
+      outfields_num_print(out,value,valuel,OUTFIELDS_NUM_UNSIGNED);
+      break;
+    case 'b':
+      outfields_bool_print(out,value,valuel);
+      break;
+    case 'a':
+      outfields_array_print(out,field,value,valuel);
+      break;
+    default:
+      fputs("null",out);
+      break;
+  }
 }
 
 static void
@@ -455,8 +455,8 @@ nodes_output(const reliq *rq, flexarr *compressed_nodes, flexarr *ncollector
 
       if (ncurrent < ncollector->size && ncol[ncurrent].b && ((reliq_expr*)ncol[ncurrent].b)->exprfl) {
         if (out != rq->output && out) {
-            fclose(out);
-            free(ptr);
+          fclose(out);
+          free(ptr);
         }
         out = open_memstream(&ptr,&fsize);
       }

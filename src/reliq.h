@@ -134,18 +134,36 @@ typedef struct {
   unsigned short flags;
 } reliq_hook;
 
+typedef struct reliq_node_matches reliq_node_matches;
+
+typedef struct {
+  reliq_node_matches *list;
+  size_t size;
+} reliq_node_matches_groups;
+
+typedef struct {
+  union {
+    reliq_pattern *tag;
+    reliq_hook *hook;
+    struct reliq_pattrib *attrib;
+    reliq_node_matches_groups *groups;
+  } data;
+  unsigned char type;
+} reliq_node_matches_node;
+
+struct reliq_node_matches {
+  reliq_node_matches_node *list;
+  size_t size;
+};
+
 typedef struct reliq_node reliq_node;
 struct reliq_node {
-  reliq_pattern tag;
+  reliq_node_matches matches;
   reliq_range position;
   reliq_range siblings_preceding;
   reliq_range siblings_subsequent;
-  struct reliq_pattrib *attribs;
-  reliq_hook *hooks;
   reliq_node *node;
 
-  size_t hooksl;
-  size_t attribsl;
   unsigned char flags;
 };
 
