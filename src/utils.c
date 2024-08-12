@@ -233,7 +233,7 @@ get_quoted(char *src, size_t *i, size_t *size, const char delim, size_t *start, 
       (*i)++;
     }
     if (src[*i] != tf)
-      return reliq_set_error(1,"string: could not find the end of %c quote",tf);
+      return script_err("string: could not find the end of %c quote",tf);
     *len = ((*i)++)-(*start);
   } else {
     *start = *i;
@@ -243,7 +243,7 @@ get_quoted(char *src, size_t *i, size_t *size, const char delim, size_t *start, 
       } else if (src[*i] == '\\' && (isspace(src[*i+1]) || src[*i+1] == delim)) {
         delchar(src,*i,size);
       } else if (src[*i] == '"' || src[*i] == '\'')
-        return reliq_set_error(1,"string: illegal use of %c inside unquoted string",src[*i]);
+        return script_err("string: illegal use of %c inside unquoted string",src[*i]);
       (*i)++;
     }
     *len = *i-*start;
@@ -307,7 +307,7 @@ range_node_comp(const char *src, const size_t size, struct reliq_range_node *nod
     while_is(isspace,src,pos,size);
     if (pos < size && src[pos] == '!') {
       if (i != 0)
-        return reliq_set_error(1,"range: '!' character in the middle of fields");
+        return script_err("range: '!' character in the middle of fields");
       node->flags |= R_INVERT; //invert
       pos++;
       while_is(isspace,src,pos,size);
@@ -316,7 +316,7 @@ range_node_comp(const char *src, const size_t size, struct reliq_range_node *nod
       node->flags |= R_RANGE; //is a range
     if (pos < size && src[pos] == '-') {
       if (i > 1)
-        return reliq_set_error(1,"range: negative value specified for field that doesn't support it");
+        return script_err("range: negative value specified for field that doesn't support it");
       pos++;
       while_is(isspace,src,pos,size);
       node->flags |= 1<<i; //starts from the end
@@ -332,11 +332,11 @@ range_node_comp(const char *src, const size_t size, struct reliq_range_node *nod
     if (pos >= size)
       break;
     if (src[pos] != ':')
-      return reliq_set_error(1,"range: bad syntax, expected ':' separator");
+      return script_err("range: bad syntax, expected ':' separator");
     pos++;
   }
   if (pos != size)
-    return reliq_set_error(1,"range: too many fields specified");
+    return script_err("range: too many fields specified");
   return NULL;
 }
 
@@ -357,7 +357,7 @@ range_comp_pre(const char *src, size_t *pos, const size_t size, flexarr *nodes)
     if (end >= size)
       goto END_OF_RANGE;
     if (src[end] != ',' && src[end] != ']')
-      return reliq_set_error(1,"range: char %u(0x%02x): not a number",end,src[end]);
+      return script_err("range: char %u(0x%02x): not a number",end,src[end]);
 
     reliq_error *err = range_node_comp(src+(*pos),end-(*pos),&node);
     if (err)
@@ -369,7 +369,7 @@ range_comp_pre(const char *src, size_t *pos, const size_t size, flexarr *nodes)
   }
   if (*pos >= size || src[*pos] != ']') {
     END_OF_RANGE: ;
-    return reliq_set_error(1,"range: char %lu: unprecedented end of range",*pos);
+    return script_err("range: char %lu: unprecedented end of range",*pos);
   }
   (*pos)++;
 

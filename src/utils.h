@@ -30,8 +30,11 @@
 #define while_isnt(w,x,y,z) while ((y) < (z) && !w((x)[(y)])) {(y)++;}
 #define LENGTH(x) (sizeof(x)/(sizeof(*x)))
 
+#define script_err(...) reliq_set_error(RELIQ_ERROR_SCRIPT,__VA_ARGS__)
 #define goto_seterr(x,...) { err = reliq_set_error(__VA_ARGS__); goto x; }
 #define goto_seterr_p(x,...) { *err = reliq_set_error(__VA_ARGS__); goto x; }
+#define goto_script_seterr(x,...) goto_seterr(x,RELIQ_ERROR_SCRIPT,__VA_ARGS__)
+#define goto_script_seterr_p(x,...)  goto_seterr_p(x,RELIQ_ERROR_SCRIPT,__VA_ARGS__)
 
 #define memcomp(w,x,y,z) ((y) == (z) && memcmp(w,x,y) == 0)
 #define memcasecomp(w,x,y,z) ((y) == (z) && memcasecmp(w,x,y) == 0)

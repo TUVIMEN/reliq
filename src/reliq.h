@@ -30,6 +30,10 @@
 
 #define RELIQ_ERROR_MESSAGE_LENGTH 512
 
+#define RELIQ_ERROR_SYS 5
+#define RELIQ_ERROR_HTML 10
+#define RELIQ_ERROR_SCRIPT 15
+
 typedef struct {
   void *arg[4];
   unsigned char flags;

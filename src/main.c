@@ -209,6 +209,12 @@ file_handle(const char *f)
     return;
   }
 
+  if (st.st_size == 0) {
+    close(fd);
+    fprintf(errfile,"%s: %s: empty file\n",argv0,f);
+    return;
+  }
+
   file = mmap(NULL,st.st_size,PROT_READ|PROT_WRITE,MAP_PRIVATE,fd,0);
   if (file == MAP_FAILED) {
     xwarn("%s",f);
@@ -226,7 +232,7 @@ load_expr_from_file(char *filename)
     return;
   int fd = open(filename,O_RDONLY);
   if (fd == -1)
-    xerr(1,"%s",filename);
+    xerr(RELIQ_ERROR_SYS,"%s",filename);
   char *file;
   size_t filel;
   pipe_to_str(fd,&file,&filel);
@@ -264,13 +270,13 @@ main(int argc, char **argv)
       case 'o':
         outfile = fopen(optarg,"w");
         if (outfile == NULL)
-          xerr(1,"%s",optarg);
+          xerr(RELIQ_ERROR_SYS,"%s",optarg);
         break;
       case 'e':
         errfile = fopen(optarg,"w");
         if (errfile == NULL) {
           errfile = stderr;
-          xerr(1,"%s",optarg);
+          xerr(RELIQ_ERROR_SYS,"%s",optarg);
         }
         break;
       case 'f': load_expr_from_file(optarg); break;

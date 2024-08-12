@@ -296,7 +296,7 @@ reliq_regcomp_add_pattern(reliq_pattern *pattern, const char *src, const size_t 
     if (checkstrclass)
       for (size_t i = 0; i < size; i++)
         if (!checkstrclass(src[i]))
-          return reliq_set_error(1,"pattern %lu: '%c' is a character impossible to find in searched field",i,src[i]);
+          return script_err("pattern %lu: '%c' is a character impossible to find in searched field",i,src[i]);
     pattern->match.str.b = memdup(src,size);
     pattern->match.str.s = size;
   } else {
@@ -330,7 +330,7 @@ reliq_regcomp_add_pattern(reliq_pattern *pattern, const char *src, const size_t 
     int r = regcomp(&pattern->match.reg,tmp,regexflags);
     free(tmp);
     if (r != 0)
-      return reliq_set_error(1,"pattern: regcomp: could not compile pattern");
+      return script_err("pattern: regcomp: could not compile pattern");
   }
   return NULL;
 }
@@ -1002,7 +1002,7 @@ exprs_check_chain(const reliq_exprs *exprs)
 
   return NULL;
   ERR: ;
-  return reliq_set_error(1,"expression is not a chain");
+  return script_err("expression is not a chain");
 }
 
 static const char *
@@ -1046,18 +1046,18 @@ match_hook_handle(char *src, size_t *pos, size_t *size, reliq_hook *out_hook, co
     }
   }
   if (!found)
-    goto_seterr(END,1,"hook \"%.*s\" does not exists",(int)func_len,func_name);
+    goto_script_seterr(END,"hook \"%.*s\" does not exists",(int)func_len,func_name);
 
   reliq_hook hook = (reliq_hook){0};
   hook.flags = match_hooks[i].flags;
 
   #define HOOK_EXPECT(x) if (!(hook.flags&(x))) \
-      goto_seterr(END,1,match_hook_unexpected_argument(hook.flags),(int)func_len,func_name)
+      goto_script_seterr(END,match_hook_unexpected_argument(hook.flags),(int)func_len,func_name)
 
   char firstchar = 0;
   if (p >= s) {
     if (!(hook.flags&F_NOARG))
-      goto_seterr(END,1,"hook \"%.*s\" expected argument",func_len,func_name);
+      goto_script_seterr(END,"hook \"%.*s\" expected argument",func_len,func_name);
   } else
     firstchar = src[p];
 
@@ -1094,7 +1094,7 @@ match_hook_handle(char *src, size_t *pos, size_t *size, reliq_hook *out_hook, co
       goto END;
   } else if (hook.flags&F_EXPRS) {
      if (src[p] != '"' && src[p] != '\'')
-       goto_seterr(END,1,match_hook_unexpected_argument(hook.flags),(int)func_len,func_name);
+       goto_script_seterr(END,match_hook_unexpected_argument(hook.flags),(int)func_len,func_name);
      char tf = src[p];
      size_t start,len;
      if ((err = get_quoted(src,&p,&s,tf,&start,&len)))
@@ -1169,7 +1169,7 @@ get_node_matches(char *src, size_t *pos, size_t *size, reliq_node_matches *match
 
     if (src[i] == ')') {
       if (fullmode)
-        err = reliq_set_error(1,"node: %lu: unexpected '%c'",i,src[i]);
+        err = script_err("node: %lu: unexpected '%c'",i,src[i]);
       i++;
       break;
     }
@@ -1177,7 +1177,7 @@ get_node_matches(char *src, size_t *pos, size_t *size, reliq_node_matches *match
     if (src[i] == '(') {
       if (++i >= s) {
         END_OF_RANGE: ;
-        err = reliq_set_error(1,"node: %lu: unprecedented end of group",i-1);
+        err = script_err("node: %lu: unprecedented end of group",i-1);
         break;
       }
 
@@ -1193,7 +1193,7 @@ get_node_matches(char *src, size_t *pos, size_t *size, reliq_node_matches *match
           goto END;
         }
         if (!*hastag && wastag && !tag) {
-          err = reliq_set_error(1,"node: %lu: if one group specifies tag then the rest has too",i);
+          err = script_err("node: %lu: if one group specifies tag then the rest has too",i);
           goto END;
         }
         wastag = tag;
@@ -1213,7 +1213,7 @@ get_node_matches(char *src, size_t *pos, size_t *size, reliq_node_matches *match
 
         /*if (match->size < 1) {
           free_node_matches_flexarr(groups_matches);
-          err = reliq_set_error(1,"node: empty group will always pass");
+          err = script_err("node: empty group will always pass");
           break;
         }*/ //future warning
 
@@ -1225,7 +1225,7 @@ get_node_matches(char *src, size_t *pos, size_t *size, reliq_node_matches *match
 
       /*if (groups_matches->size < 2) {
         free_node_matches_flexarr(groups_matches);
-        err = reliq_set_error(1,"node: groups must have at least 2 groups to affect anything");
+        err = script_err("node: groups must have at least 2 groups to affect anything");
         break;
       }*/ //future warning
 
@@ -1244,7 +1244,7 @@ get_node_matches(char *src, size_t *pos, size_t *size, reliq_node_matches *match
     if (src[i] == '~') {
       if (!fullmode) {
         NO_SIBLINGS: ;
-        err = reliq_set_error(1,"node: %lu: groups cannot have siblings",i);
+        err = script_err("node: %lu: groups cannot have siblings",i);
         break;
       }
 
@@ -1304,11 +1304,11 @@ get_node_matches(char *src, size_t *pos, size_t *size, reliq_node_matches *match
         break;
       if (i >= s || isspace(src[i])) {
         if (!fullmode) {
-          err = reliq_set_error(1,"node: %lu: groups cannot have position",i);
+          err = script_err("node: %lu: groups cannot have position",i);
           break;
         }
         if (position->s) {
-          err = reliq_set_error(1,"node: %lu: position already declared",i);
+          err = script_err("node: %lu: position already declared",i);
           break;
         }
         memcpy(position,&attrib.position,sizeof(reliq_range));
@@ -1516,7 +1516,7 @@ reliq_output_type_get(const char *src, size_t *pos, const size_t s, uchar arrayp
     (*pos)++;
   *typel = *pos-(*type-src);
   if (*pos < s && !isspace(src[*pos]) && !(arraypossible && (**type == 'a' && (src[*pos] == '(' || src[*pos] == '.'))))
-    return reliq_set_error(1,"output field: unexpected character in type 0x%02x",src[*pos]);
+    return script_err("output field: unexpected character in type 0x%02x",src[*pos]);
   return NULL;
 }
 
@@ -1540,7 +1540,7 @@ reliq_output_field_get(const char *src, size_t *pos, const size_t s, reliq_outpu
   namel = *pos-(name-src);
   if (*pos < s && !isspace(src[*pos])) {
     if (src[*pos] != '.')
-      return reliq_set_error(1,"output field: unexpected character in name 0x%02x",src[*pos]);
+      return script_err("output field: unexpected character in name 0x%02x",src[*pos]);
     (*pos)++;
 
     err = reliq_output_type_get(src,pos,s,1,&type,&typel);
@@ -1553,17 +1553,17 @@ reliq_output_field_get(const char *src, size_t *pos, const size_t s, reliq_outpu
         char const *b_start = src+*pos;
         char *b_end = memchr(b_start,')',s-*pos);
         if (!b_end)
-          return reliq_set_error(1,"output field: array: could not find the end of '(' bracket");
+          return script_err("output field: array: could not find the end of '(' bracket");
 
         while (b_start != b_end && isspace(*b_start))
           b_start++;
         if (b_start == b_end || *b_start != '"')
-          return reliq_set_error(1,"output field: array: expected argument in '(' bracket");
+          return script_err("output field: array: expected argument in '(' bracket");
 
         b_start++;
         char *q_end = memchr(b_start,'"',s-*pos);
         if (!q_end)
-          return reliq_set_error(1,"output field: array: could not find the end of '\"' quote");
+          return script_err("output field: array: could not find the end of '\"' quote");
 
         outfield->arr_delim = *b_start;
         if (*b_start == '\\' && b_start+1 != b_end) {
@@ -1572,19 +1572,19 @@ reliq_output_field_get(const char *src, size_t *pos, const size_t s, reliq_outpu
         }
         b_start++;
         if (b_start != q_end)
-          return reliq_set_error(1,"output field: array: expected a single character argument");
+          return script_err("output field: array: expected a single character argument");
 
         q_end++;
         while (q_end != b_end && isspace(*q_end))
           q_end++;
         if (q_end != b_end)
-          return reliq_set_error(1,"output field: array: expected only one argument");
+          return script_err("output field: array: expected only one argument");
 
         *pos = b_end-src+1;
       }
 
       if (*pos < s && !isspace(src[*pos]) && src[*pos] != '.')
-        return reliq_set_error(1,"output field: array: unexpected character 0x%02x",src[*pos]);
+        return script_err("output field: array: unexpected character 0x%02x",src[*pos]);
 
       if (*pos < s && src[*pos] == '.') {
         (*pos)++;
@@ -1595,7 +1595,7 @@ reliq_output_field_get(const char *src, size_t *pos, const size_t s, reliq_outpu
           return err;
         if (arr_typel) {
           if (*arr_type == 'a')
-            return reliq_set_error(1,"output field: array: array type in array is not allowed");
+            return script_err("output field: array: array type in array is not allowed");
           outfield->arr_type = *arr_type;
         }
       }
@@ -1678,7 +1678,7 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, ushort *childfields, re
       if ((i == j || (i && isspace(src[i-1]))) &&
         (src[i] == '|' || src[i] == '/')) {
         if ((src[i] == '|' && nodef.b) || (src[i] == '/' && exprf.b))
-          goto_seterr_p(EXIT,1,"%lu: format '%c' cannot be specified twice",i,src[i]);
+          goto_script_seterr_p(EXIT,"%lu: format '%c' cannot be specified twice",i,src[i]);
 
         if (i == j)
           hasexpr = 1;
@@ -1704,7 +1704,7 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, ushort *childfields, re
           if (i < s)
             continue;
         } else
-          goto_seterr_p(EXIT,1,"string: could not find the end of %c quote",tf);
+          goto_script_seterr_p(EXIT,"string: could not find the end of %c quote",tf);
       }
       if (i < s && src[i] == '[') {
         i++;
@@ -1715,7 +1715,7 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, ushort *childfields, re
           if (i < s)
             continue;
         } else
-          goto_seterr_p(EXIT,1,"range: char %lu: unprecedented end of range",i);
+          goto_script_seterr_p(EXIT,"range: char %lu: unprecedented end of range",i);
       }
 
       if (i < s && (src[i] == ',' || src[i] == ';' || src[i] == '{' || src[i] == '}')) {
@@ -1773,7 +1773,7 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, ushort *childfields, re
         new->nodef = expr.nodef;
         new->nodefl = expr.nodefl;
         if (new->childfields && expr.nodefl)
-          goto_seterr_p(EXIT,1,"illegal assignment of node format to block with fields");
+          goto_script_seterr_p(EXIT,"illegal assignment of node format to block with fields");
       }
     }
     #ifdef RELIQ_EDITING
@@ -1787,7 +1787,7 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, ushort *childfields, re
         new->exprf = expr.exprf;
         new->exprfl = expr.exprfl;
         if (new->childfields)
-          goto_seterr_p(EXIT,1,"illegal assignment of expression format to block with fields");
+          goto_script_seterr_p(EXIT,"illegal assignment of expression format to block with fields");
       }
     }
     #endif
@@ -1981,7 +1981,7 @@ ncollector_check(flexarr *ncollector, size_t correctsize)
   for (size_t j = 0; j < ncollector->size; j++)
     ncollector_sum += pcol[j].s;
   if (ncollector_sum != correctsize)
-    return reliq_set_error(1,"ncollector does not match count of found tags, %lu != %lu",ncollector_sum,correctsize);
+    return script_err("ncollector does not match count of found tags, %lu != %lu",ncollector_sum,correctsize);
   return NULL;
 }*/
 
