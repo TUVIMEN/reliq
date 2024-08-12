@@ -255,6 +255,30 @@ Range separated by spaces will match the position of results relative to parent 
 .in
 \&
 
+\fBTAG\fR, \fBATTRIBUTE\fRs and \fBHOOK\fRs can be grouped in '(' ')' brackets. ')' has to be preceded by space otherwise it will be treated as part of argument.
+
+.nf
+\&
+.in +4
+    \fB(... )\fR - correct
+    \fB( ... )\fR - correct
+    \fB( ...)\fR - incorrect
+    \fB( ( ... )(... ))\fR - correct
+.in
+\&
+
+If brackets are 'touching' themselves they will match if at least one of them matches. Groups cannot contain position or sibling definitions. If \fBTAG\fR pattern is not specified before any groups then all of the first groups will specify it.
+
+.nf
+\&
+.in +4m
+    \fBTAG ( ATTRIB1 HOOK )( ATTRIB2 ( ATTRIB3 ATTRIB4 )( ATTRIB5 ) )\fR - TAG having either ATTRIB1 with HOOK or ATTRIB2 which has ATTRIB3 and ATTRIB4 or ATTRIB5
+    \fBTAG ( ATTRIB1 ) ( ATTRIB2 )\fR - TAG having both ATTRIB1 and ATTRIB2. Since groups have space in between they are not 'touching'.
+    \fB( TAG1 HOOK )( TAG2 ) ATTRIB\fR - either TAG1 with HOOK or TAG2 both having ATTRIB.
+.in
+\&
+
+
 .SS TAG_FORMAT
 It has to be specified in '"' or '\\'' quotes.
 
@@ -534,39 +558,46 @@ Examples:
     \fI{"authors":[{"images":"...","bolded":"..."}]}\fR
 
 .SH EXAMPLES
-Get tags 'a' with attribute 'href' at position 0 of value ending with '.org', from result of matching tags 'div' with attribute 'id', and without attribute 'class', from file 'index.html'.
+Get tags 'a' with attribute 'href' at position 0 of value ending with '.org' or '.com', from result of matching tags 'div' with attribute 'id', and without attribute 'class', from file 'index.html'.
 .nf
 \&
 .in +4m
-.B $ reliq 'div id \-class; a [0]href=B>".*\\\\.org"' index.html
+.B $ reliq 'div id \-class; a [0]href=E>".*\\\\.(org|com)"' index.html
 .in
 \&
-Get tags which does not have any tags inside them from file 'index.html'.
+Get tags that don't have any tags inside them
 .nf
 \&
 .in +4m
 .B $ reliq '* c@[0]' index.html
 .in
 \&
-Get empty tags from file 'index.html'.
+Get empty tags.
 .nf
 \&
 .in +4m
 .B $ reliq '* m@>[0]' index.html
 .in
 \&
-Get hyperlinks from level greater or equal to 6 from file 'index.html'.
+Get hyperlinks from level greater or equal to 6 (counting from zero).
 .nf
 \&
 .in +4m
 .B $ reliq 'a href @l[6:] | "%(href)v\\\\n"' index.html
 .in
 \&
-Get all urls from 'a' and 'img' tags
+Get all urls from 'a' and 'img' tags, where images are end with '.png'.
 .nf
 \&
 .in +4m
-.B $ reliq 'img src | "%(src)v\\\\n", a href | "%(href)a\\\\n"'
+.B $ reliq 'img src=e>.png | "%(src)v\\\\n", a href | "%(href)v\\\\n"' index.html
+.in
+\&
+Get all urls in div with class 'index' or ul both with title attribute.
+.nf
+\&
+.in +4m
+.B $ reliq '( div .index )( ul ) title; a href | "%(href)v\\\\n' index.html
 .in
 \&
 

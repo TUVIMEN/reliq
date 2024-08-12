@@ -46,16 +46,16 @@ Get any tag with class `cont` and without id starting with `img-`.
 
     reliq '* .cont -#b>img-' index.html
 
-Get hyperlinks ending with `/[0-9]+.html`
+Get hyperlinks ending with `/[0-9]+.html`.
 
     reliq 'a href=Ee>/[0-9]+\.html | "%(href)a\n"' index.html
 
-Get links that are not at 1 level, both are equivalent
+Get links that are not at 1 level, both are equivalent.
 
     reliq 'a href l@[!0] | "(href)v\n"' index.html
     reliq 'a href -l@[0] | "(href)v\n"' index.html
 
-Get `li` tag that does not start with `Views:`, both are equivalent
+Get `li` tag that does not start with `Views:`, both are equivalent.
 
     reliq 'li m@bv>"Views:"' index.html
     reliq 'li -m@b>"Views:"' index.html
@@ -64,7 +64,7 @@ Get `ul` tags and html inside `i` tags that are inside `p` tags.
 
     reliq 'ul, p; i | "%i\n"' index.html
 
-Get the last images in every `li` with `id` matching extended regex `img-[0-9]+`
+Get the last images in every `li` with `id` matching extended regex `img-[0-9]+`.
 
     reliq 'li #E>img-[0-9]+; img src [-1] | "%(src)v\n"' index.html
 
@@ -72,11 +72,15 @@ Get `tr` and `td` inside `table` tag.
 
     reliq 'table; { tr, td }' index.html
 
-Process output using `cut` for each tag, and with `sed` and `tr` for the whole output
+Get `tr` with either `title` attribute with class `x1` or `x2`, or if it has one child. Note that `)` has to be preceded with space otherwise it will be a part of previous  argument and that brackets have to touch for it to be or.
+
+    reliq 'tr ( title ( .x1 )( .x2 ) )( c@[1] )'
+
+Process output using `cut` for each tag, and with `sed` and `tr` for the whole output.
 
     reliq 'div #B>msg_[0-9-]* | "%(id)v" cut [2] "-" / sed "s/^msg_//" tr "\n" "\t"' index.html
 
-Process output in a block (note that things in blocks have to be separated by `,` as just newline is not enough)
+Process output in a block (note that things in blocks have to be separated by `,` as just newline is not enough).
 
     reliq '
         {
@@ -85,7 +89,7 @@ Process output in a block (note that things in blocks have to be separated by `,
         } / sed "s#^//#https://#"
     ' index.html
 
-Get `tr` in `table` with level relative to `table` equal `1`, and process it individually for every tag in block, and at the end of each block delete every `\n` character and append `\n` at the end
+Get `tr` in `table` with level relative to `table` equal `1`, and process it individually for every tag in block, and at the end of each block delete every `\n` character and append `\n` at the end.
 
     reliq '
         table border=1; tr l@[1]; {
@@ -93,7 +97,7 @@ Get `tr` in `table` with level relative to `table` equal `1`, and process it ind
         } | tr "\n" echo "" "\n"
     ' index.html
 
-Same but process all tags at once in block, then process final output of the block deleting all `\n` and appending `\n` at the end. The above creates tsv where each `tr` has its own line, but this example craetes only one line
+Same but process all tags at once in block, then process final output of the block deleting all `\n` and appending `\n` at the end. The above creates tsv where each `tr` has its own line, but this example craetes only one line.
 
     reliq '
         table border=1; tr; {
@@ -121,7 +125,7 @@ https//upload.wikimedia.org/wikipedia/commons/thumb/0/05/Sodium-3D.png/80px-Sodi
 
 Note that from now on any json structure in examples will be prettified for ease of reading, in reality reliq returns compressed json.
 
-It is a json like structure because reliq does enforce json output as in above example, if output would be directly connected to json parser an error might accur when incorrect changes are made to reliq script.
+It is a json like structure because reliq doesn't enforce json output as in above example, if output would be directly connected to json parser an error might accur when incorrect changes are made to reliq script.
 
 It also does not check for repeating field names e.g.
 
@@ -248,7 +252,7 @@ will return
 If field is presented with block with `|` with empty format that contains fields, field type will change to array and block will be executed for each tag
 
     reliq '
-        .posts form #quickModForm; table l@[1]; tr l@[1] m@B>"id=\"subject_[0-9]*\""; tr l@[0] m@v>".googlesyndication.com/"; {
+        .posts form #quickModForm; table l@[1]; tr l@[1] m@B>"id=\"subject_[0-9]*\"" m@v>".googlesyndication.com/"; {
             .postid.u div #B>subject_[0-9]* | "%(id)v" / sed "s/.*_//",
             .date td valign=middle; div .smalltext | "%i" / sed "s/.* ://;s/^<\/b> //;s/ &#187;//g;s/<br *\/>.*//;s/<[^>]*>//g;s/ *$//",
             .avatar td valign=top rowspan=2; img .avatar src | "%(src)v",
