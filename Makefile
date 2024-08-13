@@ -87,6 +87,7 @@ reliq: ${OBJ}
 
 test: clean all
 	@./test.sh test/1.csv test/1.html
+	@./test.sh test/2.csv test/editing.html
 	@[ ${O_PHPTAGS} -eq 1 ] && ./test.sh test/php.csv test/php.php || true
 	@[ ${O_EDITING} -eq 1 ] && ./test.sh test/editing.csv test/editing.html || true
 	@[ ${O_EDITING} -eq 1 ] && ./test.sh test/editing-output.csv test/editing-output.html || true
@@ -98,6 +99,7 @@ test-errors: clean all
 
 test-update: test
 	@./test.sh test/1.csv test/1.html update || true
+	@./test.sh test/2.csv test/editing.html update || true
 	@./test.sh test/errors.csv test/1.html update || true
 	@[ ${O_PHPTAGS} -eq 1 ] && ./test.sh test/php.csv test/php.php update || true
 	@[ ${O_EDITING} -eq 1 ] && ./test.sh test/editing.csv test/editing.html update || true
