@@ -168,6 +168,8 @@ struct reliq_node {
   reliq_range siblings_subsequent;
   reliq_node *node;
 
+  unsigned int position_max;
+
   unsigned char flags;
 };
 

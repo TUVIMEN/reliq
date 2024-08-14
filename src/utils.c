@@ -277,14 +277,14 @@ range_match(const uint matched, const reliq_range *range, const size_t last)
     x = r->v[0];
     y = r->v[1];
     if (!(r->flags&R_RANGE)) {
-      if (r->flags&1)
+      if (r->flags&R_RELATIVE(0))
         x = ((uint)last < r->v[0]) ? 0 : last-r->v[0];
       if (matched == x)
         return r->flags&R_INVERT ? 0 : 1;
     } else {
-      if (r->flags&1)
+      if (r->flags&R_RELATIVE(0))
         x = ((uint)last < r->v[0]) ? 0 : last-r->v[0];
-      if (r->flags&2) {
+      if (r->flags&R_RELATIVE(1)) {
         if ((uint)last < r->v[1])
           continue;
         y = last-r->v[1];
@@ -319,7 +319,7 @@ range_node_comp(const char *src, const size_t size, struct reliq_range_node *nod
         return script_err("range: negative value specified for field that doesn't support it");
       pos++;
       while_is(isspace,src,pos,size);
-      node->flags |= 1<<i; //starts from the end
+      node->flags |= R_RELATIVE(i); //starts from the end
       node->flags |= R_NOTEMPTY; //not empty
     }
     if (pos < size && isdigit(src[pos])) {
@@ -327,7 +327,7 @@ range_node_comp(const char *src, const size_t size, struct reliq_range_node *nod
       while_is(isspace,src,pos,size);
       node->flags |= R_NOTEMPTY; //not empty
     } else if (i == 1)
-      node->flags |= 1<<i;
+      node->flags |= R_RELATIVE(i);
 
     if (pos >= size)
       break;
@@ -401,4 +401,51 @@ range_free(reliq_range *range)
     return;
   if (range->s)
     free(range->b);
+}
+
+uint
+predict_range_node_max(const struct reliq_range_node *node)
+{
+  uchar flags = node->flags;
+  if (flags&R_INVERT)
+    return 0;
+
+  if (!(flags&R_RANGE)) {
+    if (flags&R_RELATIVE(0))
+      return 0;
+    return node->v[0]+1;
+  }
+
+  if (flags&R_RELATIVE(0) || flags&R_RELATIVE(1) || node->v[0] > node->v[1])
+    return 0;
+
+  uint max = node->v[1]+node->v[3];
+
+  if (max < node->v[2])
+    return 0;
+
+  if (node->v[2] < 2)
+    return max+1;
+
+  max -= max%node->v[2];
+
+  return max+1;
+}
+
+uint
+predict_range_max(const reliq_range *range)
+{
+  size_t size = range->s;
+  struct reliq_range_node *nodes = range->b;
+  uint max = 0;
+
+  for (size_t i = 0; i < size; i++) {
+    uint x = predict_range_node_max(&nodes[i]);
+    if (x == 0)
+      return 0;
+    if (x > max)
+      max = x;
+  }
+
+  return max;
 }

@@ -20,6 +20,7 @@
 #define UTILS_H
 
 //reliq_range flags
+#define R_RELATIVE(x) (1<<(x))
 #define R_RANGE 0x8
 #define R_NOTEMPTY 0x10
 #define R_INVERT 0x20
@@ -57,5 +58,6 @@ void conv_special_characters(char *src, size_t *size);
 reliq_error *range_comp(const char *src, size_t *pos, const size_t size, reliq_range *range);
 unsigned char range_match(const uint matched, const reliq_range *range, const size_t last);
 void range_free(reliq_range *range);
+unsigned int predict_range_max(const reliq_range *range);
 
 #endif

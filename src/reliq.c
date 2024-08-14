@@ -801,13 +801,16 @@ reliq_match(const reliq_hnode *hnode, const reliq_hnode *parent, const reliq_nod
 }
 
 static void
-reliq_match_siblings(const reliq_hnode *nodes, const size_t nodesl, reliq_hnode const *hnode, reliq_hnode const *parent, reliq_node const *node, flexarr *dest)
+reliq_match_siblings(const reliq_hnode *nodes, const size_t nodesl, reliq_hnode const *hnode, reliq_hnode const *parent, reliq_node const *node, flexarr *dest, uint *found, uint *lasttofind)
 {
+  if (*found >= *lasttofind)
+    return;
   int r = reliq_match(hnode,parent,node);
   if (!r)
     return;
   if (!node->node) {
-    *(reliq_compressed*)flexarr_inc(dest) = (reliq_compressed){(reliq_hnode *const)hnode,(reliq_hnode *const)parent};
+    add_compressed(dest,(reliq_hnode *const)hnode,(reliq_hnode *const)parent);
+    (*found)++;
     return;
   }
   if (parent == hnode)
@@ -824,16 +827,18 @@ reliq_match_siblings(const reliq_hnode *nodes, const size_t nodesl, reliq_hnode 
   uchar islast = !(node->node && node->node->node);
 
   if (nodes != hnode && (passall || node->siblings_preceding.b)) {
-    for (size_t i=(hnode-nodes)-1,found=0; nodes[i].lvl >= lvl; i--) {
+    for (size_t i=(hnode-nodes)-1,foundamount=0; nodes[i].lvl >= lvl; i--) {
       if (nodes[i].lvl == lvl && reliq_match(&nodes[i],parent,node->node)) {
-        if (passall || range_match(found,&node->siblings_preceding,-1)) {
+        if (passall || range_match(foundamount,&node->siblings_preceding,-1)) {
           if (!islast) {
             node = node->node;
             goto REPEAT;
           }
           add_compressed(dest,(reliq_hnode *const)nodes+i,(reliq_hnode *const)parent);
+          if (++(*found) >= *lasttofind)
+            return;
         }
-        found++;
+        foundamount++;
       }
 
       if (!i)
@@ -843,16 +848,18 @@ reliq_match_siblings(const reliq_hnode *nodes, const size_t nodesl, reliq_hnode 
 
   if (hnode+1 < nodes+nodesl && (passall || node->siblings_subsequent.b)) {
     size_t first = hnode-nodes;
-    for (size_t i=first,found=0; i < nodesl && nodes[i].lvl == lvl; i++) {
+    for (size_t i=first,foundamount=0; i < nodesl && nodes[i].lvl == lvl; i++) {
       if (i != first && reliq_match(&nodes[i],parent,node->node)) {
-        if (passall || range_match(found,&node->siblings_subsequent,-1)) {
+        if (passall || range_match(foundamount,&node->siblings_subsequent,-1)) {
           if (!islast) {
             node = node->node;
             goto REPEAT;
           }
           add_compressed(dest,(reliq_hnode *const)nodes+i,(reliq_hnode *const)parent);
+          if (++(*found) >= *lasttofind)
+            return;
         }
-        found++;
+        foundamount++;
       }
 
       i += nodes[i].child_count;
@@ -1496,9 +1503,10 @@ reliq_ncomp(const char *script, size_t size, reliq_node *node)
   }
 
   if (err) {
-    END_FREE:;
+    END_FREE: ;
     reliq_nfree(parentnode);
-  }
+  } else
+    parentnode->position_max = predict_range_max(&parentnode->position);
 
   free(nscript);
   return err;
@@ -2010,31 +2018,32 @@ dest_match_position(const reliq_range *range, flexarr *dest, size_t start, size_
 }
 
 static void
-nodes_match_full(const reliq *rq, reliq_node *node, const reliq_hnode *current, flexarr *dest)
+nodes_match_full(const reliq *rq, reliq_node *node, const reliq_hnode *current, flexarr *dest, uint *found, uint *lasttofind)
 {
   uint childcount = current->child_count;
-  for (size_t i = 0; i <= childcount; i++)
-    reliq_match_siblings(rq->nodes,rq->nodesl,current+i,current,node,dest);
+  for (size_t i = 0; i <= childcount && *found < *lasttofind; i++) {
+    reliq_match_siblings(rq->nodes,rq->nodesl,current+i,current,node,dest,found,lasttofind);
+  }
 }
 
 static void
-nodes_match_child(const reliq *rq, reliq_node *node, const reliq_hnode *current, flexarr *dest)
+nodes_match_child(const reliq *rq, reliq_node *node, const reliq_hnode *current, flexarr *dest, uint *found, uint *lasttofind)
 {
   uint childcount = current->child_count;
-  for (size_t i = 1; i <= childcount; i += current[i].child_count+1)
-    reliq_match_siblings(rq->nodes,rq->nodesl,current+i,current,node,dest);
+  for (size_t i = 1; i <= childcount && *found < *lasttofind; i += current[i].child_count+1)
+    reliq_match_siblings(rq->nodes,rq->nodesl,current+i,current,node,dest,found,lasttofind);
 }
 
 static void
-nodes_match_descendant(const reliq *rq, reliq_node *node, const reliq_hnode *current, flexarr *dest)
+nodes_match_descendant(const reliq *rq, reliq_node *node, const reliq_hnode *current, flexarr *dest, uint *found, uint *lasttofind)
 {
   uint childcount = current->child_count;
-  for (size_t i = 1; i <= childcount; i++)
-    reliq_match_siblings(rq->nodes,rq->nodesl,current+i,current,node,dest);
+  for (size_t i = 1; i <= childcount && *found < *lasttofind; i++)
+    reliq_match_siblings(rq->nodes,rq->nodesl,current+i,current,node,dest,found,lasttofind);
 }
 
 static void
-nodes_match_sibling_preceding(const reliq *rq, reliq_node *node, const reliq_hnode *current, flexarr *dest, const ushort depth)
+nodes_match_sibling_preceding(const reliq *rq, reliq_node *node, const reliq_hnode *current, flexarr *dest, uint *found, uint *lasttofind, const ushort depth)
 {
   reliq_hnode *nodes = rq->nodes;
   if (nodes == current)
@@ -2043,18 +2052,18 @@ nodes_match_sibling_preceding(const reliq *rq, reliq_node *node, const reliq_hno
   if (depth == (ushort)-1)
     lvldiff = -1;
 
-  for (size_t i=(current-nodes)-1; nodes[i].lvl >= lvl; i--) {
+  for (size_t i=(current-nodes)-1; nodes[i].lvl >= lvl && *found < *lasttofind; i--) {
     /*if (nodes[i].lvl >= lvl && nodes[i].lvl <= lvldiff && reliq_match(&nodes[i],current,node))*/
       /*add_compressed(dest,(reliq_hnode *const)nodes+i,(reliq_hnode *const)current);*/
     if (nodes[i].lvl >= lvl && nodes[i].lvl <= lvldiff)
-      reliq_match_siblings(nodes,rq->nodesl,nodes+i,current,node,dest);
+      reliq_match_siblings(nodes,rq->nodesl,nodes+i,current,node,dest,found,lasttofind);
     if (!i)
       break;
   }
 }
 
 static void
-nodes_match_sibling_subsequent(const reliq *rq, reliq_node *node, const reliq_hnode *current, flexarr *dest, const ushort depth)
+nodes_match_sibling_subsequent(const reliq *rq, reliq_node *node, const reliq_hnode *current, flexarr *dest, uint *found, uint *lasttofind, const ushort depth)
 {
   reliq_hnode *nodes = rq->nodes;
   size_t nodesl = rq->nodesl;
@@ -2064,11 +2073,11 @@ nodes_match_sibling_subsequent(const reliq *rq, reliq_node *node, const reliq_hn
   if (depth == (ushort)-1)
     lvldiff = -1;
 
-  for (size_t first=current-nodes,i=first; i < nodesl && (nodes[i].lvl >= lvl && nodes[i].lvl <= lvldiff); i++) {
+  for (size_t first=current-nodes,i=first; i < nodesl && (nodes[i].lvl >= lvl && nodes[i].lvl <= lvldiff) && *found < *lasttofind; i++) {
     /*if (i != first && reliq_match(&nodes[i],current,node))*/
       /*add_compressed(dest,(reliq_hnode *const)nodes+i,(reliq_hnode *const)current);*/
     if (i != first)
-      reliq_match_siblings(nodes,rq->nodesl,nodes+i,current,node,dest);
+      reliq_match_siblings(nodes,rq->nodesl,nodes+i,current,node,dest,found,lasttofind);
 
     if (nodes[i].lvl == lvldiff)
       i += nodes[i].child_count;
@@ -2076,19 +2085,19 @@ nodes_match_sibling_subsequent(const reliq *rq, reliq_node *node, const reliq_hn
 }
 
 static void
-nodes_match_sibling(const reliq *rq, reliq_node *node, const reliq_hnode *current, flexarr *dest, const ushort depth)
+nodes_match_sibling(const reliq *rq, reliq_node *node, const reliq_hnode *current, flexarr *dest, uint *found, uint *lasttofind, const ushort depth)
 {
-  nodes_match_sibling_preceding(rq,node,current,dest,depth);
-  nodes_match_sibling_subsequent(rq,node,current,dest,depth);
+  nodes_match_sibling_preceding(rq,node,current,dest,found,lasttofind,depth);
+  nodes_match_sibling_subsequent(rq,node,current,dest,found,lasttofind,depth);
 }
 
 static void
-nodes_match_ancestor(const reliq *rq, reliq_node *node, const reliq_hnode *current, flexarr *dest, const ushort depth)
+nodes_match_ancestor(const reliq *rq, reliq_node *node, const reliq_hnode *current, flexarr *dest, uint *found, uint *lasttofind, const ushort depth)
 {
   reliq_hnode *nodes=rq->nodes;
   const reliq_hnode *first=current;
 
-  for (ushort i = 0; i <= depth && current != nodes; i++) {
+  for (ushort i = 0; i <= depth && current != nodes && *found < *lasttofind; i++) {
     ushort lvl = current->lvl;
     for (size_t j=(current-nodes)-1; nodes[j].lvl >= lvl-1; j--) {
       if (nodes[j].lvl == lvl-1) {
@@ -2102,7 +2111,7 @@ nodes_match_ancestor(const reliq *rq, reliq_node *node, const reliq_hnode *curre
 
     /*if (reliq_match(current,first,node))*/
       /*add_compressed(dest,(reliq_hnode *const)nodes+i,(reliq_hnode *const)first);*/
-    reliq_match_siblings(nodes,rq->nodesl,current,first,node,dest);
+    reliq_match_siblings(nodes,rq->nodesl,current,first,node,dest,found,lasttofind);
 
     if (current->lvl == 0)
       break;
@@ -2113,8 +2122,9 @@ static void
 node_exec_first(const reliq *rq, reliq_node *node, flexarr *dest)
 {
   size_t nodesl = rq->nodesl;
+  uint found=0,lasttofind=-1;
   for (size_t i = 0; i < nodesl; i++)
-    reliq_match_siblings(rq->nodes,rq->nodesl,rq->nodes+i,rq->parent,node,dest);
+    reliq_match_siblings(rq->nodes,rq->nodesl,rq->nodes+i,rq->parent,node,dest,&found,&lasttofind);
 
   if (node->position.s)
     dest_match_position(&node->position,dest,0,dest->size);
@@ -2128,10 +2138,14 @@ node_exec(const reliq *rq, reliq_node *node, flexarr *source, flexarr *dest)
     return;
   }
 
-  reliq_hnode *current;
+  uint found = 0;
+  uint lasttofind = node->position_max;
+  if (lasttofind == 0)
+    lasttofind = -1;
+
   for (size_t i = 0; i < source->size; i++) {
     reliq_compressed *x = &((reliq_compressed*)source->v)[i];
-    current = x->hnode;
+    reliq_hnode *current = x->hnode;
     if ((void*)current < (void*)10)
       continue;
     size_t prevdestsize = dest->size;
@@ -2139,53 +2153,58 @@ node_exec(const reliq *rq, reliq_node *node, flexarr *source, flexarr *dest)
     uchar type = node->flags&N_MATCHED_TYPE;
     switch (type) {
         case N_FULL:
-          nodes_match_full(rq,node,current,dest);
+          nodes_match_full(rq,node,current,dest,&found,&lasttofind);
           break;
         case N_SELF:
-          reliq_match_siblings(rq->nodes,rq->nodesl,current,x->parent,node,dest);
+          reliq_match_siblings(rq->nodes,rq->nodesl,current,x->parent,node,dest,&found,&lasttofind);
           break;
         case N_CHILD:
-          nodes_match_child(rq,node,current,dest);
+          nodes_match_child(rq,node,current,dest,&found,&lasttofind);
           break;
         case N_DESCENDANT:
-          nodes_match_descendant(rq,node,current,dest);
+          nodes_match_descendant(rq,node,current,dest,&found,&lasttofind);
           break;
         case N_ANCESTOR:
-          nodes_match_ancestor(rq,node,current,dest,-1);
+          nodes_match_ancestor(rq,node,current,dest,&found,&lasttofind,-1);
           break;
         case N_PARENT:
-          nodes_match_ancestor(rq,node,current,dest,0);
+          nodes_match_ancestor(rq,node,current,dest,&found,&lasttofind,0);
           break;
         case N_RELATIVE_PARENT:
-          reliq_match_siblings(rq->nodes,rq->nodesl,x->parent,NULL,node,dest);
+          reliq_match_siblings(rq->nodes,rq->nodesl,x->parent,NULL,node,dest,&found,&lasttofind);
           break;
         case N_SIBLING:
-          nodes_match_sibling(rq,node,current,dest,0);
+          nodes_match_sibling(rq,node,current,dest,&found,&lasttofind,0);
           break;
         case N_SIBLING_PRECEDING:
-          nodes_match_sibling_preceding(rq,node,current,dest,0);
+          nodes_match_sibling_preceding(rq,node,current,dest,&found,&lasttofind,0);
           if (type != N_SIBLING)
             break;
         case N_SIBLING_SUBSEQUENT:
-          nodes_match_sibling_subsequent(rq,node,current,dest,0);
+          nodes_match_sibling_subsequent(rq,node,current,dest,&found,&lasttofind,0);
           break;
         case N_FULL_SIBLING:
-          nodes_match_sibling(rq,node,current,dest,-1);
+          nodes_match_sibling(rq,node,current,dest,&found,&lasttofind,-1);
           break;
         case N_FULL_SIBLING_PRECEDING:
-          nodes_match_sibling_preceding(rq,node,current,dest,-1);
+          nodes_match_sibling_preceding(rq,node,current,dest,&found,&lasttofind,-1);
           if (type != N_SIBLING)
             break;
         case N_FULL_SIBLING_SUBSEQUENT:
-          nodes_match_sibling_subsequent(rq,node,current,dest,-1);
+          nodes_match_sibling_subsequent(rq,node,current,dest,&found,&lasttofind,-1);
           break;
         /*case N_TEXT: break;*/
         /*case N_NODE: break;*/
         /*case N_ELEMENT: break;*/
     }
 
-    if (!(node->flags&N_POSITION_ABSOLUTE) && node->position.s)
-      dest_match_position(&node->position,dest,prevdestsize,dest->size);
+    if (node->position.s) {
+      if (!(node->flags&N_POSITION_ABSOLUTE)) {
+        dest_match_position(&node->position,dest,prevdestsize,dest->size);
+        found = 0;
+      } else if (found >= lasttofind)
+        break;
+    }
   }
   if (node->flags&N_POSITION_ABSOLUTE && node->position.s)
     dest_match_position(&node->position,dest,0,dest->size);
