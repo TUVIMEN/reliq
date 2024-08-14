@@ -166,7 +166,7 @@ Consists of \fBATTRIBUTE_NAME\fR followed by '=' and \fBPATTERN\fR of attribute'
 .in
 \&
 .SS RANGE
-Is always embedded in square brackets. Consists of groups of three numbers separated by ':', that can be practically endlessly separated by ','. Empty values will be complemented. Putting '-' before two first values (even if they are not specified) makes them subtracted from the maximal value. If '!' is found before the first value the matching will be inversed.
+Is always embedded in square brackets. Consists of groups of four numbers separated by ':', that can be practically endlessly separated by ','. Empty values will be complemented. Putting '-' before two first values (even if they are not specified) makes them subtracted from the maximal value. If '!' is found before the first value the matching will be inversed.
 
 By default the minimal matching value is 0 (exceptions are documented at definition).
 
@@ -228,21 +228,53 @@ Get tags with number of children that is within the \fIRANGE\fR.
 .BR C ",  " childmatch " " \fI"EXPRESSION"\fR
 Get tags in which chained \fIEXPRESSION\fR (see \fB-F\fR option) matches at least one of its children.
 .TP
+
+Access hooks specify what nodes will be matched:
+
+.TP
+.BR full
+Matches node itself and everything below it (set by default).
+.TP
 .BR self
-same as \fBl@[0]\fR
+Matches only node itself (similar to \fBl@[0]\fR).
 .TP
 .BR child
-same as \fBl@[1]\fR
+Matches nodes that are only one level higher then self (similar to \fBl@[1]\fR).
 .TP
-.BR descendant
-same as \fBl@[1:]\fR
+.BR desc ",    " descendant
+Matches nodes that are lower than self (simalar to \fBl@[1:]\fR).
+.TP
+.BR ancestor
+Matches nodes that are ancestors of self, relative level of 0 matches to parent.
+.TP
+.BR parent
+Matches node that is a parent of self.
+.TP
+.BR rparent ", " relative_parent
+Matches node that matched self in script e.g. \fB'TAG1; TAG2; * rparent@'\fR will return \fBTAG1\fR.
+.TP
+.BR sibl ",    " sibling
+Matches siblings of self.
+.TP
+.BR spre ",    " sibling_preceding.
+Matches preceding siblings of self.
+.TP
+.BR ssub ",    " sibling_subsequent
+Matches subsequent siblings of self.
+.TP
+.BR fsibl ",   " full_sibling
+Matches siblings of self and nodes below them.
+.TP
+.BR fspre ",   " full_sibling_preceding
+Matches preceding siblings of self and nodes below them.
+.TP
+.BR fssub ",   " full_sibling_subsequent
+Matches subsequent siblings of self and nodes below them.
 
 .SS TAG
 At the begining each \fBTAG\fR must contain \fBPATTERN\fR of html tag and that can be followed by a number of \fBATTRIBUTE\fRs and \fBHOOK\fRs.
 
 Range separated by spaces will match the position of results relative to parent nodes, or if specified before tag \fBPATTERN\fR absolute to all results.
-
-\fBTAG\fRs separated by '~' match siblings. Range before '~' specifies preceding position of the matched sibling from the first tag, range after does the same, but for the subsequent siblings. As of now position range for results has to specified around the first tag and not after the '~' character.
 
 .nf
 \&
@@ -250,8 +282,6 @@ Range separated by spaces will match the position of results relative to parent 
 \fBPATTERN\fR
 \fBPATTERN ATTRIBUTE... HOOK... [RANGE]\fR - match RANGE to results relative to parent nodes
 \fB[RANGE] PATTERN\fR - match RANGE to results
-\fBTAG1 [POSITION] ~ TAG2\fR - get TAG2 matched to POSITION that is a sibling of TAG1
-\fBTAG1 [PRECEDING]~[SUBSEQUENT] TAG2\fR - get TAG2 with preceding and subsequent position matched from TAG1.
 .in
 \&
 
@@ -267,7 +297,7 @@ Range separated by spaces will match the position of results relative to parent 
 .in
 \&
 
-If brackets are 'touching' themselves they will match if at least one of them matches. Groups cannot contain position or sibling definitions. If \fBTAG\fR pattern is not specified before any groups then all of the first groups will specify it.
+If brackets are 'touching' themselves they will match if at least one of them matches. Groups cannot contain position or access hooks definitions. If \fBTAG\fR pattern is not specified before any groups then all of the first groups will specify it.
 
 .nf
 \&
