@@ -64,7 +64,7 @@ Get `ul` tags and html inside `i` tags that are inside `p` tags.
 
     reliq 'ul, p; i | "%i\n"' index.html
 
-Get the last images in every `li` with `id` matching extended regex `img-[0-9]+`.
+Get the second to last image in every `li` with `id` matching extended regex `img-[0-9]+`.
 
     reliq 'li #E>img-[0-9]+; img src [-1] | "%(src)v\n"' index.html
 

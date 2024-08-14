@@ -164,12 +164,8 @@ typedef struct reliq_node reliq_node;
 struct reliq_node {
   reliq_node_matches matches;
   reliq_range position;
-  reliq_range siblings_preceding;
-  reliq_range siblings_subsequent;
-  reliq_node *node;
 
   unsigned int position_max;
-
   unsigned char flags;
 };
 
