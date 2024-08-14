@@ -391,6 +391,9 @@ range_comp(const char *src, size_t *pos, const size_t size, reliq_range *range)
   }
 
   flexarr_conv(r,(void**)&range->b,&range->s);
+  /*range->max = predict_range_max(range); //new field
+  if (range->max == (uint)-1)
+    return script_err("range: conditions impossible to fullfill")*/ //future warning
   return NULL;
 }
 
@@ -406,6 +409,7 @@ range_free(reliq_range *range)
 uint
 predict_range_node_max(const struct reliq_range_node *node)
 {
+  //returns 0 on relative, -1 on conflicted values
   uchar flags = node->flags;
   if (flags&R_INVERT)
     return 0;
@@ -416,20 +420,26 @@ predict_range_node_max(const struct reliq_range_node *node)
     return node->v[0]+1;
   }
 
-  if (flags&R_RELATIVE(0) || flags&R_RELATIVE(1) || node->v[0] > node->v[1])
+  if (flags&R_RELATIVE(0) || flags&R_RELATIVE(1))
     return 0;
+
+  if (node->v[0] > node->v[1])
+    return -1;
 
   uint max = node->v[1]+node->v[3];
 
   if (max < node->v[2])
-    return 0;
+    return -1;
 
   if (node->v[2] < 2)
-    return max+1;
+    return node->v[1]+1;
 
   max -= max%node->v[2];
 
-  return max+1;
+  if (max < node->v[3])
+    return -1;
+
+  return max+1-node->v[3];
 }
 
 uint
@@ -443,7 +453,7 @@ predict_range_max(const reliq_range *range)
     uint x = predict_range_node_max(&nodes[i]);
     if (x == 0)
       return 0;
-    if (x > max)
+    if (max == (uint)-1 || x > max)
       max = x;
   }
 
