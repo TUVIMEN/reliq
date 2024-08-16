@@ -38,17 +38,22 @@ typedef unsigned long int ulong;
 #include "utils.h"
 #include "edit.h"
 
+#define LINE_EDIT_INC (1<<8)
+
 #define SED_MAX_PATTERN_SPACE (1<<20)
 
 const struct reliq_format_function format_functions[] = {
+    {{"sed",3},sed_edit},
     {{"trim",4},trim_edit},
     {{"tr",2},tr_edit},
-    {{"cut",3},cut_edit},
-    {{"sed",3},sed_edit},
     {{"line",4},line_edit},
+    {{"cut",3},cut_edit},
     {{"sort",4},sort_edit},
     {{"uniq",4},uniq_edit},
     {{"echo",4},echo_edit},
+    {{"wc",2},wc_edit},
+    {{"rev",3},rev_edit},
+    {{"tac",3},tac_edit},
 };
 
 reliq_error *
@@ -1922,14 +1927,17 @@ trim_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsign
   char delim = '\0';
   uchar hasdelim = 0;
 
-  if (arg[0] && flag&FORMAT_ARG0_ISSTR) {
-    reliq_str *str = (reliq_str*)arg[0];
-    if (str->b && str->s) {
-      delim = *str->b;
-      if (delim == '\\' && str->s > 1)
-        delim = special_character(str->b[1]);
-      hasdelim = 1;
-    }
+  if (arg[0]) {
+    if (flag&FORMAT_ARG0_ISSTR) {
+      reliq_str *str = (reliq_str*)arg[0];
+      if (str->b && str->s) {
+        delim = *str->b;
+        if (delim == '\\' && str->s > 1)
+          delim = special_character(str->b[1]);
+        hasdelim = 1;
+      }
+    } else
+      return script_err("%s: arg %d: incorrect type of argument, expected string","trim",1);
   }
 
   size_t line=0,delimstart,lineend;
@@ -1957,6 +1965,186 @@ trim_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsign
 
     line = lineend;
   }
+
+  return NULL;
+}
+
+reliq_error *
+rev_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
+{
+  char delim = '\n';
+
+  if (arg[0]) {
+    if (flag&FORMAT_ARG0_ISSTR) {
+      reliq_str *str = (reliq_str*)arg[0];
+      if (str->b && str->s) {
+        delim = *str->b;
+        if (delim == '\\' && str->s > 1)
+          delim = special_character(str->b[1]);
+      }
+    } else
+      return script_err("%s: arg %d: incorrect type of argument, expected string","rev",1);
+  }
+
+  size_t line=0,delimstart,lineend;
+
+  while (line < size) {
+    delimstart = line;
+    while (line < size && src[line] == delim)
+      line++;
+    if (line-delimstart)
+      fwrite(src+delimstart,1,line-delimstart,output);
+    lineend = line;
+    while (lineend < size && src[lineend] != delim)
+      lineend++;
+
+    size_t linel = lineend-line;
+    if (linel) {
+      strrev(src+line,linel);
+      fwrite(src+line,1,linel,output);
+    }
+
+    line = lineend;
+  }
+
+  return NULL;
+}
+
+reliq_error *
+tac_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
+{
+  char delim = '\n';
+
+  if (arg[0]) {
+    if (flag&FORMAT_ARG0_ISSTR) {
+      reliq_str *str = (reliq_str*)arg[0];
+      if (str->b && str->s) {
+        delim = *str->b;
+        if (delim == '\\' && str->s > 1)
+          delim = special_character(str->b[1]);
+      }
+    } else
+      return script_err("%s: arg %d: incorrect type of argument, expected string","tac",1);
+  }
+
+  size_t saveptr=0;
+  flexarr *lines = flexarr_init(sizeof(reliq_cstr),LINE_EDIT_INC);
+  reliq_cstr line;
+
+  while (1) {
+    line = cstr_get_line(src,size,&saveptr,delim);
+    if (!line.b)
+      break;
+    memcpy(flexarr_inc(lines),&line,sizeof(reliq_cstr));
+  }
+
+  reliq_cstr *linesv = lines->v;
+  for (size_t i = lines->size; i; i--)
+    fwrite(linesv[i-1].b,1,linesv[i-1].s,output);
+  return NULL;
+}
+
+reliq_error *
+wc_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
+{
+  char delim = '\n';
+  uchar v[4];
+  v[0] = 2; //lines
+  v[1] = 2; //words
+  v[2] = 2; //characters
+  v[3] = 0; //maxline
+  size_t r[4] = {0};
+  r[2] = size;
+
+  if (arg[0]) {
+    if (flag&FORMAT_ARG0_ISSTR) {
+      if (((reliq_str*)arg[0])->b) {
+        reliq_str *str = (reliq_str*)arg[0];
+        for (size_t i = 0; i < str->s; i++) {
+          if (str->b[i] == 'c') {
+            v[2] = 1;
+          } else if (str->b[i] == 'l') {
+            v[0] = 1;
+          } else if (str->b[i] == 'L') {
+            v[3] = 1;
+          } else if (str->b[i] == 'w')
+            v[1] = 1;
+        }
+      }
+    } else
+      return script_err("%s: arg %d: incorrect type of argument, expected string","wc",1);
+  }
+
+  if (arg[1]) {
+    if (flag&FORMAT_ARG1_ISSTR) {
+      reliq_str *str = (reliq_str*)arg[1];
+      if (str->b && str->s) {
+        delim = *str->b;
+        if (delim == '\\' && str->s > 1)
+          delim = special_character(str->b[1]);
+      }
+    } else
+      return script_err("%s: arg %d: incorrect type of argument, expected string","wc",2);
+  }
+
+  if (v[0] == 1 || v[1] == 1 || v[2] == 1 || v[3] == 1)
+    for (uchar i = 0; i < 4; i++)
+      if (v[i] == 2)
+        v[i] = 0;
+
+  if (v[0] || v[1] || v[3]) {
+    size_t saveptr=0;
+    reliq_cstr line;
+
+    while (1) {
+      line = cstr_get_line(src,size,&saveptr,delim);
+      if (!line.b)
+        break;
+      r[0]++;
+
+      if (v[1] || v[3]) {
+        for (size_t i = 0; i < line.s; i++) {
+          if (line.b[i] != delim && !isspace(line.b[i])) {
+            i++;
+            while (line.b[i] != delim && !isspace(line.b[i]) && i < line.s)
+              i++;
+            r[1]++;
+          }
+          if (line.b[i] == delim) {
+            if (r[3] < i)
+              r[3] = i;
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  uchar amountset = 0;
+  for (uchar i = 0; i < 4; i++)
+    if (v[i])
+      amountset++;
+
+  char numbuf[22];
+  size_t numl;
+
+  if (amountset == 1) {
+    for (uchar i = 0; i < 4; i++) {
+      if (v[i]) {
+        uint_to_str(numbuf,&numl,22,r[i]);
+        fwrite(numbuf,1,numl,output);
+        break;
+      }
+    }
+  } else for (uchar i = 0; i < 4; i++) {
+    if (v[i]) {
+      uint_to_str(numbuf,&numl,22,r[i]);
+      fwrite("\t",1,1,output);
+      fwrite(numbuf,1,numl,output);
+    }
+  }
+
+  fwrite("\n",1,1,output);
 
   return NULL;
 }

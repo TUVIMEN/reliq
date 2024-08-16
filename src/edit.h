@@ -39,6 +39,9 @@ reliq_error *line_edit(char *src, size_t size, FILE *output, const void *arg[4],
 reliq_error *sort_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag);
 reliq_error *uniq_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag);
 reliq_error *echo_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag);
+reliq_error *rev_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag);
+reliq_error *tac_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag);
+reliq_error *wc_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag);
 
 extern const struct reliq_format_function format_functions[];
 

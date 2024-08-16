@@ -468,6 +468,33 @@ Flags:
 Deviations from standard:
     \fBi\fR \fBc\fR \fBa\fR commands do nothing even though they take arguments
     \fBl\fR \fBr\fR \fBR\fR \fBQ\fR \fBw\fR \fBW\fR are not implemented
+.TP
+
+.B rev \fI"DELIM"\fR
+.IP
+Reverse order of characters in every line delimited by \fIDELIM\fR (by default '\\n').
+.TP
+
+.B tac \fI"DELIM"\fR
+.IP
+Reverse order of input lines delimited by \fIDELIM\fR (by default '\\n').
+.TP
+
+.B wc \fI"FLAGS"\fR \fI"DELIM"\fR
+.IP
+Print count of lines, words, bytes.
+
+Input is delimited by \fIDELIM\fR (by default '\\n').
+
+Flags:
+    l - lines count
+    w - words count
+    c - bytes count
+    L - size of the longest line
+
+If multiple values are returned each will be separated with '\\t'.
+
+If no flags are given then flags are set to "lwc".
 
 .SS FORMAT
 Consists of \fBFUNCTION\fRs separated by whitespace. Output of the tag is passed to \fBFUNCTION\fR, and its output is passed to the next until the last one which will print it.
