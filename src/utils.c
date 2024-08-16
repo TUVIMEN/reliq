@@ -412,7 +412,7 @@ predict_range_node_max(const struct reliq_range_node *node)
   //returns 0 on relative, -1 on conflicted values
   uchar flags = node->flags;
   if (flags&R_INVERT)
-    return 0;
+    return 0; //in most cases its relative
 
   if (!(flags&R_RANGE)) {
     if (flags&R_RELATIVE(0))
