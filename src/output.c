@@ -158,19 +158,35 @@ outfields_num_print(FILE *out, const char *value, const size_t valuel, uchar fla
   size_t end = 0;
   uchar isminus=0,haspoint=0,pointcount=0;
 
+  #define NUM_PARSE_FIRST_ZERO \
+    if ((size_t)(start-value) < valuel && *start == '0') { \
+      start++; \
+      while ((size_t)(start-value) < valuel && *start == '0') \
+        start++; \
+      if ((size_t)(start-value) >= valuel || !isdigit(*start)) \
+        start--; \
+      goto GET_NUMBER; \
+    }
+
   if (flags&(OUTFIELDS_NUM_FLOAT|OUTFIELDS_NUM_INT)) {
     NOT_A_NUMBER: ;
-    while ((size_t)(start-value) < valuel && (!isdigit(*start) && *start != '-'))
+    while ((size_t)(start-value) < valuel && ((*start < '1' || *start > '9') && *start != '-')) {
+      NUM_PARSE_FIRST_ZERO;
       start++;
+    }
     if ((size_t)(start-value) < valuel && *start == '-') {
       start++;
-      if ((size_t)(start-value) < valuel && !isdigit(*start))
+      while ((size_t)(start-value) < valuel && *start == '0')
+        start++;
+      if ((size_t)(start-value) < valuel && (*start < '1' || *start > '9'))
         goto NOT_A_NUMBER;
       isminus = 1;
     }
   } else
-    while ((size_t)(start-value) < valuel && !isdigit(*start))
+    while ((size_t)(start-value) < valuel && (*start < '1' || *start > '9')) {
+      NUM_PARSE_FIRST_ZERO;
       start++;
+    }
 
   GET_NUMBER: ;
 
