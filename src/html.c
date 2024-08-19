@@ -49,7 +49,7 @@ const reliq_str8 script_s[] = { //tags which insides should be ommited
 
 #ifdef RELIQ_AUTOCLOSING
 const reliq_str8 autoclosing_s[] = { //tags that don't need to be closed
-  {"p",1},{"tr",2},{"td",2},{"th",2},{"tbody",5},
+  {"p",1},{"tr",2},{"td",2},{"th",2},{"li",2},{"tbody",5},
   {"tfoot",5},{"thead",5},{"rt",2},{"rp",2},
   {"caption",7},{"colgroup",8},{"option",6},{"optgroup",8}
 };
@@ -186,7 +186,7 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
   size_t index = nodes->size-1;
   flexarr *a = (flexarr*)rq->attrib_buffer;
   size_t attrib_start = a->size;
-  uchar foundend = 1;
+  uchar foundend=1,s_decrease=0;
 
   hnode->all.b = f+*i;
   hnode->all.s = 0;
@@ -252,95 +252,104 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
   hnode->insides.b = f+*i;
   hnode->insides.s = *i;
   size_t tagend;
-  while (*i < s) {
-    if (f[*i] == '<') {
-      tagend=*i;
+  for (; *i < s; (*i)++) {
+    if (f[*i] != '<')
+      continue;
+
+    tagend=*i;
+    (*i)++;
+    while_is(isspace,f,*i,s);
+    if (f[*i] == '/') {
       (*i)++;
       while_is(isspace,f,*i,s);
-      if (f[*i] == '/') {
-        (*i)++;
-        while_is(isspace,f,*i,s);
 
-        if (*i+hnode->tag.s < s && memcasecmp(hnode->tag.b,f+*i,hnode->tag.s) == 0) {
-          hnode->insides.s = tagend-hnode->insides.s;
-          *i += hnode->tag.s;
-          char *ending = memchr(f+*i,'>',s-*i);
-          if (!ending) {
-            *i = s;
-            flexarr_dec(nodes);
-            return 0;
-          }
-          *i = ending-f;
-          hnode->all.s = (f+*i+1)-hnode->all.b;
+      if (*i+hnode->tag.s < s && memcasecmp(hnode->tag.b,f+*i,hnode->tag.s) == 0) {
+        hnode->insides.s = tagend-hnode->insides.s;
+        *i += hnode->tag.s;
+        char *ending = memchr(f+*i,'>',s-*i);
+        if (!ending) {
+          *i = s;
+          flexarr_dec(nodes);
+          return 0;
+        }
+        *i = ending-f;
+        hnode->all.s = (f+*i+1)-hnode->all.b;
+        goto END;
+      }
+
+      if (!index) {
+        foundend = 0;
+        continue;
+      }
+
+      reliq_cstr endname;
+      reliq_hnode *nodesv = (reliq_hnode*)nodes->v;
+      name_handle(f,i,s,&endname);
+      if (!endname.s) {
+        (*i)++;
+        continue;
+      }
+      for (size_t j = index-1;; j--) {
+        if (nodesv[j].all.s || nodesv[j].lvl >= lvl) {
+          if (!j)
+            break;
+          continue;
+        }
+        if (strcasecomp(nodesv[j].tag,endname)) {
+          /*fprintf(stderr,"*i %c%c%c'%c'%c%c\n",f[*i-3],f[*i-2],f[*i-1],f[*i],f[*i+1],f[*i+2]);*/
+          *i = tagend;
+          /*fprintf(stderr,"LLLLLLLLLLLLLLLLLLLL %u\n",lvl-nodesv[j].lvl);*/
+          /*fprintf(stderr,"*i %c%c%c'%c'%c%c\n",f[*i-3],f[*i-2],f[*i-1],f[*i],f[*i+1],f[*i+2]);*/
+          hnode->insides.s = *i-hnode->insides.s;
+          ret = (ret&0xffffffff)+((ulong)(lvl-nodesv[j].lvl)<<32);
+          /*if (f[*i] == '<')*/
+            /*s_decrease = 1;*/
           goto END;
         }
+        if (!j || !nodesv[j].lvl)
+          break;
+      }
+    } else if (!script) {
+      if (f[*i] == '!') {
+        (*i)++;
+        comment_handle(f,i,s);
+        continue;
+      } else {
+        #ifdef RELIQ_AUTOCLOSING
+        if (autoclosing) {
+          reliq_cstr name;
 
-        if (!index) {
-          foundend = 0;
-          continue;
-        }
+          while_is(isspace,f,*i,s);
+          name_handle(f,i,s,&name);
 
-        reliq_cstr endname;
-        reliq_hnode *nodesv = (reliq_hnode*)nodes->v;
-        name_handle(f,i,s,&endname);
-        if (!endname.s) {
-          (*i)++;
-          continue;
-        }
-        for (size_t j = index-1;; j--) {
-          if (nodesv[j].all.s || nodesv[j].lvl >= lvl) {
-            if (!j)
-              break;
-            continue;
-          }
-          if (strcasecomp(nodesv[j].tag,endname)) {
-            *i = tagend;
-            hnode->insides.s = *i-hnode->insides.s;
-            ret = (ret&0xffffffff)+((ulong)(lvl-nodesv[j].lvl-1)<<32);
+          if (strcasecomp(hnode->tag,name)) {
+            *i = tagend-1;
+            hnode->insides.s = *i-hnode->insides.s+1;
+            hnode->all.s = (f+*i+1)-hnode->all.b;
             goto END;
           }
-          if (!j || !nodesv[j].lvl)
-            break;
         }
-      } else if (!script) {
-        if (f[*i] == '!') {
-          (*i)++;
-          comment_handle(f,i,s);
-          continue;
-        } else {
-          #ifdef RELIQ_AUTOCLOSING
-          if (autoclosing) {
-            reliq_cstr name;
-
-            while_is(isspace,f,*i,s);
-            name_handle(f,i,s,&name);
-
-            if (strcasecomp(hnode->tag,name)) {
-              *i = tagend-1;
-              hnode->insides.s = *i-hnode->insides.s+1;
-              hnode->all.s = (f+*i+1)-hnode->all.b;
-              goto END;
-            }
-          }
-          #endif
-          *i = tagend;
-          ulong rettmp = html_struct_handle(f,i,s,lvl+1,nodes,rq,err);
-          if (*err)
-            goto END;
-          ret += rettmp&0xffffffff;
-          hnode = &((reliq_hnode*)nodes->v)[index];
-          if (rettmp>>32) {
-            (*i)--;
+        #endif
+        *i = tagend;
+        ulong rettmp = html_struct_handle(f,i,s,lvl+1,nodes,rq,err);
+        if (*err)
+          goto END;
+        /*fprintf(stderr,"*i %c%c%c'%c'%c%c\n",f[*i-3],f[*i-2],f[*i-1],f[*i],f[*i+1],f[*i+2]);*/
+        ret += rettmp&0xffffffff;
+        hnode = &((reliq_hnode*)nodes->v)[index];
+        uint lvldiff = rettmp>>32;
+        if (lvldiff) {
+          (*i)--;
+          if (lvldiff > 1) {
             hnode->insides.s = *i-hnode->insides.s+1;
             hnode->all.s = (f+*i+1)-hnode->all.b;
             ret |= ((rettmp>>32)-1)<<32;
             goto END;
           }
-          ret |= rettmp&0xffffffff00000000;
         }
+        ret |= rettmp&0xffffffff00000000;
       }
     }
-    (*i)++;
   }
 
   END: ;
@@ -350,6 +359,8 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
     hnode->all.s = f+*i-hnode->all.b;
   if (!foundend)
     hnode->insides.s = hnode->all.s;
+  if (s_decrease)
+    (*i)--;
 
   size_t size = a->size-attrib_start;
   hnode->attribsl = size;
