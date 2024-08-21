@@ -61,11 +61,11 @@ options:
 	@echo "LDFLAGS  = ${LDFLAGS}"
 	@echo "CC       = ${CC}"
 
-reliq_h:
-	@cat <(echo ${CFLAGS_D}) src/reliq.h | sed '1{s/ /\n/g; s/-D/#define /g; h; d}; /^\/\/#RELIQ_COMPILE_FLAGS/{s/.*//;G;D}' > reliq.h
+reliq-h:
+	@echo ${CFLAGS_D} | cat - src/reliq.h | sed '1{s/ /\n/g; s/-D/#define /g; s/=/ /; h; d}; /^\/\/#RELIQ_COMPILE_FLAGS/{s/.*//;G;D}' > reliq.h
 
 
-lib: clean reliq_h
+lib: clean reliq-h
 	@make O_LIB=1 TARGET=lib${TARGET}.so
 
 install-pc:
