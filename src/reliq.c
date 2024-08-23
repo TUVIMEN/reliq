@@ -564,6 +564,9 @@ reliq_regexec(const reliq_pattern *pattern, const char *src, const size_t size)
   if (pattern->flags&RELIQ_PATTERN_EMPTY)
     return (size == 0) ? !invert : invert;
 
+  if (!src)
+    return invert;
+
   reliq_cstr str = {src,size};
 
   if (pass == RELIQ_PATTERN_PASS_WORD)
