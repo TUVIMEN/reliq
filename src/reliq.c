@@ -40,7 +40,7 @@ typedef unsigned long int ulong;
 #include "output.h"
 #include "html.h"
 
-#define PASSED_INC (1<<14)
+#define PASSED_INC (1<<14) //!! causes huge allocation see val_mem1 file
 #define PATTERN_SIZE_INC (1<<8)
 #define PATTRIB_INC 8
 #define NODE_MATCHES_INC 8
@@ -1432,6 +1432,7 @@ reliq_expr_free(reliq_expr *expr)
     free(expr->nodef);
   #endif
   reliq_nfree((reliq_node*)expr->e);
+  free(expr->e);
   if (expr->outfield.name.b)
     free(expr->outfield.name.b);
 }
@@ -2464,7 +2465,7 @@ reliq_fexec_file(char *data, size_t size, FILE *output, const reliq_exprs *exprs
         (*freedata)(data,size);
       was_unallocated = 1;
     } else
-      free(data);
+      free(ptr);
 
     if (i != chain->size-1)
       fclose(output);
