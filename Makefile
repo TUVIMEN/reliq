@@ -1,4 +1,4 @@
-VERSION = 2.5
+VERSION = 2.6
 CC = gcc -std=c99
 CFLAGS = -O3 -march=native -Wall -Wextra -Wno-implicit-fallthrough
 LDFLAGS =
