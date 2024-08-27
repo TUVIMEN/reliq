@@ -56,7 +56,7 @@ typedef unsigned long int ulong;
 #define A_INVERT 0x1
 #define A_VAL_MATTERS 0x2
 
-//reliq_node flags
+//reliq_npattern flags
 #define N_MATCHED_TYPE 0xf
 #define N_FULL 1
 #define N_SELF 2
@@ -642,17 +642,17 @@ reliq_free_matches(reliq_node_matches *matches)
 }
 
 void
-reliq_nfree(reliq_node *node)
+reliq_nfree(reliq_npattern *nodep)
 {
-  if (node == NULL)
+  if (nodep == NULL)
     return;
 
-  range_free(&node->position);
+  range_free(&nodep->position);
 
-  if (node->flags&N_EMPTY)
+  if (nodep->flags&N_EMPTY)
     return;
 
-  reliq_free_matches(&node->matches);
+  reliq_free_matches(&nodep->matches);
 }
 
 int
@@ -784,17 +784,17 @@ reliq_node_matched_match(const reliq_hnode *hnode, const reliq_hnode *parent, co
 }
 
 int
-reliq_match(const reliq_hnode *hnode, const reliq_hnode *parent, const reliq_node *node)
+reliq_nexec(const reliq_hnode *hnode, const reliq_hnode *parent, const reliq_npattern *nodep)
 {
-  if (node->flags&N_EMPTY)
+  if (nodep->flags&N_EMPTY)
     return 1;
-  return reliq_node_matched_match(hnode,parent,&node->matches);
+  return reliq_node_matched_match(hnode,parent,&nodep->matches);
 }
 
 static void
-reliq_match_add(reliq_hnode const *hnode, reliq_hnode const *parent, reliq_node const *node, flexarr *dest, uint *found)
+reliq_match_add(reliq_hnode const *hnode, reliq_hnode const *parent, reliq_npattern const *nodep, flexarr *dest, uint *found)
 {
-  if (!reliq_match(hnode,parent,node))
+  if (!reliq_nexec(hnode,parent,nodep))
     return;
   add_compressed(dest,(reliq_hnode *const)hnode,(reliq_hnode *const)parent);
   (*found)++;
@@ -1366,9 +1366,9 @@ get_node_matches(char *src, size_t *pos, size_t *size, reliq_node_matches *match
 }
 
 reliq_error *
-reliq_ncomp(const char *script, size_t size, reliq_node *node)
+reliq_ncomp(const char *script, size_t size, reliq_npattern *nodep)
 {
-  if (!node)
+  if (!nodep)
     return NULL;
   reliq_error *err = NULL;
   size_t pos=0;
@@ -1376,10 +1376,10 @@ reliq_ncomp(const char *script, size_t size, reliq_node *node)
   if (size)
     nscript = memdup(script,size);
 
-  memset(node,0,sizeof(reliq_node));
-  node->flags |= N_FULL;
+  memset(nodep,0,sizeof(reliq_npattern));
+  nodep->flags |= N_FULL;
   if (pos >= size) {
-    node->flags |= N_EMPTY;
+    nodep->flags |= N_EMPTY;
     if (pos)
       goto END_FREE;
     return NULL;
@@ -1387,15 +1387,15 @@ reliq_ncomp(const char *script, size_t size, reliq_node *node)
 
   uchar hastag=0;
 
-  err = get_node_matches(nscript,&pos,&size,&node->matches,&hastag,&node->position,&node->flags);
-  if (!err && node->matches.size == 0)
-    node->flags |= N_EMPTY;
+  err = get_node_matches(nscript,&pos,&size,&nodep->matches,&hastag,&nodep->position,&nodep->flags);
+  if (!err && nodep->matches.size == 0)
+    nodep->flags |= N_EMPTY;
 
   if (err) {
     END_FREE: ;
-    reliq_nfree(node);
+    reliq_nfree(nodep);
   } else
-    node->position_max = predict_range_max(&node->position);
+    nodep->position_max = predict_range_max(&nodep->position);
 
   free(nscript);
   return err;
@@ -1432,7 +1432,7 @@ reliq_expr_free(reliq_expr *expr)
   if (expr->nodef)
     free(expr->nodef);
   #endif
-  reliq_nfree((reliq_node*)expr->e);
+  reliq_nfree((reliq_npattern*)expr->e);
   free(expr->e);
   if (expr->outfield.name.b)
     free(expr->outfield.name.b);
@@ -1645,21 +1645,21 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, const ushort lvl, ushor
   uchar found_block_end = 0;
 
   enum {
-    typePassed,
-    typeNextNode,
+    typeChainlink,
+    typeNextExpr,
     typeGroupStart,
     typeGroupEnd,
     typeFormat
-  } next = typePassed;
+  } next = typeChainlink;
 
-  reliq_str nodef,exprf;
+  reliq_str nodef,exprf; //formats
 
   for (size_t j; i < s; i++) {
     j = i;
 
-    if (next == typeNextNode) {
+    if (next == typeNextExpr) {
       first_pos = j;
-      next = typePassed;
+      next = typeChainlink;
     }
 
     uchar hasexpr=0,hasended=0;
@@ -1740,7 +1740,7 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, const ushort lvl, ushor
           found_block_end = 1;
           get_format = 0;
         } else {
-          next = (src[i] == ',') ? typeNextNode : typePassed;
+          next = (src[i] == ',') ? typeNextExpr : typeChainlink;
           exprl = i-j;
           exprl -= nodef.s+((nodef.b) ? 1 : 0);
           exprl -= exprf.s+((exprf.b) ? 1 : 0);
@@ -1807,7 +1807,7 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, const ushort lvl, ushor
     if (hasended) {
       if (next == typeGroupEnd)
         goto END_BRACKET;
-      if (next == typeNextNode)
+      if (next == typeNextExpr)
         goto NEXT_NODE;
       continue;
     }
@@ -1821,7 +1821,7 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, const ushort lvl, ushor
       expr.outfield.isset = 0;
 
       if (next != typeGroupStart)
-        expr.e = malloc(sizeof(reliq_node));
+        expr.e = malloc(sizeof(reliq_npattern));
 
       if (exprl) {
         if (j == first_pos) {
@@ -1860,13 +1860,13 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, const ushort lvl, ushor
         }
 
         if (expr.e) { //!
-          *err = reliq_ncomp(src+j,exprl,(reliq_node*)expr.e);
+          *err = reliq_ncomp(src+j,exprl,(reliq_npattern*)expr.e);
           if (*err)
             goto EXIT;
         }
       } else if (expr.e) {
-        memset(expr.e,0,sizeof(reliq_node));
-        ((reliq_node*)expr.e)->flags |= N_EMPTY;
+        memset(expr.e,0,sizeof(reliq_npattern));
+        ((reliq_npattern*)expr.e)->flags |= N_EMPTY;
       }
 
       NODE_COMP_END:
@@ -1884,7 +1884,7 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, const ushort lvl, ushor
 
     if (next == typeGroupStart) {
       new->flags |= EXPR_TABLE|EXPR_NEWBLOCK;
-      next = typePassed;
+      next = typeChainlink;
       *pos = i;
       new->e = reliq_ecomp_pre(src,pos,s,lvl+1,&new->childfields,err);
       if (*err)
@@ -1898,7 +1898,7 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, const ushort lvl, ushor
       if (i < s) {
         if (src[i] == ',') {
           i++;
-          next = typeNextNode;
+          next = typeNextExpr;
           goto NEXT_NODE;
         } else if (src[i] == '}') {
           i++;
@@ -1917,7 +1917,7 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, const ushort lvl, ushor
       }
     }
 
-    if (next == typeNextNode) {
+    if (next == typeNextExpr) {
       NEXT_NODE: ;
       acurrent = (reliq_expr*)flexarr_inc(ret);
       memset(acurrent,0,sizeof(reliq_expr));
@@ -1979,32 +1979,32 @@ dest_match_position(const reliq_range *range, flexarr *dest, size_t start, size_
 }
 
 static void
-nodes_match_full(const reliq *rq, reliq_node *node, const reliq_hnode *current, flexarr *dest, uint *found, uint lasttofind)
+nodes_match_full(const reliq *rq, reliq_npattern *nodep, const reliq_hnode *current, flexarr *dest, uint *found, uint lasttofind)
 {
   uint childcount = current->child_count;
   for (size_t i = 0; i <= childcount && *found < lasttofind; i++) {
-    reliq_match_add(current+i,current,node,dest,found);
+    reliq_match_add(current+i,current,nodep,dest,found);
   }
 }
 
 static void
-nodes_match_child(const reliq *rq, reliq_node *node, const reliq_hnode *current, flexarr *dest, uint *found, uint lasttofind)
+nodes_match_child(const reliq *rq, reliq_npattern *nodep, const reliq_hnode *current, flexarr *dest, uint *found, uint lasttofind)
 {
   uint childcount = current->child_count;
   for (size_t i = 1; i <= childcount && *found < lasttofind; i += current[i].child_count+1)
-    reliq_match_add(current+i,current,node,dest,found);
+    reliq_match_add(current+i,current,nodep,dest,found);
 }
 
 static void
-nodes_match_descendant(const reliq *rq, reliq_node *node, const reliq_hnode *current, flexarr *dest, uint *found, uint lasttofind)
+nodes_match_descendant(const reliq *rq, reliq_npattern *nodep, const reliq_hnode *current, flexarr *dest, uint *found, uint lasttofind)
 {
   uint childcount = current->child_count;
   for (size_t i = 1; i <= childcount && *found < lasttofind; i++)
-    reliq_match_add(current+i,current,node,dest,found);
+    reliq_match_add(current+i,current,nodep,dest,found);
 }
 
 static void
-nodes_match_sibling_preceding(const reliq *rq, reliq_node *node, const reliq_hnode *current, flexarr *dest, uint *found, uint lasttofind, const ushort depth)
+nodes_match_sibling_preceding(const reliq *rq, reliq_npattern *nodep, const reliq_hnode *current, flexarr *dest, uint *found, uint lasttofind, const ushort depth)
 {
   reliq_hnode *nodes = rq->nodes;
   if (nodes == current)
@@ -2015,14 +2015,14 @@ nodes_match_sibling_preceding(const reliq *rq, reliq_node *node, const reliq_hno
 
   for (size_t i=(current-nodes)-1; nodes[i].lvl >= lvl && *found < lasttofind; i--) {
     if (nodes[i].lvl >= lvl && nodes[i].lvl <= lvldiff)
-      reliq_match_add(nodes+i,current,node,dest,found);
+      reliq_match_add(nodes+i,current,nodep,dest,found);
     if (!i)
       break;
   }
 }
 
 static void
-nodes_match_sibling_subsequent(const reliq *rq, reliq_node *node, const reliq_hnode *current, flexarr *dest, uint *found, uint lasttofind, const ushort depth)
+nodes_match_sibling_subsequent(const reliq *rq, reliq_npattern *nodep, const reliq_hnode *current, flexarr *dest, uint *found, uint lasttofind, const ushort depth)
 {
   reliq_hnode *nodes = rq->nodes;
   size_t nodesl = rq->nodesl;
@@ -2034,7 +2034,7 @@ nodes_match_sibling_subsequent(const reliq *rq, reliq_node *node, const reliq_hn
 
   for (size_t first=current-nodes,i=first; i < nodesl && (nodes[i].lvl >= lvl && nodes[i].lvl <= lvldiff) && *found < lasttofind; i++) {
     if (i != first)
-      reliq_match_add(nodes+i,current,node,dest,found);
+      reliq_match_add(nodes+i,current,nodep,dest,found);
 
     if (nodes[i].lvl == lvldiff)
       i += nodes[i].child_count;
@@ -2042,14 +2042,14 @@ nodes_match_sibling_subsequent(const reliq *rq, reliq_node *node, const reliq_hn
 }
 
 static void
-nodes_match_sibling(const reliq *rq, reliq_node *node, const reliq_hnode *current, flexarr *dest, uint *found, uint lasttofind, const ushort depth)
+nodes_match_sibling(const reliq *rq, reliq_npattern *nodep, const reliq_hnode *current, flexarr *dest, uint *found, uint lasttofind, const ushort depth)
 {
-  nodes_match_sibling_preceding(rq,node,current,dest,found,lasttofind,depth);
-  nodes_match_sibling_subsequent(rq,node,current,dest,found,lasttofind,depth);
+  nodes_match_sibling_preceding(rq,nodep,current,dest,found,lasttofind,depth);
+  nodes_match_sibling_subsequent(rq,nodep,current,dest,found,lasttofind,depth);
 }
 
 static void
-nodes_match_ancestor(const reliq *rq, reliq_node *node, const reliq_hnode *current, flexarr *dest, uint *found, uint lasttofind, const ushort depth)
+nodes_match_ancestor(const reliq *rq, reliq_npattern *nodep, const reliq_hnode *current, flexarr *dest, uint *found, uint lasttofind, const ushort depth)
 {
   reliq_hnode *nodes=rq->nodes;
   const reliq_hnode *first=current;
@@ -2066,7 +2066,7 @@ nodes_match_ancestor(const reliq *rq, reliq_node *node, const reliq_hnode *curre
         break;
     }
 
-    reliq_match_add(current,first,node,dest,found);
+    reliq_match_add(current,first,nodep,dest,found);
 
     if (current->lvl == 0)
       break;
@@ -2074,28 +2074,28 @@ nodes_match_ancestor(const reliq *rq, reliq_node *node, const reliq_hnode *curre
 }
 
 static void
-node_exec_first(const reliq *rq, reliq_node *node, flexarr *dest, const uint lasttofind)
+node_exec_first(const reliq *rq, reliq_npattern *nodep, flexarr *dest, const uint lasttofind)
 {
   size_t nodesl = rq->nodesl;
   uint found = 0;
   for (size_t i = 0; i < nodesl && found < lasttofind; i++)
-    reliq_match_add(rq->nodes+i,rq->parent,node,dest,&found);
+    reliq_match_add(rq->nodes+i,rq->parent,nodep,dest,&found);
 
-  if (node->position.s)
-    dest_match_position(&node->position,dest,0,dest->size);
+  if (nodep->position.s)
+    dest_match_position(&nodep->position,dest,0,dest->size);
 }
 
 static void
-node_exec(const reliq *rq, reliq_node *node, flexarr *source, flexarr *dest)
+node_exec(const reliq *rq, reliq_npattern *nodep, flexarr *source, flexarr *dest)
 {
-  uint found=0,lasttofind=node->position_max;
+  uint found=0,lasttofind=nodep->position_max;
   if (lasttofind == (uint)-1)
     return;
   if (lasttofind == 0)
     lasttofind = -1;
 
   if (source->size == 0) {
-    node_exec_first(rq,node,dest,lasttofind);
+    node_exec_first(rq,nodep,dest,lasttofind);
     return;
   }
 
@@ -2106,61 +2106,61 @@ node_exec(const reliq *rq, reliq_node *node, flexarr *source, flexarr *dest)
       continue;
     size_t prevdestsize = dest->size;
 
-    switch (node->flags&N_MATCHED_TYPE) {
+    switch (nodep->flags&N_MATCHED_TYPE) {
       case N_FULL:
-        nodes_match_full(rq,node,current,dest,&found,lasttofind);
+        nodes_match_full(rq,nodep,current,dest,&found,lasttofind);
         break;
       case N_SELF:
-        reliq_match_add(current,x->parent,node,dest,&found); //!!
+        reliq_match_add(current,x->parent,nodep,dest,&found); //!!
         break;
       case N_CHILD:
-        nodes_match_child(rq,node,current,dest,&found,lasttofind);
+        nodes_match_child(rq,nodep,current,dest,&found,lasttofind);
         break;
       case N_DESCENDANT:
-        nodes_match_descendant(rq,node,current,dest,&found,lasttofind);
+        nodes_match_descendant(rq,nodep,current,dest,&found,lasttofind);
         break;
       case N_ANCESTOR:
-        nodes_match_ancestor(rq,node,current,dest,&found,lasttofind,-1);
+        nodes_match_ancestor(rq,nodep,current,dest,&found,lasttofind,-1);
         break;
       case N_PARENT:
-        nodes_match_ancestor(rq,node,current,dest,&found,lasttofind,0);
+        nodes_match_ancestor(rq,nodep,current,dest,&found,lasttofind,0);
         break;
       case N_RELATIVE_PARENT:
-        reliq_match_add(x->parent,current,node,dest,&found);
+        reliq_match_add(x->parent,current,nodep,dest,&found);
         break;
       case N_SIBLING:
-        nodes_match_sibling(rq,node,current,dest,&found,lasttofind,0);
+        nodes_match_sibling(rq,nodep,current,dest,&found,lasttofind,0);
         break;
       case N_SIBLING_PRECEDING:
-        nodes_match_sibling_preceding(rq,node,current,dest,&found,lasttofind,0);
+        nodes_match_sibling_preceding(rq,nodep,current,dest,&found,lasttofind,0);
         break;
       case N_SIBLING_SUBSEQUENT:
-        nodes_match_sibling_subsequent(rq,node,current,dest,&found,lasttofind,0);
+        nodes_match_sibling_subsequent(rq,nodep,current,dest,&found,lasttofind,0);
         break;
       case N_FULL_SIBLING:
-        nodes_match_sibling(rq,node,current,dest,&found,lasttofind,-1);
+        nodes_match_sibling(rq,nodep,current,dest,&found,lasttofind,-1);
         break;
       case N_FULL_SIBLING_PRECEDING:
-        nodes_match_sibling_preceding(rq,node,current,dest,&found,lasttofind,-1);
+        nodes_match_sibling_preceding(rq,nodep,current,dest,&found,lasttofind,-1);
         break;
       case N_FULL_SIBLING_SUBSEQUENT:
-        nodes_match_sibling_subsequent(rq,node,current,dest,&found,lasttofind,-1);
+        nodes_match_sibling_subsequent(rq,nodep,current,dest,&found,lasttofind,-1);
         break;
       /*case N_TEXT: break;*/
       /*case N_NODE: break;*/
       /*case N_ELEMENT: break;*/
     }
 
-    if (node->position.s) {
-      if (!(node->flags&N_POSITION_ABSOLUTE)) {
-        dest_match_position(&node->position,dest,prevdestsize,dest->size);
+    if (nodep->position.s) {
+      if (!(nodep->flags&N_POSITION_ABSOLUTE)) {
+        dest_match_position(&nodep->position,dest,prevdestsize,dest->size);
         found = 0;
       } else if (found >= lasttofind)
         break;
     }
   }
-  if (node->flags&N_POSITION_ABSOLUTE && node->position.s)
-    dest_match_position(&node->position,dest,0,dest->size);
+  if (nodep->flags&N_POSITION_ABSOLUTE && nodep->position.s)
+    dest_match_position(&nodep->position,dest,0,dest->size);
 }
 
 /*static reliq_error *
@@ -2337,12 +2337,12 @@ reliq_exec_pre(const reliq *rq, const reliq_expr *exprs, size_t exprsl, flexarr 
       }
     } else if (exprs[i].e) {
       lastnode = &exprs[i];
-      reliq_node *node = (reliq_node*)exprs[i].e;
+      reliq_npattern *nodep = (reliq_npattern*)exprs[i].e;
       if (outnamed)
         add_compressed_blank(buf[1],ofNamed,outnamed);
 
       if (!isempty)
-        node_exec(rq,node,buf[0],buf[1]);
+        node_exec(rq,nodep,buf[0],buf[1]);
 
       if (outnamed)
         add_compressed_blank(buf[1],ofBlockEnd,NULL);
@@ -2473,7 +2473,7 @@ reliq_analyze(const char *data, const size_t size, flexarr *nodes, reliq *rq)
 }
 
 static reliq_error *
-reliq_fmatch(const char *data, const size_t size, FILE *output, const reliq_node *node,
+reliq_fmatch(const char *data, const size_t size, FILE *output, const reliq_npattern *nodep,
 #ifdef RELIQ_EDITING
   reliq_format_func *nodef,
 #else
@@ -2484,7 +2484,7 @@ reliq_fmatch(const char *data, const size_t size, FILE *output, const reliq_node
   reliq t;
   t.data = data;
   t.datal = size;
-  t.expr = node;
+  t.expr = nodep;
   t.nodef = nodef;
   t.nodefl = nodefl;
   t.flags = 0;
@@ -2525,7 +2525,7 @@ reliq_fexec_file(char *data, size_t size, FILE *output, const reliq_exprs *exprs
   for (size_t i = 0; i < chain->size; i++) {
     output = (i == chain->size-1) ? destination : open_memstream(&nptr,&fsize);
 
-    err = reliq_fmatch(ptr,size,output,(reliq_node*)chainv[i].e,
+    err = reliq_fmatch(ptr,size,output,(reliq_npattern*)chainv[i].e,
       chainv[i].nodef,chainv[i].nodefl);
 
     fflush(output);

@@ -382,8 +382,8 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
         : NULL;
   } else {
     hnode->attribs = a->v+(attrib_start*a->elsize);
-    reliq_node const *expr = rq->expr;
-    if (expr && reliq_match(hnode,NULL,expr))
+    reliq_npattern const *expr = rq->expr;
+    if (expr && reliq_nexec(hnode,NULL,expr))
       *err = node_output(hnode,NULL,rq->nodef,rq->nodefl,rq->output,rq);
     flexarr_dec(nodes);
   }

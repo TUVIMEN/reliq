@@ -32,6 +32,7 @@ lastargs=""
 
 sed 's/\\/\\\\/g' "$file" | while read i
 do
+    [ -z "$i" ] && continue
     first="$(echo "$i" | cut -b 1)"
 
     if echo "$first" | grep -q '^[#@$!%]$'
