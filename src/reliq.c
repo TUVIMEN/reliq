@@ -112,6 +112,7 @@ typedef unsigned long int ulong;
 #define EXPR_NEWBLOCK 0x2
 #define EXPR_NEWCHAIN 0x4
 #define EXPR_SINGULAR 0x8
+#define EXPR_TEXT 0x10
 
 #define ATTRIB_INC (1<<3)
 #define RELIQ_NODES_INC (1<<13)
@@ -1582,8 +1583,47 @@ reliq_output_field_get(const char *src, size_t *pos, const size_t s, reliq_outpu
   return NULL;
 }
 
+static reliq_error *
+skip_quotes(const char *src, size_t *pos, const size_t s)
+{
+  size_t i = *pos;
+  char quote = src[i++];
+  reliq_error *err = NULL;
+
+  while (i < s && src[i] != quote) {
+    if (src[i] == '\\' && (src[i+1] == '\\' || src[i+1] == quote))
+      i++;
+    i++;
+  }
+  if (i < s && src[i] == quote) {
+    i++;
+  } else
+    err = script_err("string: could not find the end of %c quote",quote);
+
+  *pos = i;
+  return err;
+}
+
+static reliq_error *
+skip_sbrackets(const char *src, size_t *pos, const size_t s)
+{
+  size_t i = *pos;
+  reliq_error *err = NULL;
+
+  i++;
+  while (i < s && src[i] != ']')
+    i++;
+  if (i < s && src[i] == ']') {
+    i++;
+  } else
+    err = script_err("range: char %lu: unprecedented end of range",i);
+
+  *pos = i;
+  return err;
+}
+
 static flexarr *
-reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, ushort *childfields, reliq_error **err)
+reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, const ushort lvl, ushort *childfields, reliq_error **err)
 {
   if (s == 0)
     return NULL;
@@ -1602,17 +1642,18 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, ushort *childfields, re
   char *src = memdup(csrc,s);
   size_t exprl;
   size_t i=*pos,first_pos=*pos;
+  uchar found_block_end = 0;
 
   enum {
     typePassed,
     typeNextNode,
     typeGroupStart,
-    typeGroupEnd
+    typeGroupEnd,
+    typeFormat
   } next = typePassed;
 
   reliq_str nodef,exprf;
 
-  while_is(isspace,src,*pos,s);
   for (size_t j; i < s; i++) {
     j = i;
 
@@ -1624,6 +1665,7 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, ushort *childfields, re
     uchar hasexpr=0,hasended=0;
     reliq_expr *new = NULL;
     exprl = 0;
+    uchar get_format = 0;
 
     REPEAT: ;
 
@@ -1637,11 +1679,17 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, ushort *childfields, re
         i += 2;
         continue;
       }
-      if (i+1 < s && src[i] == '\\' && (src[i+1] == ',' || src[i+1] == ';' ||
-        src[i+1] == '"' || src[i+1] == '\'' || src[i+1] == '{' || src[i+1] == '}')) {
-        delchar(src,i++,&s);
-        exprl = (i-j)-nodef.s-((nodef.b) ? 1 : 0);
-        continue;
+      if (i+1 < s && src[i] == '\\') {
+        uchar toescape = 0;
+        char c = src[i+1];
+        if (c == ',' || c == ';' || c == '"' || c == '\'' || c == '{' || c == '}') {
+          toescape = 1;
+        }
+        if (toescape) {
+          delchar(src,i++,&s);
+          exprl = (i-j)-nodef.s-((nodef.b) ? 1 : 0);
+          continue;
+        }
       }
       if ((i == j || (i && isspace(src[i-1]))) &&
         (src[i] == '|' || src[i] == '/')) {
@@ -1657,36 +1705,27 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, ushort *childfields, re
             nodef.s = i-(nodef.b-src);
           exprf.b = src+(++i);
         }
+        get_format = 1;
         continue;
       }
 
       if (src[i] == '"' || src[i] == '\'') {
-        char tf = src[i++];
-        while (i < s && src[i] != tf) {
-          if (src[i] == '\\' && (src[i+1] == '\\' || src[i+1] == tf))
-            i++;
-          i++;
-        }
-        if (i < s && src[i] == tf) {
-          i++;
-          if (i < s)
-            continue;
-        } else
-          goto_script_seterr_p(EXIT,"string: could not find the end of %c quote",tf);
+        if ((*err = skip_quotes(src,&i,s)))
+          goto EXIT;
+        if (i < s)
+          continue;
       }
       if (i < s && src[i] == '[') {
-        i++;
-        while (i < s && src[i] != ']')
-          i++;
-        if (i < s && src[i] == ']') {
-          i++;
-          if (i < s)
-            continue;
-        } else
-          goto_script_seterr_p(EXIT,"range: char %lu: unprecedented end of range",i);
+        if ((*err = skip_sbrackets(src,&i,s)))
+          goto EXIT;
+        if (i < s)
+          continue;
       }
 
       if (i < s && (src[i] == ',' || src[i] == ';' || src[i] == '{' || src[i] == '}')) {
+        if (get_format && src[i] == ';')
+          goto_script_seterr_p(EXIT,"%lu: illegal use of node format inside chain",i);
+
         if (exprf.b) {
           exprf.s = i-(exprf.b-src);
         } else if (nodef.b)
@@ -1694,13 +1733,18 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, ushort *childfields, re
 
         if (src[i] == '{') {
           next = typeGroupStart;
+          if (get_format)
+            goto UNEXPECTED_BEFORE_BLOCK;
         } else if (src[i] == '}') {
           next = typeGroupEnd;
+          found_block_end = 1;
+          get_format = 0;
         } else {
           next = (src[i] == ',') ? typeNextNode : typePassed;
           exprl = i-j;
           exprl -= nodef.s+((nodef.b) ? 1 : 0);
           exprl -= exprf.s+((exprf.b) ? 1 : 0);
+          get_format = 0;
         }
         i++;
         break;
@@ -1796,6 +1840,25 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, ushort *childfields, re
           }
         }
 
+        if (next == typeGroupStart) {
+          uchar empty = 1;
+          if (get_format)
+            empty = 0;
+          if (empty) {
+            const char *base = src+j;
+            for (size_t g = 0; g < exprl; g++) {
+              if (!isspace(base[g])) {
+                  empty = 0;
+                  break;
+              }
+            }
+          }
+          if (!empty) {
+            UNEXPECTED_BEFORE_BLOCK: ;
+            goto_script_seterr_p(EXIT,"block: %lu: unexpected text before opening of the block",i);
+          }
+        }
+
         if (expr.e) { //!
           *err = reliq_ncomp(src+j,exprl,(reliq_node*)expr.e);
           if (*err)
@@ -1823,7 +1886,7 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, ushort *childfields, re
       new->flags |= EXPR_TABLE|EXPR_NEWBLOCK;
       next = typePassed;
       *pos = i;
-      new->e = reliq_ecomp_pre(src,pos,s,&new->childfields,err);
+      new->e = reliq_ecomp_pre(src,pos,s,lvl+1,&new->childfields,err);
       if (*err)
         goto EXIT;
       if (childfields)
@@ -1839,13 +1902,18 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, ushort *childfields, re
           goto NEXT_NODE;
         } else if (src[i] == '}') {
           i++;
+          found_block_end = 1;
           goto END_BRACKET;
-        } else if (src[i] == ';' || src[i] == '{') {
+        } else if (src[i] == ';')
           continue;
+        else if (src[i] == '{') {
+          goto UNEXPECTED_BEFORE_BLOCK;
         } else if (src[i] == '|' || src[i] == '/') {
            hasended = 1;
+           get_format = 1;
            goto REPEAT;
-        }
+        } else
+          goto_script_seterr_p(EXIT,"block: %lu: unexpected text after ending of the block",i);
       }
     }
 
@@ -1868,6 +1936,8 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, ushort *childfields, re
   flexarr_clearb(ret);
   EXIT:
   free(src);
+  if (!*err && ((lvl > 0 && !found_block_end) || (lvl == 0 && found_block_end)))
+    *err = script_err("block: %lu: unprecedented end of block",i);
   if (*err) {
     reliq_exprs_free_pre(ret);
     return NULL;
@@ -1879,7 +1949,7 @@ reliq_error *
 reliq_ecomp(const char *src, size_t size, reliq_exprs *exprs)
 {
   reliq_error *err = NULL;
-  flexarr *ret = reliq_ecomp_pre(src,NULL,size,NULL,&err);
+  flexarr *ret = reliq_ecomp_pre(src,NULL,size,0,NULL,&err);
   if (ret) {
     //reliq_expr_print(ret,0);
     flexarr_conv(ret,(void**)&exprs->b,&exprs->s);
