@@ -48,6 +48,7 @@ ifeq ($(strip ${O_LINKED}),1)
 	LDFLAGS += -lreliq
 endif
 
+TEST_FLAGS=$(shell echo "${CFLAGS_D}" | sed -E 's/(^| )-D/\1/g; s/(^| )[a-zA-Z0-9_]+=("[^"]*")?[^ ]*( |$$)//')
 CFLAGS_ALL = ${CFLAGS} ${CFLAGS_D}
 
 OBJ = ${SRC:.c=.o}
@@ -86,26 +87,14 @@ reliq: ${OBJ}
 	${CC} ${CFLAGS_ALL} -c $< -o $@
 
 test: clean all
-	@./test.sh test/1.csv test/1.html
-	@./test.sh test/2.csv test/editing.html
-	@[ ${O_PHPTAGS} -eq 1 ] && ./test.sh test/php.csv test/php.php || true
-	@[ ${O_EDITING} -eq 1 ] && ./test.sh test/editing.csv test/editing.html || true
-	@[ ${O_EDITING} -eq 1 ] && ./test.sh test/editing-output.csv test/editing-output.html || true
-	@./test.sh test/output.csv test/output.html || true
+	@./test.sh test/basic.test . "${TEST_FLAGS}" || true
 
 test-errors: clean all
-	@./test.sh test/errors.csv test/1.html || true
-	@[ ${O_EDITING} -eq 1 ] && ./test.sh test/errors-editing.csv test/editing.html || true
+	@./test.sh test/errors.test . "${TEST_FLAGS}" || true
 
 test-update: test
-	@./test.sh test/1.csv test/1.html update || true
-	@./test.sh test/2.csv test/editing.html update || true
-	@./test.sh test/errors.csv test/1.html update || true
-	@[ ${O_PHPTAGS} -eq 1 ] && ./test.sh test/php.csv test/php.php update || true
-	@[ ${O_EDITING} -eq 1 ] && ./test.sh test/editing.csv test/editing.html update || true
-	@[ ${O_EDITING} -eq 1 ] && ./test.sh test/editing-output.csv test/editing-output.html update || true
-	@[ ${O_EDITING} -eq 1 ] && ./test.sh test/errors-editing.csv test/editing.html update || true
-	@./test.sh test/output.csv test/output.html update || true
+	@./test.sh test/basic.test update "${TEST_FLAGS}" || true
+	@./test.sh test/errors.test update "${TEST_FLAGS}" || true
 
 dist: clean
 	mkdir -p ${TARGET}-${VERSION}
