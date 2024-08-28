@@ -329,3 +329,7 @@ Because of parsing and processing on the go the order of output might look rever
 - [stackexchange-scraper](https://github.com/TUVIMEN/stackexchange-scraper)
 - [elektroda-scraper](https://github.com/TUVIMEN/elektroda-scraper)
 - and many others of my repositories
+
+## Syntax highlighting
+
+[vim](https://github.com/TUVIMEN/reliq/blob/master/reliq.vim)
