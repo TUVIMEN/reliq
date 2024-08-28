@@ -1143,8 +1143,10 @@ free_node_matches_flexarr(flexarr *groups_matches)
 }
 
 static reliq_error *
-get_node_matches(char *src, size_t *pos, size_t *size, reliq_node_matches *matches, uchar *hastag, reliq_range *position, uchar *nodeflags)
+get_node_matches(char *src, size_t *pos, size_t *size, const ushort lvl, reliq_node_matches *matches, uchar *hastag, reliq_range *position, uchar *nodeflags)
 {
+  if (lvl >= RELIQ_MAX_GROUP_LEVEL)
+    return script_err("node: %lu: reached %lu level of recursion",*pos,lvl);
   reliq_error *err = NULL;
   struct reliq_pattrib attrib;
   reliq_hook hook;
@@ -1187,7 +1189,7 @@ get_node_matches(char *src, size_t *pos, size_t *size, reliq_node_matches *match
         uchar tag = *hastag;
         reliq_node_matches *match = flexarr_inc(groups_matches);
 
-        if ((err = get_node_matches(src,&i,&s,match,&tag,NULL, NULL))) {
+        if ((err = get_node_matches(src,&i,&s,lvl+1,match,&tag,NULL, NULL))) {
           flexarr_dec(groups_matches);
           goto END;
         }
@@ -1387,7 +1389,7 @@ reliq_ncomp(const char *script, size_t size, reliq_npattern *nodep)
 
   uchar hastag=0;
 
-  err = get_node_matches(nscript,&pos,&size,&nodep->matches,&hastag,&nodep->position,&nodep->flags);
+  err = get_node_matches(nscript,&pos,&size,0,&nodep->matches,&hastag,&nodep->position,&nodep->flags);
   if (!err && nodep->matches.size == 0)
     nodep->flags |= N_EMPTY;
 
@@ -1627,6 +1629,11 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, const ushort lvl, ushor
 {
   if (s == 0)
     return NULL;
+
+  if (lvl >= RELIQ_MAX_BLOCK_LEVEL) {
+    *err = script_err("block: %lu: reached %lu level of recursion",*pos,lvl);
+    return NULL;
+  }
 
   size_t tpos = 0;
   if (pos == NULL)
@@ -2690,26 +2697,27 @@ reliq_std_free(void *addr, size_t len)
     return 0;
 }
 
-reliq
-reliq_init(const char *data, const size_t size, int (*freedata)(void *addr, size_t len))
+reliq_error *
+reliq_init(const char *data, const size_t size, int (*freedata)(void *addr, size_t len), reliq *rq)
 {
-  reliq t;
-  t.data = data;
-  t.datal = size;
-  t.freedata = freedata;
-  t.expr = NULL;
-  t.flags = RELIQ_SAVE;
-  t.output = NULL;
-  t.nodef = NULL;
-  t.nodefl = 0;
-  t.parent = NULL;
+  rq->data = data;
+  rq->datal = size;
+  rq->freedata = freedata;
+  rq->expr = NULL;
+  rq->flags = RELIQ_SAVE;
+  rq->output = NULL;
+  rq->nodef = NULL;
+  rq->nodefl = 0;
+  rq->parent = NULL;
 
   flexarr *nodes = flexarr_init(sizeof(reliq_hnode),RELIQ_NODES_INC);
-  t.attrib_buffer = (void*)flexarr_init(sizeof(reliq_cstr_pair),ATTRIB_INC);
+  rq->attrib_buffer = (void*)flexarr_init(sizeof(reliq_cstr_pair),ATTRIB_INC);
 
-  reliq_analyze(data,size,nodes,&t);
+  reliq_error *err = reliq_analyze(data,size,nodes,rq);
 
-  flexarr_conv(nodes,(void**)&t.nodes,&t.nodesl);
-  flexarr_free((flexarr*)t.attrib_buffer);
-  return t;
+  flexarr_conv(nodes,(void**)&rq->nodes,&rq->nodesl);
+  flexarr_free((flexarr*)rq->attrib_buffer);
+  if (err)
+    reliq_free(rq);
+  return err;
 }

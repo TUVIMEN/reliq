@@ -31,6 +31,7 @@
 #include <sys/mman.h>
 #include <ftw.h>
 #include <errno.h>
+#include <libgen.h>
 
 #include "reliq.h"
 
@@ -147,7 +148,9 @@ expr_exec(char *f, size_t s, const uchar inpipe)
     return;
   }
 
-  reliq rq = reliq_init(f,s,freedata);
+  reliq rq;
+  if ((err = reliq_init(f,s,freedata,&rq)))
+    goto ERR;
   err = reliq_exec_file(&rq,outfile,&exprs);
 
   reliq_free(&rq);
@@ -258,7 +261,7 @@ main(int argc, char **argv)
   outfile = stdout;
   errfile = stderr;
 
-  argv0 = argv[0];
+  argv0 = basename(argv[0]);
   if (argc < 2)
     usage();
 

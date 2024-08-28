@@ -190,6 +190,10 @@ phptag_handle(const char *f, size_t *i, const size_t s, reliq_hnode *hnode)
 ulong
 html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, flexarr *nodes, reliq *rq, reliq_error **err)
 {
+  if (lvl >= RELIQ_MAX_NODE_LEVEL) {
+    *err = reliq_set_error(RELIQ_ERROR_HTML,"html: %lu: reached %u level of recursion in document",*i,lvl);
+    return 0;
+  }
   *err = NULL;
   ulong ret = 1;
   reliq_hnode *hnode = flexarr_inc(nodes);
@@ -346,7 +350,7 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
         *i = tagend;
         ulong rettmp = html_struct_handle(f,i,s,lvl+1,nodes,rq,err);
         if (*err)
-          goto END;
+          return 0;
         /*fprintf(stderr,"*i %c%c%c'%c'%c%c\n",f[*i-3],f[*i-2],f[*i-1],f[*i],f[*i+1],f[*i+2]);*/
         ret += rettmp&0xffffffff;
         hnode = &((reliq_hnode*)nodes->v)[index];

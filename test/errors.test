@@ -1,2 +1,3 @@
 @errors/errors-editing.test
 @errors/errors.test
+@errors/limits.test
