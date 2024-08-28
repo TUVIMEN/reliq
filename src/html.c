@@ -275,6 +275,7 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
     if (f[*i] != '<')
       continue;
 
+    FINAL_TAG_END: ;
     tagend=*i;
     (*i)++;
     while_is(isspace,f,*i,s);
@@ -316,7 +317,7 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
         }
         if (strcasecomp(nodesv[j].tag,endname)) {
           *i = tagend;
-          hnode->insides.s = *i-hnode->insides.s;
+          hnode->insides.s = *i-(hnode->insides.b-f);
           ret = (ret&0xffffffff)+((ulong)(lvl-nodesv[j].lvl)<<32);
           goto END;
         }
@@ -351,18 +352,16 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
         ulong rettmp = html_struct_handle(f,i,s,lvl+1,nodes,rq,err);
         if (*err)
           return 0;
-        /*fprintf(stderr,"*i %c%c%c'%c'%c%c\n",f[*i-3],f[*i-2],f[*i-1],f[*i],f[*i+1],f[*i+2]);*/
         ret += rettmp&0xffffffff;
         hnode = &((reliq_hnode*)nodes->v)[index];
         uint lvldiff = rettmp>>32;
         if (lvldiff) {
-          (*i)--;
           if (lvldiff > 1) {
-            hnode->insides.s = *i-hnode->insides.s+1;
-            hnode->all.s = (f+*i+1)-hnode->all.b;
+            hnode->insides.s = *i-(hnode->insides.b-f);
             ret |= ((rettmp>>32)-1)<<32;
             goto END;
-          }
+          } else
+            goto FINAL_TAG_END;
         }
         ret |= rettmp&0xffffffff00000000;
       }
@@ -372,8 +371,11 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
   END: ;
   if (*i >= s) {
     hnode->all.s = s-(hnode->all.b-f)-1;
-  } else if (!hnode->all.s)
+    hnode->insides.s = s-(hnode->insides.b-f)-1;;
+  } else if (!hnode->all.s) {
     hnode->all.s = f+*i-hnode->all.b;
+    hnode->insides.s = f+*i-hnode->insides.b;
+  }
   if (!foundend)
     hnode->insides.s = hnode->all.s;
 

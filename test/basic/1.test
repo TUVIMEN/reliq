@@ -81,6 +81,10 @@ eda6e68de1ab8a712c52a4000ffbfda8,'div -.extra -l@[2] id'
 740836caefc7955eee7b0ae47e4faf17,'(ul )(img ) src'
 3fb22b68edd13ab990e6ace3b697316d,'div ( id ( .index )( .annointed ) )( style ) '
 f17e288090dff529bdc0dcf62d71e5f3,'(ul l@[3:] c@[:50] )((img src -alt )(p ) c@[0]  ) m@v>"2"'
+
+$ unclosed-tag.html
+18c53a8a802f5c7ca3f883a2ed89f8ce,'td .tablerow | "%i"'
+
 $ 1.html
 % RELIQ_AUTOCLOSING
 # example file was build to test tag ommission, the following tests fail only because of that
