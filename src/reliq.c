@@ -112,7 +112,6 @@ typedef unsigned long int ulong;
 #define EXPR_NEWBLOCK 0x2
 #define EXPR_NEWCHAIN 0x4
 #define EXPR_SINGULAR 0x8
-#define EXPR_TEXT 0x10
 
 #define ATTRIB_INC (1<<3)
 #define RELIQ_NODES_INC (1<<13)
@@ -989,7 +988,7 @@ format_comp(char *src, size_t *pos, size_t *size,
 }
 
 static reliq_error *
-exprs_check_chain(const reliq_exprs *exprs)
+exprs_check_chain(const reliq_exprs *exprs, const uchar noaccesshooks)
 {
   if (!exprs->s)
     return NULL;
@@ -999,9 +998,12 @@ exprs_check_chain(const reliq_exprs *exprs)
   flexarr *chain = exprs->b[0].e;
   reliq_expr *chainv = (reliq_expr*)chain->v;
 
-  for (size_t i = 0; i < chain->size; i++)
+  for (size_t i = 0; i < chain->size; i++) {
     if (chainv[i].flags&EXPR_TABLE)
       goto ERR;
+    if (noaccesshooks && (((reliq_npattern*)chainv[i].e)->flags&N_MATCHED_TYPE) > 1)
+      return script_err("illegal use of access hooks in fast mode",((reliq_npattern*)chainv[i].e)->flags&N_MATCHED_TYPE);
+  }
 
   return NULL;
   ERR: ;
@@ -1101,7 +1103,7 @@ match_hook_handle(char *src, size_t *pos, size_t *size, reliq_hook *out_hook, co
        goto ERR;
      if ((err = reliq_ecomp(src+start,len,&hook.match.exprs)))
        goto ERR;
-     if ((err = exprs_check_chain(&hook.match.exprs))) {
+     if ((err = exprs_check_chain(&hook.match.exprs,0))) {
        reliq_efree(&hook.match.exprs);
        goto ERR;
      }
@@ -2519,7 +2521,7 @@ reliq_fexec_file(char *data, size_t size, FILE *output, const reliq_exprs *exprs
   uchar was_unallocated = 0;
   if (exprs->s == 0)
     goto END;
-  if ((err = exprs_check_chain(exprs)))
+  if ((err = exprs_check_chain(exprs,1)))
     goto END;
 
   FILE *destination = output;
