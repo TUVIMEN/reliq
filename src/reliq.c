@@ -40,7 +40,7 @@ typedef unsigned long int ulong;
 #include "output.h"
 #include "html.h"
 
-#define PASSED_INC (1<<14) //!! causes huge allocation see val_mem1 file
+#define PASSED_INC (1<<8) //!! if increased causes huge allocation see val_mem1 file
 #define PATTERN_SIZE_INC (1<<8)
 #define PATTRIB_INC 8
 #define NODE_MATCHES_INC 8
@@ -2296,10 +2296,10 @@ reliq_exec_pre(const reliq *rq, const reliq_expr *exprs, size_t exprsl, flexarr 
   reliq_error *err;
 
   buf[0] = flexarr_init(sizeof(reliq_compressed),PASSED_INC);
-  if (source && source->asize) {
-    buf[0]->asize = source->asize;
+  if (source && source->size) {
+    buf[0]->asize = source->size;
     buf[0]->size = source->size;
-    buf[0]->v = memdup(source->v,source->asize*sizeof(reliq_compressed));
+    buf[0]->v = memdup(source->v,source->size*sizeof(reliq_compressed));
   }
 
   buf[1] = flexarr_init(sizeof(reliq_compressed),PASSED_INC);
