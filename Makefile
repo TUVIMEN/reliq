@@ -6,9 +6,11 @@ TARGET = reliq
 
 CFLAGS_D = -DRELIQ_VERSION=\"${VERSION}\"
 
+O_SMALL_STACK := 0 # limits for small stack
 O_PHPTAGS := 1 # support for <?php ?>
 O_AUTOCLOSING := 1 # support for autoclosing tags (tag ommission https://html.spec.whatwg.org/multipage/syntax.html#optional-tags)
 O_EDITING := 1 #support for editing
+
 O_LIB := 0 # compile libreliq
 O_LINKED := 0 # link reliq to libreliq
 
@@ -21,6 +23,10 @@ INCLUDE_PATH ?= ${PREFIX}/include
 
 SRC = src/main.c src/flexarr.c src/html.c src/reliq.c src/ctype.c src/utils.c src/output.c
 LIB_SRC = src/flexarr.c src/html.c src/reliq.c src/ctype.c src/utils.c src/output.c
+
+ifeq ($(strip ${O_SMALL_STACK}),1)
+	CFLAGS_D += -DRELIQ_SMALL_STACK
+endif
 
 ifeq ($(strip ${O_PHPTAGS}),1)
 	CFLAGS_D += -DRELIQ_PHPTAGS

@@ -26,9 +26,15 @@
 
 //#RELIQ_COMPILE_FLAGS
 
+#ifndef RELIQ_SMALL_STACK
 #define RELIQ_MAX_NODE_LEVEL 8192 //stack overflows at 32744 at 8192kb stack
 #define RELIQ_MAX_GROUP_LEVEL 3552 //stack overflows at 14160 at 8192kb stack
 #define RELIQ_MAX_BLOCK_LEVEL 6892 //stack overflows at 27576 at 8192kb stack
+#else
+#define RELIQ_MAX_NODE_LEVEL 256
+#define RELIQ_MAX_GROUP_LEVEL 256
+#define RELIQ_MAX_BLOCK_LEVEL 256
+#endif
 
 #define RELIQ_SAVE 0x1
 
