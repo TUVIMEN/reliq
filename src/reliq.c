@@ -183,7 +183,7 @@ const struct reliq_match_hook match_hooks[] = {
     {{"attributes",10},H_RANGE|H_ATTRIBUTES},
     {{"levelrelative",13},H_RANGE|H_LEVEL_RELATIVE},
     {{"level",5},H_RANGE|H_LEVEL},
-    {{"children",8},H_RANGE|H_CHILD_COUNT},
+    {{"count",5},H_RANGE|H_CHILD_COUNT},
     {{"childmatch",10},H_EXPRS|H_CHILD_MATCH},
 
     {{"desc",4},H_DESCENDANT|H_NOARG|H_FLAG},
@@ -710,7 +710,7 @@ reliq_match_hook(const reliq_hnode *hnode, const reliq_hnode *parent, const reli
       srcl = hnode->lvl;
       break;
     case H_CHILD_COUNT:
-      srcl = hnode->child_count;
+      srcl = hnode->desc_count;
       break;
     case H_MATCH_INSIDES:
       src = hnode->insides.b;
@@ -728,7 +728,7 @@ reliq_match_hook(const reliq_hnode *hnode, const reliq_hnode *parent, const reli
     reliq r;
     memset(&r,0,sizeof(reliq));
     r.nodes = (reliq_hnode*)hnode;
-    r.nodesl = hnode->child_count+1;
+    r.nodesl = hnode->desc_count+1;
     r.parent = hnode;
 
     size_t compressedl = 0;
@@ -855,7 +855,7 @@ print_text(const reliq_hnode *nodes, const reliq_hnode *hnode, FILE *outfile, uc
   char const *start = hnode->insides.b;
   size_t end;
 
-  for (size_t i = 1; i <= hnode->child_count; i++) {
+  for (size_t i = 1; i <= hnode->desc_count; i++) {
     const reliq_hnode *n = hnode+i;
 
     end = n->all.b-start;
@@ -865,7 +865,7 @@ print_text(const reliq_hnode *nodes, const reliq_hnode *hnode, FILE *outfile, uc
     if (recursive)
       print_text(nodes,n,outfile,recursive);
 
-    i += n->child_count;
+    i += n->desc_count;
     start = n->all.b+n->all.s;
   }
 
@@ -933,7 +933,7 @@ reliq_printf(FILE *outfile, const char *format, const size_t formatl, const reli
           print_attrib_value(hnode->attribs,hnode->attribsl,text,textl,num,trim,outfile);
           break;
         case 's': print_uint(hnode->all.s,outfile); break;
-        case 'c': print_uint(hnode->child_count,outfile); break;
+        case 'c': print_uint(hnode->desc_count,outfile); break;
         case 'C': fwrite(hnode->all.b,1,hnode->all.s,outfile); break;
         case 'p': print_uint(hnode->all.b-rq->data,outfile); break;
         case 'n': fwrite(hnode->tag.b,1,hnode->tag.s,outfile); break;
@@ -1990,7 +1990,7 @@ dest_match_position(const reliq_range *range, flexarr *dest, size_t start, size_
 static void
 nodes_match_full(const reliq *rq, reliq_npattern *nodep, const reliq_hnode *current, flexarr *dest, uint *found, uint lasttofind)
 {
-  uint childcount = current->child_count;
+  uint childcount = current->desc_count;
   for (size_t i = 0; i <= childcount && *found < lasttofind; i++) {
     reliq_match_add(current+i,current,nodep,dest,found);
   }
@@ -1999,15 +1999,15 @@ nodes_match_full(const reliq *rq, reliq_npattern *nodep, const reliq_hnode *curr
 static void
 nodes_match_child(const reliq *rq, reliq_npattern *nodep, const reliq_hnode *current, flexarr *dest, uint *found, uint lasttofind)
 {
-  uint childcount = current->child_count;
-  for (size_t i = 1; i <= childcount && *found < lasttofind; i += current[i].child_count+1)
+  uint childcount = current->desc_count;
+  for (size_t i = 1; i <= childcount && *found < lasttofind; i += current[i].desc_count+1)
     reliq_match_add(current+i,current,nodep,dest,found);
 }
 
 static void
 nodes_match_descendant(const reliq *rq, reliq_npattern *nodep, const reliq_hnode *current, flexarr *dest, uint *found, uint lasttofind)
 {
-  uint childcount = current->child_count;
+  uint childcount = current->desc_count;
   for (size_t i = 1; i <= childcount && *found < lasttofind; i++)
     reliq_match_add(current+i,current,nodep,dest,found);
 }
@@ -2046,7 +2046,7 @@ nodes_match_sibling_subsequent(const reliq *rq, reliq_npattern *nodep, const rel
       reliq_match_add(nodes+i,current,nodep,dest,found);
 
     if (nodes[i].lvl == lvldiff)
-      i += nodes[i].child_count;
+      i += nodes[i].desc_count;
   }
 }
 
@@ -2623,7 +2623,7 @@ reliq_from_compressed_independent(const reliq_compressed *compressed, const size
 
     lvl = current->lvl;
 
-    for (size_t j = 0; j <= current->child_count; j++) {
+    for (size_t j = 0; j <= current->desc_count; j++) {
       new = (reliq_hnode*)flexarr_inc(nodes);
       memcpy(new,current+j,sizeof(reliq_hnode));
 
@@ -2676,7 +2676,7 @@ reliq_from_compressed(const reliq_compressed *compressed, const size_t compresse
 
     lvl = current->lvl;
 
-    for (size_t j = 0; j <= current->child_count; j++) {
+    for (size_t j = 0; j <= current->desc_count; j++) {
       new = (reliq_hnode*)flexarr_inc(nodes);
       memcpy(new,current+j,sizeof(reliq_hnode));
 

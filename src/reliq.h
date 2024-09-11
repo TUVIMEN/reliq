@@ -79,7 +79,7 @@ typedef struct {
   reliq_cstr tag;
   reliq_cstr insides;
   reliq_cstr_pair *attribs;
-  unsigned int child_count;
+  unsigned int desc_count; //count of descendants
   unsigned short attribsl;
   unsigned short lvl;
 } reliq_hnode; //html node

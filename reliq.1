@@ -79,7 +79,7 @@ Follow all symbolic links, unlike
 .B \-l
 set
 .IR PATTERN
-to '| "%n%A - children(%c) lvl(%L) size(%s) pos(%p)\\n"'.
+to '| "%n%A - desc(%c) lvl(%L) size(%s) pos(%p)\\n"'.
 
 .SH SYNTAX
 .SS PATTERN
@@ -222,8 +222,8 @@ Get tags that are on level within \fIRANGE\fR.
 .BR l ",  " levelrelative " " \fI[RANGE]\fR
 Get tags that are on level relative to parent within the \fIRANGE\fR.
 .TP
-.BR c ",  " children " " \fI[RANGE]\fR
-Get tags with number of children that is within the \fIRANGE\fR.
+.BR c ",  " countdescendants " " \fI[RANGE]\fR
+Get tags with descendant count that is within the \fIRANGE\fR.
 .TP
 .BR C ",  " childmatch " " \fI"EXPRESSION"\fR
 Get tags in which chained \fIEXPRESSION\fR (see \fB-F\fR option) matches at least one of its children.
@@ -355,7 +355,7 @@ Tag's position in current file.
 .IP %s
 Tag's size.
 .IP %c
-Tag's children count.
+Tag's count of descendants.
 .IP %C
 Contents of tag.
 .IP %a

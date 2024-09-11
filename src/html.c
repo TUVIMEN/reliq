@@ -381,7 +381,7 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
 
   size_t size = a->size-attrib_start;
   hnode->attribsl = size;
-  hnode->child_count = ret-1;
+  hnode->desc_count = ret-1;
   if (rq->flags&RELIQ_SAVE) {
     hnode->attribs = size ?
         memdup(a->v+(attrib_start*a->elsize),size*a->elsize)
