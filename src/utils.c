@@ -37,6 +37,7 @@ typedef unsigned long long int ullong;
 
 #define RANGES_INC (1<<4)
 #define UINT_TO_STR_MAX 32
+#define QUOTE_INCR 512
 
 void
 strrev(char *v, size_t size)
@@ -423,42 +424,43 @@ number_handle(const char *src, size_t *pos, const size_t size)
 }
 
 reliq_error *
-get_quoted(char *src, size_t *i, size_t *size, const char delim, size_t *start, size_t *len)
+get_quoted(const char *src, size_t *pos, const size_t size, const char delim, char **result, size_t *resultl)
 {
-  *len = 0;
-  if (src[*i] == '"' || src[*i] == '\'') {
-    char tf = src[*i];
-    *start = ++(*i);
-    for (; *i < *size && src[*i] != tf; (*i)++) {
-      if (*i+1 >= *size || src[*i] != '\\')
-          continue;
-      if (src[*i+1] == '\\') {
-        (*i)++;
-      } else if (src[*i+1] == tf)
-        delchar(src,*i,size);
-    }
-    if (src[*i] != tf)
-      return script_err("string: could not find the end of %c quote",tf);
-    *len = ((*i)++)-(*start);
-  } else {
-    *start = *i;
-    for (; *i < *size && !isspace(src[*i]) && src[*i] != delim; (*i)++) {
-      if (*i+1 < *size && src[*i] == '\\') {
-        if (src[*i+1] == '\\') {
-          (*i)++;
-          continue;
-        }
-        if (isspace(src[*i+1]) || src[*i+1] == delim) {
-          delchar(src,*i,size);
-          continue;
-        }
+  size_t i=*pos;
+  reliq_error *err = NULL;
+  flexarr *res = flexarr_init(sizeof(char),QUOTE_INCR);
+
+  for (; i < size && !isspace(src[i]) && src[i] != delim; i++) {
+    if (i+1 < size && src[i] == '\\') {
+      if (src[i+1] == '\\') {
+        *(char*)flexarr_inc(res) = src[++i];
+        continue;
       }
-      if (src[*i] == '"' || src[*i] == '\'')
-        return script_err("string: illegal use of %c inside unquoted string",src[*i]);
+    } else if (src[i] == '"' || src[i] == '\'') {
+      char tf = src[i++];
+      for (; i < size && src[i] != tf; i++) {
+        if (i+1 < size && src[i] == '\\') {
+          if (src[i+1] == '\\') {
+            *(char*)flexarr_inc(res) = src[i++];
+          } if (src[i+1] == tf)
+            i++;
+        }
+        *(char*)flexarr_inc(res) = src[i];
+      }
+      if (src[i] != tf)
+        goto_script_seterr(END,"string: could not find the end of %c quote",tf);
+      continue;
     }
-    *len = *i-*start;
+    *(char*)flexarr_inc(res) = src[i];
   }
-  return NULL;
+  END: ;
+  *pos = i;
+  if (err) {
+    *resultl = 0;
+    flexarr_free(res);
+  } else
+    flexarr_conv(res,(void**)result,resultl);
+  return err;
 }
 
 void

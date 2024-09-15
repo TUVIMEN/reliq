@@ -59,7 +59,7 @@ char *delstr(char *src, const size_t pos, size_t *size, const size_t count);
 char *delchar(char *src, const size_t pos, size_t *size);
 unsigned int get_dec(const char *src, size_t size, size_t *traversed);
 unsigned int number_handle(const char *src, size_t *pos, const size_t size);
-reliq_error *get_quoted(char *src, size_t *i, size_t *size, const char delim, size_t *start, size_t *len);
+reliq_error *get_quoted(const char *src, size_t *pos, const size_t size, const char delim, char **result, size_t *resultl);
 void splchars_conv(char *src, size_t *size);
 reliq_error *range_comp(const char *src, size_t *pos, const size_t size, reliq_range *range);
 unsigned char range_match(const uint matched, const reliq_range *range, const size_t last);

@@ -217,12 +217,12 @@ reliq reliq_from_compressed(const reliq_compressed *compressed, const size_t com
 reliq reliq_from_compressed_independent(const reliq_compressed *compressed, const size_t compressedl);
 
 //node pattern
-reliq_error *reliq_ncomp(const char *script, size_t size, reliq_npattern *nodep);
+reliq_error *reliq_ncomp(const char *script, const size_t size, reliq_npattern *nodep);
 int reliq_nexec(const reliq_hnode *hnode, const reliq_hnode *parent, const reliq_npattern *nodep);
 void reliq_nfree(reliq_npattern *nodep);
 
 //expression
-reliq_error *reliq_ecomp(const char *script, size_t size, reliq_exprs *exprs);
+reliq_error *reliq_ecomp(const char *script, const size_t size, reliq_exprs *exprs);
 
 reliq_error *reliq_fexec_file(char *data, const size_t size, FILE *output, const reliq_exprs *exprs, int (*freedata)(void *addr, size_t len));
 reliq_error *reliq_fexec_str(char *data, const size_t size, char **str, size_t *strl, const reliq_exprs *exprs, int (*freedata)(void *addr, size_t len));

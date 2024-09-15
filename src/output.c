@@ -351,9 +351,11 @@ outfields_value_print(FILE *out, const reliq_output_field *field, const char *va
 static void
 outfields_print_pre(struct outfield **fields, size_t *pos, const size_t size, const ushort lvl, uchar isarray, FILE *out)
 {
+  size_t i = *pos;
+
   fputc(isarray ? '[' : '{',out);
-  for (; *pos < size; (*pos)++) {
-    struct outfield *field = fields[*pos];
+  for (; i < size; i++) {
+    struct outfield *field = fields[i];
     if (field->lvl < lvl)
         break;
 
@@ -375,15 +377,17 @@ outfields_print_pre(struct outfield **fields, size_t *pos, const size_t size, co
       field->s = 0;
     }
     if (field->code == 2 || field->code == 3) {
-      (*pos)++;
-      outfields_print_pre(fields,pos,size,lvl+1,(field->code == 3) ? 1 : 0,out);
-      (*pos)--;
+      i++;
+      outfields_print_pre(fields,&i,size,lvl+1,(field->code == 3) ? 1 : 0,out);
+      i--;
     }
 
-    if (*pos+1 < size && fields[*pos+1]->lvl >= lvl)
+    if (i+1 < size && fields[i+1]->lvl >= lvl)
       fputc(',',out);
   }
   fputc(isarray ? ']' : '}',out);
+
+  *pos = i;
 }
 
 static void

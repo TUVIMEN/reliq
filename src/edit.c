@@ -57,7 +57,7 @@ const struct reliq_format_function format_functions[] = {
 };
 
 reliq_error *
-format_exec(char *input, size_t inputl, FILE *output, const reliq_hnode *hnode, const reliq_hnode *parent, const reliq_format_func *format, const size_t formatl, const reliq *rq)
+format_exec(const char *input, const size_t inputl, FILE *output, const reliq_hnode *hnode, const reliq_hnode *parent, const reliq_format_func *format, const size_t formatl, const reliq *rq)
 {
   if (hnode && (!formatl || (formatl == 1 && (format[0].flags&FORMAT_FUNC) == 0 && (!format[0].arg[0] || !((reliq_cstr*)format[0].arg[0])->b)))) {
     reliq_print(output,hnode);
@@ -78,18 +78,19 @@ format_exec(char *input, size_t inputl, FILE *output, const reliq_hnode *hnode, 
     if (hnode && i == 0 && (format[i].flags&FORMAT_FUNC) == 0) {
       reliq_printf(out,((reliq_cstr*)format[i].arg[0])->b,((reliq_cstr*)format[i].arg[0])->s,hnode,parent,rq);
     } else {
-      if (i == 0) {
-        if (hnode) {
-          FILE *t = open_memstream(&ptr[0],&fsize[0]);
-          reliq_print(t,hnode);
-          fclose(t);
-        } else {
-          ptr[0] = input;
-          fsize[0] = inputl;
-        }
+      if (i == 0 && hnode) {
+        FILE *t = open_memstream(&ptr[0],&fsize[0]);
+        reliq_print(t,hnode);
+        fclose(t);
       }
       if (format[i].flags&FORMAT_FUNC) {
-        reliq_error *err = format_functions[(format[i].flags&FORMAT_FUNC)-1].func(ptr[0],fsize[0],out,(const void**)format[i].arg,format[i].flags);
+        char const *src = ptr[0];
+        size_t size = fsize[0];
+        if (i == 0 && !hnode) {
+          src = input;
+          size = inputl;
+        }
+        reliq_error *err = format_functions[(format[i].flags&FORMAT_FUNC)-1].func(src,size,out,(const void**)format[i].arg,format[i].flags);
         if (err)
           return err;
       }
@@ -107,81 +108,85 @@ format_exec(char *input, size_t inputl, FILE *output, const reliq_hnode *hnode, 
 }
 
 static reliq_error *
-format_get_func_args(reliq_format_func *f, char *src, size_t *pos, size_t *size, size_t *argcount)
+format_get_func_args(reliq_format_func *f, const char *src, size_t *pos, const size_t size, size_t *argcount)
 {
-  reliq_error *err;
-  size_t i = 0;
-  for (; *pos < *size; i++) {
-    if (i >= 4)
-      return script_err("too many arguments passed to a function");
+  reliq_error *err = NULL;
+  size_t arg=0,i=*pos;
+  for (; i < size; arg++) {
+    if (arg >= 4)
+      goto_script_seterr(END,"too many arguments passed to a function");
 
-    if (src[*pos] == '"' || src[*pos] == '\'') {
-      size_t start,len;
-      if ((err = get_quoted(src,pos,size,' ',&start,&len)))
-        return err;
+    if (src[i] == '"' || src[i] == '\'') {
+      char *result;
+      size_t resultl;
+      if ((err = get_quoted(src,&i,size,' ',&result,&resultl)))
+        goto END;
 
-      if (len) {
-        reliq_str *str = f->arg[i] = malloc(sizeof(reliq_str));
-        str->b = memdup(src+start,len);
-        str->s = len;
-        f->flags |= (FORMAT_ARG0_ISSTR<<i);
+      if (resultl) {
+        reliq_str *str = f->arg[arg] = malloc(sizeof(reliq_str));
+        str->b = result;
+        str->s = resultl;
+        f->flags |= (FORMAT_ARG0_ISSTR<<arg);
       }
-    } else if (src[*pos] == '[') {
-      reliq_str *str = f->arg[i] = malloc(sizeof(reliq_range));
-      if ((err = range_comp(src,pos,*size,(reliq_range*)str)))
-        return err;
+    } else if (src[i] == '[') {
+      reliq_range range;
+      if ((err = range_comp(src,&i,size,&range)))
+        goto END;
+      f->arg[arg] = memdup(&range,sizeof(range));
     }
 
-    if (*pos >= *size)
-        break;
+    if (i >= size)
+      break;
 
-    while_is(isspace,src,*pos,*size);
-    if (*pos >= *size)
-        break;
+    while_is(isspace,src,i,size);
+    if (i >= size)
+      break;
 
-    if (src[*pos] != '[' && src[*pos] != '"' && src[*pos] != '\'') {
-      if (isalnum(src[*pos]) || src[*pos] == '/' || src[*pos] == '|')
-          break;
-      *argcount = i+1;
-      return script_err("bad argument at %lu(0x%02x)",*pos,src[*pos]);
+    if (src[i] != '[' && src[i] != '"' && src[i] != '\'') {
+      if (isalnum(src[i]) || src[i] == '/' || src[i] == '|')
+        break;
+      *argcount = arg+1;
+      goto_script_seterr(END,"bad argument at %lu(0x%02x)",i,src[i]);
     }
   }
-  *argcount = i+1;
-  return NULL;
+  *argcount = arg+1;
+  END: ;
+  *pos = i;
+  return err;
 }
 
 reliq_error *
-format_get_funcs(flexarr *format, char *src, size_t *pos, size_t *size)
+format_get_funcs(flexarr *format, const char *src, size_t *pos, const size_t size)
 {
   reliq_format_func *f;
-  char *fname;
-  size_t fnamel = 0;
+  char const *fname;
+  size_t fnamel=0,i=*pos;
+  reliq_error *err = NULL;
 
-  while (*pos < *size) {
-    while_is(isspace,src,*pos,*size);
-    if (*pos >= *size)
+  while (i < size) {
+    while_is(isspace,src,i,size);
+    if (i >= size)
       break;
 
-    if (src[*pos] == '|' || src[*pos] == '/')
-        return NULL;
+    if (src[i] == '|' || src[i] == '/')
+      goto END;
 
-    if (isalnum(src[*pos])) {
-      fname = src+*pos;
-      while_is(isalnum,src,*pos,*size);
-      fnamel = *pos-(fname-src);
-      if (*pos < *size && !isspace(src[*pos]))
-        return script_err("format function has to be separated by space from its arguments");
+    if (isalnum(src[i])) {
+      fname = src+i;
+      while_is(isalnum,src,i,size);
+      fnamel = i-(fname-src);
+      if (i < size && !isspace(src[i]))
+        goto_script_seterr(END,"format function has to be separated by space from its arguments");
     } else
       fname = NULL;
 
     f = (reliq_format_func*)flexarr_inc(format);
     memset(f,0,sizeof(reliq_format_func));
 
-    while_is(isspace,src,*pos,*size);
+    while_is(isspace,src,i,size);
     size_t argcount = 0;
-    reliq_error *err = format_get_func_args(f,src,pos,size,&argcount);
-    if (err)
-      return err;
+    if ((err = format_get_func_args(f,src,&i,size,&argcount)))
+      goto END;
 
     if (fname) {
       char found = 0;
@@ -193,12 +198,14 @@ format_get_funcs(flexarr *format, char *src, size_t *pos, size_t *size)
         }
       }
       if (!found)
-        return script_err("format function does not exist: \"%.*s\"",fnamel,fname);
+        goto_script_seterr(END,"format function does not exist: \"%.*s\"",fnamel,fname);
       f->flags |= i+1;
     } else if (argcount > 1)
-      return script_err("printf defined two times in format");
+      goto_script_seterr(END,"printf defined two times in format");
   }
-  return NULL;
+  END: ;
+  *pos = i;
+  return err;
 }
 
 void
@@ -1137,7 +1144,7 @@ sed_script_comp(const char *src, size_t size, int eflags, flexarr **script)
 }
 
 static reliq_error *
-sed_pre_edit(char *src, size_t size, FILE *output, char *buffers[3], flexarr *script, const char linedelim, uchar silent)
+sed_pre_edit(const char *src, const size_t size, FILE *output, char *buffers[3], flexarr *script, const char linedelim, uchar silent)
 {
   char *patternsp = buffers[0],
     *buffersp = buffers[1],
@@ -1437,7 +1444,7 @@ sed_pre_edit(char *src, size_t size, FILE *output, char *buffers[3], flexarr *sc
 }
 
 reliq_error *
-sed_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
+sed_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const unsigned char flag)
 {
   reliq_error *err;
   const char argv0[] = "sed";
@@ -1538,7 +1545,7 @@ echo_edit_print(reliq_str *str, FILE *output)
 }
 
 reliq_error *
-echo_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
+echo_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const unsigned char flag)
 {
   reliq_str *str[2] = {NULL};
   const char argv0[] = "echo";
@@ -1571,7 +1578,7 @@ echo_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsign
 }
 
 reliq_error *
-uniq_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
+uniq_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const unsigned char flag)
 {
   char delim = '\n';
   const char argv0[] = "uniq";
@@ -1614,7 +1621,7 @@ sort_cmp(const reliq_cstr *s1, const reliq_cstr *s2)
 }
 
 reliq_error *
-sort_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
+sort_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const unsigned char flag)
 {
   char delim = '\n';
   uchar reverse=0,unique=0; //,natural=0,icase=0;
@@ -1685,7 +1692,7 @@ sort_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsign
 }
 
 reliq_error *
-line_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
+line_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const unsigned char flag)
 {
   char delim = '\n';
   reliq_range *range = NULL;
@@ -1726,7 +1733,7 @@ line_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsign
 }
 
 reliq_error *
-cut_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
+cut_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const unsigned char flag)
 {
   uchar delim[256]={0};
   uchar complement=0,onlydelimited=0,delimited=0;
@@ -1857,7 +1864,7 @@ cut_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigne
 }
 
 reliq_error *
-tr_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
+tr_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const unsigned char flag)
 {
   uchar array[256] = {0};
   reliq_str *string[2] = {NULL};
@@ -1945,7 +1952,7 @@ tr_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned
 }
 
 reliq_error *
-trim_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
+trim_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const unsigned char flag)
 {
   char delim = '\0';
   const char argv0[] = "trim";
@@ -1987,7 +1994,7 @@ trim_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsign
 }
 
 reliq_error *
-rev_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
+rev_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const unsigned char flag)
 {
   char delim = '\n';
   const char argv0[] = "rev";
@@ -2009,8 +2016,18 @@ rev_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigne
 
     size_t linel = lineend-line;
     if (linel) {
-      strrev(src+line,linel);
-      fwrite(src+line,1,linel,output);
+      const size_t bufmaxsize = 2048;
+      char buf[bufmaxsize];
+      do {
+        size_t j = 0;
+        for (; j < bufmaxsize; linel--, j++) {
+          buf[j] = src[line+linel-1];
+          if (linel < 1)
+            break;
+        }
+        if (j)
+          fwrite(buf,1,j,output);
+      } while (linel);
     }
 
     line = lineend;
@@ -2020,7 +2037,7 @@ rev_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigne
 }
 
 reliq_error *
-tac_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
+tac_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const unsigned char flag)
 {
   char delim = '\n';
   const char argv0[] = "tac";
@@ -2046,7 +2063,7 @@ tac_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigne
 }
 
 reliq_error *
-wc_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
+wc_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const unsigned char flag)
 {
   char delim = '\n';
   const char argv0[] = "wc";

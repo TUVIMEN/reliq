@@ -415,39 +415,42 @@ reliq_regfree(reliq_pattern *pattern)
 }
 
 static reliq_error *
-reliq_regcomp(reliq_pattern *pattern, char *src, size_t *pos, size_t *size, const char delim, const char *flags, uchar (*checkstrclass)(char))
+reliq_regcomp(reliq_pattern *pattern, const char *src, size_t *pos, const size_t size, const char delim, const char *flags, uchar (*checkstrclass)(char))
 {
-  reliq_error *err;
+  reliq_error *err=NULL;
+  size_t i = *pos;
 
   memset(pattern,0,sizeof(reliq_pattern));
-  reliq_regcomp_get_flags(pattern,src,pos,*size,flags);
+  reliq_regcomp_get_flags(pattern,src,&i,size,flags);
 
-  if (*pos && *pos < *size && src[*pos-1] == '>' && src[*pos] == '[') {
-    if ((err = range_comp(src,pos,*size,&pattern->range)))
-      return err;
-    if (*pos >= *size || src[*pos] == delim || isspace(src[*pos])) {
+  if (i && i < size && src[i-1] == '>' && src[i] == '[') {
+    if ((err = range_comp(src,&i,size,&pattern->range)))
+      goto END;
+    if (i >= size || src[i] == delim || isspace(src[i])) {
       pattern->flags |= RELIQ_PATTERN_ALL;
-      return NULL;
+      goto END;
     }
   }
 
-  if ((*pos+1 == *size || (*pos+1 < *size &&
-    (isspace(src[*pos+1]) || src[*pos+1] == delim)))
-    && src[*pos] == '*') {
-    (*pos)++;
+  if ((i+1 == size || (i+1 < size &&
+    (isspace(src[i+1]) || src[i+1] == delim)))
+    && src[i] == '*') {
+    i++;
     pattern->flags |= RELIQ_PATTERN_ALL;
-    return NULL;
+    goto END;
   }
 
-  size_t start,len;
-  if ((err = get_quoted(src,pos,size,delim,&start,&len)))
-    goto ERR;
+  char *str;
+  size_t strl;
+  if ((err = get_quoted(src,&i,size,delim,&str,&strl)))
+    goto END;
 
-  err = reliq_regcomp_add_pattern(pattern,src+start,len,checkstrclass);
-  if (err) {
-    ERR: ;
+  err = reliq_regcomp_add_pattern(pattern,str,strl,checkstrclass);
+  free(str);
+  END: ;
+  *pos = i;
+  if (err)
     reliq_regfree(pattern);
-  }
   return err;
 }
 
@@ -947,7 +950,7 @@ reliq_print(FILE *outfile, const reliq_hnode *hnode)
 }
 
 static reliq_error *
-format_comp(char *src, size_t *pos, size_t *size,
+format_comp(const char *src, size_t *pos, const size_t size,
 #ifdef RELIQ_EDITING
   reliq_format_func **format,
 #else
@@ -955,31 +958,26 @@ format_comp(char *src, size_t *pos, size_t *size,
 #endif
   size_t *formatl)
 {
-  reliq_error *err;
-  if (*pos >= *size || !src)
-    return NULL;
+  reliq_error *err = NULL;
+  size_t i = *pos;
+  if (i >= size || !src)
+    goto END;
   #ifndef RELIQ_EDITING
-  while_is(isspace,src,*pos,*size);
+  while_is(isspace,src,i,size);
 
-  if (src[*pos] != '"' && src[*pos] != '\'')
-    return NULL;
+  if (src[i] != '"' && src[i] != '\'')
+    goto END;
 
-  size_t start,len;
-  if ((err = get_quoted(src,pos,size,' ',&start,&len)))
-    return err;
-
-  if (len) {
-    *format = memdup(src+start,len);
-    *formatl = len;
-  }
+  if ((err = get_quoted(src,&i,size,' ',format,formatl)))
+    goto END;
   #else
   flexarr *f = flexarr_init(sizeof(reliq_format_func),FORMAT_INC);
-  err = format_get_funcs(f,src,pos,size);
+  err = format_get_funcs(f,src,&i,size);
   flexarr_conv(f,(void**)format,formatl);
-  if (err)
-    return err;
   #endif
-  return NULL;
+  END: ;
+  *pos = i;
+  return err;
 }
 
 static reliq_error *
@@ -1019,20 +1017,28 @@ match_hook_unexpected_argument(const ushort flags)
     return NULL;
 }
 
+static uchar
+hook_handle_isname(char c)
+{
+  if (c == '_' || c == '-')
+    return 1;
+  return isalpha(c);
+}
+
 static reliq_error *
-match_hook_handle(char *src, size_t *pos, size_t *size, reliq_hook *out_hook, const uchar invert, uchar *nodeflags)
+match_hook_handle(const char *src, size_t *pos, const size_t size, reliq_hook *out_hook, const uchar invert, uchar *nodeflags)
 {
   reliq_error *err = NULL;
-  size_t p=*pos,s=*size;
+  size_t p=*pos;
   const size_t prevpos = p;
   const char *func_name = src+p;
   out_hook->flags = 0;
 
-  while_is(isalpha,src,p,s);
+  while_is(hook_handle_isname,src,p,size);
 
   size_t func_len = p-prevpos;
 
-  if (p >= s || !func_len || src[p] != '@') {
+  if (p >= size || !func_len || src[p] != '@') {
     p = prevpos;
     goto ERR;
   }
@@ -1056,7 +1062,7 @@ match_hook_handle(char *src, size_t *pos, size_t *size, reliq_hook *out_hook, co
       goto_script_seterr(ERR,match_hook_unexpected_argument(hook.flags),(int)func_len,func_name)
 
   char firstchar = 0;
-  if (p >= s) {
+  if (p >= size) {
     if (!(hook.flags&H_NOARG))
       goto_script_seterr(ERR,"hook \"%.*s\" expected argument",func_len,func_name);
   } else
@@ -1087,16 +1093,18 @@ match_hook_handle(char *src, size_t *pos, size_t *size, reliq_hook *out_hook, co
     }
   } else if (src[p] == '[') {
     HOOK_EXPECT(H_RANGE);
-    if ((err = range_comp(src,&p,s,&hook.match.range)))
+    if ((err = range_comp(src,&p,size,&hook.match.range)))
       goto ERR;
   } else if (hook.flags&H_EXPRS) {
      if (src[p] != '"' && src[p] != '\'')
        goto_script_seterr(ERR,match_hook_unexpected_argument(hook.flags),(int)func_len,func_name);
-     char tf = src[p];
-     size_t start,len;
-     if ((err = get_quoted(src,&p,&s,tf,&start,&len)))
+     char *str;
+     size_t strl;
+     if ((err = get_quoted(src,&p,size,' ',&str,&strl)) || !strl)
        goto ERR;
-     if ((err = reliq_ecomp(src+start,len,&hook.match.exprs)))
+     err = reliq_ecomp(str,strl,&hook.match.exprs);
+     free(str);
+     if (err)
        goto ERR;
      if ((err = exprs_check_chain(&hook.match.exprs,0))) {
        reliq_efree(&hook.match.exprs);
@@ -1104,7 +1112,7 @@ match_hook_handle(char *src, size_t *pos, size_t *size, reliq_hook *out_hook, co
      }
   } else {
     HOOK_EXPECT(H_PATTERN);
-    if ((err = reliq_regcomp(&hook.match.pattern,src,&p,&s,' ',"uWcas",NULL)))
+    if ((err = reliq_regcomp(&hook.match.pattern,src,&p,size,' ',"uWcas",NULL)))
       goto ERR;
     if (!hook.match.pattern.range.s && hook.match.pattern.flags&RELIQ_PATTERN_ALL) { //ignore if it matches everything
       reliq_regfree(&hook.match.pattern);
@@ -1117,7 +1125,6 @@ match_hook_handle(char *src, size_t *pos, size_t *size, reliq_hook *out_hook, co
     hook.flags |= H_INVERT;
   memcpy(out_hook,&hook,sizeof(hook));
   ERR:
-  *size = s;
   *pos = p;
   return err;
 }
@@ -1140,7 +1147,7 @@ free_node_matches_flexarr(flexarr *groups_matches)
 }
 
 static reliq_error *
-get_node_matches(char *src, size_t *pos, size_t *size, const ushort lvl, reliq_node_matches *matches, uchar *hastag, reliq_range *position, uchar *nodeflags)
+get_node_matches(const char *src, size_t *pos, const size_t size, const ushort lvl, reliq_node_matches *matches, uchar *hastag, reliq_range *position, uchar *nodeflags)
 {
   if (lvl >= RELIQ_MAX_GROUP_LEVEL)
     return script_err("node: %lu: reached %lu level of recursion",*pos,lvl);
@@ -1156,11 +1163,10 @@ get_node_matches(char *src, size_t *pos, size_t *size, const ushort lvl, reliq_n
     fullmode = 1;
 
   size_t i = *pos;
-  size_t s = *size;
   char shortcut;
-  while (i < s) {
-    while_is(isspace,src,i,s);
-    if (i >= s)
+  while (i < size) {
+    while_is(isspace,src,i,size);
+    if (i >= size)
       break;
 
     shortcut = 0;
@@ -1173,7 +1179,7 @@ get_node_matches(char *src, size_t *pos, size_t *size, const ushort lvl, reliq_n
     }
 
     if (src[i] == '(') {
-      if (++i >= s) {
+      if (++i >= size) {
         END_OF_RANGE: ;
         err = script_err("node: %lu: unprecedented end of group",i-1);
         break;
@@ -1186,7 +1192,7 @@ get_node_matches(char *src, size_t *pos, size_t *size, const ushort lvl, reliq_n
         uchar tag = *hastag;
         reliq_node_matches *match = flexarr_inc(groups_matches);
 
-        if ((err = get_node_matches(src,&i,&s,lvl+1,match,&tag,NULL, NULL))) {
+        if ((err = get_node_matches(src,&i,size,lvl+1,match,&tag,NULL, NULL))) {
           flexarr_dec(groups_matches);
           goto END;
         }
@@ -1196,15 +1202,15 @@ get_node_matches(char *src, size_t *pos, size_t *size, const ushort lvl, reliq_n
         }
         wastag = tag;
 
-        if (i >= s || src[i] != '(') {
+        if (i >= size || src[i] != '(') {
           size_t lastindex = i-1;
-          if (i >= s)
-            lastindex = s-1;
-          if (i >= s+1 || src[lastindex] != ')') {
+          if (i >= size)
+            lastindex = size-1;
+          if (i >= size+1 || src[lastindex] != ')') {
             free_node_matches_flexarr(groups_matches);
             goto END_OF_RANGE;
           }
-          if (i >= s)
+          if (i >= size)
             i++;
           break;
         }
@@ -1245,12 +1251,12 @@ get_node_matches(char *src, size_t *pos, size_t *size, const ushort lvl, reliq_n
     } else if (src[i] == '-') {
       attrib.flags |= A_INVERT;
       i++;
-    } else if (i+1 < s && src[i] == '\\' && (src[i+1] == '+' || src[i+1] == '-'))
+    } else if (i+1 < size && src[i] == '\\' && (src[i+1] == '+' || src[i+1] == '-'))
       i++;
 
     if (isalpha(src[i])) {
       size_t prev = i;
-      if ((err = match_hook_handle(src,&i,&s,&hook,attrib.flags&A_INVERT,nodeflags)))
+      if ((err = match_hook_handle(src,&i,size,&hook,attrib.flags&A_INVERT,nodeflags)))
         break;
       if (i != prev) {
         if (!fullmode && hook.flags&H_FLAG) {
@@ -1268,23 +1274,23 @@ get_node_matches(char *src, size_t *pos, size_t *size, const ushort lvl, reliq_n
       }
     }
 
-    if (i >= s)
+    if (i >= size)
       break;
 
     if (src[i] == '.' || src[i] == '#') {
       shortcut = src[i++];
-    } else if (i+1 < s && src[i] == '\\' && (src[i+1] == '.' || src[i+1] == '#'))
+    } else if (i+1 < size && src[i] == '\\' && (src[i+1] == '.' || src[i+1] == '#'))
       i++;
 
-    while_is(isspace,src,i,s);
-    if (i >= s)
+    while_is(isspace,src,i,size);
+    if (i >= size)
       break;
 
     GET_TAG: ;
     if (src[i] == '[') {
-      if ((err = range_comp(src,&i,s,&attrib.position)))
+      if ((err = range_comp(src,&i,size,&attrib.position)))
         break;
-      if (i >= s || isspace(src[i])) {
+      if (i >= size || isspace(src[i])) {
         if (!fullmode) {
           err = script_err("node: %lu: groups cannot have position",i);
           break;
@@ -1300,45 +1306,45 @@ get_node_matches(char *src, size_t *pos, size_t *size, const ushort lvl, reliq_n
         continue;
       } else if (!*hastag)
           goto GET_TAG_NAME;
-    } else if (*hastag && i+1 < s && src[i] == '\\' && src[i+1] == '[')
+    } else if (*hastag && i+1 < size && src[i] == '\\' && src[i+1] == '[')
       i++;
 
     if (!*hastag) {
       GET_TAG_NAME: ;
       reliq_pattern tag;
-      if ((err = reliq_regcomp(&tag,src,&i,&s,' ',NULL,strclass_attrib)))
+      if ((err = reliq_regcomp(&tag,src,&i,size,' ',NULL,strclass_attrib)))
         break;
       *hastag = 1;
       reliq_node_matches_node_add(result,MATCHES_TYPE_TAG,&tag,sizeof(reliq_pattern));
       continue;
     }
 
-    if (i >= s)
+    if (i >= size)
       break;
 
     if (shortcut == '.' || shortcut == '#') {
       char *t_name = (shortcut == '.') ? "class" : "id";
       size_t t_pos=0,t_size=(shortcut == '.' ? 5 : 2);
-      if ((err = reliq_regcomp(&attrib.r[0],t_name,&t_pos,&t_size,' ',"uWsfi",strclass_attrib)))
+      if ((err = reliq_regcomp(&attrib.r[0],t_name,&t_pos,t_size,' ',"uWsfi",strclass_attrib)))
         break;
 
-      if ((err = reliq_regcomp(&attrib.r[1],src,&i,&s,' ',"uwsf",NULL)))
+      if ((err = reliq_regcomp(&attrib.r[1],src,&i,size,' ',"uwsf",NULL)))
         break;
       attrib.flags |= A_VAL_MATTERS;
     } else {
-      if ((err = reliq_regcomp(&attrib.r[0],src,&i,&s,'=',NULL,strclass_attrib))) //!
+      if ((err = reliq_regcomp(&attrib.r[0],src,&i,size,'=',NULL,strclass_attrib))) //!
         break;
 
-      while_is(isspace,src,i,s);
-      if (i >= s)
+      while_is(isspace,src,i,size);
+      if (i >= size)
         goto ADD_SKIP;
       if (src[i] == '=') {
         i++;
-        while_is(isspace,src,i,s);
-        if (i >= s)
+        while_is(isspace,src,i,size);
+        if (i >= size)
           break;
 
-        if ((err = reliq_regcomp(&attrib.r[1],src,&i,&s,' ',NULL,NULL)))
+        if ((err = reliq_regcomp(&attrib.r[1],src,&i,size,' ',NULL,NULL)))
           break;
         attrib.flags |= A_VAL_MATTERS;
       } else {
@@ -1347,7 +1353,7 @@ get_node_matches(char *src, size_t *pos, size_t *size, const ushort lvl, reliq_n
       }
     }
 
-    if (i < s && src[i] != '+' && src[i] != '-')
+    if (i < size && src[i] != '+' && src[i] != '-')
       i++;
     ADD_SKIP: ;
 
@@ -1360,20 +1366,16 @@ get_node_matches(char *src, size_t *pos, size_t *size, const ushort lvl, reliq_n
 
   flexarr_conv(result,(void**)&matches->list,&matches->size);
   *pos = i;
-  *size = s;
   return err;
 }
 
 reliq_error *
-reliq_ncomp(const char *script, size_t size, reliq_npattern *nodep)
+reliq_ncomp(const char *script, const size_t size, reliq_npattern *nodep)
 {
   if (!nodep)
     return NULL;
   reliq_error *err = NULL;
   size_t pos=0;
-  char *nscript = NULL;
-  if (size)
-    nscript = memdup(script,size);
 
   memset(nodep,0,sizeof(reliq_npattern));
   nodep->flags |= N_FULL;
@@ -1386,7 +1388,7 @@ reliq_ncomp(const char *script, size_t size, reliq_npattern *nodep)
 
   uchar hastag=0;
 
-  err = get_node_matches(nscript,&pos,&size,0,&nodep->matches,&hastag,&nodep->position,&nodep->flags);
+  err = get_node_matches(script,&pos,size,0,&nodep->matches,&hastag,&nodep->position,&nodep->flags);
   if (!err && nodep->matches.size == 0)
     nodep->flags |= N_EMPTY;
 
@@ -1396,7 +1398,6 @@ reliq_ncomp(const char *script, size_t size, reliq_npattern *nodep)
   } else
     nodep->position_max = predict_range_max(&nodep->position);
 
-  free(nscript);
   return err;
 }
 
@@ -1477,15 +1478,102 @@ reliq_efree(reliq_exprs *exprs)
 }
 
 static reliq_error *
-reliq_output_type_get(const char *src, size_t *pos, const size_t s, uchar arraypossible, char const**type, size_t *typel)
+reliq_output_type_get(const char *src, size_t *pos, const size_t s, uchar arraypossible, char const **type, size_t *typel)
 {
-  *type = src+*pos;
-  while (*pos < s && isalnum(src[*pos]))
-    (*pos)++;
-  *typel = *pos-(*type-src);
-  if (*pos < s && !isspace(src[*pos]) && !(arraypossible && (**type == 'a' && (src[*pos] == '(' || src[*pos] == '.'))))
-    return script_err("output field: unexpected character in type 0x%02x",src[*pos]);
-  return NULL;
+  size_t i = *pos;
+  reliq_error *err = NULL;
+
+  *type = src+i;
+  while (i < s && isalnum(src[i]))
+    (i)++;
+  *typel = i-(*type-src);
+  if (i < s && !isspace(src[i]) && !(arraypossible && (**type == 'a' && (src[i] == '(' || src[i] == '.'))))
+    err = script_err("output field: unexpected character in type 0x%02x",src[i]);
+
+  *pos = i;
+  return err;
+}
+
+static reliq_error *
+reliq_output_type_array_get_delim(const char *src, size_t *pos, const size_t s, char *delim)
+{
+  reliq_error *err = NULL;
+  size_t i = *pos;
+
+  if (i >= s || src[i] != '(')
+    goto END;
+
+  i++;
+  char const *b_start = src+i;
+  char *b_end = memchr(b_start,')',s-i);
+  if (!b_end)
+    goto_script_seterr(END,"output field: array: could not find the end of '(' bracket");
+
+  while (b_start != b_end && isspace(*b_start))
+    b_start++;
+  if (b_start == b_end || *b_start != '"')
+    goto_script_seterr(END,"output field: array: expected argument in '(' bracket");
+
+  b_start++;
+  char *q_end = memchr(b_start,'"',s-i);
+  if (!q_end)
+    goto_script_seterr(END,"output field: array: could not find the end of '\"' quote");
+
+  *delim = *b_start;
+  if (*b_start == '\\' && b_start+1 != b_end) {
+    b_start++;
+    size_t traversed;
+    *delim = splchar2(b_start,b_end-b_start,&traversed);
+    if (*delim != '\\' && *delim == *b_start) {
+      *delim = '\\';
+      b_start--;
+    } else
+      b_start += traversed-1;
+  }
+  b_start++;
+  if (b_start != q_end)
+    goto_script_seterr(END,"output field: array: expected a single character argument");
+
+  q_end++;
+  while (q_end != b_end && isspace(*q_end))
+    q_end++;
+  if (q_end != b_end)
+    goto_script_seterr(END,"output field: array: expected only one argument");
+
+  i = b_end-src+1;
+
+  END: ;
+  *pos = i;
+  return err;
+}
+
+static reliq_error *
+reliq_output_type_array_get(const char *src, size_t *pos, const size_t s, reliq_output_field *outfield)
+{
+  reliq_error *err = NULL;
+  size_t i = *pos;
+
+  if (i >= s || (err = reliq_output_type_array_get_delim(src,&i,s,&outfield->arr_delim)))
+    goto END;
+
+  if (i < s && !isspace(src[i]) && src[i] != '.')
+    goto_script_seterr(END,"output field: array: unexpected character 0x%02x",src[i]);
+
+  if (i < s && src[i] == '.') {
+    i++;
+    char const *arr_type;
+    size_t arr_typel = 0;
+    if ((err = reliq_output_type_get(src,&i,s,0,&arr_type,&arr_typel)))
+      goto END;
+    if (arr_typel) {
+      if (*arr_type == 'a')
+        goto_script_seterr(END,"output field: array: array type in array is not allowed");
+      outfield->arr_type = *arr_type;
+    }
+  }
+  END:
+  *pos = i;
+  return err;
 }
 
 static reliq_error *
@@ -1496,96 +1584,41 @@ reliq_output_field_get(const char *src, size_t *pos, const size_t s, reliq_outpu
 
   reliq_error *err = NULL;
   const char *name,*type;
-  size_t namel=0,typel=0;
+  size_t i=*pos,namel=0,typel=0;
 
   outfield->arr_type = 's';
   outfield->arr_delim = '\n';
 
-  (*pos)++;
-  name = src+*pos;
-  while (*pos < s && (isalnum(src[*pos]) || src[*pos] == '-' || src[*pos] == '_'))
-    (*pos)++;
-  namel = *pos-(name-src);
-  if (*pos < s && !isspace(src[*pos])) {
-    if (src[*pos] != '.')
-      return script_err("output field: unexpected character in name 0x%02x",src[*pos]);
-    (*pos)++;
+  i++;
+  name = src+i;
+  while (i < s && (isalnum(src[i]) || src[i] == '-' || src[i] == '_'))
+    i++;
+  namel = i-(name-src);
+  if (i < s && !isspace(src[i])) {
+    if (src[i] != '.')
+      goto_script_seterr(ERR,"output field: unexpected character in name 0x%02x",src[i]);
+    i++;
 
-    err = reliq_output_type_get(src,pos,s,1,&type,&typel);
-    if (err)
-      return err;
+    if ((err = reliq_output_type_get(src,&i,s,1,&type,&typel)))
+      goto ERR;
 
-    if (typel && *type == 'a' && *pos < s) {
-      if (src[*pos] == '(') {
-        (*pos)++;
-        char const *b_start = src+*pos;
-        char *b_end = memchr(b_start,')',s-*pos);
-        if (!b_end)
-          return script_err("output field: array: could not find the end of '(' bracket");
-
-        while (b_start != b_end && isspace(*b_start))
-          b_start++;
-        if (b_start == b_end || *b_start != '"')
-          return script_err("output field: array: expected argument in '(' bracket");
-
-        b_start++;
-        char *q_end = memchr(b_start,'"',s-*pos);
-        if (!q_end)
-          return script_err("output field: array: could not find the end of '\"' quote");
-
-        outfield->arr_delim = *b_start;
-        if (*b_start == '\\' && b_start+1 != b_end) {
-          b_start++;
-          size_t traversed;
-          outfield->arr_delim = splchar2(b_start,b_end-b_start,&traversed);
-          if (outfield->arr_delim != '\\' && outfield->arr_delim == *b_start) {
-            outfield->arr_delim = '\\';
-            b_start--;
-          } else
-            b_start += traversed-1;
-        }
-        b_start++;
-        if (b_start != q_end)
-          return script_err("output field: array: expected a single character argument");
-
-        q_end++;
-        while (q_end != b_end && isspace(*q_end))
-          q_end++;
-        if (q_end != b_end)
-          return script_err("output field: array: expected only one argument");
-
-        *pos = b_end-src+1;
-      }
-
-      if (*pos < s && !isspace(src[*pos]) && src[*pos] != '.')
-        return script_err("output field: array: unexpected character 0x%02x",src[*pos]);
-
-      if (*pos < s && src[*pos] == '.') {
-        (*pos)++;
-        char const*arr_type;
-        size_t arr_typel = 0;
-        err = reliq_output_type_get(src,pos,s,0,&arr_type,&arr_typel);
-        if (err)
-          return err;
-        if (arr_typel) {
-          if (*arr_type == 'a')
-            return script_err("output field: array: array type in array is not allowed");
-          outfield->arr_type = *arr_type;
-        }
-      }
-    }
+    if (typel && *type == 'a')
+      if ((err = reliq_output_type_array_get(src,&i,s,outfield)))
+        goto ERR;
   }
 
   outfield->isset = 1;
 
   if (!namel)
-    return NULL;
+    goto ERR;
 
   outfield->type = typel ? *type : 's';
   outfield->name.s = namel;
   outfield->name.b = memdup(name,namel);
 
-  return NULL;
+  ERR:
+  *pos = i;
+  return err;
 }
 
 static reliq_error *
@@ -1787,7 +1820,7 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, const ushort lvl, ushor
 
     if (nodef.b) {
       size_t g=0,t=nodef.s;
-      *err = format_comp(nodef.b,&g,&t,&expr.nodef,&expr.nodefl);
+      *err = format_comp(nodef.b,&g,t,&expr.nodef,&expr.nodefl);
       s -= nodef.s-t;
       if (*err)
         goto EXIT;
@@ -1802,7 +1835,7 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, const ushort lvl, ushor
     #ifdef RELIQ_EDITING
     if (exprf.b) {
       size_t g=0,t=exprf.s;
-      *err = format_comp(exprf.b,&g,&t,&expr.exprf,&expr.exprfl);
+      *err = format_comp(exprf.b,&g,t,&expr.exprf,&expr.exprfl);
       s -= exprf.s-t;
       if (*err)
         goto EXIT;
@@ -1957,7 +1990,7 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, const ushort lvl, ushor
 }
 
 reliq_error *
-reliq_ecomp(const char *src, size_t size, reliq_exprs *exprs)
+reliq_ecomp(const char *src, const size_t size, reliq_exprs *exprs)
 {
   reliq_error *err = NULL;
   flexarr *ret = reliq_ecomp_pre(src,NULL,size,0,NULL,&err);

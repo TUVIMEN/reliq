@@ -68,134 +68,147 @@ const reliq_str8 *autoclosing_s[] = { //tags that don't need to be closed
 #endif
 
 static void
-comment_handle(const char *f, size_t *i, const size_t s)
+comment_handle(const char *f, size_t *pos, const size_t s)
 {
-  (*i)++;
-  if (f[*i] == '-' && f[*i+1] == '-') {
-    *i += 2;
-    while (s-*i > 2 && memcmp(f+*i,"-->",3) != 0)
-      (*i)++;
-    *i += 3;
+  size_t i = *pos;
+  i++;
+  if (f[i] == '-' && f[i+1] == '-') {
+    i += 2;
+    while (s-i > 2 && memcmp(f+i,"-->",3) != 0)
+      i++;
+    i += 3;
   } else {
-    while (*i < s && f[*i] != '>')
-      (*i)++;
+    while (i < s && f[i] != '>')
+      i++;
   }
+  *pos = i;
 }
 
 static void
-name_handle(const char *f, size_t *i, const size_t s, reliq_cstr *tag)
+name_handle(const char *f, size_t *pos, const size_t s, reliq_cstr *tag)
 {
-    tag->b = f+*i;
-    while (*i < s && (isalnum(f[*i]) || f[*i] == '-' || f[*i] == '_' || f[*i] == ':'))
-      (*i)++;
-    tag->s = (f+*i)-tag->b;
+  size_t i = *pos;
+  tag->b = f+i;
+  while (i < s && (isalnum(f[i]) || f[i] == '-' || f[i] == '_' || f[i] == ':'))
+    i++;
+  tag->s = (f+i)-tag->b;
+  *pos = i;
 }
 
 static void
-attrib_handle(const char *f, size_t *i, const size_t s, flexarr *attribs)
+attrib_handle(const char *f, size_t *pos, const size_t s, flexarr *attribs)
 {
+  size_t i = *pos;
   reliq_cstr_pair *ac = (reliq_cstr_pair*)flexarr_inc(attribs);
-  name_handle(f,i,s,&ac->f);
-  while_is(isspace,f,*i,s);
-  if (f[*i] != '=') {
+  name_handle(f,&i,s,&ac->f);
+  while_is(isspace,f,i,s);
+  if (f[i] != '=') {
     ac->s.b = NULL;
     ac->s.s = 0;
-    return;
+    goto END;
   }
-  (*i)++;
-  while_is(isspace,f,*i,s);
-  if (f[*i] == '>') {
+  i++;
+  while_is(isspace,f,i,s);
+  if (f[i] == '>') {
     attribs->size--;
-    (*i)++;
-    return;
+    i++;
+    goto END;
   }
-  if (f[*i] == '\'' || f[*i] == '"') {
-    char delim = f[(*i)++];
-    ac->s.b = f+*i;
-    char *ending = memchr(f+*i,delim,s-*i);
+  if (f[i] == '\'' || f[i] == '"') {
+    char delim = f[i++];
+    ac->s.b = f+i;
+    char *ending = memchr(f+i,delim,s-i);
     if (!ending) {
-      *i = s;
-      return;
+      i = s;
+      goto END;
     }
-    *i = ending-f;
-    ac->s.s = (f+*i)-ac->s.b;
-    if (f[*i] == delim)
-      (*i)++;
+    i = ending-f;
+    ac->s.s = (f+i)-ac->s.b;
+    if (f[i] == delim)
+      i++;
   } else {
-    ac->s.b = f+*i;
-    while (*i < s && !isspace(f[*i]) && f[*i] != '>')
-      (*i)++;
-     ac->s.s = (f+*i)-ac->s.b;
+    ac->s.b = f+i;
+    while (i < s && !isspace(f[i]) && f[i] != '>')
+      i++;
+     ac->s.s = (f+i)-ac->s.b;
   }
+
+  END: ;
+  *pos = i;
 }
 
 #ifdef RELIQ_PHPTAGS
 static void
-phptag_handle(const char *f, size_t *i, const size_t s, reliq_hnode *hnode)
+phptag_handle(const char *f, size_t *pos, const size_t s, reliq_hnode *hnode)
 {
-  (*i)++;
-  while_is(isspace,f,*i,s);
-  name_handle(f,i,s,&hnode->tag);
-  hnode->insides.b = f+*i;
+  size_t i = *pos;
+  i++;
+  while_is(isspace,f,i,s);
+  name_handle(f,&i,s,&hnode->tag);
+  hnode->insides.b = f+i;
   hnode->insides.s = 0;
 
   char *ending;
-  for (; *i < s; (*i)++) {
-    if (f[*i] == '\\') {
-      *i += 2;
+  for (; i < s; i++) {
+    if (f[i] == '\\') {
+      i += 2;
       continue;
     }
-    if (f[*i] == '?' && f[*i+1] == '>') {
-      hnode->insides.s = (*i)-1-(hnode->insides.b-f);
-      (*i)++;
+    if (f[i] == '?' && f[i+1] == '>') {
+      hnode->insides.s = i-1-(hnode->insides.b-f);
+      i++;
       break;
     }
-    if (f[*i] == '"') {
-      (*i)++;
+    if (f[i] == '"') {
+      i++;
       size_t n,jumpv;
       while (1) {
-        ending = memchr(f+*i,'"',s-*i);
+        ending = memchr(f+i,'"',s-i);
         if (!ending) {
-          *i = s;
-          return;
+          i = s;
+          goto END;
         }
-        jumpv = ending-f-*i;
+        jumpv = ending-f-i;
         if (!jumpv) {
-          (*i)++;
+          i++;
           break;
         }
-        *i = ending-f;
+        i = ending-f;
         n = 1;
-        while (jumpv && f[*i-n] == '\\')
+        while (jumpv && f[i-n] == '\\')
           n++;
         if ((n-1)&1)
           continue;
         break;
       }
-    } else if (f[*i] == '\'') {
-      (*i)++;
-      ending = memchr(f+*i,'\'',s-*i);
+    } else if (f[i] == '\'') {
+      i++;
+      ending = memchr(f+i,'\'',s-i);
       if (ending) {
-        *i = ending-f;
+        i = ending-f;
       } else {
-        *i = s;
-        return;
+        i = s;
+        goto END;
       }
     }
   }
-  hnode->all.s = (f+*i)-hnode->all.b+1;
+  hnode->all.s = (f+i)-hnode->all.b+1;
+  END: ;
+  *pos = i;
 }
 #endif
 
 ulong
-html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, flexarr *nodes, reliq *rq, reliq_error **err)
+html_struct_handle(const char *f, size_t *pos, const size_t s, const ushort lvl, flexarr *nodes, reliq *rq, reliq_error **err)
 {
-  if (lvl >= RELIQ_MAX_NODE_LEVEL) {
-    *err = reliq_set_error(RELIQ_ERROR_HTML,"html: %lu: reached %u level of recursion in document",*i,lvl);
-    return 0;
-  }
   *err = NULL;
   ulong ret = 1;
+  size_t i = *pos;
+  if (lvl >= RELIQ_MAX_NODE_LEVEL) {
+    *err = reliq_set_error(RELIQ_ERROR_HTML,"html: %lu: reached %u level of recursion in document",i,lvl);
+    ret = 0;
+    goto ERR;
+  }
   reliq_hnode *hnode = flexarr_inc(nodes);
   memset(hnode,0,sizeof(reliq_hnode));
   hnode->lvl = lvl;
@@ -204,49 +217,50 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
   size_t attrib_start = a->size;
   uchar foundend=1;
 
-  hnode->all.b = f+*i;
+  hnode->all.b = f+i;
   hnode->all.s = 0;
-  (*i)++;
-  while_is(isspace,f,*i,s);
-  if (f[*i] == '!') {
-    comment_handle(f,i,s);
+  i++;
+  while_is(isspace,f,i,s);
+  if (f[i] == '!') {
+    comment_handle(f,&i,s);
     flexarr_dec(nodes);
-    return 0;
+    ret = 0;
+    goto ERR;
   }
 
   #ifdef RELIQ_PHPTAGS
-  if (f[*i] == '?') {
-    phptag_handle(f,i,s,hnode);
+  if (f[i] == '?') {
+    phptag_handle(f,&i,s,hnode);
     goto END;
   }
   #endif
 
-  name_handle(f,i,s,&hnode->tag);
-  for (; *i < s && f[*i] != '>';) {
-    while_is(isspace,f,*i,s);
-    if (f[*i] == '/') {
-      char *r = memchr(f+*i,'>',s-*i);
+  name_handle(f,&i,s,&hnode->tag);
+  for (; i < s && f[i] != '>';) {
+    while_is(isspace,f,i,s);
+    if (f[i] == '/') {
+      char *r = memchr(f+i,'>',s-i);
       if (r != NULL)
         hnode->all.s = r-hnode->all.b+1;
       goto END;
     }
 
-    if (!isalpha(f[*i])) {
-      if (f[*i] == '>')
+    if (!isalpha(f[i])) {
+      if (f[i] == '>')
           break;
-      (*i)++;
+      i++;
       continue;
     }
 
-    while_is(isspace,f,*i,s);
-    attrib_handle(f,i,s,a);
+    while_is(isspace,f,i,s);
+    attrib_handle(f,&i,s,a);
   }
 
   #define search_array(x,y) for (uchar _j = 0; _j < (uint)LENGTH(x); _j++) \
     if (strcasecomp(x[_j],y))
 
   search_array(selfclosing_s,hnode->tag) {
-    hnode->all.s = f+*i-hnode->all.b+1;
+    hnode->all.s = f+i-hnode->all.b+1;
     goto END;
   }
 
@@ -267,33 +281,34 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
   #endif
 
   FOUND_AND_SKIP_OTHERS: ;
-  (*i)++;
-  hnode->insides.b = f+*i;
-  hnode->insides.s = *i;
+  i++;
+  hnode->insides.b = f+i;
+  hnode->insides.s = i;
   size_t tagend;
-  for (; *i < s; (*i)++) {
-    if (f[*i] != '<')
+  for (; i < s; i++) {
+    if (f[i] != '<')
       continue;
 
     FINAL_TAG_END: ;
-    tagend=*i;
-    (*i)++;
-    while_is(isspace,f,*i,s);
-    if (f[*i] == '/') {
-      (*i)++;
-      while_is(isspace,f,*i,s);
+    tagend=i;
+    i++;
+    while_is(isspace,f,i,s);
+    if (f[i] == '/') {
+      i++;
+      while_is(isspace,f,i,s);
 
-      if (*i+hnode->tag.s < s && memcasecmp(hnode->tag.b,f+*i,hnode->tag.s) == 0) {
+      if (i+hnode->tag.s < s && memcasecmp(hnode->tag.b,f+i,hnode->tag.s) == 0) {
         hnode->insides.s = tagend-hnode->insides.s;
-        *i += hnode->tag.s;
-        char *ending = memchr(f+*i,'>',s-*i);
+        i += hnode->tag.s;
+        char *ending = memchr(f+i,'>',s-i);
         if (!ending) {
-          *i = s;
+          i = s;
           flexarr_dec(nodes);
-          return 0;
+          ret = 0;
+          goto ERR;
         }
-        *i = ending-f;
-        hnode->all.s = (f+*i+1)-hnode->all.b;
+        i = ending-f;
+        hnode->all.s = (f+i+1)-hnode->all.b;
         goto END;
       }
 
@@ -304,9 +319,9 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
 
       reliq_cstr endname;
       reliq_hnode *nodesv = (reliq_hnode*)nodes->v;
-      name_handle(f,i,s,&endname);
+      name_handle(f,&i,s,&endname);
       if (!endname.s) {
-        (*i)++;
+        i++;
         continue;
       }
       for (size_t j = index-1;; j--) {
@@ -316,8 +331,8 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
           continue;
         }
         if (strcasecomp(nodesv[j].tag,endname)) {
-          *i = tagend;
-          hnode->insides.s = *i-(hnode->insides.b-f);
+          i = tagend;
+          hnode->insides.s = i-(hnode->insides.b-f);
           ret = (ret&0xffffffff)+((ulong)(lvl-nodesv[j].lvl)<<32);
           goto END;
         }
@@ -325,9 +340,9 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
           break;
       }
     } else if (!script) {
-      if (f[*i] == '!') {
-        (*i)++;
-        comment_handle(f,i,s);
+      if (f[i] == '!') {
+        i++;
+        comment_handle(f,&i,s);
         continue;
       } else {
         #ifdef RELIQ_AUTOCLOSING
@@ -335,29 +350,31 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
           const reliq_str8 *arr = autoclosing_s[autoclosing];
           reliq_cstr name;
 
-          while_is(isspace,f,*i,s);
-          name_handle(f,i,s,&name);
+          while_is(isspace,f,i,s);
+          name_handle(f,&i,s,&name);
 
           for (uchar j = 1; arr[j].b; j++) {
             if (strcasecomp(arr[j],name)) {
-              *i = tagend-1;
-              hnode->insides.s = *i-hnode->insides.s+1;
-              hnode->all.s = (f+*i+1)-hnode->all.b;
+              i = tagend-1;
+              hnode->insides.s = i-hnode->insides.s+1;
+              hnode->all.s = (f+i+1)-hnode->all.b;
               goto END;
             }
           }
         }
         #endif
-        *i = tagend;
-        ulong rettmp = html_struct_handle(f,i,s,lvl+1,nodes,rq,err);
-        if (*err)
-          return 0;
+        i = tagend;
+        ulong rettmp = html_struct_handle(f,&i,s,lvl+1,nodes,rq,err);
+        if (*err) {
+          ret = 0;
+          goto ERR;
+        }
         ret += rettmp&0xffffffff;
         hnode = &((reliq_hnode*)nodes->v)[index];
         uint lvldiff = rettmp>>32;
         if (lvldiff) {
           if (lvldiff > 1) {
-            hnode->insides.s = *i-(hnode->insides.b-f);
+            hnode->insides.s = i-(hnode->insides.b-f);
             ret |= ((rettmp>>32)-1)<<32;
             goto END;
           } else
@@ -369,12 +386,12 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
   }
 
   END: ;
-  if (*i >= s) {
+  if (i >= s) {
     hnode->all.s = s-(hnode->all.b-f)-1;
     hnode->insides.s = s-(hnode->insides.b-f)-1;;
   } else if (!hnode->all.s) {
-    hnode->all.s = f+*i-hnode->all.b;
-    hnode->insides.s = f+*i-hnode->insides.b;
+    hnode->all.s = f+i-hnode->all.b;
+    hnode->insides.s = f+i-hnode->insides.b;
   }
   if (!foundend)
     hnode->insides.s = hnode->all.s;
@@ -394,5 +411,7 @@ html_struct_handle(const char *f, size_t *i, const size_t s, const ushort lvl, f
     flexarr_dec(nodes);
   }
   a->size = attrib_start;
+  ERR: ;
+  *pos = i;
   return ret;
 }
