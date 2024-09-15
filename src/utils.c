@@ -28,6 +28,7 @@ typedef unsigned char uchar;
 typedef unsigned short ushort;
 typedef unsigned int uint;
 typedef unsigned long int ulong;
+typedef unsigned long long int ullong;
 
 #include "reliq.h"
 #include "flexarr.h"
@@ -35,6 +36,7 @@ typedef unsigned long int ulong;
 #include "utils.h"
 
 #define RANGES_INC (1<<4)
+#define UINT_TO_STR_MAX 32
 
 void
 strrev(char *v, size_t size)
@@ -150,6 +152,17 @@ memcasecmp(const void *v1, const void *v2, const size_t n)
   return 0;
 }
 
+
+void
+print_uint(unsigned long num, FILE *outfile)
+{
+  char str[UINT_TO_STR_MAX];
+  size_t len = 0;
+  uint_to_str(str,&len,UINT_TO_STR_MAX,num);
+  if (len)
+    fwrite(str,1,len,outfile);
+}
+
 void const*
 memcasemem(void const *haystack, size_t const haystackl, const void *needle, const size_t needlel)
 {
@@ -168,7 +181,7 @@ memcasemem(void const *haystack, size_t const haystackl, const void *needle, con
 }
 
 char
-special_character(const char c)
+splchar(const char c) //convert special characters e.g. '\n'
 {
   char r;
   switch (c) {
@@ -185,15 +198,206 @@ special_character(const char c)
   return r;
 }
 
-char *
-delchar(char *src, const size_t pos, size_t *size)
+static int
+hextodec(int n)
 {
-  size_t s = *size-1;
+  if (n >= '0' && n <= '9')
+    return n-48;
+  if (n >= 'A' && n <= 'F')
+    return n-55;
+  if (n >= 'a' && n <= 'f')
+    return n-87;
+  return -1;
+}
+
+static ullong
+get_fromhex(const char *src, const size_t maxsize, size_t *traversed, const uchar maxlength)
+{
+  *traversed = 0;
+  if (!maxlength || !maxsize)
+    return 0;
+  size_t i = 0;
+  ullong ret = 0;
+  const size_t size = (maxsize < maxlength) ? maxsize : maxlength;
+
+  for (; i < maxsize && i < size; i++) {
+    int val = hextodec(src[i]);
+    if (val == -1)
+      goto END;
+    ret = (ret<<4)|val;
+  }
+
+  END: ;
+  *traversed = i;
+  return ret;
+}
+
+static ullong
+splchar2_fromhex(const char *src, const size_t maxsize, size_t *traversed, const uchar maxlength) {
+  if (maxsize < 1) {
+    *traversed = 1;
+    return *src;
+  }
+  ullong ret = get_fromhex(src+1,maxsize-1,traversed,maxlength);
+  if (*traversed == 0)
+    return ret = *src;
+  (*traversed)++;
+  return ret;
+}
+
+static char
+splchar2_hex(const char *src, const size_t maxsize, size_t *traversed)
+{
+  return splchar2_fromhex(src,maxsize,traversed,2)&255;
+}
+
+static char
+splchar2_oct(const char *src, const size_t maxsize, size_t *traversed)
+{
+  size_t i = 1;
+  char ret = 0;
+  for (; i < maxsize && i <= 3; i++) {
+    char c = src[i];
+    if (c < '0' || c > '7')
+      goto END;
+    c -= '0';
+    ret = (ret<<3)|c;
+  }
+
+  END: ;
+  if (i == 1)
+    ret = 'o';
+  *traversed = i;
+  return ret;
+}
+
+char
+splchar2(const char *src, const size_t maxsize, size_t *traversed)
+{
+  size_t trav = 0;
+  char ret;
+  if (*src == 'o') {
+    ret = splchar2_oct(src,maxsize,&trav);
+  } else if (*src == 'x') {
+    ret = splchar2_hex(src,maxsize,&trav);
+  } else {
+    trav = 1;
+    ret = splchar(*src);
+  }
+  if (traversed)
+    *traversed = trav;
+  return ret;
+}
+
+uint
+enc16utf8(const short c)
+{
+  uint d = 0;
+  char bcount = 15;
+  while (bcount != -1 && ((c>>bcount)&1) == 0)
+    bcount--;
+  bcount++;
+  if (bcount < 8) {
+    d = c;
+  } else if (bcount < 12) {
+    d |= 0xc080|(c&0x3f)|((c&0x7c0)<<2);
+  } else
+    d |= 0xe08080|(c&0x3f)|((c&0xfc0)<<2)|((c&0xf000)<<4);
+  return d;
+}
+
+ulong
+enc32utf8(const int c)
+{
+  char msf = 31;
+  while (msf != -1 && ((c>>msf)&1) == 0)
+    msf--;
+  msf++;
+  if (msf < 8) {
+    return c;
+  } else if (msf < 12) {
+    return 0xc081|(c&0x3f)|((c&0x7c0)<<2);
+  } else if (msf < 17) {
+    return 0xe08080|(c&0x3f)|((c&0xfc0)<<2)|((c&0xf000)<<4);
+  } else if (msf < 22) {
+    return 0xf0808080|(c&0x3f)|((c&0xfc0)<<2)|((c&0x3f000)<<4)|((c&0x1c0000)<<6);
+  } else if (msf < 27)
+    return 0xf480808080|(c&0x3f)|((c&0xfc0)<<2)|((c&0x3f000)<<4)|((c&0xfc0000)<<6)|((c&0x3000000)<<8);
+  return 0xf68080808080|(c&0x3f)|((c&0xfc0)<<2)|((c&0x3f000)<<4)|((c&0xfc0000)<<6)|((c&0xcf000000)<<8)|((c&400000000)<<10);
+}
+
+static void
+splchar3_unicode(const char *src, const size_t maxsize, char *result, size_t *resultl, size_t *traversed, uchar maxlength)
+{
+  ullong val = splchar2_fromhex(src,maxsize,traversed,maxlength);
+  if (*traversed == 0) {
+    *resultl = 0;
+    *result = *src;
+    return;
+  }
+  ulong ret = (maxlength == 4) ?
+    enc16utf8(val) :
+    enc32utf8(val);
+
+  *result = 0;
+  if (ret == 0 && *traversed > 1) {
+    *resultl = 1;
+    return;
+  }
+  *resultl = 0;
+  for (size_t i = 3; ; i--) {
+    ulong mask = 0xff<<(i<<3);
+    if (ret&mask) {
+      *result = ((ret&mask)>>(i<<3))&255;
+      result++;
+      (*resultl)++;
+    }
+    if (!i)
+      break;
+  }
+}
+
+void
+splchar3(const char *src, const size_t maxsize, char *result, size_t *resultl, size_t *traversed)
+{
+  if (maxsize == 0) {
+    *result = 0;
+    *traversed = 0;
+    return;
+  }
+
+  if (*src == 'u')
+    return splchar3_unicode(src,maxsize,result,resultl,traversed,4);
+  if (*src == 'U')
+    return splchar3_unicode(src,maxsize,result,resultl,traversed,8);
+  *resultl = 0;
+  char r = splchar2(src,maxsize,traversed);
+  if (r != *src || r == '\\') {
+    *resultl = 1;
+    *result = r;
+  }
+}
+
+char *
+delstr(char *src, const size_t pos, size_t *size, const size_t count)
+{
+  if (*size-pos <= count) {
+    src[pos] = 0;
+    return src;
+  }
+
+  size_t s = *size-count;
   for (size_t i = pos; i < s; i++)
-    src[i] = src[i+1];
+    src[i] = src[i+count];
   src[s] = 0;
   *size = s;
   return src;
+}
+
+char *
+delchar(char *src, const size_t pos, size_t *size)
+{
+  return delstr(src,pos,size,1);
 }
 
 unsigned int
@@ -225,26 +429,32 @@ get_quoted(char *src, size_t *i, size_t *size, const char delim, size_t *start, 
   if (src[*i] == '"' || src[*i] == '\'') {
     char tf = src[*i];
     *start = ++(*i);
-    while (*i < *size && src[*i] != tf) {
-      if (src[*i] == '\\' && src[*i+1] == '\\') {
+    for (; *i < *size && src[*i] != tf; (*i)++) {
+      if (*i+1 >= *size || src[*i] != '\\')
+          continue;
+      if (src[*i+1] == '\\') {
         (*i)++;
-      } else if (src[*i] == '\\' && src[*i+1] == tf)
+      } else if (src[*i+1] == tf)
         delchar(src,*i,size);
-      (*i)++;
     }
     if (src[*i] != tf)
       return script_err("string: could not find the end of %c quote",tf);
     *len = ((*i)++)-(*start);
   } else {
     *start = *i;
-    while (*i < *size && !isspace(src[*i]) && src[*i] != delim) {
-      if (src[*i] == '\\' && src[*i+1] == '\\') {
-        (*i)++;
-      } else if (src[*i] == '\\' && (isspace(src[*i+1]) || src[*i+1] == delim)) {
-        delchar(src,*i,size);
-      } else if (src[*i] == '"' || src[*i] == '\'')
+    for (; *i < *size && !isspace(src[*i]) && src[*i] != delim; (*i)++) {
+      if (*i+1 < *size && src[*i] == '\\') {
+        if (src[*i+1] == '\\') {
+          (*i)++;
+          continue;
+        }
+        if (isspace(src[*i+1]) || src[*i+1] == delim) {
+          delchar(src,*i,size);
+          continue;
+        }
+      }
+      if (src[*i] == '"' || src[*i] == '\'')
         return script_err("string: illegal use of %c inside unquoted string",src[*i]);
-      (*i)++;
     }
     *len = *i-*start;
   }
@@ -252,16 +462,19 @@ get_quoted(char *src, size_t *i, size_t *size, const char delim, size_t *start, 
 }
 
 void
-conv_special_characters(char *src, size_t *size)
+splchars_conv(char *src, size_t *size)
 {
   for (size_t i = 0; i < (*size)-1; i++) {
     if (src[i] != '\\')
       continue;
-    char c = special_character(src[i+1]);
-    if (c != src[i+1]) {
-      delchar(src,i,size);
-      src[i] = c;
-    }
+
+    size_t resultl,traversed;
+    splchar3(src+i+1,*size-i-1,src+i,&resultl,&traversed);
+    if (resultl == 0)
+      continue;
+
+    i += resultl-1;
+    delstr(src,i+1,size,traversed-resultl+1);
   }
 }
 

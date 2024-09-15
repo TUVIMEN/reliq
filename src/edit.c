@@ -222,6 +222,29 @@ format_free(reliq_format_func *format, size_t formatl)
   free(format);
 }
 
+static int
+get_arg_delim(const void *args[4], const int num, const uchar flag, char *delim)
+{
+  const void *arg = args[num];
+  if (!arg)
+    return 0;
+  if (!(flag&(FORMAT_ARG0_ISSTR<<num)))
+    return -1;
+
+  reliq_str *str = (reliq_str*)arg;
+  if (!str->b || !str->s)
+    return 0;
+
+  char d = *str->b;
+  if (d == '\\' && str->s > 1) {
+    d = splchar2(str->b+1,str->s-1,NULL);
+    if (d != '\\' && d == str->b[1])
+      d = '\\';
+  }
+  *delim = d;
+  return 1;
+}
+
 const struct { char *name; size_t namel; const char *arr; } tr_ctypes[] = {
   {"space",5,IS_SPACE},
   {"alnum",5,IS_ALNUM},
@@ -246,7 +269,7 @@ tr_match_ctypes(const char *name, const size_t namel) {
 }
 
 static int
-tr_strrange_next(const char *src, const size_t size, size_t *pos, int *rstart, int *rend, char const**array, int *repeat, int *hasended, reliq_error **err)
+tr_strrange_next(const char *src, const size_t size, size_t *pos, int *rstart, int *rend, char const **array, int *repeat, int *hasended, reliq_error **err)
 {
   *err = NULL;
   if (*repeat != -1 && *rstart != -1) {
@@ -309,30 +332,30 @@ tr_strrange_next(const char *src, const size_t size, size_t *pos, int *rstart, i
 
   if (*pos >= size) {
     *hasended = 1;
-    if (2 < size && src[size-1] == '\\') {
-        size_t x = 0;
-        while (size-2-x && src[size-2-x] == '\\')
-          x++;
-        return (x&1) ? -1 : special_character(src[size-1]);
-    } else
-      return src[size-1];
+    return -2; //no output
   }
 
   char ch,och;
+  size_t traversed;
+
   och = src[*pos];
   if (src[*pos] == '\\' && *pos+1 < size) {
-    ch = special_character(src[++(*pos)]);
+    (*pos)++;
+    ch = splchar2(src+*pos,size-*pos,&traversed);
+    *pos += traversed-1;
   } else
     ch = src[*pos];
   if (*pos+2 < size && src[(*pos)+1] == '-' && (src[(*pos)+2] != '\\' || *pos+3 < size)) {
-    char second = src[(*pos)+2];
+    (*pos) += 2;
+    char second = src[*pos];
     if (second == '\\') {
-      second = special_character(src[(*pos)+3]);
       (*pos)++;
+      second = splchar2(src+*pos,size-*pos,&traversed);
+      (*pos) += traversed-1;
     }
     *rstart = ch;
     *rend = second;
-    *pos += 3;
+    (*pos)++;
     return tr_strrange_next(src,size,pos,rstart,rend,array,repeat,hasended,err);
   } else {
     if (och != '\\' && *pos+5 < size && ch == '[' && src[(*pos)+1] == ':') {
@@ -355,13 +378,14 @@ tr_strrange_next(const char *src, const size_t size, size_t *pos, int *rstart, i
       }
     } else if (och != '\\' && *pos+3 < size && ch == '[' && (src[(*pos)+1] != '\\' || *pos+4 < size)) {
       size_t prevpos = *pos;
-      char cha = src[(*pos)+1];
+      char cha = src[++(*pos)];
       if (cha == '\\') {
-        cha = special_character(src[(*pos)+2]);
         (*pos)++;
+        cha = splchar2(src+*pos,size-*pos,&traversed);
+        *pos += traversed-1;
       }
-      if (src[(*pos)+2] == '*') {
-        *pos += 3;
+      if (src[(*pos)+1] == '*') {
+        *pos += 2;
         int num = number_handle(src,pos,size);
         if (num == -1) {
           *rend = 0;
@@ -381,7 +405,7 @@ tr_strrange_next(const char *src, const size_t size, size_t *pos, int *rstart, i
     (*pos)++;
     return ch;
   }
-  return -1;
+  return -2;
 }
 
 static reliq_error *
@@ -392,20 +416,26 @@ tr_strrange(const char *src1, const size_t size1, const char *src2, const size_t
   char const *array[2] = {NULL};
   reliq_error *err;
 
+  int last_r2 = -1;
   while (!hasended[0]) {
     int r1 = tr_strrange_next(src1,size1,&pos[0],&rstart[0],&rend[0],&array[0],&repeat[0],&hasended[0],&err);
     if (err)
       return err;
-    if (r1 == -1 || hasended[0])
+    if (r1 <= -1 || hasended[0])
       break;
     int r2 = -1;
-    if (src2 && !complement) {
+    if (src2 && !complement && !hasended[1]) {
       r2 = tr_strrange_next(src2,size2,&pos[1],&rstart[1],&rend[1],&array[1],&repeat[1],&hasended[1],&err);
       if (err)
         return err;
       if (r2 == -1)
         break;
+      if (r2 != -2)
+        last_r2 = r2;
     }
+    if (hasended[1] && last_r2 != -1)
+      r2 = last_r2;
+
     if (!complement && arr_enabled)
       arr_enabled[(uchar)r1] = 1;
 
@@ -490,7 +520,7 @@ sed_address_comp_regex(const char *src, size_t *pos, size_t size, regex_t *preg,
 
   size_t len = regex_end-*pos;
   memcpy(tmp,src+*pos,len);
-  conv_special_characters(tmp,&len);
+  splchars_conv(tmp,&len);
   tmp[len] = 0;
 
   *pos = regex_end+1;
@@ -814,18 +844,17 @@ sed_comp_onlynewline(const char *src, size_t *pos, const size_t size, const usho
 }
 
 static reliq_error *
-sed_comp_sy_arg(const char *src, size_t *pos, const size_t size, const char argdelim, const char name, const char foundchar, reliq_cstr *result, size_t *realsize)
+sed_comp_sy_arg(const char *src, size_t *pos, const size_t size, const char argdelim, const char name, const char foundchar, reliq_cstr *result)
 {
   reliq_error *err = NULL;
   size_t p = (*pos)+1;
   const char *res = src+p;
-  size_t resl=0,real=0;
+  size_t resl=0;
 
   while (p < size && src[p] != argdelim && src[p] != '\n') {
     if (src[p] == '\\')
       p++;
     p++;
-    real++;
   }
   resl = p-(res-src);
   if (p >= size || src[p] != argdelim) {
@@ -837,33 +866,43 @@ sed_comp_sy_arg(const char *src, size_t *pos, const size_t size, const char argd
   *pos = p;
   result->b = res;
   result->s = resl;
-  *realsize = real;
 
   return err;
 }
 
 static reliq_error *
-sed_comp_y(const size_t pos, const char name, struct sed_expression *sedexpr, reliq_cstr *second, reliq_cstr *third, const size_t realfirstlen, const size_t realsecondlen)
+sed_comp_y(const size_t pos, const char name, struct sed_expression *sedexpr, reliq_cstr *second, reliq_cstr *third)
 {
   if (third->s)
     return sed_EXTRACHARS(pos);
 
-  if (realfirstlen != realsecondlen)
-    return sed_DIFFERENT_LENGHTS(pos,name);
-
   sedexpr->arg1 = malloc(256*sizeof(char));
   sedexpr->arg2 = malloc(256*sizeof(uchar));
+  reliq_cstr first = sedexpr->arg;
+  size_t i=0,j=0;
 
-  for (size_t i = 0; i < sedexpr->arg.s; i++) {
-    uchar specialchar = 0;
-    if (sedexpr->arg.b[i] == '\\') {
-      specialchar = 1;
+  for (; i < first.s && j < second->s; i++, j++) {
+    char c1 = first.b[i];
+    size_t traversed;
+    if (c1 == '\\') {
       i++;
+      c1 = splchar2(first.b+i,first.s-i,&traversed);
+      i += traversed-1;
     }
-    ((uchar*)sedexpr->arg2)[(uchar)sedexpr->arg.b[i]] = 1;
-    ((char*)sedexpr->arg1)[(uchar)sedexpr->arg.b[i]] =
-        specialchar ? special_character(second->b[i]) : second->b[i];
+    char c2 = second->b[j];
+    if (c2 == '\\') {
+      j++;
+      c2 = splchar2(second->b+j,second->s-j,&traversed);
+      j += traversed-1;
+    }
+
+    ((uchar*)sedexpr->arg2)[(uchar)c1] = 1;
+    ((char*)sedexpr->arg1)[(uchar)c1] = c2;
   }
+
+  if (i != first.s || j != second->s)
+    return sed_DIFFERENT_LENGHTS(pos,name);
+
   return NULL;
 }
 
@@ -915,7 +954,7 @@ sed_comp_s(const char *src, const size_t pos, int eflags, struct sed_expression 
 
   size_t len = sedexpr->arg.s;
   memcpy(tmp,sedexpr->arg.b,sedexpr->arg.s);
-  conv_special_characters(tmp,&len);
+  splchars_conv(tmp,&len);
   tmp[len] = 0;
 
   sedexpr->arg1 = malloc(sizeof(regex_t));
@@ -934,10 +973,9 @@ sed_comp_sy(const char *src, size_t *pos, const size_t size, const char name, in
 {
   reliq_error *err = NULL;
   size_t p = *pos;
-  size_t realfirstlen = 0;
   char argdelim = src[p];
 
-  if ((err = sed_comp_sy_arg(src,&p,size,argdelim,name,sedexpr->name,&sedexpr->arg,&realfirstlen)))
+  if ((err = sed_comp_sy_arg(src,&p,size,argdelim,name,sedexpr->name,&sedexpr->arg)))
     goto END;
 
   if (!sedexpr->arg.s) {
@@ -949,9 +987,8 @@ sed_comp_sy(const char *src, size_t *pos, const size_t size, const char name, in
   }
 
   reliq_cstr second,third;
-  size_t realsecondlen = 0;
 
-  if ((err = sed_comp_sy_arg(src,&p,size,argdelim,name,sedexpr->name,&second,&realsecondlen)))
+  if ((err = sed_comp_sy_arg(src,&p,size,argdelim,name,sedexpr->name,&second)))
     goto END;
 
   third.b = src+(++p);
@@ -960,7 +997,7 @@ sed_comp_sy(const char *src, size_t *pos, const size_t size, const char name, in
   third.s = p-(third.b-src);
 
   if (name == 'y') {
-    err = sed_comp_y(p,name,sedexpr,&second,&third,realfirstlen,realsecondlen);
+    err = sed_comp_y(p,name,sedexpr,&second,&third);
   } else
     err = sed_comp_s(src,p,eflags,sedexpr,&second,&third);
 
@@ -1250,7 +1287,8 @@ sed_pre_edit(char *src, size_t size, FILE *output, char *buffers[3], flexarr *sc
           goto END;
           break;
         case '=':
-          fprintf(output,"%u%c",linenumber,linedelim);
+          print_uint(linenumber,output);
+          fputc(linedelim,output);
           break;
         case 't':
           if (!successfulsub)
@@ -1306,8 +1344,19 @@ sed_pre_edit(char *src, size_t size, FILE *output, char *buffers[3], flexarr *sc
               if (c == '&' || (i+1 < arg.s && c == '\\')) {
                 char unchanged_c = '0';
                 if (c == '\\') {
-                  c = special_character(arg.b[++i]);
-                  unchanged_c = arg.b[i];
+                  unchanged_c = arg.b[++i];
+                  size_t traversed,resultl;
+                  char result[8];
+                  splchar3(arg.b+i,arg.s-i,result,&resultl,&traversed);
+                  i += traversed-1;
+                  if (resultl == 0) {
+                    c = unchanged_c;
+                  } else if (resultl > 1) {
+                    memcpy(buffersp+bufferspl,result,resultl);
+                    bufferspl += resultl;
+                    continue;
+                  } else
+                    c = result[0];
                 }
 
                 if (isdigit(unchanged_c)) {
@@ -1391,6 +1440,7 @@ reliq_error *
 sed_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
 {
   reliq_error *err;
+  const char argv0[] = "sed";
   uchar extendedregex=0,silent=0;
   flexarr *script = NULL;
 
@@ -1410,19 +1460,11 @@ sed_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigne
         }
       }
     } else
-      return script_err("%s: arg %d: incorrect type of argument, expected string","sed",2);
+      return script_err("%s: arg %d: incorrect type of argument, expected string",argv0,2);
   }
-  if (arg[2]) {
-    if (flag&FORMAT_ARG2_ISSTR) {
-      reliq_str *str = (reliq_str*)arg[2];
-      if (str->b && str->s) {
-        linedelim = *str->b;
-        if (linedelim == '\\' && str->s > 1)
-          linedelim = special_character(str->b[1]);
-      }
-    } else
-      return script_err("%s: arg %d: incorrect type of argument, expected string","sed",3);
-  }
+
+  if (get_arg_delim(arg,2,flag,&linedelim) == -1)
+    return script_err("%s: arg %d: incorrect type of argument, expected string",argv0,3);
 
   if (arg[0]) {
     if (flag&FORMAT_ARG0_ISSTR) {
@@ -1432,10 +1474,10 @@ sed_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigne
           return err;
       }
     } else
-      return script_err("%s: arg %d: incorrect type of argument, expected string","sed",1);
+      return script_err("%s: arg %d: incorrect type of argument, expected string",argv0,1);
   }
   if (script == NULL)
-    return script_err("sed: missing script argument");
+    return script_err("%s: missing script argument",argv0);
 
   char *buffers[3];
   for (size_t i = 0; i < 3; i++)
@@ -1480,8 +1522,16 @@ echo_edit_print(reliq_str *str, FILE *output)
 {
   for (size_t i = 0; i < str->s; i++) {
     if (str->b[i] == '\\' && i+1 < str->s) {
-      fputc(special_character(str->b[++i]),output);
-      continue;
+      size_t resultl,traversed;
+      char result[8];
+      i++;
+      splchar3(str->b+i,str->s-i,result,&resultl,&traversed);
+      if (resultl != 0) {
+        fwrite(result,resultl,1,output);
+        i += traversed-1;
+        continue;
+      } else
+        i--;
     }
     fputc(str->b[i],output);
   }
@@ -1491,24 +1541,25 @@ reliq_error *
 echo_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
 {
   reliq_str *str[2] = {NULL};
+  const char argv0[] = "echo";
 
   if (arg[0]) {
     if (flag&FORMAT_ARG0_ISSTR) {
       if (((reliq_str*)arg[0])->b && ((reliq_str*)arg[0])->s)
         str[0] = (reliq_str*)arg[0];
     } else
-      return script_err("%s: arg %d: incorrect type of argument, expected string","echo",1);
+      return script_err("%s: arg %d: incorrect type of argument, expected string",argv0,1);
   }
   if (arg[1]) {
     if (flag&FORMAT_ARG1_ISSTR) {
       if (((reliq_str*)arg[1])->b && ((reliq_str*)arg[1])->s)
         str[1] = (reliq_str*)arg[1];
     } else
-      return script_err("%s: arg %d: incorrect type of argument, expected string","echo",2);
+      return script_err("%s: arg %d: incorrect type of argument, expected string",argv0,2);
   }
 
   if (!str[0] && !str[1])
-    return script_err("echo: missing arguments");
+    return script_err("%s: missing arguments",argv0);
 
   if (str[0] && str[0]->s)
     echo_edit_print(str[0],output);
@@ -1523,18 +1574,10 @@ reliq_error *
 uniq_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
 {
   char delim = '\n';
+  const char argv0[] = "uniq";
 
-  if (arg[0]) {
-    if (flag&FORMAT_ARG0_ISSTR) {
-      reliq_str *str = (reliq_str*)arg[0];
-      if (str->b && str->s) {
-        delim = *str->b;
-        if (delim == '\\' && str->s > 1)
-          delim = special_character(str->b[1]);
-      }
-    } else
-      return script_err("%s: arg %d: incorrect type of argument, expected string","uniq",1);
-  }
+  if (get_arg_delim(arg,0,flag,&delim) == -1)
+    return script_err("%s: arg %d: incorrect type of argument, expected string",argv0,1);
 
   reliq_cstr line,previous;
   size_t saveptr = 0;
@@ -1575,6 +1618,7 @@ sort_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsign
 {
   char delim = '\n';
   uchar reverse=0,unique=0; //,natural=0,icase=0;
+  const char argv0[] = "sort";
 
   if (arg[0]) {
     if (flag&FORMAT_ARG0_ISSTR && ((reliq_str*)arg[0])->b) {
@@ -1590,18 +1634,11 @@ sort_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsign
           unique = 1;
       }
     } else
-      return script_err("%s: arg %d: incorrect type of argument, expected string","sort",1);
+      return script_err("%s: arg %d: incorrect type of argument, expected string",argv0,1);
   }
 
-  if (arg[1] && flag&FORMAT_ARG1_ISSTR) {
-    reliq_str *str = (reliq_str*)arg[1];
-    if (str->b && str->s) {
-      delim = *str->b;
-      if (delim == '\\' && str->s > 1)
-        delim = special_character(str->b[1]);
-    } else
-      return script_err("%s: arg %d: incorrect type of argument, expected string","sort",2);
-  }
+  if (get_arg_delim(arg,1,flag,&delim) == -1)
+    return script_err("%s: arg %d: incorrect type of argument, expected string",argv0,2);
 
   flexarr *lines = flexarr_init(sizeof(reliq_cstr),(1<<10));
   reliq_cstr line,previous;
@@ -1652,27 +1689,19 @@ line_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsign
 {
   char delim = '\n';
   reliq_range *range = NULL;
+  const char argv0[] = "line";
 
   if (arg[0]) {
     if (flag&FORMAT_ARG0_ISSTR)
-      return script_err("%s: arg %d: incorrect type of argument, expected range","line",1);
+      return script_err("%s: arg %d: incorrect type of argument, expected range",argv0,1);
     range = (reliq_range*)arg[0];
   }
 
-  if (arg[1]) {
-    if (flag&FORMAT_ARG1_ISSTR) {
-      reliq_str *str = (reliq_str*)arg[1];
-      if (str->b && str->s) {
-        delim = *str->b;
-        if (delim == '\\' && str->s > 1)
-          delim = special_character(str->b[1]);
-      }
-    } else
-      return script_err("%s: arg %d: incorrect type of argument, expected string","line",2);
-  }
+  if (get_arg_delim(arg,1,flag,&delim) == -1)
+    return script_err("%s: arg %d: incorrect type of argument, expected string",argv0,2);
 
   if (!range)
-    return script_err("line: missing arguments");
+    return script_err("%s: missing arguments",argv0);
 
   size_t saveptr=0,linecount=0,currentline=0;
   reliq_cstr line;
@@ -1702,13 +1731,14 @@ cut_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigne
   uchar delim[256]={0};
   uchar complement=0,onlydelimited=0,delimited=0;
   char linedelim = '\n';
+  const char argv0[] = "cut";
   reliq_error *err;
 
   reliq_range *range = NULL;
 
   if (arg[0]) {
     if (flag&FORMAT_ARG0_ISSTR)
-      script_err("%s: arg %d: incorrect type of argument, expected range","cut",1);
+      script_err("%s: arg %d: incorrect type of argument, expected range",argv0,1);
     range = (reliq_range*)arg[0];
   }
 
@@ -1721,7 +1751,7 @@ cut_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigne
         delimited = 1;
       }
     } else
-      return script_err("%s: arg %d: incorrect type of argument, expected string","cut",2);
+      return script_err("%s: arg %d: incorrect type of argument, expected string",argv0,2);
   }
   if (arg[2]) {
     if (flag&FORMAT_ARG2_ISSTR) {
@@ -1737,22 +1767,14 @@ cut_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigne
         }
       }
     } else
-      return script_err("%s: arg %d: incorrect type of argument, expected string","cut",3);
-  }
-  if (arg[3]) {
-    if (flag&FORMAT_ARG3_ISSTR) {
-      reliq_str *str = (reliq_str*)arg[3];
-      if (str->b && str->s) {
-        linedelim = *str->b;
-        if (linedelim == '\\' && str->s > 1)
-          linedelim = special_character(str->b[1]);
-      }
-    } else
-        return script_err("%s: arg %d: incorrect type of argument, expected string","cut",4);
+      return script_err("%s: arg %d: incorrect type of argument, expected string",argv0,3);
   }
 
+  if (get_arg_delim(arg,3,flag,&linedelim) == -1)
+    return script_err("%s: arg %d: incorrect type of argument, expected string",argv0,4);
+
   if (!range)
-    return script_err("cut: missing range argument");
+    return script_err("%s: missing range argument",argv0);
 
   reliq_cstr line;
   size_t saveptr = 0;
@@ -1840,6 +1862,7 @@ tr_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned
   uchar array[256] = {0};
   reliq_str *string[2] = {NULL};
   uchar complement=0,squeeze=0;
+  const char argv0[] = "tr";
   reliq_error *err;
 
   if (arg[0]) {
@@ -1847,14 +1870,14 @@ tr_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned
       if (((reliq_str*)arg[0])->b && ((reliq_str*)arg[0])->s)
         string[0] = (reliq_str*)arg[0];
     } else
-      return script_err("%s: arg %d: incorrect type of argument, expected string","tr",1);
+      return script_err("%s: arg %d: incorrect type of argument, expected string",argv0,1);
   }
   if (arg[1]) {
     if (flag&FORMAT_ARG1_ISSTR) {
       if (((reliq_str*)arg[1])->b && ((reliq_str*)arg[1])->s)
         string[1] = (reliq_str*)arg[1];
     } else
-      return script_err("%s: arg %d: incorrect type of argument, expected string","tr",2);
+      return script_err("%s: arg %d: incorrect type of argument, expected string",argv0,2);
   }
   if (arg[2]) {
     if (flag&FORMAT_ARG2_ISSTR) {
@@ -1868,11 +1891,11 @@ tr_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned
         }
       }
     } else
-      return script_err("%s: arg %d: incorrect type of argument, expected string","tr",3);
+      return script_err("%s: arg %d: incorrect type of argument, expected string",argv0,3);
   }
 
   if (!string[0])
-    return script_err("tr: missing arguments");
+    return script_err("%s: missing arguments",argv0);
 
   const size_t bufsize = 8192;
   char buf[bufsize];
@@ -1925,20 +1948,14 @@ reliq_error *
 trim_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
 {
   char delim = '\0';
+  const char argv0[] = "trim";
   uchar hasdelim = 0;
 
-  if (arg[0]) {
-    if (flag&FORMAT_ARG0_ISSTR) {
-      reliq_str *str = (reliq_str*)arg[0];
-      if (str->b && str->s) {
-        delim = *str->b;
-        if (delim == '\\' && str->s > 1)
-          delim = special_character(str->b[1]);
-        hasdelim = 1;
-      }
-    } else
-      return script_err("%s: arg %d: incorrect type of argument, expected string","trim",1);
-  }
+  int r = get_arg_delim(arg,0,flag,&delim);
+  if (r == -1)
+    return script_err("%s: arg %d: incorrect type of argument, expected string",argv0,1);
+  if (r == 1)
+    hasdelim = 1;
 
   size_t line=0,delimstart,lineend;
 
@@ -1973,18 +1990,10 @@ reliq_error *
 rev_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
 {
   char delim = '\n';
+  const char argv0[] = "rev";
 
-  if (arg[0]) {
-    if (flag&FORMAT_ARG0_ISSTR) {
-      reliq_str *str = (reliq_str*)arg[0];
-      if (str->b && str->s) {
-        delim = *str->b;
-        if (delim == '\\' && str->s > 1)
-          delim = special_character(str->b[1]);
-      }
-    } else
-      return script_err("%s: arg %d: incorrect type of argument, expected string","rev",1);
-  }
+  if (get_arg_delim(arg,0,flag,&delim) == -1)
+    return script_err("%s: arg %d: incorrect type of argument, expected string",argv0,1);
 
   size_t line=0,delimstart,lineend;
 
@@ -2014,18 +2023,10 @@ reliq_error *
 tac_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
 {
   char delim = '\n';
+  const char argv0[] = "tac";
 
-  if (arg[0]) {
-    if (flag&FORMAT_ARG0_ISSTR) {
-      reliq_str *str = (reliq_str*)arg[0];
-      if (str->b && str->s) {
-        delim = *str->b;
-        if (delim == '\\' && str->s > 1)
-          delim = special_character(str->b[1]);
-      }
-    } else
-      return script_err("%s: arg %d: incorrect type of argument, expected string","tac",1);
-  }
+  if (get_arg_delim(arg,0,flag,&delim) == -1)
+    return script_err("%s: arg %d: incorrect type of argument, expected string",argv0,1);
 
   size_t saveptr=0;
   flexarr *lines = flexarr_init(sizeof(reliq_cstr),LINE_EDIT_INC);
@@ -2048,6 +2049,7 @@ reliq_error *
 wc_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
 {
   char delim = '\n';
+  const char argv0[] = "wc";
   uchar v[4];
   v[0] = 2; //lines
   v[1] = 2; //words
@@ -2072,20 +2074,11 @@ wc_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned
         }
       }
     } else
-      return script_err("%s: arg %d: incorrect type of argument, expected string","wc",1);
+      return script_err("%s: arg %d: incorrect type of argument, expected string",argv0,1);
   }
 
-  if (arg[1]) {
-    if (flag&FORMAT_ARG1_ISSTR) {
-      reliq_str *str = (reliq_str*)arg[1];
-      if (str->b && str->s) {
-        delim = *str->b;
-        if (delim == '\\' && str->s > 1)
-          delim = special_character(str->b[1]);
-      }
-    } else
-      return script_err("%s: arg %d: incorrect type of argument, expected string","wc",2);
-  }
+  if (get_arg_delim(arg,1,flag,&delim) == -1)
+    return script_err("%s: arg %d: incorrect type of argument, expected string",argv0,2);
 
   if (v[0] == 1 || v[1] == 1 || v[2] == 1 || v[3] == 1)
     for (uchar i = 0; i < 4; i++)

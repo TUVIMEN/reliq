@@ -50,8 +50,6 @@ typedef unsigned long int ulong;
 #define NCOLLECTOR_INC (1<<8)
 #define FCOLLECTOR_INC (1<<5)
 
-#define UINT_TO_STR_MAX 32
-
 //reliq_pattrib flags
 #define A_INVERT 0x1
 #define A_VAL_MATTERS 0x2
@@ -824,16 +822,6 @@ print_attribs(const reliq_hnode *hnode, const uchar trim, FILE *outfile)
 }
 
 static void
-print_uint(unsigned long num, FILE *outfile)
-{
-  char str[UINT_TO_STR_MAX];
-  size_t len = 0;
-  uint_to_str(str,&len,UINT_TO_STR_MAX,num);
-  if (len)
-    fwrite(str,1,len,outfile);
-}
-
-static void
 print_attrib_value(const reliq_cstr_pair *attribs, const size_t attribsl, const char *text, const size_t textl, const int num, const uchar trim, FILE *outfile)
 {
   if (num != -1) {
@@ -883,9 +871,16 @@ reliq_printf(FILE *outfile, const char *format, const size_t formatl, const reli
   int num = -1;
   while (i < formatl) {
     if (format[i] == '\\') {
-      fputc(special_character(format[++i]),outfile);
+      size_t resultl,traversed;
+      char result[8];
       i++;
-      continue;
+      splchar3(format+i,formatl-i,result,&resultl,&traversed);
+      if (resultl != 0) {
+        fwrite(result,resultl,1,outfile);
+        i += traversed;
+        continue;
+      } else
+        i--;
     }
     if (format[i] == '%') {
       if (++i >= formatl)
@@ -1541,7 +1536,13 @@ reliq_output_field_get(const char *src, size_t *pos, const size_t s, reliq_outpu
         outfield->arr_delim = *b_start;
         if (*b_start == '\\' && b_start+1 != b_end) {
           b_start++;
-          outfield->arr_delim = special_character(*b_start);
+          size_t traversed;
+          outfield->arr_delim = splchar2(b_start,b_end-b_start,&traversed);
+          if (outfield->arr_delim != '\\' && outfield->arr_delim == *b_start) {
+            outfield->arr_delim = '\\';
+            b_start--;
+          } else
+            b_start += traversed-1;
         }
         b_start++;
         if (b_start != q_end)
@@ -1684,13 +1685,13 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, const ushort lvl, ushor
     exprf.b = NULL;
     exprf.s = 0;
     while (i < s) {
-      if (i+1 < s && src[i] == '\\' && src[i+1] == '\\') {
-        i += 2;
-        continue;
-      }
-      if (i+1 < s && src[i] == '\\') {
-        uchar toescape = 0;
+      if (src[i] == '\\' && i+1 < s) {
         char c = src[i+1];
+        if (c == '\\') {
+          i += 2;
+          continue;
+        }
+        uchar toescape = 0;
         if (c == ',' || c == ';' || c == '"' || c == '\'' || c == '{' || c == '}') {
           toescape = 1;
         }
@@ -1700,6 +1701,7 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, const ushort lvl, ushor
           continue;
         }
       }
+
       if ((i == j || (i && isspace(src[i-1]))) &&
         (src[i] == '|' || src[i] == '/')) {
         if ((src[i] == '|' && nodef.b) || (src[i] == '/' && exprf.b))

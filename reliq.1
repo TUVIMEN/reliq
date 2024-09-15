@@ -332,6 +332,14 @@ Horizontal tab.
 Vertical tab.
 .IP \e0
 ASCII NUL.
+.IP \e0\fIXXX\fR
+Byte in octal.
+.IP \ex\fIXX\fR
+Byte in hexadecimal.
+.IP \eu\fIXXXX\fR
+UTF-8 character.
+.IP \eU\fIXXXXXXXX\fR
+UTF-8 character.
 .IP \e\e
 A literal backslash (`\e').
 .IP %%
@@ -609,6 +617,10 @@ Examples:
     blocks ended with '|' character are treated as arrays. If such block has no input, it returns "[]".
     \fB.authors div .author; { .images img, .bolded b } |\fR
     \fI{"authors":[{"images":"...","bolded":"..."}]}\fR
+
+.SH NOTES
+
+UTF-8 \fI\eu\fR and \fI\eU\fR escape directives don't work in any place where delimiter is to be specified i.e. array separator in fields, in translasion tables of \fBtr\fR, in \fIy\fR \fBsed\fR command, in delimiters of \fBsed\fR, \fBtr\fR, \fBline\fR, \fBtrim\fR, \fBuniq\fR, \fBsort\fR, \fBecho\fR, \fBcut\fR, \fBrev\fR, \fBtac\fR, \fBwc\fR commands.
 
 .SH EXAMPLES
 Get tags 'a' with attribute 'href' at position 0 of value ending with '.org' or '.com', from result of matching tags 'div' with attribute 'id', and without attribute 'class', from file 'index.html'.
