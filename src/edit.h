@@ -28,24 +28,24 @@
 
 struct reliq_format_function {
   reliq_str8 name;
-  reliq_error *(*func)(const char*,const size_t,FILE*,const void*[4],const unsigned char);
+  reliq_error *(*func)(char*,size_t,FILE*,const void*[4],const unsigned char);
 };
 
-reliq_error *trim_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const unsigned char flag);
-reliq_error *tr_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const unsigned char flag);
-reliq_error *cut_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const unsigned char flag);
-reliq_error *sed_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const unsigned char flag);
-reliq_error *line_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const unsigned char flag);
-reliq_error *sort_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const unsigned char flag);
-reliq_error *uniq_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const unsigned char flag);
-reliq_error *echo_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const unsigned char flag);
-reliq_error *rev_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const unsigned char flag);
-reliq_error *tac_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const unsigned char flag);
-reliq_error *wc_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const unsigned char flag);
+reliq_error *trim_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag);
+reliq_error *tr_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag);
+reliq_error *cut_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag);
+reliq_error *sed_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag);
+reliq_error *line_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag);
+reliq_error *sort_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag);
+reliq_error *uniq_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag);
+reliq_error *echo_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag);
+reliq_error *rev_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag);
+reliq_error *tac_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag);
+reliq_error *wc_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag);
 
 extern const struct reliq_format_function format_functions[];
 
-reliq_error *format_exec(const char *input, const size_t inputl, FILE *output, const reliq_hnode *hnode, const reliq_hnode *parent, const reliq_format_func *format, const size_t formatl, const reliq *rq);
+reliq_error *format_exec(char *input, size_t inputl, FILE *output, const reliq_hnode *hnode, const reliq_hnode *parent, const reliq_format_func *format, const size_t formatl, const reliq *rq);
 void format_free(reliq_format_func *format, size_t formatl);
 reliq_error *format_get_funcs(flexarr *format, const char *src, size_t *pos, const size_t size);
 

@@ -19,6 +19,8 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#include <stdint.h>
+
 //reliq_range flags
 #define R_RELATIVE(x) (1<<(x))
 #define R_RANGE 0x8
@@ -50,14 +52,17 @@ void memwordtok_r(const void *ptr, const size_t plen, void const **saveptr, size
 int memcasecmp(const void *v1, const void *v2, const size_t n);
 void const *memcasemem(void const *haystack, size_t const haystackl, const void *needle, const size_t needlel);
 void *memdup(void const *src, size_t size);
-unsigned int enc16utf8(const short c);
-unsigned long enc32utf8(const int c);
+uint32_t enc16utf8(const uint16_t c);
+uint64_t enc32utf8(const uint32_t c);
+int write_utf8(uint64_t data, char *result, size_t *traversed, const size_t maxlength);
 char splchar(const char c);
-char splchar2(const char *src, const size_t maxsize, size_t *traversed);
-void splchar3(const char *src, const size_t maxsize, char *result, size_t *resultl, size_t *traversed);
+char splchar2(const char *src, const size_t srcl, size_t *traversed);
+void splchar3(const char *src, const size_t srcl, char *result, size_t *resultl, size_t *traversed);
 char *delstr(char *src, const size_t pos, size_t *size, const size_t count);
 char *delchar(char *src, const size_t pos, size_t *size);
 unsigned int get_dec(const char *src, size_t size, size_t *traversed);
+uint64_t get_fromdec(const char *src, const size_t srcl, size_t *traversed, const unsigned char maxlength);
+uint64_t get_fromhex(const char *src, const size_t srcl, size_t *traversed, const unsigned char maxlength);
 unsigned int number_handle(const char *src, size_t *pos, const size_t size);
 reliq_error *get_quoted(const char *src, size_t *pos, const size_t size, const char delim, char **result, size_t *resultl);
 void splchars_conv(char *src, size_t *size);

@@ -199,6 +199,23 @@ splchar(const char c) //convert special characters e.g. '\n'
   return r;
 }
 
+uint64_t
+get_fromdec(const char *src, const size_t srcl, size_t *traversed, const uchar maxlength)
+{
+  *traversed = 0;
+  if (!maxlength || !srcl)
+    return 0;
+  size_t i = 0;
+  ullong ret = 0;
+  const size_t size = (srcl < maxlength) ? srcl : maxlength;
+
+  for (; i < size && isdigit(src[i]); i++)
+    ret = (ret*10)+(src[i]-'0');
+
+  *traversed = i;
+  return ret;
+}
+
 static int
 hextodec(int n)
 {
@@ -211,17 +228,17 @@ hextodec(int n)
   return -1;
 }
 
-static ullong
-get_fromhex(const char *src, const size_t maxsize, size_t *traversed, const uchar maxlength)
+uint64_t
+get_fromhex(const char *src, const size_t srcl, size_t *traversed, const uchar maxlength)
 {
   *traversed = 0;
-  if (!maxlength || !maxsize)
+  if (!maxlength || !srcl)
     return 0;
   size_t i = 0;
   ullong ret = 0;
-  const size_t size = (maxsize < maxlength) ? maxsize : maxlength;
+  const size_t size = (srcl < maxlength) ? srcl : maxlength;
 
-  for (; i < maxsize && i < size; i++) {
+  for (; i < size; i++) {
     int val = hextodec(src[i]);
     if (val == -1)
       goto END;
@@ -234,12 +251,12 @@ get_fromhex(const char *src, const size_t maxsize, size_t *traversed, const ucha
 }
 
 static ullong
-splchar2_fromhex(const char *src, const size_t maxsize, size_t *traversed, const uchar maxlength) {
-  if (maxsize < 1) {
+splchar2_fromhex(const char *src, const size_t srcl, size_t *traversed, const uchar maxlength) {
+  if (srcl < 1) {
     *traversed = 1;
     return *src;
   }
-  ullong ret = get_fromhex(src+1,maxsize-1,traversed,maxlength);
+  ullong ret = get_fromhex(src+1,srcl-1,traversed,maxlength);
   if (*traversed == 0)
     return ret = *src;
   (*traversed)++;
@@ -247,17 +264,17 @@ splchar2_fromhex(const char *src, const size_t maxsize, size_t *traversed, const
 }
 
 static char
-splchar2_hex(const char *src, const size_t maxsize, size_t *traversed)
+splchar2_hex(const char *src, const size_t srcl, size_t *traversed)
 {
-  return splchar2_fromhex(src,maxsize,traversed,2)&255;
+  return splchar2_fromhex(src,srcl,traversed,2)&255;
 }
 
 static char
-splchar2_oct(const char *src, const size_t maxsize, size_t *traversed)
+splchar2_oct(const char *src, const size_t srcl, size_t *traversed)
 {
   size_t i = 1;
   char ret = 0;
-  for (; i < maxsize && i <= 3; i++) {
+  for (; i < srcl && i <= 3; i++) {
     char c = src[i];
     if (c < '0' || c > '7')
       goto END;
@@ -273,14 +290,14 @@ splchar2_oct(const char *src, const size_t maxsize, size_t *traversed)
 }
 
 char
-splchar2(const char *src, const size_t maxsize, size_t *traversed)
+splchar2(const char *src, const size_t srcl, size_t *traversed)
 {
   size_t trav = 0;
   char ret;
   if (*src == 'o') {
-    ret = splchar2_oct(src,maxsize,&trav);
+    ret = splchar2_oct(src,srcl,&trav);
   } else if (*src == 'x') {
-    ret = splchar2_hex(src,maxsize,&trav);
+    ret = splchar2_hex(src,srcl,&trav);
   } else {
     trav = 1;
     ret = splchar(*src);
@@ -290,8 +307,8 @@ splchar2(const char *src, const size_t maxsize, size_t *traversed)
   return ret;
 }
 
-uint
-enc16utf8(const short c)
+uint32_t
+enc16utf8(const uint16_t c)
 {
   uint d = 0;
   char bcount = 15;
@@ -307,8 +324,8 @@ enc16utf8(const short c)
   return d;
 }
 
-ulong
-enc32utf8(const int c)
+uint64_t
+enc32utf8(const uint32_t c)
 {
   char msf = 31;
   while (msf != -1 && ((c>>msf)&1) == 0)
@@ -327,52 +344,62 @@ enc32utf8(const int c)
   return 0xf68080808080|(c&0x3f)|((c&0xfc0)<<2)|((c&0x3f000)<<4)|((c&0xfc0000)<<6)|((c&0xcf000000)<<8)|((c&400000000)<<10);
 }
 
-static void
-splchar3_unicode(const char *src, const size_t maxsize, char *result, size_t *resultl, size_t *traversed, uchar maxlength)
+int
+write_utf8(uint64_t data, char *result, size_t *traversed, const size_t maxlength)
 {
-  ullong val = splchar2_fromhex(src,maxsize,traversed,maxlength);
+  *result = 0;
+  if (data == 0) {
+    *traversed = 1;
+    return 0;
+  }
+  *traversed = 0;
+  for (size_t i = 5; *traversed < maxlength; i--) {
+    uint64_t mask = 0xff<<(i<<3);
+    if (data&mask) {
+      *result = ((data&mask)>>(i<<3))&255;
+      result++;
+      (*traversed)++;
+    }
+    if (!i)
+      break;
+  }
+  if (*traversed >= maxlength)
+    return -1;
+  return 0;
+}
+
+static void
+splchar3_unicode(const char *src, const size_t srcl, char *result, size_t *resultl, size_t *traversed, const uchar maxlength)
+{
+  ullong val = splchar2_fromhex(src,srcl,traversed,maxlength);
   if (*traversed == 0) {
     *resultl = 0;
     *result = *src;
     return;
   }
-  ulong ret = (maxlength == 4) ?
+  uint64_t ret = (maxlength == 4) ?
     enc16utf8(val) :
     enc32utf8(val);
 
-  *result = 0;
-  if (ret == 0 && *traversed > 1) {
-    *resultl = 1;
-    return;
-  }
-  *resultl = 0;
-  for (size_t i = 3; ; i--) {
-    ulong mask = 0xff<<(i<<3);
-    if (ret&mask) {
-      *result = ((ret&mask)>>(i<<3))&255;
-      result++;
-      (*resultl)++;
-    }
-    if (!i)
-      break;
-  }
+  write_utf8(ret,result,resultl,8);
 }
 
 void
-splchar3(const char *src, const size_t maxsize, char *result, size_t *resultl, size_t *traversed)
+splchar3(const char *src, const size_t srcl, char *result, size_t *resultl, size_t *traversed)
 {
-  if (maxsize == 0) {
+  *resultl = 0;
+  if (srcl == 0) {
     *result = 0;
     *traversed = 0;
     return;
   }
 
   if (*src == 'u')
-    return splchar3_unicode(src,maxsize,result,resultl,traversed,4);
+    return splchar3_unicode(src,srcl,result,resultl,traversed,4);
   if (*src == 'U')
-    return splchar3_unicode(src,maxsize,result,resultl,traversed,8);
-  *resultl = 0;
-  char r = splchar2(src,maxsize,traversed);
+    return splchar3_unicode(src,srcl,result,resultl,traversed,8);
+
+  char r = splchar2(src,srcl,traversed);
   if (r != *src || r == '\\') {
     *resultl = 1;
     *result = r;

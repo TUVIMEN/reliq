@@ -57,7 +57,7 @@ const struct reliq_format_function format_functions[] = {
 };
 
 reliq_error *
-format_exec(const char *input, const size_t inputl, FILE *output, const reliq_hnode *hnode, const reliq_hnode *parent, const reliq_format_func *format, const size_t formatl, const reliq *rq)
+format_exec(char *input, size_t inputl, FILE *output, const reliq_hnode *hnode, const reliq_hnode *parent, const reliq_format_func *format, const size_t formatl, const reliq *rq)
 {
   if (hnode && (!formatl || (formatl == 1 && (format[0].flags&FORMAT_FUNC) == 0 && (!format[0].arg[0] || !((reliq_cstr*)format[0].arg[0])->b)))) {
     reliq_print(output,hnode);
@@ -78,19 +78,18 @@ format_exec(const char *input, const size_t inputl, FILE *output, const reliq_hn
     if (hnode && i == 0 && (format[i].flags&FORMAT_FUNC) == 0) {
       reliq_printf(out,((reliq_cstr*)format[i].arg[0])->b,((reliq_cstr*)format[i].arg[0])->s,hnode,parent,rq);
     } else {
-      if (i == 0 && hnode) {
-        FILE *t = open_memstream(&ptr[0],&fsize[0]);
-        reliq_print(t,hnode);
-        fclose(t);
+      if (i == 0) {
+        if (hnode) {
+          FILE *t = open_memstream(&ptr[0],&fsize[0]);
+          reliq_print(t,hnode);
+          fclose(t);
+        } else {
+          ptr[0] = input;
+          fsize[0] = inputl;
+        }
       }
       if (format[i].flags&FORMAT_FUNC) {
-        char const *src = ptr[0];
-        size_t size = fsize[0];
-        if (i == 0 && !hnode) {
-          src = input;
-          size = inputl;
-        }
-        reliq_error *err = format_functions[(format[i].flags&FORMAT_FUNC)-1].func(src,size,out,(const void**)format[i].arg,format[i].flags);
+        reliq_error *err = format_functions[(format[i].flags&FORMAT_FUNC)-1].func(ptr[0],fsize[0],out,(const void**)format[i].arg,format[i].flags);
         if (err)
           return err;
       }
@@ -1444,7 +1443,7 @@ sed_pre_edit(const char *src, const size_t size, FILE *output, char *buffers[3],
 }
 
 reliq_error *
-sed_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const unsigned char flag)
+sed_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
 {
   reliq_error *err;
   const char argv0[] = "sed";
@@ -1545,7 +1544,7 @@ echo_edit_print(reliq_str *str, FILE *output)
 }
 
 reliq_error *
-echo_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const unsigned char flag)
+echo_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
 {
   reliq_str *str[2] = {NULL};
   const char argv0[] = "echo";
@@ -1578,7 +1577,7 @@ echo_edit(const char *src, const size_t size, FILE *output, const void *arg[4], 
 }
 
 reliq_error *
-uniq_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const unsigned char flag)
+uniq_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
 {
   char delim = '\n';
   const char argv0[] = "uniq";
@@ -1621,7 +1620,7 @@ sort_cmp(const reliq_cstr *s1, const reliq_cstr *s2)
 }
 
 reliq_error *
-sort_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const unsigned char flag)
+sort_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
 {
   char delim = '\n';
   uchar reverse=0,unique=0; //,natural=0,icase=0;
@@ -1692,7 +1691,7 @@ sort_edit(const char *src, const size_t size, FILE *output, const void *arg[4], 
 }
 
 reliq_error *
-line_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const unsigned char flag)
+line_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
 {
   char delim = '\n';
   reliq_range *range = NULL;
@@ -1733,7 +1732,7 @@ line_edit(const char *src, const size_t size, FILE *output, const void *arg[4], 
 }
 
 reliq_error *
-cut_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const unsigned char flag)
+cut_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
 {
   uchar delim[256]={0};
   uchar complement=0,onlydelimited=0,delimited=0;
@@ -1864,7 +1863,7 @@ cut_edit(const char *src, const size_t size, FILE *output, const void *arg[4], c
 }
 
 reliq_error *
-tr_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const unsigned char flag)
+tr_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
 {
   uchar array[256] = {0};
   reliq_str *string[2] = {NULL};
@@ -1952,7 +1951,7 @@ tr_edit(const char *src, const size_t size, FILE *output, const void *arg[4], co
 }
 
 reliq_error *
-trim_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const unsigned char flag)
+trim_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
 {
   char delim = '\0';
   const char argv0[] = "trim";
@@ -1994,7 +1993,7 @@ trim_edit(const char *src, const size_t size, FILE *output, const void *arg[4], 
 }
 
 reliq_error *
-rev_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const unsigned char flag)
+rev_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
 {
   char delim = '\n';
   const char argv0[] = "rev";
@@ -2016,18 +2015,8 @@ rev_edit(const char *src, const size_t size, FILE *output, const void *arg[4], c
 
     size_t linel = lineend-line;
     if (linel) {
-      const size_t bufmaxsize = 2048;
-      char buf[bufmaxsize];
-      do {
-        size_t j = 0;
-        for (; j < bufmaxsize; linel--, j++) {
-          buf[j] = src[line+linel-1];
-          if (linel < 1)
-            break;
-        }
-        if (j)
-          fwrite(buf,1,j,output);
-      } while (linel);
+      strrev(src+line,linel);
+      fwrite(src+line,1,linel,output);
     }
 
     line = lineend;
@@ -2037,7 +2026,7 @@ rev_edit(const char *src, const size_t size, FILE *output, const void *arg[4], c
 }
 
 reliq_error *
-tac_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const unsigned char flag)
+tac_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
 {
   char delim = '\n';
   const char argv0[] = "tac";
@@ -2063,7 +2052,7 @@ tac_edit(const char *src, const size_t size, FILE *output, const void *arg[4], c
 }
 
 reliq_error *
-wc_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const unsigned char flag)
+wc_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
 {
   char delim = '\n';
   const char argv0[] = "wc";

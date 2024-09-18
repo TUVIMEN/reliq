@@ -39,6 +39,7 @@ typedef unsigned long int ulong;
 #include "edit.h"
 #include "output.h"
 #include "html.h"
+#include "htmlescapecodes.h"
 
 #define PASSED_INC (1<<8) //!! if increased causes huge allocation see val_mem1 file
 #define PATTERN_SIZE_INC (1<<8)
@@ -800,61 +801,67 @@ reliq_match_add(reliq_hnode const *hnode, reliq_hnode const *parent, reliq_npatt
   (*found)++;
 }
 
+#define PC_UNTRIM 0x1
+#define PC_DECODE 0x2
+
 static void
-print_trimmed_if(const reliq_cstr *str, const uchar trim, FILE *outfile)
+print_chars(char const *src, size_t size, const uchar flags, FILE *outfile)
 {
-  char const *dest = str->b;
-  size_t destl = str->s;
-  if (trim)
-    memtrim((void const**)&dest,&destl,str->b,str->s);
-  if (destl)
-    fwrite(dest,1,destl,outfile);
+  if (!(flags&PC_UNTRIM))
+    memtrim((void const**)&src,&size,src,size);
+  if (!size)
+    return;
+  if (flags&PC_DECODE) {
+    htmlescapecodes_file(src,size,outfile);
+  } else
+    fwrite(src,1,size,outfile);
 }
 
 static void
-print_attribs(const reliq_hnode *hnode, const uchar trim, FILE *outfile)
+print_attribs(const reliq_hnode *hnode, const uchar flags, FILE *outfile)
 {
   reliq_cstr_pair *a = hnode->attribs;
   for (ushort j = 0; j < hnode->attribsl; j++) {
     fputc(' ',outfile);
     fwrite(a[j].f.b,1,a[j].f.s,outfile);
     fputs("=\"",outfile);
-    print_trimmed_if(&a[j].s,trim,outfile);
+    print_chars(a[j].s.b,a[j].s.s,flags,outfile);
     fputc('"',outfile);
   }
 }
 
 static void
-print_attrib_value(const reliq_cstr_pair *attribs, const size_t attribsl, const char *text, const size_t textl, const int num, const uchar trim, FILE *outfile)
+print_attrib_value(const reliq_cstr_pair *attribs, const size_t attribsl, const char *text, const size_t textl, const int num, const uchar flags, FILE *outfile)
 {
   if (num != -1) {
     if ((size_t)num < attribsl)
-      print_trimmed_if(&attribs[num].s,trim,outfile);
+      print_chars(attribs[num].s.b,attribs[num].s.s,flags,outfile);
   } else if (textl != 0) {
     for (size_t i = 0; i < attribsl; i++)
       if (memcomp(attribs[i].f.b,text,textl,attribs[i].f.s))
-        print_trimmed_if(&attribs[i].s,trim,outfile);
+        print_chars(attribs[i].s.b,attribs[i].s.s,flags,outfile);
   } else for (size_t i = 0; i < attribsl; i++) {
-    print_trimmed_if(&attribs[i].s,trim,outfile);
+    print_chars(attribs[i].s.b,attribs[i].s.s,flags,outfile);
     fputc('"',outfile);
   }
 }
 
 static void
-print_text(const reliq_hnode *nodes, const reliq_hnode *hnode, FILE *outfile, uchar recursive)
+print_text(const reliq_hnode *nodes, const reliq_hnode *hnode, uchar flags, FILE *outfile, uchar recursive)
 {
   char const *start = hnode->insides.b;
   size_t end;
+  flags |= PC_UNTRIM;
 
   for (size_t i = 1; i <= hnode->desc_count; i++) {
     const reliq_hnode *n = hnode+i;
 
     end = n->all.b-start;
     if (end)
-      fwrite(start,1,end,outfile);
+      print_chars(start,end,flags,outfile);
 
     if (recursive)
-      print_text(nodes,n,outfile,recursive);
+      print_text(nodes,n,flags,outfile,recursive);
 
     i += n->desc_count;
     start = n->all.b+n->all.s;
@@ -862,7 +869,7 @@ print_text(const reliq_hnode *nodes, const reliq_hnode *hnode, FILE *outfile, uc
 
   end = hnode->insides.s-(start-hnode->insides.b);
   if (end)
-    fwrite(start,1,end,outfile);
+    print_chars(start,end,flags,outfile);
 }
 
 void
@@ -898,18 +905,19 @@ reliq_printf(FILE *outfile, const char *format, const size_t formatl, const reli
         textl = t-(format+i);
         i = t-format+1;
       }
+
+      uchar printflags = 0;
+
+      REPEAT: ;
       if (i >= formatl)
           return;
-
-      uchar trim = 0;
-
       switch (format[i++]) {
         case '%': fputc('%',outfile); break;
-        case 'i':
-          trim = 1;
-        case 'I': print_trimmed_if(&hnode->insides,trim,outfile); break;
-        case 't': print_text(rq->nodes,hnode,outfile,0); break;
-        case 'T': print_text(rq->nodes,hnode,outfile,1); break;
+        case 'U': printflags |= PC_UNTRIM; goto REPEAT; break;
+        case 'D': printflags |= PC_DECODE; goto REPEAT; break;
+        case 'i': print_chars(hnode->insides.b,hnode->insides.s,printflags,outfile); break;
+        case 't': print_text(rq->nodes,hnode,printflags,outfile,0); break;
+        case 'T': print_text(rq->nodes,hnode,printflags,outfile,1); break;
         case 'l': {
           ushort lvl = hnode->lvl;
           if (parent) {
@@ -923,16 +931,13 @@ reliq_printf(FILE *outfile, const char *format, const size_t formatl, const reli
           break;
         case 'L': print_uint(hnode->lvl,outfile); break;
         case 'a':
-          trim = 1;
-        case 'A': print_attribs(hnode,trim,outfile); break;
+          print_attribs(hnode,printflags,outfile); break;
         case 'v':
-          trim = 1;
-        case 'V':
-          print_attrib_value(hnode->attribs,hnode->attribsl,text,textl,num,trim,outfile);
+          print_attrib_value(hnode->attribs,hnode->attribsl,text,textl,num,printflags,outfile);
           break;
         case 's': print_uint(hnode->all.s,outfile); break;
         case 'c': print_uint(hnode->desc_count,outfile); break;
-        case 'C': fwrite(hnode->all.b,1,hnode->all.s,outfile); break;
+        case 'C': print_chars(hnode->all.b,hnode->all.s,printflags|PC_UNTRIM,outfile); break;
         case 'p': print_uint(hnode->all.b-rq->data,outfile); break;
         case 'n': fwrite(hnode->tag.b,1,hnode->tag.s,outfile); break;
       }

@@ -314,6 +314,8 @@ It has to be specified in '"' or '\\'' quotes.
 
 If format is not specified it will be set to "%C\\n".
 
+\fIi\fR, \fIt\fR, \fIT\fR, \fIC\fR, \fIa\fR, \fIv\fR directives can be preceded with '\fIU\fR' and '\fID\fR' characters that change their output e.g. '%Ui', '%(href)DUa', '%1UDa'. '\fIU\fR' causes output to be untrimmed (by default they are trimmed), '\fID\fR' decodes html escape codes.
+
 Prints output according to \fBFORMAT\fR interpreting '\e' escapes and `%' directives. The escapes and directives are:
 .RS
 .IP \ea
@@ -347,8 +349,6 @@ A literal percent sign.
 .IP %n
 Tag's name.
 .IP %i
-Tag's insides, trimmed.
-.IP %I
 Tag's insides.
 .IP %t
 Tag's text.
@@ -367,20 +367,12 @@ Tag's count of descendants.
 .IP %C
 Contents of tag.
 .IP %a
-All of the tag's attributes, trimmed.
-.IP %A
 All of the tag's attributes.
 .IP %v
-Trimmed values of tag's attributes separated with '"'.
-.IP %\fIk\fPv
-Trimmed value of tag's attribute, where \fIk\fP is its position counted from zero.
-.IP %(\fIk\fP)v
-Trimmed value of tag's attribute, where \fIk\fP is its name.
-.IP %V
 Values of tag's attributes separated with '"'.
-.IP %\fIk\fPV
+.IP %\fIk\fPv
 Value of tag's attribute, where \fIk\fP is its position counted from zero.
-.IP %(\fIk\fP)V
+.IP %(\fIk\fP)v
 Value of tag's attribute, where \fIk\fP is its name.
 
 .SS FUNCTION
