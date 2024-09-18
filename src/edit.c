@@ -36,6 +36,7 @@ typedef unsigned long int ulong;
 #include "flexarr.h"
 #include "ctype.h"
 #include "utils.h"
+#include "htmlescapecodes.h"
 #include "edit.h"
 
 #define LINE_EDIT_INC (1<<8)
@@ -48,6 +49,7 @@ const struct reliq_format_function format_functions[] = {
     {{"tr",2},tr_edit},
     {{"line",4},line_edit},
     {{"cut",3},cut_edit},
+    {{"decode",6},decode_edit},
     {{"sort",4},sort_edit},
     {{"uniq",4},uniq_edit},
     {{"echo",4},echo_edit},
@@ -2048,6 +2050,8 @@ tac_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigne
   reliq_cstr *linesv = lines->v;
   for (size_t i = lines->size; i; i--)
     fwrite(linesv[i-1].b,1,linesv[i-1].s,output);
+
+  flexarr_free(lines);
   return NULL;
 }
 
@@ -2138,12 +2142,19 @@ wc_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned
   } else for (uchar i = 0; i < 4; i++) {
     if (v[i]) {
       uint_to_str(numbuf,&numl,22,r[i]);
-      fwrite("\t",1,1,output);
+      fputc('\t',output);
       fwrite(numbuf,1,numl,output);
     }
   }
 
-  fwrite("\n",1,1,output);
+  fputc('\n',output);
 
+  return NULL;
+}
+
+reliq_error *
+decode_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
+{
+  htmlescapecodes_file(src,size,output);
   return NULL;
 }

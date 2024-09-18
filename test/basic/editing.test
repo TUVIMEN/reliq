@@ -67,3 +67,6 @@ a1baa078ce966b3022b8c760e4f3516e,'li | "%i l\\a\j \U204 \xa \u \u000 \n"'
 60f1112bf3c2d1cca9431fa8cc8ec58f,'li | "%i\n" / sed "\#\U0001f4e7#p" "n"'
 4429af3e442723009725527261d86453,'li | "%i\n" / sed "s/\x61/|\ua0a|/g; s/\i/\J/g; s/=\o42p/=\x27p/g; s/\o143/\o322/g"'
 def5318b05f50c5472d92563bda00818,'li | tr "\x61-\x64" tr "\k\x22" "\o12" tr "[\x20*3]" "$"'
+
+$ 2.html
+741ed4c871a5f8ca395a07a82d2c117e,'encoding / decode'

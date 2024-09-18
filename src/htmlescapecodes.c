@@ -28,6 +28,7 @@
 #include "ctype.h"
 #include "reliq.h"
 #include "utils.h"
+#include "htmlescapecodes.h"
 
 typedef unsigned char uchar;
 typedef unsigned short ushort;
@@ -2241,7 +2242,7 @@ htmlescapecode(const char *src, const size_t srcl, size_t *traversed, char *resu
           }
         }
 
-      } while (i+len < srcl && isalpha(src[i+len]) && len < 32);
+      } while (i+len < srcl && isalpha(src[i+len]) && len <= HTMLESCAPECODES_MAXSIZE_NAME);
 
       if (i+len >= srcl || src[i+len] != ';') {
         i--;
@@ -2280,10 +2281,10 @@ htmlescapecode(const char *src, const size_t srcl, size_t *traversed, char *resu
       uint64_t data = 0;
       size_t trav;
       if (isdigit(src[i])) {
-        data = get_fromdec(src+i,srcl-i,&trav,10);
+        data = get_fromdec(src+i,srcl-i,&trav,HTMLESCAPECODES_MAXSIZE_DIGITS);
       } else {
         i++;
-        data = get_fromhex(src+i,srcl-i,&trav,8);
+        data = get_fromhex(src+i,srcl-i,&trav,HTMLESCAPECODES_MAXSIZE_XDIGITS);
       }
       i += trav;
 
@@ -2313,12 +2314,12 @@ htmlescapecode(const char *src, const size_t srcl, size_t *traversed, char *resu
 void
 htmlescapecodes_file(const char *src, const size_t srcl, FILE *out)
 {
-  const size_t buf_size=4096,maxcharsize=16;
+  const size_t buf_size=4096;
   char buf[buf_size];
   size_t buf_used = 0;
 
   for (size_t i = 0; i < srcl;) {
-    if (buf_size-buf_used < maxcharsize) {
+    if (buf_size-buf_used < HTMLESCAPECODES_MAXSIZE_VAL) {
       fwrite(buf,1,buf_used,out);
       buf_used = 0;
     }
