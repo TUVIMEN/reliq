@@ -25,10 +25,6 @@
 #include <string.h>
 
 typedef unsigned char uchar;
-typedef unsigned short ushort;
-typedef unsigned int uint;
-typedef unsigned long int ulong;
-typedef unsigned long long int ullong;
 
 #include "reliq.h"
 #include "flexarr.h"
@@ -40,7 +36,7 @@ typedef unsigned long long int ullong;
 #define QUOTE_INCR 512
 
 void
-strrev(char *v, size_t size)
+strrev(char *v, const size_t size)
 {
   if (!v || !size)
     return;
@@ -133,7 +129,7 @@ memwordtok_r(const void *ptr, const size_t plen, void const **saveptr, size_t *s
 }
 
 void *
-memdup(void const *src, size_t size)
+memdup(void const *src, const size_t size)
 {
   return memcpy(malloc(size),src,size);
 }
@@ -206,7 +202,7 @@ get_fromdec(const char *src, const size_t srcl, size_t *traversed, const uchar m
   if (!maxlength || !srcl)
     return 0;
   size_t i = 0;
-  ullong ret = 0;
+  uint64_t ret = 0;
   const size_t size = (srcl < maxlength) ? srcl : maxlength;
 
   for (; i < size && isdigit(src[i]); i++)
@@ -235,7 +231,7 @@ get_fromhex(const char *src, const size_t srcl, size_t *traversed, const uchar m
   if (!maxlength || !srcl)
     return 0;
   size_t i = 0;
-  ullong ret = 0;
+  uint64_t ret = 0;
   const size_t size = (srcl < maxlength) ? srcl : maxlength;
 
   for (; i < size; i++) {
@@ -250,13 +246,13 @@ get_fromhex(const char *src, const size_t srcl, size_t *traversed, const uchar m
   return ret;
 }
 
-static ullong
+static uint64_t
 splchar2_fromhex(const char *src, const size_t srcl, size_t *traversed, const uchar maxlength) {
   if (srcl < 1) {
     *traversed = 1;
     return *src;
   }
-  ullong ret = get_fromhex(src+1,srcl-1,traversed,maxlength);
+  uint64_t ret = get_fromhex(src+1,srcl-1,traversed,maxlength);
   if (*traversed == 0)
     return ret = *src;
   (*traversed)++;
@@ -310,7 +306,7 @@ splchar2(const char *src, const size_t srcl, size_t *traversed)
 uint32_t
 enc16utf8(const uint16_t c)
 {
-  uint d = 0;
+  uint32_t d = 0;
   char bcount = 15;
   while (bcount != -1 && ((c>>bcount)&1) == 0)
     bcount--;
@@ -371,7 +367,7 @@ write_utf8(uint64_t data, char *result, size_t *traversed, const size_t maxlengt
 static void
 splchar3_unicode(const char *src, const size_t srcl, char *result, size_t *resultl, size_t *traversed, const uchar maxlength)
 {
-  ullong val = splchar2_fromhex(src,srcl,traversed,maxlength);
+  uint64_t val = splchar2_fromhex(src,srcl,traversed,maxlength);
   if (*traversed == 0) {
     *resultl = 0;
     *result = *src;
@@ -429,7 +425,7 @@ delchar(char *src, const size_t pos, size_t *size)
 }
 
 unsigned int
-get_dec(const char *src, size_t size, size_t *traversed)
+get_dec(const char *src, const size_t size, size_t *traversed)
 {
     size_t pos=0;
     unsigned int r = 0;
@@ -508,26 +504,26 @@ splchars_conv(char *src, size_t *size)
 }
 
 uchar
-range_match(const uint matched, const reliq_range *range, const size_t last)
+range_match(const uint32_t matched, const reliq_range *range, const size_t last)
 {
   if (!range || !range->s)
     return 1;
   struct reliq_range_node const *r;
-  uint x,y;
+  uint32_t x,y;
   for (size_t i = 0; i < range->s; i++) {
     r = &range->b[i];
     x = r->v[0];
     y = r->v[1];
     if (!(r->flags&R_RANGE)) {
       if (r->flags&R_RELATIVE(0))
-        x = ((uint)last < r->v[0]) ? 0 : last-r->v[0];
+        x = ((uint32_t)last < r->v[0]) ? 0 : last-r->v[0];
       if (matched == x)
         return r->flags&R_INVERT ? 0 : 1;
     } else {
       if (r->flags&R_RELATIVE(0))
-        x = ((uint)last < r->v[0]) ? 0 : last-r->v[0];
+        x = ((uint32_t)last < r->v[0]) ? 0 : last-r->v[0];
       if (r->flags&R_RELATIVE(1)) {
-        if ((uint)last < r->v[1])
+        if ((uint32_t)last < r->v[1])
           continue;
         y = last-r->v[1];
       }
@@ -634,7 +630,7 @@ range_comp(const char *src, size_t *pos, const size_t size, reliq_range *range)
 
   flexarr_conv(r,(void**)&range->b,&range->s);
   /*range->max = predict_range_max(range); //new field
-  if (range->max == (uint)-1)
+  if (range->max == (uint32_t)-1)
     return script_err("range: conditions impossible to fullfill")*/ //future warning
   return NULL;
 }
@@ -648,11 +644,11 @@ range_free(reliq_range *range)
     free(range->b);
 }
 
-uint
+uint32_t
 predict_range_node_max(const struct reliq_range_node *node)
 {
   //returns 0 on relative, -1 on conflicted values
-  uchar flags = node->flags;
+  uint8_t flags = node->flags;
   if (flags&R_INVERT)
     return 0; //in most cases its relative
 
@@ -668,7 +664,7 @@ predict_range_node_max(const struct reliq_range_node *node)
   if (node->v[0] > node->v[1])
     return -1;
 
-  uint max = node->v[1]+node->v[3];
+  uint32_t max = node->v[1]+node->v[3];
 
   if (max < node->v[2])
     return -1;
@@ -684,18 +680,18 @@ predict_range_node_max(const struct reliq_range_node *node)
   return max+1-node->v[3];
 }
 
-uint
+uint32_t
 predict_range_max(const reliq_range *range)
 {
-  size_t size = range->s;
+  const size_t size = range->s;
   struct reliq_range_node *nodes = range->b;
-  uint max = 0;
+  uint32_t max = 0;
 
   for (size_t i = 0; i < size; i++) {
-    uint x = predict_range_node_max(&nodes[i]);
+    uint32_t x = predict_range_node_max(&nodes[i]);
     if (x == 0)
       return 0;
-    if (max == (uint)-1 || x > max)
+    if (max == (uint32_t)-1 || x > max)
       max = x;
   }
 

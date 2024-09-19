@@ -26,9 +26,6 @@
 #include <string.h>
 
 typedef unsigned char uchar;
-typedef unsigned short ushort;
-typedef unsigned int uint;
-typedef unsigned long int ulong;
 
 #include "reliq.h"
 #include "flexarr.h"
@@ -72,13 +69,13 @@ struct outfield {
   char *v;
   size_t s;
   reliq_output_field const *o;
-  ushort lvl;
+  uint16_t lvl;
   uchar code;
 };
 
 #ifdef RELIQ_EDITING
-void
-fcollector_rearrange_pre(struct fcollector_expr *fcols, size_t start, size_t end, ushort lvl)
+static void
+fcollector_rearrange_pre(struct fcollector_expr *fcols, size_t start, size_t end, const uint16_t lvl)
 {
   size_t i=start;
   while (start < end) {
@@ -152,7 +149,7 @@ fcollector_out_end(flexarr *outs, const size_t ncurrent, struct fcollector_expr 
 #define OUTFIELDS_NUM_UNSIGNED 4
 
 static void
-outfields_num_print(FILE *out, const char *value, const size_t valuel, uchar flags)
+outfields_num_print(FILE *out, const char *value, const size_t valuel, const uint8_t flags)
 {
   char const *start = value;
   size_t end = 0;
@@ -243,7 +240,7 @@ outfields_bool_print(FILE *out, const char *value, const size_t valuel)
 }
 
 static void
-outfields_unicode_print(FILE *out, ushort character)
+outfields_unicode_print(FILE *out, uint16_t character)
 {
   char val[] = "\\u0000";
   const size_t vall = 6;
@@ -349,7 +346,7 @@ outfields_value_print(FILE *out, const reliq_output_field *field, const char *va
 }
 
 static void
-outfields_print_pre(struct outfield **fields, size_t *pos, const size_t size, const ushort lvl, uchar isarray, FILE *out)
+outfields_print_pre(struct outfield **fields, size_t *pos, const size_t size, const uint16_t lvl, uchar isarray, FILE *out)
 {
   size_t i = *pos;
 
@@ -451,11 +448,11 @@ nodes_output(const reliq *rq, flexarr *compressed_nodes, flexarr *ncollector
   #endif
 
   flexarr *outfields = flexarr_init(sizeof(struct outfield*),OUTFIELDS_INC);
-  ushort fieldlvl = 0;
+  uint16_t fieldlvl = 0;
   FILE **oout = NULL; //outfields output
   enum outfieldCode prevcode = ofUnnamed;
   size_t prev_j = j;
-  ushort field_ended = 0;
+  uchar field_ended = 0;
 
   for (;; j++) {
     #ifdef RELIQ_EDITING

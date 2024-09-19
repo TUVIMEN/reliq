@@ -21,6 +21,7 @@
 
 #include <stddef.h>
 #include <stdarg.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <regex.h>
 
@@ -46,12 +47,12 @@
 
 typedef struct {
   void *arg[4];
-  unsigned char flags;
+  uint8_t flags; //FORMAT_
 } reliq_format_func;
 
 typedef struct {
   char *b;
-  unsigned char s;
+  uint8_t s;
 } reliq_str8;
 
 typedef struct {
@@ -79,14 +80,14 @@ typedef struct {
   reliq_cstr tag;
   reliq_cstr insides;
   reliq_cstr_pair *attribs;
-  unsigned int desc_count; //count of descendants
-  unsigned short attribsl;
-  unsigned short lvl;
+  uint32_t desc_count; //count of descendants
+  uint16_t attribsl;
+  uint16_t lvl;
 } reliq_hnode; //html node
 
 struct reliq_range_node {
-  unsigned int v[4];
-  unsigned char flags;
+  uint32_t v[4];
+  uint8_t flags; //R_
 };
 
 typedef struct {
@@ -100,13 +101,13 @@ typedef struct {
     regex_t reg;
   } match;
   reliq_range range;
-  unsigned short flags;
+  uint16_t flags; //RELIQ_PATTERN_
 } reliq_pattern;
 
 struct reliq_pattrib {
   reliq_pattern r[2];
   reliq_range position;
-  unsigned char flags;
+  uint8_t flags; //A_
 };
 
 typedef struct {
@@ -130,8 +131,8 @@ typedef struct {
   #ifdef RELIQ_EDITING
   size_t exprfl;
   #endif
-  unsigned short childfields;
-  unsigned char flags;
+  uint16_t childfields;
+  uint8_t flags; //EXPR_
 } reliq_expr;
 
 typedef struct {
@@ -145,7 +146,7 @@ typedef struct {
     reliq_pattern pattern;
     reliq_range range;
   } match;
-  unsigned short flags;
+  uint16_t flags; //H_
 } reliq_hook;
 
 typedef struct reliq_node_matches reliq_node_matches;
@@ -162,7 +163,7 @@ typedef struct {
     struct reliq_pattrib *attrib;
     reliq_node_matches_groups *groups;
   } data;
-  unsigned char type;
+  uint8_t type; //MATCHES_TYPE_
 } reliq_node_matches_node;
 
 struct reliq_node_matches {
@@ -175,8 +176,8 @@ struct reliq_npattern {
   reliq_node_matches matches;
   reliq_range position;
 
-  unsigned int position_max;
-  unsigned char flags;
+  uint32_t position_max;
+  uint8_t flags; //N_
 };
 
 typedef struct {
@@ -205,7 +206,7 @@ typedef struct {
 
   size_t nodesl;
   size_t datal; //length of data
-  unsigned char flags;
+  uint8_t flags; //RELIQ_
 } reliq;
 
 int reliq_std_free(void *addr, size_t len); //mapping to free(3) that can be used for freedata

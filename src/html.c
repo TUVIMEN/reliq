@@ -25,9 +25,6 @@
 #include <string.h>
 
 typedef unsigned char uchar;
-typedef unsigned short ushort;
-typedef unsigned int uint;
-typedef unsigned long int ulong;
 
 #include "reliq.h"
 #include "flexarr.h"
@@ -198,11 +195,11 @@ phptag_handle(const char *f, size_t *pos, const size_t s, reliq_hnode *hnode)
 }
 #endif
 
-ulong
-html_struct_handle(const char *f, size_t *pos, const size_t s, const ushort lvl, flexarr *nodes, reliq *rq, reliq_error **err)
+uint64_t
+html_struct_handle(const char *f, size_t *pos, const size_t s, const uint16_t lvl, flexarr *nodes, reliq *rq, reliq_error **err)
 {
   *err = NULL;
-  ulong ret = 1;
+  uint64_t ret = 1;
   size_t i = *pos;
   if (lvl >= RELIQ_MAX_NODE_LEVEL) {
     *err = reliq_set_error(RELIQ_ERROR_HTML,"html: %lu: reached %u level of recursion in document",i,lvl);
@@ -256,7 +253,7 @@ html_struct_handle(const char *f, size_t *pos, const size_t s, const ushort lvl,
     attrib_handle(f,&i,s,a);
   }
 
-  #define search_array(x,y) for (uchar _j = 0; _j < (uint)LENGTH(x); _j++) \
+  #define search_array(x,y) for (uchar _j = 0; _j < (uchar)LENGTH(x); _j++) \
     if (strcasecomp(x[_j],y))
 
   search_array(selfclosing_s,hnode->tag) {
@@ -272,7 +269,7 @@ html_struct_handle(const char *f, size_t *pos, const size_t s, const ushort lvl,
 
   #ifdef RELIQ_AUTOCLOSING
   uchar autoclosing = -1;
-  for (uchar j = 0; j < (uint)LENGTH(autoclosing_s); j++) {
+  for (uchar j = 0; j < (uchar)LENGTH(autoclosing_s); j++) {
     if (strcasecomp(autoclosing_s[j][0],hnode->tag)) {
       autoclosing = j;
       goto FOUND_AND_SKIP_OTHERS;
@@ -333,7 +330,7 @@ html_struct_handle(const char *f, size_t *pos, const size_t s, const ushort lvl,
         if (strcasecomp(nodesv[j].tag,endname)) {
           i = tagend;
           hnode->insides.s = i-(hnode->insides.b-f);
-          ret = (ret&0xffffffff)+((ulong)(lvl-nodesv[j].lvl)<<32);
+          ret = (ret&0xffffffff)+((uint64_t)(lvl-nodesv[j].lvl)<<32);
           goto END;
         }
         if (!j || !nodesv[j].lvl)
@@ -364,14 +361,14 @@ html_struct_handle(const char *f, size_t *pos, const size_t s, const ushort lvl,
         }
         #endif
         i = tagend;
-        ulong rettmp = html_struct_handle(f,&i,s,lvl+1,nodes,rq,err);
+        uint64_t rettmp = html_struct_handle(f,&i,s,lvl+1,nodes,rq,err);
         if (*err) {
           ret = 0;
           goto ERR;
         }
         ret += rettmp&0xffffffff;
         hnode = &((reliq_hnode*)nodes->v)[index];
-        uint lvldiff = rettmp>>32;
+        uint32_t lvldiff = rettmp>>32;
         if (lvldiff) {
           if (lvldiff > 1) {
             hnode->insides.s = i-(hnode->insides.b-f);

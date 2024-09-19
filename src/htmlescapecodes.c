@@ -31,10 +31,6 @@
 #include "htmlescapecodes.h"
 
 typedef unsigned char uchar;
-typedef unsigned short ushort;
-typedef unsigned int uint;
-typedef unsigned long int ulong;
-typedef unsigned long long int ullong;
 
 struct htmlcode {
   reliq_str8 name;

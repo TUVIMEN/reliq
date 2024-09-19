@@ -41,14 +41,11 @@
 #define BUFF_INC_VALUE (1<<23)
 
 typedef unsigned char uchar;
-typedef unsigned short ushort;
-typedef unsigned int uint;
-typedef unsigned long int ulong;
 
 char *argv0;
 reliq_exprs exprs = {0};
 
-uint settings = 0;
+unsigned int settings = 0; //F_
 int nftwflags = FTW_PHYS;
 FILE *outfile;
 FILE *errfile;

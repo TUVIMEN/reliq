@@ -23,7 +23,7 @@ struct fcollector_expr {
   const reliq_expr *e;
   size_t start;
   size_t end;
-  unsigned short lvl;
+  uint16_t lvl;
   unsigned char isnodef;
 };
 

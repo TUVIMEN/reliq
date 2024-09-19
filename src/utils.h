@@ -45,13 +45,13 @@
 #define strcasecomp(x,y) memcasecomp(x.b,y.b,x.s,y.s)
 
 void print_uint(unsigned long num, FILE *outfile);
-void strrev(char *v, size_t size);
+void strrev(char *v, const size_t size);
 void uint_to_str(char *dest, size_t *destl, const size_t max_destl, unsigned long num);
 void memtrim(void const **dest, size_t *destsize, const void *src, const size_t size);
 void memwordtok_r(const void *ptr, const size_t plen, void const **saveptr, size_t *saveptrlen, void const **word, size_t *wordlen);
 int memcasecmp(const void *v1, const void *v2, const size_t n);
 void const *memcasemem(void const *haystack, size_t const haystackl, const void *needle, const size_t needlel);
-void *memdup(void const *src, size_t size);
+void *memdup(void const *src, const size_t size);
 uint32_t enc16utf8(const uint16_t c);
 uint64_t enc32utf8(const uint32_t c);
 int write_utf8(uint64_t data, char *result, size_t *traversed, const size_t maxlength);
@@ -60,7 +60,7 @@ char splchar2(const char *src, const size_t srcl, size_t *traversed);
 void splchar3(const char *src, const size_t srcl, char *result, size_t *resultl, size_t *traversed);
 char *delstr(char *src, const size_t pos, size_t *size, const size_t count);
 char *delchar(char *src, const size_t pos, size_t *size);
-unsigned int get_dec(const char *src, size_t size, size_t *traversed);
+unsigned int get_dec(const char *src, const size_t size, size_t *traversed);
 uint64_t get_fromdec(const char *src, const size_t srcl, size_t *traversed, const unsigned char maxlength);
 uint64_t get_fromhex(const char *src, const size_t srcl, size_t *traversed, const unsigned char maxlength);
 unsigned int number_handle(const char *src, size_t *pos, const size_t size);

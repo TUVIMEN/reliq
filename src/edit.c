@@ -28,9 +28,6 @@
 #include <limits.h>
 
 typedef unsigned char uchar;
-typedef unsigned short ushort;
-typedef unsigned int uint;
-typedef unsigned long int ulong;
 
 #include "reliq.h"
 #include "flexarr.h"
@@ -44,18 +41,18 @@ typedef unsigned long int ulong;
 #define SED_MAX_PATTERN_SPACE (1<<20)
 
 const struct reliq_format_function format_functions[] = {
-    {{"sed",3},sed_edit},
-    {{"trim",4},trim_edit},
-    {{"tr",2},tr_edit},
-    {{"line",4},line_edit},
-    {{"cut",3},cut_edit},
-    {{"decode",6},decode_edit},
-    {{"sort",4},sort_edit},
-    {{"uniq",4},uniq_edit},
-    {{"echo",4},echo_edit},
-    {{"wc",2},wc_edit},
-    {{"rev",3},rev_edit},
-    {{"tac",3},tac_edit},
+    {{"sed",3},(reliq_format_function_t)sed_edit},
+    {{"trim",4},(reliq_format_function_t)trim_edit},
+    {{"tr",2},(reliq_format_function_t)tr_edit},
+    {{"line",4},(reliq_format_function_t)line_edit},
+    {{"cut",3},(reliq_format_function_t)cut_edit},
+    {{"decode",6},(reliq_format_function_t)decode_edit},
+    {{"sort",4},(reliq_format_function_t)sort_edit},
+    {{"uniq",4},(reliq_format_function_t)uniq_edit},
+    {{"echo",4},(reliq_format_function_t)echo_edit},
+    {{"wc",2},(reliq_format_function_t)wc_edit},
+    {{"rev",3},(reliq_format_function_t)rev_edit},
+    {{"tac",3},(reliq_format_function_t)tac_edit},
 };
 
 reliq_error *
@@ -231,7 +228,7 @@ format_free(reliq_format_func *format, size_t formatl)
 }
 
 static int
-get_arg_delim(const void *args[4], const int num, const uchar flag, char *delim)
+get_arg_delim(const void *args[4], const int num, const uint8_t flag, char *delim)
 {
   const void *arg = args[num];
   if (!arg)
@@ -460,7 +457,7 @@ tr_strrange(const char *src1, const size_t size1, const char *src2, const size_t
           break;
         last = r;
       }
-      for (ushort i = 0; i < 256; i++) {
+      for (uint16_t i = 0; i < 256; i++) {
         if (arr[(uchar)i]) {
           arr[(uchar)i] = 0;
         } else {
@@ -470,7 +467,7 @@ tr_strrange(const char *src1, const size_t size1, const char *src2, const size_t
         }
       }
     } else
-      for (ushort i = 0; i < 256; i++)
+      for (uint16_t i = 0; i < 256; i++)
         arr[(uchar)i] = !arr[(uchar)i];
   }
   return NULL;
@@ -494,11 +491,11 @@ struct sed_address {
   unsigned int num[2];
   regex_t reg[2];
   unsigned int fline;
-  ushort flags;
+  uint16_t flags; //SED_A_
 };
 
 static void
-sed_address_comp_number(const char *src, size_t *pos, size_t size, uint *result)
+sed_address_comp_number(const char *src, size_t *pos, const size_t size, uint32_t *result)
 {
   size_t s;
   *result = get_dec(src+*pos,size-*pos,&s);
@@ -506,7 +503,7 @@ sed_address_comp_number(const char *src, size_t *pos, size_t size, uint *result)
 }
 
 static reliq_error *
-sed_address_comp_regex(const char *src, size_t *pos, size_t size, regex_t *preg, int eflags)
+sed_address_comp_regex(const char *src, size_t *pos, const size_t size, regex_t *preg, const int eflags)
 {
   char regex_delim = '/';
   if (*pos+1 < size && src[*pos] == '\\')
@@ -538,7 +535,7 @@ sed_address_comp_regex(const char *src, size_t *pos, size_t size, regex_t *preg,
 }
 
 static reliq_error *
-sed_address_comp_reverse(const char *src, size_t *pos, size_t size, struct sed_address *address)
+sed_address_comp_reverse(const char *src, size_t *pos, const size_t size, struct sed_address *address)
 {
   while_is(isspace,src,*pos,size);
   if (*pos < size && src[*pos] == '!') {
@@ -554,7 +551,7 @@ sed_address_comp_reverse(const char *src, size_t *pos, size_t size, struct sed_a
 }
 
 static reliq_error *
-sed_address_comp_pre(const char *src, size_t *pos, size_t size, struct sed_address *address, int eflags)
+sed_address_comp_pre(const char *src, size_t *pos, const size_t size, struct sed_address *address, int eflags)
 {
   reliq_error *err = NULL;
   address->flags = 0;
@@ -631,7 +628,7 @@ sed_address_free(struct sed_address *a)
 }
 
 static reliq_error *
-sed_address_comp(const char *src, size_t *pos, size_t size, struct sed_address *address, int eflags)
+sed_address_comp(const char *src, size_t *pos, const size_t size, struct sed_address *address, int eflags)
 {
   reliq_error *err = sed_address_comp_pre(src,pos,size,address,eflags|REG_NOSUB);
   if (err) {
@@ -642,13 +639,13 @@ sed_address_comp(const char *src, size_t *pos, size_t size, struct sed_address *
 }
 
 static int
-sed_address_exec(const char *src, size_t size, uint line, uchar islast, struct sed_address *address)
+sed_address_exec(const char *src, const size_t size, const uint32_t line, const uchar islast, struct sed_address *address)
 {
   if (address->flags == SED_A_EMPTY)
     return 1;
   regmatch_t pmatch;
   uchar rev=0,range=0,first=0;
-  ushort flags = address->flags;
+  uint16_t flags = address->flags;
 
   if (flags&SED_A_REVERSE)
     rev = 1;
@@ -738,12 +735,12 @@ sed_address_exec(const char *src, size_t size, uint line, uchar islast, struct s
 #define SED_EXPRESSION_S_PRINT 0x04000000
 
 struct sed_expression {
-  ushort lvl;
+  uint16_t lvl;
   struct sed_address address;
   char name;
   reliq_cstr arg;
   void *arg1;
-  void *arg2;
+  void *arg2; //SED_EXPRESSION_S_
 };
 
 static void
@@ -769,7 +766,7 @@ sed_expression_free(struct sed_expression *e)
 
 struct sed_command {
   char name;
-  ushort flags;
+  uint16_t flags; //SC_
 } sed_commands[] = {
   {'{',0},
   {'}',SC_NOADDRESS},
@@ -837,7 +834,7 @@ sed_EXTRACHARS(const size_t pos)
 }
 
 static void
-sed_comp_onlynewline(const char *src, size_t *pos, const size_t size, const ushort flags)
+sed_comp_onlynewline(const char *src, size_t *pos, const size_t size, const uint16_t flags)
 {
   size_t p = *pos;
   if (flags&SC_ESCAPE_NEWLINE) {
@@ -915,9 +912,9 @@ sed_comp_y(const size_t pos, const char name, struct sed_expression *sedexpr, re
 }
 
 static reliq_error *
-sed_comp_s_flags(const char *src, const size_t size, const size_t pos, int *eflags, ulong *args)
+sed_comp_s_flags(const char *src, const size_t size, const size_t pos, int *eflags, uint64_t *args)
 {
-  ulong arg2 = 0;
+  uint64_t arg2 = 0;
   for (size_t i = 0; i < size; i++) {
     if (src[i] == 'i') {
       if (arg2&SED_EXPRESSION_S_ICASE)
@@ -937,7 +934,7 @@ sed_comp_s_flags(const char *src, const size_t size, const size_t pos, int *efla
     } else if (isdigit(src[i])) {
       if (arg2&SED_EXPRESSION_S_NUMBER)
         return script_err("sed: char %lu: multiple number options to `s' command",pos);
-      uint c = number_handle(src,&i,size);
+      uint32_t c = number_handle(src,&i,size);
       if (!c)
         return script_err("sed: char %lu: number option to `s' may not be zero",pos);
       arg2 |= c&SED_EXPRESSION_S_NUMBER;
@@ -957,7 +954,7 @@ sed_comp_s(const char *src, const size_t pos, int eflags, struct sed_expression 
   if (sedexpr->arg.s >= REGEX_PATTERN_SIZE-1)
     return script_err("sed: `s' pattern is too big");
 
-  if ((err = sed_comp_s_flags(third->b,third->s,pos,&eflags,(ulong*)(void*)&sedexpr->arg2)))
+  if ((err = sed_comp_s_flags(third->b,third->s,pos,&eflags,(uint64_t*)(void*)&sedexpr->arg2)))
     return err;
 
   size_t len = sedexpr->arg.s;
@@ -1036,7 +1033,7 @@ sed_comp_check_labels(flexarr *script)
 }
 
 static reliq_error *
-sed_script_comp_pre(const char *src, size_t size, int eflags, flexarr **script)
+sed_script_comp_pre(const char *src, const size_t size, int eflags, flexarr **script)
 {
   reliq_error *err;
   size_t pos = 0;
@@ -1046,7 +1043,7 @@ sed_script_comp_pre(const char *src, size_t size, int eflags, flexarr **script)
   sedexpr->arg1 = NULL;
   sedexpr->arg2 = NULL;
   struct sed_command *command;
-  ushort lvl = 0;
+  uint16_t lvl = 0;
   while (pos < size) {
     sedexpr->name = '\0';
     while (pos < size && (isspace(src[pos]) || src[pos] == ';'))
@@ -1099,9 +1096,9 @@ sed_script_comp_pre(const char *src, size_t size, int eflags, flexarr **script)
       while (pos < size && src[pos] != '\n' && src[pos] != '#' && src[pos] != ';' && src[pos] != '}')
         pos++;
     if (command->name != 's' && command->name != 'y') {
-      uint argend = pos;
+      size_t argend = pos;
       if (!(command->flags&SC_ONLY_NEWLINE))
-        while (argend > argstart-src && isspace(src[argend-1]))
+        while (argend > (size_t)(argstart-src) && isspace(src[argend-1]))
           argend--;
       sedexpr->arg.b = argstart;
       sedexpr->arg.s = argend-(argstart-src);
@@ -1134,7 +1131,7 @@ sed_script_comp_pre(const char *src, size_t size, int eflags, flexarr **script)
 }
 
 static reliq_error *
-sed_script_comp(const char *src, size_t size, int eflags, flexarr **script)
+sed_script_comp(const char *src, const size_t size, int eflags, flexarr **script)
 {
   reliq_error *err = NULL;
   if ((err = sed_script_comp_pre(src,size,eflags,script))) {
@@ -1159,7 +1156,7 @@ sed_pre_edit(const char *src, const size_t size, FILE *output, char *buffers[3],
     buffersp_delim=0,
     holdsp_delim=0;
 
-  uint linenumber = 0;
+  uint32_t linenumber = 0;
   struct sed_expression *scriptv = (struct sed_expression*)script->v;
   size_t cycle = 0;
 
@@ -1201,7 +1198,7 @@ sed_pre_edit(const char *src, const size_t size, FILE *output, char *buffers[3],
     for (; cycle < script->size; cycle++) {
       if (!sed_address_exec(patternsp,patternspl,linenumber,islastline,&scriptv[cycle].address)) {
         if (scriptv[cycle].name == '{') {
-          uint lvl = scriptv[++cycle].lvl;
+          uint16_t lvl = scriptv[++cycle].lvl;
           while (cycle+1 < script->size && lvl <= scriptv[cycle+1].lvl)
             cycle++;
           if (cycle < script->size)
@@ -1322,10 +1319,10 @@ sed_pre_edit(const char *src, const size_t size, FILE *output, char *buffers[3],
           break;
         case 's': {
           successfulsub = 0;
-          uchar global = ((((ulong)scriptv[cycle].arg2)&SED_EXPRESSION_S_GLOBAL) ? 1 : 0),
-            print = ((((ulong)scriptv[cycle].arg2)&SED_EXPRESSION_S_PRINT) ? 1 : 0);
-          uint matchnum = ((ulong)scriptv[cycle].arg2)&SED_EXPRESSION_S_NUMBER;
-          uint matchfound = 0;
+          uchar global = ((((uint64_t)scriptv[cycle].arg2)&SED_EXPRESSION_S_GLOBAL) ? 1 : 0),
+            print = ((((uint64_t)scriptv[cycle].arg2)&SED_EXPRESSION_S_PRINT) ? 1 : 0);
+          uint32_t matchnum = ((uint64_t)scriptv[cycle].arg2)&SED_EXPRESSION_S_NUMBER,
+            matchfound = 0;
           size_t after = 0;
           do {
           regmatch_t pmatch[10];
@@ -1445,7 +1442,7 @@ sed_pre_edit(const char *src, const size_t size, FILE *output, char *buffers[3],
 }
 
 reliq_error *
-sed_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
+sed_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const uint8_t flag)
 {
   reliq_error *err;
   const char argv0[] = "sed";
@@ -1500,7 +1497,7 @@ sed_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigne
 }
 
 static reliq_cstr
-cstr_get_line(const char *src, size_t size, size_t *saveptr, const char delim)
+cstr_get_line(const char *src, const size_t size, size_t *saveptr, const char delim)
 {
   reliq_cstr ret = {NULL,0};
   size_t startline = *saveptr;
@@ -1517,7 +1514,7 @@ cstr_get_line(const char *src, size_t size, size_t *saveptr, const char delim)
 
 //without delim saved
 static reliq_cstr
-cstr_get_line_d(const char *src, size_t size, size_t *saveptr, const char delim)
+cstr_get_line_d(const char *src, const size_t size, size_t *saveptr, const char delim)
 {
   reliq_cstr ret = cstr_get_line(src,size,saveptr,delim);
   if (ret.b && ret.b[ret.s-1] == delim)
@@ -1546,7 +1543,7 @@ echo_edit_print(reliq_str *str, FILE *output)
 }
 
 reliq_error *
-echo_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
+echo_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const uint8_t flag)
 {
   reliq_str *str[2] = {NULL};
   const char argv0[] = "echo";
@@ -1579,7 +1576,7 @@ echo_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsign
 }
 
 reliq_error *
-uniq_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
+uniq_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const uint8_t flag)
 {
   char delim = '\n';
   const char argv0[] = "uniq";
@@ -1622,7 +1619,7 @@ sort_cmp(const reliq_cstr *s1, const reliq_cstr *s2)
 }
 
 reliq_error *
-sort_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
+sort_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const uint8_t flag)
 {
   char delim = '\n';
   uchar reverse=0,unique=0; //,natural=0,icase=0;
@@ -1693,7 +1690,7 @@ sort_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsign
 }
 
 reliq_error *
-line_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
+line_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const uint8_t flag)
 {
   char delim = '\n';
   reliq_range *range = NULL;
@@ -1734,7 +1731,7 @@ line_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsign
 }
 
 reliq_error *
-cut_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
+cut_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const uint8_t flag)
 {
   uchar delim[256]={0};
   uchar complement=0,onlydelimited=0,delimited=0;
@@ -1865,7 +1862,7 @@ cut_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigne
 }
 
 reliq_error *
-tr_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
+tr_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const uint8_t flag)
 {
   uchar array[256] = {0};
   reliq_str *string[2] = {NULL};
@@ -1953,7 +1950,7 @@ tr_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned
 }
 
 reliq_error *
-trim_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
+trim_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const uint8_t flag)
 {
   char delim = '\0';
   const char argv0[] = "trim";
@@ -1995,7 +1992,7 @@ trim_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsign
 }
 
 reliq_error *
-rev_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
+rev_edit(char *src, const size_t size, FILE *output, const void *arg[4], const uint8_t flag)
 {
   char delim = '\n';
   const char argv0[] = "rev";
@@ -2028,7 +2025,7 @@ rev_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigne
 }
 
 reliq_error *
-tac_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
+tac_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const uint8_t flag)
 {
   char delim = '\n';
   const char argv0[] = "tac";
@@ -2056,7 +2053,7 @@ tac_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigne
 }
 
 reliq_error *
-wc_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
+wc_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const uint8_t flag)
 {
   char delim = '\n';
   const char argv0[] = "wc";
@@ -2153,7 +2150,7 @@ wc_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned
 }
 
 reliq_error *
-decode_edit(char *src, size_t size, FILE *output, const void *arg[4], const unsigned char flag)
+decode_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const uint8_t flag)
 {
   htmlescapecodes_file(src,size,output);
   return NULL;

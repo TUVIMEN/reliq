@@ -19,7 +19,7 @@
 #ifndef OUTPUT_H
 #define OUTPUT_H
 
-unsigned long html_struct_handle(const char *f, size_t *pos, const size_t s, const ushort lvl, flexarr *nodes, reliq *rq, reliq_error **err);
+uint64_t html_struct_handle(const char *f, size_t *pos, const size_t s, const uint16_t lvl, flexarr *nodes, reliq *rq, reliq_error **err);
 
 #endif
 
