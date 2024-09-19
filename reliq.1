@@ -140,7 +140,7 @@ Matching options:
 .SS ATTRIBUTE_NAME
 Attribute's name \fBPATTERN\fR. Starting by '+' or '-' will ensure that it will be treated as attribute, but in most cases can be omitted. '-' signifies its negation. It can be followed by \fB[RANGE]\fR which matches attribute's position in tag.
 
-Attribute name can be shortened to '.' or '#' (see below).
+Attribute name can be shortened to '.' or '#' (see below). This sets \fBATTRIB_NAME\fR flags to 'uWsfi' and 'uwsf' for \fBPATTERN\fR.
 .nf
 \&
 .in +4m
@@ -211,7 +211,7 @@ List of implemented hooks:
 
 .TP
 .BR m ",  " match " " \fI"PATTERN"\fR
-Get tags with insides that match \fIPATTERN\fR, by default the matching of it will be set to "uWcas".
+Get tags with insides that match \fIPATTERN\fR, by default pattern flags set to "uWcas".
 .TP
 .BR a ",  " attributes " " \fI[RANGE]\fR
 Get tags with attributes that are within the \fIRANGE\fR.
@@ -227,6 +227,9 @@ Get tags with descendant count that is within the \fIRANGE\fR.
 .TP
 .BR C ",  " childmatch " " \fI"EXPRESSION"\fR
 Get tags in which chained \fIEXPRESSION\fR (see \fB-F\fR option) matches at least one of its children.
+.TP
+.BR e ",  " endmatch " " \fI"PATTERN"\fR
+Get tags with insides of ending tag that match \fIPATTERN\fR, by default pattern flags set to 'uWcnfs'.
 .TP
 
 Access hooks specify what nodes will be matched:
@@ -314,7 +317,7 @@ It has to be specified in '"' or '\\'' quotes.
 
 If format is not specified it will be set to "%C\\n".
 
-\fIi\fR, \fIt\fR, \fIT\fR, \fIC\fR, \fIa\fR, \fIv\fR directives can be preceded with '\fIU\fR' and '\fID\fR' characters that change their output e.g. '%Ui', '%(href)DUa', '%1UDa'. '\fIU\fR' causes output to be untrimmed (by default they are trimmed), '\fID\fR' decodes html escape codes.
+\fIi\fR, \fIt\fR, \fIT\fR, \fIC\fR, \fIa\fR, \fIv\fR \fIS\fR, \fIE\fR, \fIe\fR directives can be preceded with '\fIU\fR' and '\fID\fR' characters that change their output e.g. '%Ui', '%(href)DUa', '%1UDa'. '\fIU\fR' causes output to be untrimmed (by default they are trimmed), '\fID\fR' decodes html escape codes.
 
 Prints output according to \fBFORMAT\fR interpreting '\e' escapes and `%' directives. The escapes and directives are:
 .RS
@@ -374,6 +377,12 @@ Values of tag's attributes separated with '"'.
 Value of tag's attribute, where \fIk\fP is its position counted from zero.
 .IP %(\fIk\fP)v
 Value of tag's attribute, where \fIk\fP is its name.
+.IP %S
+Starting tag.
+.IP %E
+Ending tag.
+.IP %e
+Contents of ending tag.
 
 .SS FUNCTION
 Begins with name followed by arguments separated by whitespaces.
@@ -495,6 +504,11 @@ Flags:
 If multiple values are returned each will be separated with '\\t'.
 
 If no flags are given then flags are set to "lwc".
+.TP
+
+.B decode
+.IP
+Decode html escape codes.
 
 .SS FORMAT
 Consists of \fBFUNCTION\fRs separated by whitespace. Output of the tag is passed to \fBFUNCTION\fR, and its output is passed to the next until the last one which will print it.

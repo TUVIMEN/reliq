@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # test.sh file.test . FLAGS
 # test.sh file.test update FLAGS - update md5 hashes

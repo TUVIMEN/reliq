@@ -83,19 +83,20 @@ typedef unsigned long int ulong;
 #define H_CHILD_COUNT 4
 #define H_MATCH_INSIDES 5
 #define H_CHILD_MATCH 6
-#define H_FULL 7
-#define H_SELF 8
-#define H_CHILD 9
-#define H_DESCENDANT 10
-#define H_ANCESTOR 11
-#define H_PARENT 12
-#define H_RELATIVE_PARENT 13
-#define H_SIBLING 14
-#define H_SIBLING_PRECEDING 15
-#define H_SIBLING_SUBSEQUENT 16
-#define H_FULL_SIBLING 17
-#define H_FULL_SIBLING_PRECEDING 18
-#define H_FULL_SIBLING_SUBSEQUENT 19
+#define H_MATCH_END 7
+#define H_FULL 8
+#define H_SELF 9
+#define H_CHILD 10
+#define H_DESCENDANT 11
+#define H_ANCESTOR 12
+#define H_PARENT 13
+#define H_RELATIVE_PARENT 14
+#define H_SIBLING 15
+#define H_SIBLING_PRECEDING 16
+#define H_SIBLING_SUBSEQUENT 17
+#define H_FULL_SIBLING 18
+#define H_FULL_SIBLING_PRECEDING 19
+#define H_FULL_SIBLING_SUBSEQUENT 20
 
 #define H_RANGE 0x20
 #define H_PATTERN 0x40
@@ -177,6 +178,7 @@ const struct reliq_match_hook match_hooks[] = {
     {{"L",1},H_RANGE|H_LEVEL},
     {{"c",1},H_RANGE|H_CHILD_COUNT},
     {{"C",1},H_EXPRS|H_CHILD_MATCH},
+    {{"e",1},H_PATTERN|H_MATCH_END},
 
     {{"match",5},H_PATTERN|H_MATCH_INSIDES},
     {{"attributes",10},H_RANGE|H_ATTRIBUTES},
@@ -184,6 +186,7 @@ const struct reliq_match_hook match_hooks[] = {
     {{"level",5},H_RANGE|H_LEVEL},
     {{"count",5},H_RANGE|H_CHILD_COUNT},
     {{"childmatch",10},H_EXPRS|H_CHILD_MATCH},
+    {{"endmatch",8},H_PATTERN|H_MATCH_END},
 
     {{"desc",4},H_DESCENDANT|H_NOARG|H_FLAG},
     {{"rparent",7},H_RELATIVE_PARENT|H_NOARG|H_FLAG},
@@ -718,6 +721,18 @@ reliq_match_hook(const reliq_hnode *hnode, const reliq_hnode *parent, const reli
       src = hnode->insides.b;
       srcl = hnode->insides.s;
       break;
+    case H_MATCH_END:
+      src = hnode->insides.b+hnode->insides.s;
+      srcl = hnode->all.s-(hnode->insides.b-hnode->all.b)-hnode->insides.s;
+      if (srcl >= 2) {
+        src++;
+        srcl -= 2;
+      }
+      if (!hnode->insides.b) {
+        src = NULL;
+        srcl = 0;
+      }
+      break;
   }
 
   if (flags&H_RANGE) {
@@ -906,7 +921,9 @@ reliq_printf(FILE *outfile, const char *format, const size_t formatl, const reli
         i = t-format+1;
       }
 
-      uchar printflags = 0;
+      uchar printflags=0,endinsides=0;
+      char const*src;
+      size_t srcl;
 
       REPEAT: ;
       if (i >= formatl)
@@ -938,6 +955,32 @@ reliq_printf(FILE *outfile, const char *format, const size_t formatl, const reli
         case 's': print_uint(hnode->all.s,outfile); break;
         case 'c': print_uint(hnode->desc_count,outfile); break;
         case 'C': print_chars(hnode->all.b,hnode->all.s,printflags|PC_UNTRIM,outfile); break;
+        case 'S':
+          src = hnode->all.b;
+          if (hnode->insides.b) {
+            srcl = hnode->insides.b-hnode->all.b;
+          } else
+            srcl = hnode->all.s;
+          print_chars(src,srcl,printflags|PC_UNTRIM,outfile);
+          break;
+        case 'e':
+          endinsides = 1;
+        case 'E':
+          if (!hnode->insides.b)
+            break;
+          srcl = hnode->all.s-(hnode->insides.b-hnode->all.b)-hnode->insides.s;
+          src = hnode->insides.b+hnode->insides.s;
+          if (!srcl)
+            break;
+          if (endinsides) {
+            if (srcl < 2)
+              break;
+            src++;
+            srcl -= 2;
+          }
+
+          print_chars(src,srcl,printflags|(endinsides ? 0 : PC_UNTRIM),outfile);
+          break;
         case 'p': print_uint(hnode->all.b-rq->data,outfile); break;
         case 'n': fwrite(hnode->tag.b,1,hnode->tag.s,outfile); break;
       }
@@ -1117,7 +1160,10 @@ match_hook_handle(const char *src, size_t *pos, const size_t size, reliq_hook *o
      }
   } else {
     HOOK_EXPECT(H_PATTERN);
-    if ((err = reliq_regcomp(&hook.match.pattern,src,&p,size,' ',"uWcas",NULL)))
+    char *rflags = "uWcas";
+    if ((hook.flags&H_KINDS) == H_MATCH_END)
+      rflags = "uWcnfs";
+    if ((err = reliq_regcomp(&hook.match.pattern,src,&p,size,' ',rflags,NULL)))
       goto ERR;
     if (!hook.match.pattern.range.s && hook.match.pattern.flags&RELIQ_PATTERN_ALL) { //ignore if it matches everything
       reliq_regfree(&hook.match.pattern);
