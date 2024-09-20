@@ -45,6 +45,9 @@ extern const char IS_PUNCT[];
 #define isprint(x) IS_PRINT[(unsigned char)x]
 #define ispunct(x) IS_PUNCT[(unsigned char)x]
 
+#define toupper_inline(x) (islower(x) ? (x)-32 : (x))
+#define tolower_inline(x) (isupper(x) ? (x)+32 : (x))
+
 int toupper(int c);
 int tolower(int c);
 

@@ -135,7 +135,6 @@ expr_exec(char *f, size_t s, const uchar inpipe)
     return;
 
   reliq_error *err;
-
   void *freedata = inpipe ? reliq_std_free : munmap;
 
   if (settings&F_FAST) {

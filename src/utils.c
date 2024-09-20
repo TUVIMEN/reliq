@@ -140,15 +140,14 @@ memcasecmp(const void *v1, const void *v2, const size_t n)
   const char *s1 = v1,
     *s2 = v2;
   for (size_t i = 0; i < n; i++) {
-    char u1 = toupper(s1[i]);
-    char u2 = toupper(s2[i]);
+    char u1 = toupper_inline(s1[i]);
+    char u2 = toupper_inline(s2[i]);
     char diff = u1-u2;
     if (diff)
       return diff;
   }
   return 0;
 }
-
 
 void
 print_uint(unsigned long num, FILE *outfile)
@@ -169,7 +168,8 @@ memcasemem(void const *haystack, size_t const haystackl, const void *needle, con
     *needle_s = needle;
   for (size_t i=0,prev; i < haystackl; i++) {
     prev = i;
-    for (size_t j=0; i < haystackl && j < needlel && toupper(needle_s[j]) == toupper(haystack_s[i]); i++, j++)
+    for (size_t j=0; i < haystackl && j < needlel &&
+      toupper_inline(needle_s[j]) == toupper_inline(haystack_s[i]); i++, j++)
       if (j == needlel-1)
         return haystack+(i-j);
     i = prev;

@@ -661,7 +661,8 @@ reliq_free(reliq *rq)
 {
   if (rq == NULL)
     return -1;
-  for (size_t i = 0; i < rq->nodesl; i++)
+  const size_t size = rq->nodesl;
+  for (size_t i = 0; i < size; i++)
     free(rq->nodes[i].attribs);
   if (rq->nodesl)
     free(rq->nodes);
@@ -675,7 +676,8 @@ pattrib_match(const reliq_hnode *hnode, const struct reliq_pattrib *attrib)
 {
   const reliq_cstr_pair *a = hnode->attribs;
   uchar found = 0;
-  for (uint16_t i = 0; i < hnode->attribsl; i++) {
+  const size_t size = hnode->attribsl;
+  for (uint16_t i = 0; i < size; i++) {
     if (!range_match(i,&attrib->position,hnode->attribsl-1))
       continue;
 
@@ -833,7 +835,8 @@ static void
 print_attribs(const reliq_hnode *hnode, const uint8_t flags, FILE *outfile)
 {
   reliq_cstr_pair *a = hnode->attribs;
-  for (uint16_t j = 0; j < hnode->attribsl; j++) {
+  const size_t size = hnode->attribsl;
+  for (uint16_t j = 0; j < size; j++) {
     fputc(' ',outfile);
     fwrite(a[j].f.b,1,a[j].f.s,outfile);
     fputs("=\"",outfile);
@@ -865,7 +868,8 @@ print_text(const reliq_hnode *nodes, const reliq_hnode *hnode, uint8_t flags, FI
   size_t end;
   flags |= PC_UNTRIM;
 
-  for (size_t i = 1; i <= hnode->desc_count; i++) {
+  const size_t size = hnode->desc_count;
+  for (size_t i = 1; i <= size; i++) {
     const reliq_hnode *n = hnode+i;
 
     end = n->all.b-start;
@@ -1037,7 +1041,8 @@ exprs_check_chain(const reliq_exprs *exprs, const uchar noaccesshooks)
   flexarr *chain = exprs->b[0].e;
   reliq_expr *chainv = (reliq_expr*)chain->v;
 
-  for (size_t i = 0; i < chain->size; i++) {
+  const size_t size = chain->size;
+  for (size_t i = 0; i < size; i++) {
     if (chainv[i].flags&EXPR_TABLE)
       goto ERR;
     if (noaccesshooks && (((reliq_npattern*)chainv[i].e)->flags&N_MATCHED_TYPE) > 1)
@@ -1190,7 +1195,8 @@ static void
 free_node_matches_flexarr(flexarr *groups_matches)
 {
   reliq_node_matches *matchesv = (reliq_node_matches*)groups_matches->v;
-  for (size_t i = 0; i < groups_matches->size; i++)
+  const size_t size = groups_matches->size;
+  for (size_t i = 0; i < size; i++)
     reliq_free_matches(&matchesv[i]);
   flexarr_free(groups_matches);
 }
@@ -1493,7 +1499,8 @@ reliq_exprs_free_pre(flexarr *exprs)
   if (!exprs)
     return;
   reliq_expr *e = (reliq_expr*)exprs->v;
-  for (size_t i = 0; i < exprs->size; i++) {
+  const size_t size = exprs->size;
+  for (size_t i = 0; i < size; i++) {
     if (e[i].flags&EXPR_TABLE) {
       if (e[i].outfield.name.b)
         free(e[i].outfield.name.b);
@@ -1515,7 +1522,8 @@ reliq_exprs_free_pre(flexarr *exprs)
 void
 reliq_efree(reliq_exprs *exprs)
 {
-  for (size_t i = 0; i < exprs->s; i++) {
+  const size_t size = exprs->s;
+  for (size_t i = 0; i < size; i++) {
     if (exprs->b[i].flags&EXPR_TABLE) {
       if (exprs->b[i].outfield.name.b)
         free(exprs->b[i].outfield.name.b);
@@ -2074,7 +2082,7 @@ dest_match_position(const reliq_range *range, flexarr *dest, size_t start, size_
 static void
 nodes_match_full(const reliq *rq, reliq_npattern *nodep, const reliq_hnode *current, flexarr *dest, uint32_t *found, const uint32_t lasttofind)
 {
-  uint32_t childcount = current->desc_count;
+  const uint32_t childcount = current->desc_count;
   for (size_t i = 0; i <= childcount && *found < lasttofind; i++) {
     reliq_match_add(current+i,current,nodep,dest,found);
   }
@@ -2083,7 +2091,7 @@ nodes_match_full(const reliq *rq, reliq_npattern *nodep, const reliq_hnode *curr
 static void
 nodes_match_child(const reliq *rq, reliq_npattern *nodep, const reliq_hnode *current, flexarr *dest, uint32_t *found, const uint32_t lasttofind)
 {
-  uint32_t childcount = current->desc_count;
+  const uint32_t childcount = current->desc_count;
   for (size_t i = 1; i <= childcount && *found < lasttofind; i += current[i].desc_count+1)
     reliq_match_add(current+i,current,nodep,dest,found);
 }
@@ -2091,7 +2099,7 @@ nodes_match_child(const reliq *rq, reliq_npattern *nodep, const reliq_hnode *cur
 static void
 nodes_match_descendant(const reliq *rq, reliq_npattern *nodep, const reliq_hnode *current, flexarr *dest, uint32_t *found, const uint32_t lasttofind)
 {
-  uint32_t childcount = current->desc_count;
+  const uint32_t childcount = current->desc_count;
   for (size_t i = 1; i <= childcount && *found < lasttofind; i++)
     reliq_match_add(current+i,current,nodep,dest,found);
 }
@@ -2102,7 +2110,8 @@ nodes_match_sibling_preceding(const reliq *rq, reliq_npattern *nodep, const reli
   reliq_hnode *nodes = rq->nodes;
   if (nodes == current)
     return;
-  uint16_t lvl = current->lvl, lvldiff = lvl+depth;
+  const uint16_t lvl = current->lvl;
+  uint16_t lvldiff = lvl+depth;
   if (depth == (uint16_t)-1)
     lvldiff = -1;
 
@@ -2118,10 +2127,11 @@ static void
 nodes_match_sibling_subsequent(const reliq *rq, reliq_npattern *nodep, const reliq_hnode *current, flexarr *dest, uint32_t *found, const uint32_t lasttofind, const uint16_t depth)
 {
   reliq_hnode *nodes = rq->nodes;
-  size_t nodesl = rq->nodesl;
+  const size_t nodesl = rq->nodesl;
   if (current+1 >= nodes+nodesl)
     return;
-  uint16_t lvl = current->lvl, lvldiff = lvl+depth;
+  const uint16_t lvl = current->lvl;
+  uint16_t lvldiff = lvl+depth;
   if (depth == (uint16_t)-1)
     lvldiff = -1;
 
@@ -2148,7 +2158,7 @@ nodes_match_ancestor(const reliq *rq, reliq_npattern *nodep, const reliq_hnode *
   const reliq_hnode *first=current;
 
   for (uint16_t i = 0; i <= depth && current != nodes && *found < lasttofind; i++) {
-    uint16_t lvl = current->lvl;
+    const uint16_t lvl = current->lvl;
     for (size_t j=(current-nodes)-1; nodes[j].lvl >= lvl-1; j--) {
       if (nodes[j].lvl == lvl-1) {
         current = &nodes[j];
@@ -2169,7 +2179,7 @@ nodes_match_ancestor(const reliq *rq, reliq_npattern *nodep, const reliq_hnode *
 static void
 node_exec_first(const reliq *rq, reliq_npattern *nodep, flexarr *dest, const uint32_t lasttofind)
 {
-  size_t nodesl = rq->nodesl;
+  const size_t nodesl = rq->nodesl;
   uint32_t found = 0;
   for (size_t i = 0; i < nodesl && found < lasttofind; i++)
     reliq_match_add(rq->nodes+i,rq->parent,nodep,dest,&found);
@@ -2192,7 +2202,8 @@ node_exec(const reliq *rq, reliq_npattern *nodep, flexarr *source, flexarr *dest
     return;
   }
 
-  for (size_t i = 0; i < source->size; i++) {
+  const size_t size = source->size;
+  for (size_t i = 0; i < size; i++) {
     reliq_compressed *x = &((reliq_compressed*)source->v)[i];
     reliq_hnode *current = x->hnode;
     if ((void*)current < (void*)10)
@@ -2279,7 +2290,8 @@ ncollector_add(flexarr *ncollector, flexarr *dest, flexarr *source, size_t start
     goto END;
   if (istable&EXPR_TABLE && !isempty) {
     if (startn != lastn) { //truncate previously added, now useless ncollector
-      for (size_t i = lastn; i < ncollector->size; i++)
+      const size_t size = ncollector->size;
+      for (size_t i = lastn; i < size; i++)
         ((reliq_cstr*)ncollector->v)[startn+i] = ((reliq_cstr*)ncollector->v)[i];
       ncollector->size -= lastn-startn;
     }
@@ -2327,7 +2339,8 @@ reliq_exec_table(const reliq *rq, const reliq_expr *expr, const reliq_output_fie
     reliq_compressed *inv = (reliq_compressed*)flexarr_inc(in);
     reliq_compressed *sourcev = (reliq_compressed*)source->v;
 
-    for (size_t i = 0; i < source->size; i++) {
+    const size_t size = source->size;
+    for (size_t i = 0; i < size; i++) {
       *inv = sourcev[i];
       if ((void*)inv->hnode < (void*)10)
         continue;
@@ -2496,6 +2509,8 @@ reliq_exec_pre(const reliq *rq, const reliq_expr *exprs, size_t exprsl, flexarr 
 reliq_error *
 reliq_exec_r(reliq *rq, FILE *output, reliq_compressed **outnodes, size_t *outnodesl, const reliq_exprs *exprs)
 {
+  if (!exprs)
+    return NULL;
   flexarr *compressed=NULL;
   rq->output = output;
   reliq_error *err;
@@ -2535,6 +2550,8 @@ reliq_exec(reliq *rq, reliq_compressed **nodes, size_t *nodesl, const reliq_expr
 reliq_error *
 reliq_exec_file(reliq *rq, FILE *output, const reliq_exprs *exprs)
 {
+  if (!exprs)
+    return NULL;
   reliq_error *err = reliq_exec_r(rq,output,NULL,NULL,exprs);
   fflush(output);
   return err;
@@ -2543,6 +2560,8 @@ reliq_exec_file(reliq *rq, FILE *output, const reliq_exprs *exprs)
 reliq_error *
 reliq_exec_str(reliq *rq, char **str, size_t *strl, const reliq_exprs *exprs)
 {
+  if (!exprs)
+    return NULL;
   FILE *output = open_memstream(str,strl);
   reliq_error *err = reliq_exec_file(rq,output,exprs);
   fclose(output);
@@ -2603,7 +2622,7 @@ reliq_fexec_file(char *data, size_t size, FILE *output, const reliq_exprs *exprs
 {
   reliq_error *err = NULL;
   uchar was_unallocated = 0;
-  if (exprs->s == 0)
+  if (!exprs || exprs->s == 0)
     goto END;
   if ((err = exprs_check_chain(exprs,1)))
     goto END;
@@ -2615,7 +2634,8 @@ reliq_fexec_file(char *data, size_t size, FILE *output, const reliq_exprs *exprs
   flexarr *chain = (flexarr*)exprs->b[0].e;
   reliq_expr *chainv = (reliq_expr*)chain->v;
 
-  for (size_t i = 0; i < chain->size; i++) {
+  const size_t chainsize = chain->size;
+  for (size_t i = 0; i < chainsize; i++) {
     output = (i == chain->size-1) ? destination : open_memstream(&nptr,&fsize);
 
     err = reliq_fmatch(ptr,size,output,(reliq_npattern*)chainv[i].e,
@@ -2649,6 +2669,8 @@ reliq_fexec_file(char *data, size_t size, FILE *output, const reliq_exprs *exprs
 reliq_error *
 reliq_fexec_str(char *data, const size_t size, char **str, size_t *strl, const reliq_exprs *exprs, int (*freedata)(void *data, size_t len))
 {
+  if (!exprs)
+    return NULL;
   FILE *output = open_memstream(str,strl);
   reliq_error *err = reliq_fexec_file(data,size,output,exprs,freedata);
   fclose(output);
@@ -2664,7 +2686,8 @@ reliq_hnode_shift(reliq_hnode *node, const size_t pos)
   shift_cstr(node->all);
   shift_cstr(node->tag);
   shift_cstr(node->insides);
-  for (size_t i = 0; i < node->attribsl; i++) {
+  const size_t size = node->attribsl;
+  for (size_t i = 0; i < size; i++) {
     shift_cstr(node->attribs[i].f);
     shift_cstr(node->attribs[i].s);
   }
@@ -2678,7 +2701,8 @@ reliq_hnode_shift_finalize(reliq_hnode *node, char *ref)
   shift_cstr_p(node->all);
   shift_cstr_p(node->tag);
   shift_cstr_p(node->insides);
-  for (size_t i = 0; i < node->attribsl; i++) {
+  const size_t size = node->attribsl;
+  for (size_t i = 0; i < size; i++) {
     shift_cstr_p(node->attribs[i].f);
     shift_cstr_p(node->attribs[i].s);
   }
@@ -2707,7 +2731,8 @@ reliq_from_compressed_independent(const reliq_compressed *compressed, const size
 
     lvl = current->lvl;
 
-    for (size_t j = 0; j <= current->desc_count; j++) {
+    const size_t desc_count = current->desc_count;
+    for (size_t j = 0; j <= desc_count; j++) {
       new = (reliq_hnode*)flexarr_inc(nodes);
       memcpy(new,current+j,sizeof(reliq_hnode));
 
@@ -2727,7 +2752,8 @@ reliq_from_compressed_independent(const reliq_compressed *compressed, const size
 
   fclose(out);
 
-  for (size_t i = 0; i < nodes->size; i++)
+  const size_t nodessize = nodes->size;
+  for (size_t i = 0; i < nodessize; i++)
     reliq_hnode_shift_finalize(&((reliq_hnode*)nodes->v)[i],ptr);
 
   flexarr_conv(nodes,(void**)&t.nodes,&t.nodesl);
@@ -2760,7 +2786,8 @@ reliq_from_compressed(const reliq_compressed *compressed, const size_t compresse
 
     lvl = current->lvl;
 
-    for (size_t j = 0; j <= current->desc_count; j++) {
+    const size_t desc_count = current->desc_count;
+    for (size_t j = 0; j <= desc_count; j++) {
       new = (reliq_hnode*)flexarr_inc(nodes);
       memcpy(new,current+j,sizeof(reliq_hnode));
 

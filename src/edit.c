@@ -207,7 +207,7 @@ format_get_funcs(flexarr *format, const char *src, size_t *pos, const size_t siz
 }
 
 void
-format_free(reliq_format_func *format, size_t formatl)
+format_free(reliq_format_func *format, const size_t formatl)
 {
   if (!format)
     return;
@@ -809,7 +809,8 @@ sed_get_command(char name)
 static void
 sed_script_free(flexarr *script)
 {
-  for (size_t i = 0; i < script->size; i++)
+  const size_t size = script->size;
+  for (size_t i = 0; i < size; i++)
     sed_expression_free(&((struct sed_expression*)script->v)[i]);
   flexarr_free(script);
 }
@@ -886,7 +887,8 @@ sed_comp_y(const size_t pos, const char name, struct sed_expression *sedexpr, re
   reliq_cstr first = sedexpr->arg;
   size_t i=0,j=0;
 
-  for (; i < first.s && j < second->s; i++, j++) {
+  const size_t size = second->s;
+  for (; i < first.s && j < size; i++, j++) {
     char c1 = first.b[i];
     size_t traversed;
     if (c1 == '\\') {
@@ -1015,10 +1017,11 @@ static reliq_error *
 sed_comp_check_labels(flexarr *script)
 {
   struct sed_expression *scriptv = (struct sed_expression*)script->v;
-  for (size_t i = 0; i < script->size; i++) {
+  const size_t size = script->size;
+  for (size_t i = 0; i < size; i++) {
     if ((scriptv[i].name == 'b' || scriptv[i].name == 't' || scriptv[i].name == 'T') && scriptv[i].arg.s) {
       uchar found = 0;
-      for (size_t j = 0; j < script->size; j++) {
+      for (size_t j = 0; j < size; j++) {
         if (scriptv[j].name == ':' &&
           strcomp(scriptv[i].arg,scriptv[j].arg)) {
           found = 1;
@@ -1194,8 +1197,8 @@ sed_pre_edit(const char *src, const size_t size, FILE *output, char *buffers[3],
       islastline = 1;
 
     appendnextline = 0;
-
-    for (; cycle < script->size; cycle++) {
+    const size_t scriptsize = script->size;
+    for (; cycle < scriptsize; cycle++) {
       if (!sed_address_exec(patternsp,patternspl,linenumber,islastline,&scriptv[cycle].address)) {
         if (scriptv[cycle].name == '{') {
           uint16_t lvl = scriptv[++cycle].lvl;
@@ -1306,7 +1309,7 @@ sed_pre_edit(const char *src, const size_t size, FILE *output, char *buffers[3],
             cycle = 0;
             goto NEXT;
           }
-          for (size_t i = 0; i < script->size; i++)
+          for (size_t i = 0; i < scriptsize; i++)
             if (scriptv[i].name == ':' && strcomp(scriptv[cycle].arg,scriptv[i].arg))
               cycle = i;
           break;
@@ -1525,12 +1528,14 @@ cstr_get_line_d(const char *src, const size_t size, size_t *saveptr, const char 
 static void
 echo_edit_print(reliq_str *str, FILE *output)
 {
-  for (size_t i = 0; i < str->s; i++) {
-    if (str->b[i] == '\\' && i+1 < str->s) {
+  const char *b = str->b;
+  const size_t size = str->s;
+  for (size_t i = 0; i < size; i++) {
+    if (b[i] == '\\' && i+1 < size) {
       size_t resultl,traversed;
       char result[8];
       i++;
-      splchar3(str->b+i,str->s-i,result,&resultl,&traversed);
+      splchar3(b+i,size-i,result,&resultl,&traversed);
       if (resultl != 0) {
         fwrite(result,resultl,1,output);
         i += traversed-1;
@@ -1538,7 +1543,7 @@ echo_edit_print(reliq_str *str, FILE *output)
       } else
         i--;
     }
-    fputc(str->b[i],output);
+    fputc(b[i],output);
   }
 }
 
@@ -2045,7 +2050,8 @@ tac_edit(const char *src, const size_t size, FILE *output, const void *arg[4], c
   }
 
   reliq_cstr *linesv = lines->v;
-  for (size_t i = lines->size; i; i--)
+  const size_t linessize = lines->size;
+  for (size_t i = linessize; i; i--)
     fwrite(linesv[i-1].b,1,linesv[i-1].s,output);
 
   flexarr_free(lines);

@@ -400,7 +400,8 @@ static void
 outfields_free(flexarr *outfields)
 {
   struct outfield **outfieldsv = (struct outfield**)outfields->v;
-  for (size_t i = 0; i < outfields->size; i++) {
+  const size_t size = outfields->size;
+  for (size_t i = 0; i < size; i++) {
     if (outfieldsv[i]->f)
       fclose(outfieldsv[i]->f);
     if (outfieldsv[i]->s)
@@ -587,7 +588,8 @@ nodes_output(const reliq *rq, flexarr *compressed_nodes, flexarr *ncollector
   END: ;
   #ifdef RELIQ_EDITING
   struct fcollector_out **outsv = (struct fcollector_out**)outs->v;
-  for (size_t i = 0; i < outs->size; i++) {
+  size_t size = outs->size;
+  for (size_t i = 0; i < size; i++) {
     fclose(outsv[i]->f);
     if (outsv[i]->s)
       free(outsv[i]->v);

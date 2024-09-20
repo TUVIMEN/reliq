@@ -16,6 +16,8 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include "ctype.h"
+
 const char IS_ALNUM[] = {
   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
   0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
@@ -116,11 +118,11 @@ const char IS_PUNCT[] = {
 int
 toupper(int c)
 {
-  return IS_LOWER[(unsigned char)c] ? c-32 : c;
+  return islower(c) ? c-32 : c;
 }
 
 int
 tolower(int c)
 {
-  return IS_UPPER[(unsigned char)c] ? c+32 : c;
+  return isupper(c) ? c+32 : c;
 }
