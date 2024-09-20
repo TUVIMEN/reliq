@@ -350,7 +350,7 @@ write_utf8(uint64_t data, char *result, size_t *traversed, const size_t maxlengt
   }
   *traversed = 0;
   for (size_t i = 5; *traversed < maxlength; i--) {
-    uint64_t mask = 0xff<<(i<<3);
+    uint64_t mask = ((uint64_t)0xff)<<(i<<3);
     if (data&mask) {
       *result = ((data&mask)>>(i<<3))&255;
       result++;
