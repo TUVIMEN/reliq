@@ -61,7 +61,7 @@ ef30bf351de1d0cd95f7d7d167dc2b81,'div | "%(class)v\n"'
 4c55441f94161bd26a11e2e6c21c141d,'div "cla""""ss" | "%0v\n"'
 3966708d52e5428d97d96eb72a1e034c,'div cl"a""ss" | "%1v\n"'
 41a0db25bac4b2dc19ef9411cb416794,'div [1]class | "%1v\n"'
-7c402e8f6b14a3bd7349650760998aca,'div [0]class | "%p\n"'
+7c402e8f6b14a3bd7349650760998aca,'div [0]class | "%I\n"'
 264aeec0df39685d07e43b482c323218,'div [0]class | "%c\n"'
 4e90bff379e2864ff883e6c436be6838,'div; * l@[0] | "%l %L\n"'
 374fa4f27e596cc0420ee42b88c8d583,'div; p [2]'
@@ -86,6 +86,8 @@ d0b583d123409e3672d7d8da08b7b3f2,'div; li L@[4] | "%l \u0b0a \j %L\n"'
 70e2a9089b4a9a6285ae226f9d57ae14,'img; p sibling_subsequent@'
 ae90273077454a8d04787d0d76eaaf3b,'* | "NN %n - %S - %e - %E\n"'
 b2d2918ef1236a4791ff4b0d17a95bec,'* e@vbt>"/" | "%e - %S - %i"\n, * e@"/div" | "%E\n"'
+3da65c504828d9db1410cf27c58311ed,'ul; li [0]; ul ancestor@ l@[1] | "%n - %p - %P - %I - %l - %L\n", br | "%n - %p - %P - %I\n", div; img | "%n - %p - %P - %I\n"'
+f6b160095d29236b39e39656c17e6db3,'ul; li [0]; ul ancestor@ p@[2] P@[18] I@[798] | "%n - %p - %P - %I\n"'
 
 $ unclosed-tag.html
 18c53a8a802f5c7ca3f883a2ed89f8ce,'td .tablerow | "%i"'
@@ -93,8 +95,8 @@ $ unclosed-tag.html
 $ 1.html
 % RELIQ_AUTOCLOSING
 # example file was build to test tag ommission, the following tests fail only because of that
-062cb966e6f28ed77773ab99e5f30787,-l
-4694e22fb7045162a0f7c0c729709499,-Fl
+e7d9afcf9ec82b4ba2b2b31812dd2e85,-l
+5d0bafb4658e64ae776f170dff362d20,-Fl
 4b598550215418bab967d2d9614cea93,-F 'div;li;a'
 0f278918c0ad665cb78b28b995cad495,'* m@v>"<" m@>[1:]'
 45570f89bc1aa25501382114c37a8893,'li'

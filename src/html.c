@@ -403,7 +403,7 @@ html_struct_handle(const char *f, size_t *pos, const size_t s, const uint16_t lv
   } else {
     hnode->attribs = a->v+(attrib_start*a->elsize);
     reliq_npattern const *expr = rq->expr;
-    if (expr && reliq_nexec(hnode,NULL,expr))
+    if (expr && reliq_nexec(rq,hnode,NULL,expr))
       *err = node_output(hnode,NULL,rq->nodef,rq->nodefl,rq->output,rq);
     flexarr_dec(nodes);
   }

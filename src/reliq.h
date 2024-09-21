@@ -219,7 +219,7 @@ reliq reliq_from_compressed_independent(const reliq_compressed *compressed, cons
 
 //node pattern
 reliq_error *reliq_ncomp(const char *script, const size_t size, reliq_npattern *nodep);
-int reliq_nexec(const reliq_hnode *hnode, const reliq_hnode *parent, const reliq_npattern *nodep);
+int reliq_nexec(const reliq *rq, const reliq_hnode *hnode, const reliq_hnode *parent, const reliq_npattern *nodep);
 void reliq_nfree(reliq_npattern *nodep);
 
 //expression

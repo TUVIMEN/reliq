@@ -79,7 +79,7 @@ Follow all symbolic links, unlike
 .B \-l
 set
 .IR PATTERN
-to '| "%n%A - desc(%c) lvl(%L) size(%s) pos(%p)\\n"'.
+to '| "%n%Ua - desc(%c) lvl(%L) size(%s) pos(%I)\\n"'.
 
 .SH SYNTAX
 .SS PATTERN
@@ -230,6 +230,15 @@ Get tags in which chained \fIEXPRESSION\fR (see \fB-F\fR option) matches at leas
 .TP
 .BR e ",  " endmatch " " \fI"PATTERN"\fR
 Get tags with insides of ending tag that match \fIPATTERN\fR, by default pattern flags set to 'uWcnfs'.
+.TP
+.BR P ",  " position " " \fI[RANGE]\fR
+Get tags with position within \fIRANGE\fR.
+.TP
+.BR p ",  " positionrelative " " \fI[RANGE]\fR
+Get tags with position relative to parent within \fIRANGE\fR.
+.TP
+.BR I ",  " index " " \fI[RANGE]\fR
+Get tags with starting index of tag in file that is within \fIRANGE\fR.
 .TP
 
 Access hooks specify what nodes will be matched:
@@ -383,6 +392,12 @@ Starting tag.
 Ending tag.
 .IP %e
 Contents of ending tag.
+.IP %P
+Position of tag.
+.IP %p
+Position of tag relative to parent.
+.IP %I
+Index of tag's starting position in file.
 
 .SS FUNCTION
 Begins with name followed by arguments separated by whitespaces.
