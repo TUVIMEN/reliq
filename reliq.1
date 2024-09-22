@@ -639,6 +639,10 @@ Examples:
     \fB.authors div .author; { .images img, .bolded b } |\fR
     \fI{"authors":[{"images":"...","bolded":"..."}]}\fR
 
+.SS COMMENTS
+
+Basic C style comments are implemented, although they have to be preceded by whitespace.
+
 .SH NOTES
 
 UTF-8 \fI\eu\fR and \fI\eU\fR escape directives don't work in any place where delimiter is to be specified i.e. array separator in fields, in translasion tables of \fBtr\fR, in \fIy\fR \fBsed\fR command, in delimiters of \fBsed\fR, \fBtr\fR, \fBline\fR, \fBtrim\fR, \fBuniq\fR, \fBsort\fR, \fBecho\fR, \fBcut\fR, \fBrev\fR, \fBtac\fR, \fBwc\fR commands.
