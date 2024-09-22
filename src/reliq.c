@@ -2009,52 +2009,49 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, const uint16_t lvl, uin
       if (next != typeGroupStart)
         expr.e = malloc(sizeof(reliq_npattern));
 
+      size_t g = j;
+      while_is(isspace,src,g,s);
+      exprl -= g-j;
+
       if (exprl) {
-        if (j == first_pos) {
-          size_t g = j;
+        if (j == first_pos && g < s && src[g] == '.') {
+          size_t g_prev = g;
+          if ((*err = reliq_output_field_get(src,&g,s,&expr.outfield)))
+            goto NODE_COMP_END;
+          exprl -= g-g_prev;
+          if (expr.outfield.name.b) {
+            if (childfields)
+              (*childfields)++;
+            acurrent->childfields++;
+          }
+          g_prev = g;
           while_is(isspace,src,g,s);
-          if (g < s && src[g] == '.') {
-            if ((*err = reliq_output_field_get(src,&g,s,&expr.outfield)))
-              goto NODE_COMP_END;
-            if (expr.outfield.name.b) {
-              if (childfields)
-                (*childfields)++;
-              acurrent->childfields++;
-            }
-            exprl -= g-j;
-            j = g;
-          }
+          exprl -= g-g_prev;
         }
 
-        if (next == typeGroupStart) {
-          uchar empty = 1;
-          if (get_format)
-            empty = 0;
-          if (empty) {
-            const char *base = src+j;
-            for (size_t g = 0; g < exprl; g++) {
-              if (!isspace(base[g])) {
-                  empty = 0;
-                  break;
-              }
-            }
-          }
-          if (!empty) {
-            UNEXPECTED_BEFORE_BLOCK: ;
-            goto_script_seterr_p(EXIT,"block: %lu: unexpected text before opening of the block",i);
-          }
+        if (next == typeGroupStart && (exprl || get_format)) {
+          UNEXPECTED_BEFORE_BLOCK: ;
+          goto_script_seterr_p(EXIT,"block: %lu: unexpected text before opening of the block",i);
         }
 
-        if (expr.e) { //!
-          *err = reliq_ncomp(src+j,exprl,(reliq_npattern*)expr.e);
+        if (expr.e) {
+          if (!exprl) {
+            free(expr.e);
+            continue;
+          }
+          *err = reliq_ncomp(src+g,exprl,(reliq_npattern*)expr.e);
           if (*err)
             goto EXIT;
         }
       } else if (expr.e) {
-        memset(expr.e,0,sizeof(reliq_npattern));
-        ((reliq_npattern*)expr.e)->flags |= N_EMPTY;
+        if (nodef.b || exprf.b) {
+          memset(expr.e,0,sizeof(reliq_npattern));
+          ((reliq_npattern*)expr.e)->flags |= N_EMPTY;
+        } else {
+          free(expr.e);
+          continue;
+        }
       }
-
       NODE_COMP_END:
       new = (reliq_expr*)flexarr_inc(acurrent->e);
       *new = expr;
