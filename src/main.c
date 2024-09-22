@@ -264,7 +264,7 @@ main(int argc, char **argv)
   while ((opt = getopt(argc,argv,"lo:e:f:HrRFvh")) != -1) {
     switch (opt) {
       case 'l':
-        handle_reliq_error(reliq_ecomp("| \"%n%Ua - desc(%c) lvl(%L) size(%s) pos(%I)\\n\"",51,&exprs));
+        handle_reliq_error(reliq_ecomp("| \"%n%Ua - desc(%c) lvl(%L) size(%s) pos(%I)\\n\"",47,&exprs));
         break;
       case 'o':
         outfile = fopen(optarg,"w");

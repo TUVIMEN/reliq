@@ -405,12 +405,15 @@ splchar3(const char *src, const size_t srcl, char *result, size_t *resultl, size
 char *
 delstr(char *src, const size_t pos, size_t *size, const size_t count)
 {
+  if (pos >= *size)
+    return src;
   if (*size-pos <= count) {
     src[pos] = 0;
+    *size = pos;
     return src;
   }
 
-  size_t s = *size-count;
+  const size_t s = *size-count;
   for (size_t i = pos; i < s; i++)
     src[i] = src[i+count];
   src[s] = 0;

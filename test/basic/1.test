@@ -88,15 +88,20 @@ ae90273077454a8d04787d0d76eaaf3b,'* | "NN %n - %S - %e - %E\n"'
 b2d2918ef1236a4791ff4b0d17a95bec,'* e@vbt>"/" | "%e - %S - %i"\n, * e@"/div" | "%E\n"'
 3da65c504828d9db1410cf27c58311ed,'ul; li [0]; ul ancestor@ l@[1] | "%n - %p - %P - %I - %l - %L\n", br | "%n - %p - %P - %I\n", div; img | "%n - %p - %P - %I\n"'
 f6b160095d29236b39e39656c17e6db3,'ul; li [0]; ul ancestor@ p@[2] P@[18] I@[798] | "%n - %p - %P - %I\n"'
+8b1431981d981e10344492019cdcc434,'li /* src */ | /*"lk"*/ "kas %a\n" /*"%(src)Dv\n"*/ // , li'
+d16a377803444b99f2a9f2dc87ed162c,'{ li /* sfa */ m@hsf }'
 
 $ unclosed-tag.html
 18c53a8a802f5c7ca3f883a2ed89f8ce,'td .tablerow | "%i"'
 
+$ editing.html
+e47d4d3285c95618f1efb1bc71132fb8,'{ li m@\, }'
+
 $ 1.html
 % RELIQ_AUTOCLOSING
 # example file was build to test tag ommission, the following tests fail only because of that
-e7d9afcf9ec82b4ba2b2b31812dd2e85,-l
-5d0bafb4658e64ae776f170dff362d20,-Fl
+5b1fd1bec0eca8bc27f56a29d1cf3bf4,-l
+17274115d3cf302655faefd8a11670d8,-Fl
 4b598550215418bab967d2d9614cea93,-F 'div;li;a'
 0f278918c0ad665cb78b28b995cad495,'* m@v>"<" m@>[1:]'
 45570f89bc1aa25501382114c37a8893,'li'

@@ -1759,6 +1759,36 @@ skip_sbrackets(const char *src, size_t *pos, const size_t s)
   return err;
 }
 
+static uchar
+skip_comment(const char *src, size_t *pos, const size_t s)
+{
+  size_t i = *pos;
+  if (i+1 >= s || src[i] != '/' || (src[i+1] != '/' && src[i+1] != '*'))
+    return 0;
+
+  char tf = src[i+1];
+  i += 2;
+
+  if (tf == '/') {
+    for (; i < s; i++) {
+      if (src[i] == '\n') {
+        i++;
+        break;
+      }
+    }
+  } else {
+    for (; i < s; i++) {
+      if (i+1 < s && src[i] == '*' && src[i+1] == '/') {
+        i += 2;
+        break;
+      }
+    }
+  }
+
+  *pos = i;
+  return 1;
+}
+
 static flexarr *
 reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, const uint16_t lvl, uint16_t *childfields, reliq_error **err)
 {
@@ -1772,7 +1802,7 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, const uint16_t lvl, uin
 
   size_t tpos = 0;
   if (pos == NULL)
-    pos = &tpos;
+    pos = &tpos; //works since it's passed up the stack
 
   flexarr *ret = flexarr_init(sizeof(reliq_expr),PATTERN_SIZE_INC);
   reliq_expr *acurrent = (reliq_expr*)flexarr_inc(ret);
@@ -1783,7 +1813,9 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, const uint16_t lvl, uin
   reliq_expr expr = (reliq_expr){0};
   char *src = memdup(csrc,s);
   size_t exprl;
-  size_t i=*pos,first_pos=*pos;
+  size_t i=*pos,first_pos=*pos,
+    i_diff=0; //i_diff accounts for deleted charactes (by comments or escape characters) from copy of csrc,
+    //since calling functions operate on unchanged csrc returned *pos has to be i+i_diff
   uchar found_block_end = 0;
 
   enum {
@@ -1830,13 +1862,24 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, const uint16_t lvl, uin
         if (toescape) {
           delchar(src,i++,&s);
           exprl = (i-j)-nodef.s-((nodef.b) ? 1 : 0);
+          i_diff++;
           continue;
         }
       }
 
       if ((i == j || (i && isspace(src[i-1]))) &&
         (src[i] == '|' || src[i] == '/')) {
-        if ((src[i] == '|' && nodef.b) || (src[i] == '/' && exprf.b))
+        size_t prev_i = i;
+        if (skip_comment(src,&i,s)) {
+          i_diff += i-prev_i;
+          delstr(src,prev_i,&s,i-prev_i);
+          i = prev_i;
+          continue;
+        }
+
+        if ((src[i] == '|' && nodef.b) ||
+          (src[i] == '/' && exprf.b) ||
+          (i+1 < s && (src[i+1] == '/' || src[i+1] == '|')))
           goto_script_seterr_p(EXIT,"%lu: format '%c' cannot be specified twice",i,src[i]);
 
         if (i == j)
@@ -2075,7 +2118,7 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, const uint16_t lvl, uin
   }
 
   END_BRACKET: ;
-  *pos = i;
+  *pos = i+i_diff;
   flexarr_clearb(ret);
   EXIT:
   free(src);
