@@ -363,7 +363,7 @@ outfields_print_pre(struct outfield **fields, size_t *pos, const size_t size, co
       fputc(':',out);
     }
 
-    if (field->code == 1 || field->code == 4) {
+    if (field->code == ofNamed || field->code == ofNoFieldsBlock) {
       if (field->f)
         fclose(field->f);
       field->f = NULL;
@@ -373,9 +373,9 @@ outfields_print_pre(struct outfield **fields, size_t *pos, const size_t size, co
         free(field->v);
       field->s = 0;
     }
-    if (field->code == 2 || field->code == 3) {
+    if (field->code == ofBlock || field->code == ofArray) {
       i++;
-      outfields_print_pre(fields,&i,size,lvl+1,(field->code == 3) ? 1 : 0,out);
+      outfields_print_pre(fields,&i,size,lvl+1,(field->code == ofArray) ? 1 : 0,out);
       i--;
     }
 
@@ -411,13 +411,24 @@ outfields_free(flexarr *outfields)
   flexarr_free(outfields);
 }
 
-// hnode codes
-// 0 unnamed field
-// 1 named field
-// 2 start field block
-// 3 start field block array
-// 4 named field empty block
-// 5 end field block
+/*static void
+print_code_debug(const size_t nodeindex, uint16_t fieldlvl, const enum outfieldCode code, const enum outfieldCode prevcode)
+{
+  if (fieldlvl && code == ofBlockEnd)
+    fieldlvl--;
+  if (nodeindex != 0 && (code != ofBlockEnd || prevcode != ofNamed))
+    for (size_t k = 0; k < fieldlvl; k++)
+      fputc('\t',stderr);
+
+  switch (code) {
+    case ofUnnamed: fprintf(stderr,"|unnamed %lu| {}\n",nodeindex); break;
+    case ofBlock: fprintf(stderr,"|block %lu| {\n",nodeindex); break;
+    case ofArray: fprintf(stderr,"|array %lu| {\n",nodeindex); break;
+    case ofNoFieldsBlock: fprintf(stderr,"|noFieldsBlock %lu| {\n",nodeindex); break;
+    case ofNamed: fprintf(stderr,"|named %lu| {",nodeindex); break;
+    case ofBlockEnd: fprintf(stderr,"} |blockEnd %lu|\n",nodeindex); break;
+  }
+}*/
 
 reliq_error *
 nodes_output(const reliq *rq, flexarr *compressed_nodes, flexarr *ncollector
@@ -492,6 +503,8 @@ nodes_output(const reliq *rq, flexarr *compressed_nodes, flexarr *ncollector
       enum outfieldCode code = (enum outfieldCode)x->hnode;
       struct outfield *field,**field_pre;
 
+      //print_code_debug(j,fieldlvl,code,prevcode);
+
       /*the if ends in hard to manage ways so these values are assigned before it ends
         and copied variables are used*/
       const enum outfieldCode prevcode_r = prevcode;
@@ -523,13 +536,14 @@ nodes_output(const reliq *rq, flexarr *compressed_nodes, flexarr *ncollector
           if (outfields->size > 2 && field->o == outfieldsv[outfields->size-2]->o)
             field->o = NULL;
           fieldlvl++;
+          field_ended = 0;
           break;
         case ofBlockEnd:
           if (fieldlvl)
             fieldlvl--;
           field_ended = 1;
 
-          if ((prevcode_r == ofNoFieldsBlock || prevcode_r == ofArray || prevcode_r == ofBlock) && j-prev_j_r == ofNamed)
+          if ((prevcode_r == ofNoFieldsBlock || prevcode_r == ofArray || prevcode_r == ofBlock) && j-prev_j_r == 1)
             goto NCOLLECTOR_END; //j-prev_j_r is 1 meaning that block was immedietly ended, and so it has to end
 
           if (g == 0) //the first node in ncol[ncurrent] was ending block, so the previous one did not free oout

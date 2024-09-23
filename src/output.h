@@ -28,12 +28,12 @@ struct fcollector_expr {
 };
 
 enum outfieldCode {
-  ofUnnamed,
-  ofNamed,
-  ofBlock,
-  ofArray,
-  ofNoFieldsBlock,
-  ofBlockEnd
+  ofUnnamed = 1, //start of unnamed field that manifests only when search fails, it's not terminated by ofBlockEnd
+  ofNamed, //start of the named field
+  ofBlock, //start of block with fields
+  ofArray, //start of fielded array
+  ofNoFieldsBlock, //start of block with no fields
+  ofBlockEnd //end of all the above
 };
 
 reliq_error *node_output(const reliq_hnode *hnode, const reliq_hnode *parent,
