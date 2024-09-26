@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "builtin.h"
 #include "ctype.h"
 #include "reliq.h"
 #include "utils.h"
@@ -2316,7 +2317,7 @@ htmlescapecodes_file(const char *src, const size_t srcl, SINK *out)
   size_t buf_used = 0;
 
   for (size_t i = 0; i < srcl;) {
-    if (BUF_SIZE-buf_used < HTMLESCAPECODES_MAXSIZE_VAL) {
+    if (unlikely(BUF_SIZE-buf_used < HTMLESCAPECODES_MAXSIZE_VAL)) {
       sink_write(out,buf,buf_used);
       buf_used = 0;
     }

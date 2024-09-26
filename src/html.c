@@ -26,6 +26,7 @@
 
 typedef unsigned char uchar;
 
+#include "builtin.h"
 #include "reliq.h"
 #include "flexarr.h"
 #include "ctype.h"
@@ -81,7 +82,7 @@ comment_handle(const char *f, size_t *pos, const size_t s)
   *pos = i;
 }
 
-static void
+static inline void
 name_handle(const char *f, size_t *pos, const size_t s, reliq_cstr *tag)
 {
   size_t i = *pos;
@@ -99,29 +100,29 @@ attrib_handle(const char *f, size_t *pos, const size_t s, flexarr *attribs)
   reliq_cstr_pair *ac = (reliq_cstr_pair*)flexarr_inc(attribs);
   name_handle(f,&i,s,&ac->f);
   while_is(isspace,f,i,s);
-  if (f[i] != '=') {
+  if (unlikely(f[i] != '=')) {
     ac->s.b = NULL;
     ac->s.s = 0;
     goto END;
   }
   i++;
   while_is(isspace,f,i,s);
-  if (f[i] == '>') {
+  if (unlikely(f[i] == '>')) {
     attribs->size--;
     i++;
     goto END;
   }
-  if (f[i] == '\'' || f[i] == '"') {
+  if (likely(f[i] == '\'' || f[i] == '"')) {
     char delim = f[i++];
     ac->s.b = f+i;
     char *ending = memchr(f+i,delim,s-i);
-    if (!ending) {
+    if (unlikely(!ending)) {
       i = s;
       goto END;
     }
     i = ending-f;
     ac->s.s = (f+i)-ac->s.b;
-    if (f[i] == delim)
+    if (likely(f[i] == delim))
       i++;
   } else {
     ac->s.b = f+i;
@@ -147,16 +148,16 @@ phptag_handle(const char *f, size_t *pos, const size_t s, reliq_hnode *hnode)
 
   char *ending;
   for (; i < s; i++) {
-    if (f[i] == '\\') {
+    if (unlikely(f[i] == '\\')) {
       i += 2;
       continue;
     }
-    if (f[i] == '?' && f[i+1] == '>') {
+    if (unlikely(f[i] == '?' && f[i+1] == '>')) {
       hnode->insides.s = i-1-(hnode->insides.b-f);
       i++;
       break;
     }
-    if (f[i] == '"') {
+    if (unlikely(f[i] == '"')) {
       i++;
       size_t n,jumpv;
       while (1) {
@@ -178,10 +179,10 @@ phptag_handle(const char *f, size_t *pos, const size_t s, reliq_hnode *hnode)
           continue;
         break;
       }
-    } else if (f[i] == '\'') {
+    } else if (unlikely(f[i] == '\'')) {
       i++;
       ending = memchr(f+i,'\'',s-i);
-      if (ending) {
+      if (likely(ending)) {
         i = ending-f;
       } else {
         i = s;
@@ -201,7 +202,7 @@ html_struct_handle(const char *f, size_t *pos, const size_t s, const uint16_t lv
   *err = NULL;
   uint64_t ret = 1;
   size_t i = *pos;
-  if (lvl >= RELIQ_MAX_NODE_LEVEL) {
+  if (unlikely(lvl >= RELIQ_MAX_NODE_LEVEL)) {
     *err = reliq_set_error(RELIQ_ERROR_HTML,"html: %lu: reached %u level of recursion in document",i,lvl);
     ret = 0;
     goto ERR;
@@ -218,7 +219,7 @@ html_struct_handle(const char *f, size_t *pos, const size_t s, const uint16_t lv
   hnode->all.s = 0;
   i++;
   while_is(isspace,f,i,s);
-  if (f[i] == '!') {
+  if (unlikely(f[i] == '!')) {
     comment_handle(f,&i,s);
     flexarr_dec(nodes);
     ret = 0;
@@ -226,7 +227,7 @@ html_struct_handle(const char *f, size_t *pos, const size_t s, const uint16_t lv
   }
 
   #ifdef RELIQ_PHPTAGS
-  if (f[i] == '?') {
+  if (unlikely(f[i] == '?')) {
     phptag_handle(f,&i,s,hnode);
     goto END;
   }
@@ -234,22 +235,26 @@ html_struct_handle(const char *f, size_t *pos, const size_t s, const uint16_t lv
 
   name_handle(f,&i,s,&hnode->tag);
   for (; i < s && f[i] != '>';) {
-    while_is(isspace,f,i,s);
-    if (f[i] == '/') {
-      char *r = memchr(f+i,'>',s-i);
-      if (r != NULL)
-        hnode->all.s = r-hnode->all.b+1;
-      goto END;
-    }
-
-    if (!isalpha(f[i])) {
-      if (f[i] == '>')
-          break;
+    if (isspace(f[i])) {
       i++;
       continue;
     }
 
-    while_is(isspace,f,i,s);
+    if (unlikely(f[i] == '/')) {
+      char *r = memchr(f+i,'>',s-i);
+      if (likely(r != NULL))
+        hnode->all.s = r-hnode->all.b+1;
+      goto END;
+    }
+
+    if (unlikely(f[i] == '>'))
+       break;
+
+    if (unlikely(!isalpha(f[i]))) {
+      i++;
+      continue;
+    }
+
     attrib_handle(f,&i,s,a);
   }
 
@@ -290,7 +295,7 @@ html_struct_handle(const char *f, size_t *pos, const size_t s, const uint16_t lv
     tagend=i;
     i++;
     while_is(isspace,f,i,s);
-    if (f[i] == '/') {
+    if (unlikely(f[i] == '/')) {
       i++;
       while_is(isspace,f,i,s);
 
@@ -309,7 +314,7 @@ html_struct_handle(const char *f, size_t *pos, const size_t s, const uint16_t lv
         goto END;
       }
 
-      if (!index) {
+      if (unlikely(!index)) {
         foundend = 0;
         continue;
       }
@@ -317,7 +322,7 @@ html_struct_handle(const char *f, size_t *pos, const size_t s, const uint16_t lv
       reliq_cstr endname;
       reliq_hnode *nodesv = (reliq_hnode*)nodes->v;
       name_handle(f,&i,s,&endname);
-      if (!endname.s) {
+      if (unlikely(!endname.s)) {
         i++;
         continue;
       }
@@ -362,14 +367,14 @@ html_struct_handle(const char *f, size_t *pos, const size_t s, const uint16_t lv
         #endif
         i = tagend;
         uint64_t rettmp = html_struct_handle(f,&i,s,lvl+1,nodes,rq,err);
-        if (*err) {
+        if (unlikely(*err)) {
           ret = 0;
           goto ERR;
         }
         ret += rettmp&0xffffffff;
         hnode = &((reliq_hnode*)nodes->v)[index];
         uint32_t lvldiff = rettmp>>32;
-        if (lvldiff) {
+        if (likely(lvldiff)) {
           if (lvldiff > 1) {
             hnode->insides.s = i-(hnode->insides.b-f);
             ret |= ((rettmp>>32)-1)<<32;

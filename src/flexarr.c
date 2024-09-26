@@ -18,9 +18,10 @@
 
 #include <stdlib.h>
 
+#include "builtin.h"
 #include "flexarr.h"
 
-flexarr *
+flexarr * ATTR_MALLOC
 flexarr_init(const size_t elsize, const size_t inc_r)
 {
   flexarr *ret = calloc(1,sizeof(flexarr));
@@ -29,14 +30,24 @@ flexarr_init(const size_t elsize, const size_t inc_r)
   return ret;
 }
 
+static inline void * ATTR_MALLOC
+flexarr_realloc(void *ptr, size_t size)
+{
+  if (unlikely(!size)) {
+    if (ptr)
+      free(ptr);
+    return NULL;
+  }
+  return realloc(ptr,size);
+}
+
 void *
 flexarr_inc(flexarr *f)
 {
-  if (f->size >= f->asize) {
-    void *v = realloc(f->v,(f->asize+=f->inc_r)*f->elsize);
-    if (v == NULL)
+  if (unlikely(f->size >= f->asize)) {
+    f->v = flexarr_realloc(f->v,(f->asize+=f->inc_r)*f->elsize);
+    if (unlikely(!f->v))
       return NULL;
-    f->v = v;
   }
   return f->v+(f->size++*f->elsize);
 }
@@ -44,19 +55,18 @@ flexarr_inc(flexarr *f)
 void *
 flexarr_append(flexarr *f, const void *v, const size_t count)
 {
-  if (!count)
+  if (unlikely(!count))
     return f->v;
 
   size_t free_space = f->asize-f->size;
-  if (free_space < count) {
+  if (unlikely(free_space < count)) {
     size_t needed=(count-free_space),n=needed/f->inc_r;
-    if (needed%f->inc_r)
+    if (likely(needed%f->inc_r))
       n++;
     f->asize += n*f->inc_r;
-    void *v = realloc(f->v,f->asize*f->elsize);
-    if (v == NULL)
+    f->v = flexarr_realloc(f->v,f->asize*f->elsize);
+    if (unlikely(f->v == NULL))
       return NULL;
-    f->v = v;
   }
   void *ret = memcpy(f->v+f->size,v,count);
   f->size += count;
@@ -66,7 +76,7 @@ flexarr_append(flexarr *f, const void *v, const size_t count)
 void *
 flexarr_dec(flexarr *f)
 {
-  if (f->size == 0)
+  if (unlikely(f->size == 0))
     return NULL;
   return f->v+(f->size--*f->elsize);
 }
@@ -76,31 +86,27 @@ flexarr_set(flexarr *f, const size_t s) //set number of allocated elements to s
 {
   if (f->size >= s || f->asize >= s)
     return NULL;
-  void *v = realloc(f->v,s*f->elsize);
-  if (v == NULL)
-    return NULL;
+  f->v = flexarr_realloc(f->v,s*f->elsize);
   f->asize = s;
-  return f->v = v;
+  return f->v;
 }
 
 void *
 flexarr_alloc(flexarr *f, const size_t s) //allocate additional s amount of elements
 {
-  if (s == 0 || f->asize-f->size >= s)
+  if (unlikely(s == 0) || f->asize-f->size >= s)
     return f->v;
-  void *v = realloc(f->v,(f->size+s)*f->elsize);
-  if (v == NULL)
-    return NULL;
+  f->v = flexarr_realloc(f->v,(f->size+s)*f->elsize);
   f->asize = f->size+s;
-  return f->v = v;
+  return f->v;
 }
 
 void *
 flexarr_add(flexarr *dst, const flexarr *src) //append contents of src to dst
 {
-  if (dst->size+src->size > dst->asize)
-    if (flexarr_alloc(dst,src->size) == NULL)
-      return NULL;
+  if (dst->size+src->size > dst->asize &&
+    unlikely(flexarr_alloc(dst,src->size) == NULL))
+    return NULL;
   memcpy(dst->v+(dst->size*dst->elsize),src->v,src->size*dst->elsize);
   dst->size += src->size;
   return dst->v;
@@ -109,14 +115,10 @@ flexarr_add(flexarr *dst, const flexarr *src) //append contents of src to dst
 void *
 flexarr_clearb(flexarr *f) //clear buffer
 {
-  if (f->size == f->asize || !f->v)
-      return NULL;
+  if (unlikely(f->size == f->asize || !f->v))
+    return NULL;
   f->asize = f->size;
-  if (!f->size) {
-    free(f->v);
-    return f->v = NULL;
-  } else
-    return f->v = realloc(f->v,f->size*f->elsize);
+  return f->v = flexarr_realloc(f->v,f->size*f->elsize);
 }
 
 void
@@ -131,7 +133,7 @@ flexarr_conv(flexarr *f, void **v, size_t *s) //convert from flexarr to normal a
 void
 flexarr_free(flexarr *f)
 {
-  if (f->asize)
+  if (likely(f->asize))
     free(f->v);
   f->v = NULL;
   f->size = 0;
