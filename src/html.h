@@ -16,8 +16,12 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef OUTPUT_H
-#define OUTPUT_H
+#ifndef HTML_H
+#define HTML_H
+
+#include <stdint.h>
+#include "flexarr.h"
+#include "reliq.h"
 
 uint64_t html_struct_handle(const char *f, size_t *pos, const size_t s, const uint16_t lvl, flexarr *nodes, reliq *rq, reliq_error **err);
 

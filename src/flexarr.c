@@ -17,7 +17,6 @@
 */
 
 #include <stdlib.h>
-#include <string.h>
 
 #include "flexarr.h"
 
@@ -33,13 +32,35 @@ flexarr_init(const size_t elsize, const size_t inc_r)
 void *
 flexarr_inc(flexarr *f)
 {
-  if (f->size == f->asize) {
+  if (f->size >= f->asize) {
     void *v = realloc(f->v,(f->asize+=f->inc_r)*f->elsize);
     if (v == NULL)
       return NULL;
     f->v = v;
   }
   return f->v+(f->size++*f->elsize);
+}
+
+void *
+flexarr_append(flexarr *f, const void *v, const size_t count)
+{
+  if (!count)
+    return f->v;
+
+  size_t free_space = f->asize-f->size;
+  if (free_space < count) {
+    size_t needed=(count-free_space),n=needed/f->inc_r;
+    if (needed%f->inc_r)
+      n++;
+    f->asize += n*f->inc_r;
+    void *v = realloc(f->v,f->asize*f->elsize);
+    if (v == NULL)
+      return NULL;
+    f->v = v;
+  }
+  void *ret = memcpy(f->v+f->size,v,count);
+  f->size += count;
+  return ret;
 }
 
 void *
@@ -91,10 +112,11 @@ flexarr_clearb(flexarr *f) //clear buffer
   if (f->size == f->asize || !f->v)
       return NULL;
   f->asize = f->size;
-  void *v = realloc(f->v,f->size*f->elsize);
-  if (v == NULL)
-    return NULL;
-  return f->v = v;
+  if (!f->size) {
+    free(f->v);
+    return f->v = NULL;
+  } else
+    return f->v = realloc(f->v,f->size*f->elsize);
 }
 
 void
@@ -102,10 +124,6 @@ flexarr_conv(flexarr *f, void **v, size_t *s) //convert from flexarr to normal a
 {
   flexarr_clearb(f);
   *s = f->size;
-  if (!f->size && f->v) {
-    free(f->v);
-    f->v = NULL;
-  }
   *v = f->v;
   free(f);
 }

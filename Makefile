@@ -21,8 +21,8 @@ MANDIR = $(DESTDIR)${MANPREFIX}/man1
 LD_LIBRARY_PATH ?= ${PREFIX}/lib
 INCLUDE_PATH ?= ${PREFIX}/include
 
-SRC = src/main.c src/flexarr.c src/html.c src/reliq.c src/ctype.c src/utils.c src/output.c src/htmlescapecodes.c
-LIB_SRC = src/flexarr.c src/html.c src/reliq.c src/ctype.c src/utils.c src/output.c src/htmlescapecodes.c
+LIB_SRC = src/flexarr.c src/sink.c src/html.c src/reliq.c src/hnode_print.c src/ctype.c src/utils.c src/output.c src/htmlescapecodes.c
+SRC = src/main.c ${LIB_SRC}
 
 ifeq ($(strip ${O_SMALL_STACK}),1)
 	CFLAGS_D += -DRELIQ_SMALL_STACK

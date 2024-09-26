@@ -16,32 +16,15 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef FLEXARR_H
-#define FLEXARR_H
+#ifndef HNODE_PRINT_H
+#define HNODE_PRINT_H
 
+#include <stdio.h>
 #include <string.h>
+#include "reliq.h"
+#include "sink.h"
 
-typedef struct {
-  void *v;
-  size_t asize; //allocated size
-  size_t size; //used size
-  size_t elsize; //size of a single element
-  size_t inc_r; //increase rate
-} flexarr;
-
-flexarr *flexarr_init(const size_t elsize, const size_t inc_r);
-
-void *flexarr_inc(flexarr *f);
-void *flexarr_append(flexarr *f, const void *v, const size_t count);
-void *flexarr_add(flexarr *dst, const flexarr *src);
-
-void *flexarr_dec(flexarr *f);
-
-void *flexarr_set(flexarr *f, const size_t s);
-void *flexarr_alloc(flexarr *f, const size_t s);
-
-void *flexarr_clearb(flexarr *f);
-void flexarr_conv(flexarr *f, void **v, size_t *s);
-void flexarr_free(flexarr *f);
+void hnode_printf(SINK *outfile, const char *format, const size_t formatl, const reliq_hnode *hnode, const reliq_hnode *parent, const reliq *rq);
+void hnode_print(SINK *outfile, const reliq_hnode *hnode);
 
 #endif

@@ -16,8 +16,14 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef HTML_H
-#define HTML_H
+#ifndef OUTPUT_H
+#define OUTPUT_H
+
+#include <stdint.h>
+#include <string.h>
+#include "flexarr.h"
+#include "sink.h"
+#include "reliq.h"
 
 struct fcollector_expr {
   const reliq_expr *e;
@@ -42,7 +48,7 @@ reliq_error *node_output(const reliq_hnode *hnode, const reliq_hnode *parent,
         #else
         const char *format
         #endif
-        , const size_t formatl, FILE *output, const reliq *rq);
+        , const size_t formatl, SINK *output, const reliq *rq);
 reliq_error *nodes_output(const reliq *rq, flexarr *compressed_nodes, flexarr *pcollector
         #ifdef RELIQ_EDITING
         , flexarr *fcollector

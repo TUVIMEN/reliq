@@ -404,7 +404,7 @@ html_struct_handle(const char *f, size_t *pos, const size_t s, const uint16_t lv
     hnode->attribs = a->v+(attrib_start*a->elsize);
     reliq_npattern const *expr = rq->expr;
     if (expr && reliq_nexec(rq,hnode,NULL,expr))
-      *err = node_output(hnode,NULL,rq->nodef,rq->nodefl,rq->output,rq);
+      *err = node_output(hnode,NULL,rq->nodef,rq->nodefl,(SINK*)rq->output,rq);
     flexarr_dec(nodes);
   }
   a->size = attrib_start;

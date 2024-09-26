@@ -20,6 +20,10 @@
 #define UTILS_H
 
 #include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+#include "sink.h"
+#include "reliq.h"
 
 //reliq_range flags
 #define R_RELATIVE(x) (1<<(x))
@@ -44,7 +48,7 @@
 #define strcomp(x,y) memcomp(x.b,y.b,x.s,y.s)
 #define strcasecomp(x,y) memcasecomp(x.b,y.b,x.s,y.s)
 
-void print_uint(unsigned long num, FILE *outfile);
+void print_uint(unsigned long num, SINK *outfile);
 void strrev(char *v, const size_t size);
 void uint_to_str(char *dest, size_t *destl, const size_t max_destl, unsigned long num);
 void memtrim(void const **dest, size_t *destsize, const void *src, const size_t size);

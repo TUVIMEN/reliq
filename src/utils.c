@@ -150,13 +150,13 @@ memcasecmp(const void *v1, const void *v2, const size_t n)
 }
 
 void
-print_uint(unsigned long num, FILE *outfile)
+print_uint(unsigned long num, SINK *outfile)
 {
   char str[UINT_TO_STR_MAX];
   size_t len = 0;
   uint_to_str(str,&len,UINT_TO_STR_MAX,num);
   if (len)
-    fwrite(str,1,len,outfile);
+    sink_write(outfile,str,len);
 }
 
 void const*

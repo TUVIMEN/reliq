@@ -35,6 +35,7 @@ typedef unsigned char uchar;
 #include "utils.h"
 #include "htmlescapecodes.h"
 #include "edit.h"
+#include "hnode_print.h"
 
 #define LINE_EDIT_INC (1<<8)
 
@@ -56,32 +57,32 @@ const struct reliq_format_function format_functions[] = {
 };
 
 reliq_error *
-format_exec(char *input, size_t inputl, FILE *output, const reliq_hnode *hnode, const reliq_hnode *parent, const reliq_format_func *format, const size_t formatl, const reliq *rq)
+format_exec(char *input, size_t inputl, SINK *output, const reliq_hnode *hnode, const reliq_hnode *parent, const reliq_format_func *format, const size_t formatl, const reliq *rq)
 {
   if (hnode && (!formatl || (formatl == 1 && (format[0].flags&FORMAT_FUNC) == 0 && (!format[0].arg[0] || !((reliq_cstr*)format[0].arg[0])->b)))) {
-    reliq_print(output,hnode);
+    hnode_print(output,hnode);
     return NULL;
   }
   if (hnode && formatl == 1 && (format[0].flags&FORMAT_FUNC) == 0 && format[0].arg[0] && ((reliq_cstr*)format[0].arg[0])->b) {
-    reliq_printf(output,((reliq_cstr*)format[0].arg[0])->b,((reliq_cstr*)format[0].arg[0])->s,hnode,parent,rq);
+    hnode_printf(output,((reliq_cstr*)format[0].arg[0])->b,((reliq_cstr*)format[0].arg[0])->s,hnode,parent,rq);
     return NULL;
   }
 
-  FILE *out;
+  SINK *out;
   char *ptr[2];
   ptr[1] = NULL;
   size_t fsize[2];
 
   for (size_t i = 0; i < formatl; i++) {
-    out = (i == formatl-1) ? output : open_memstream(&ptr[1],&fsize[1]);
+    out = (i == formatl-1) ? output : sink_open(&ptr[1],&fsize[1]);
     if (hnode && i == 0 && (format[i].flags&FORMAT_FUNC) == 0) {
-      reliq_printf(out,((reliq_cstr*)format[i].arg[0])->b,((reliq_cstr*)format[i].arg[0])->s,hnode,parent,rq);
+      hnode_printf(out,((reliq_cstr*)format[i].arg[0])->b,((reliq_cstr*)format[i].arg[0])->s,hnode,parent,rq);
     } else {
       if (i == 0) {
         if (hnode) {
-          FILE *t = open_memstream(&ptr[0],&fsize[0]);
-          reliq_print(t,hnode);
-          fclose(t);
+          SINK *t = sink_open(&ptr[0],&fsize[0]);
+          hnode_print(t,hnode);
+          sink_close(t);
         } else {
           ptr[0] = input;
           fsize[0] = inputl;
@@ -95,7 +96,7 @@ format_exec(char *input, size_t inputl, FILE *output, const reliq_hnode *hnode, 
     }
 
     if (i != formatl-1)
-      fclose(out);
+      sink_close(out);
     if (i != 0 || (hnode && (format[i].flags&FORMAT_FUNC) != 0))
       free(ptr[0]);
     ptr[0] = ptr[1];
@@ -104,6 +105,84 @@ format_exec(char *input, size_t inputl, FILE *output, const reliq_hnode *hnode, 
 
   return NULL;
 }
+
+/*
+  This is a memory optimized implementation of the above. Instead of openinig new SINK for every
+  function it reuses it's last SINK.
+
+  However testing it on 64MB sample it's consistently slower by 200ms, even though it allocates
+  189.49MB less memory using 18502 less allocations.
+
+     time ./reliq -f speed.reliq sp2
+
+  Tests on the same sample concatenated to 444MB showed around 800ms difference.
+
+  Because of that it's not used and is saved for future. Weird are the ways of operating systems.
+*/
+
+/*reliq_error *
+format_exec(char *input, size_t inputl, SINK *output, const reliq_hnode *hnode, const reliq_hnode *parent, const reliq_format_func *format, const size_t formatl, const reliq *rq)
+{
+  if (hnode && (!formatl || (formatl == 1 && (format[0].flags&FORMAT_FUNC) == 0 && (!format[0].arg[0] || !((reliq_cstr*)format[0].arg[0])->b)))) {
+    hnode_print(output,hnode);
+    return NULL;
+  }
+  if (hnode && formatl == 1 && (format[0].flags&FORMAT_FUNC) == 0 && format[0].arg[0] && ((reliq_cstr*)format[0].arg[0])->b) {
+    hnode_printf(output,((reliq_cstr*)format[0].arg[0])->b,((reliq_cstr*)format[0].arg[0])->s,hnode,parent,rq);
+    return NULL;
+  }
+
+  reliq_error *err = NULL;
+  SINK *out;
+  char *ptr[2];
+  size_t fsize[2];
+  SINK *sn[2] = {0};
+  if (formatl > 1 || !hnode || (format[0].flags&FORMAT_FUNC) == 0)
+    sn[0] = sink_open(&ptr[0],&fsize[0]);
+  if (formatl > 1)
+    sn[1] = sink_open(&ptr[1],&fsize[1]);
+
+  for (size_t i = 0; i < formatl; i++) {
+    out = (i == formatl-1) ? output : sn[1];
+    if (hnode && i == 0 && (format[i].flags&FORMAT_FUNC) == 0) {
+      hnode_printf(out,((reliq_cstr*)format[i].arg[0])->b,((reliq_cstr*)format[i].arg[0])->s,hnode,parent,rq);
+    } else {
+      if (i == 0) {
+        if (hnode) {
+          hnode_print(sn[0],hnode);
+          sink_flush(sn[0]);
+        } else {
+          ptr[0] = input;
+          fsize[0] = inputl;
+        }
+      }
+      if (format[i].flags&FORMAT_FUNC) {
+        err = format_functions[(format[i].flags&FORMAT_FUNC)-1].func(ptr[0],fsize[0],out,(const void**)format[i].arg,format[i].flags);
+        if (err)
+          goto ERR;
+      }
+    }
+
+    if (out != output) {
+      sink_flush(out);
+      sink_change(sn[1],&ptr[0],&fsize[0],fsize[1]);
+      sink_change(sn[0],&ptr[1],&fsize[1],0);
+
+      SINK *t = sn[1];
+      sn[1] = sn[0];
+      sn[0] = t;
+    }
+  }
+
+  ERR: ;
+  if (sn[0])
+    sink_destroy(sn[0]);
+  if (sn[1])
+    sink_destroy(sn[1]);
+
+  return NULL;
+}*/
+
 
 static reliq_error *
 format_get_func_args(reliq_format_func *f, const char *src, size_t *pos, const size_t size, size_t *argcount)
@@ -1145,7 +1224,7 @@ sed_script_comp(const char *src, const size_t size, int eflags, flexarr **script
 }
 
 static reliq_error *
-sed_pre_edit(const char *src, const size_t size, FILE *output, char *buffers[3], flexarr *script, const char linedelim, uchar silent)
+sed_pre_edit(const char *src, const size_t size, SINK *output, char *buffers[3], flexarr *script, const char linedelim, uchar silent)
 {
   char *patternsp = buffers[0],
     *buffersp = buffers[1],
@@ -1177,7 +1256,7 @@ sed_pre_edit(const char *src, const size_t size, FILE *output, char *buffers[3],
     if (lineend < size) {
       while (lineend < size && src[lineend] != linedelim)
         lineend++;
-      if (src[lineend] == linedelim)
+      if (lineend < size && src[lineend] == linedelim)
         patternsp_delim = 1;
 
       end = lineend;
@@ -1263,9 +1342,9 @@ sed_pre_edit(const char *src, const size_t size, FILE *output, char *buffers[3],
             offset = patternspl;
           }
           if (offset)
-            fwrite(patternsp,1,offset,output);
+            sink_write(output,patternsp,offset);
           if (!silent || patternsp_delim)
-            fputc(linedelim,output);
+            sink_put(output,linedelim);
           break;
         case 'N':
           appendnextline = 1;
@@ -1296,7 +1375,7 @@ sed_pre_edit(const char *src, const size_t size, FILE *output, char *buffers[3],
           break;
         case '=':
           print_uint(linenumber,output);
-          fputc(linedelim,output);
+          sink_put(output,linedelim);
           break;
         case 't':
           if (!successfulsub)
@@ -1419,9 +1498,9 @@ sed_pre_edit(const char *src, const size_t size, FILE *output, char *buffers[3],
     } else {
       if (!silent) {
         if (patternspl)
-          fwrite(patternsp,1,patternspl,output);
+          sink_write(output,patternsp,patternspl);
         if (patternsp_delim)
-          fputc(linedelim,output);
+          sink_put(output,linedelim);
       }
       patternspl = 0;
     }
@@ -1436,16 +1515,16 @@ sed_pre_edit(const char *src, const size_t size, FILE *output, char *buffers[3],
 
   END: ;
   if (!silent && patternspl) {
-    fwrite(patternsp,1,patternspl,output);
+    sink_write(output,patternsp,patternspl);
     if (patternsp_delim)
-      fputc(linedelim,output);
+      sink_put(output,linedelim);
   }
 
   return NULL;
 }
 
 reliq_error *
-sed_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const uint8_t flag)
+sed_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag)
 {
   reliq_error *err;
   const char argv0[] = "sed";
@@ -1526,7 +1605,7 @@ cstr_get_line_d(const char *src, const size_t size, size_t *saveptr, const char 
 }
 
 static void
-echo_edit_print(reliq_str *str, FILE *output)
+echo_edit_print(reliq_str *str, SINK *output)
 {
   const char *b = str->b;
   const size_t size = str->s;
@@ -1537,18 +1616,18 @@ echo_edit_print(reliq_str *str, FILE *output)
       i++;
       splchar3(b+i,size-i,result,&resultl,&traversed);
       if (resultl != 0) {
-        fwrite(result,resultl,1,output);
+        sink_write(output,result,resultl);
         i += traversed-1;
         continue;
       } else
         i--;
     }
-    fputc(b[i],output);
+    sink_put(output,b[i]);
   }
 }
 
 reliq_error *
-echo_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const uint8_t flag)
+echo_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag)
 {
   reliq_str *str[2] = {NULL};
   const char argv0[] = "echo";
@@ -1573,7 +1652,7 @@ echo_edit(const char *src, const size_t size, FILE *output, const void *arg[4], 
 
   if (str[0] && str[0]->s)
     echo_edit_print(str[0],output);
-  fwrite(src,1,size,output);
+  sink_write(output,src,size);
   if (str[1] && str[1]->s)
     echo_edit_print(str[1],output);
 
@@ -1581,7 +1660,7 @@ echo_edit(const char *src, const size_t size, FILE *output, const void *arg[4], 
 }
 
 reliq_error *
-uniq_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const uint8_t flag)
+uniq_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag)
 {
   char delim = '\n';
   const char argv0[] = "uniq";
@@ -1600,15 +1679,15 @@ uniq_edit(const char *src, const size_t size, FILE *output, const void *arg[4], 
     REPEAT: ;
     line = cstr_get_line_d(src,size,&saveptr,delim);
     if (!line.b) {
-      fwrite(previous.b,1,previous.s,output);
-      fputc(delim,output);
+      sink_write(output,previous.b,previous.s);
+      sink_put(output,delim);
       break;
     }
 
     if (strcomp(line,previous))
       goto REPEAT;
-    fwrite(previous.b,1,previous.s,output);
-    fputc(delim,output);
+    sink_write(output,previous.b,previous.s);
+    sink_put(output,delim);
     previous = line;
   }
   return NULL;
@@ -1624,7 +1703,7 @@ sort_cmp(const reliq_cstr *s1, const reliq_cstr *s2)
 }
 
 reliq_error *
-sort_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const uint8_t flag)
+sort_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag)
 {
   char delim = '\n';
   uchar reverse=0,unique=0; //,natural=0,icase=0;
@@ -1682,12 +1761,12 @@ sort_edit(const char *src, const size_t size, FILE *output, const void *arg[4], 
       break;
     if (unique && strcomp(previous,linesv[i]))
       goto REPEAT;
-    fwrite(previous.b,1,previous.s,output);
-    fputc(delim,output);
+    sink_write(output,previous.b,previous.s);
+    sink_put(output,delim);
     previous = linesv[i];
   }
-  fwrite(previous.b,1,previous.s,output);
-  fputc(delim,output);
+  sink_write(output,previous.b,previous.s);
+  sink_put(output,delim);
 
   END: ;
   flexarr_free(lines);
@@ -1695,7 +1774,7 @@ sort_edit(const char *src, const size_t size, FILE *output, const void *arg[4], 
 }
 
 reliq_error *
-line_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const uint8_t flag)
+line_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag)
 {
   char delim = '\n';
   reliq_range *range = NULL;
@@ -1730,13 +1809,13 @@ line_edit(const char *src, const size_t size, FILE *output, const void *arg[4], 
       break;
     currentline++;
     if (range_match(currentline,range,linecount))
-      fwrite(line.b,1,line.s,output);
+      sink_write(output,line.b,line.s);
   }
   return NULL;
 }
 
 reliq_error *
-cut_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const uint8_t flag)
+cut_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag)
 {
   uchar delim[256]={0};
   uchar complement=0,onlydelimited=0,delimited=0;
@@ -1815,16 +1894,16 @@ cut_edit(const char *src, const size_t size, FILE *output, const void *arg[4], c
         if (dlength != dend-dstart) {
           printlinedelim = 1;
         } else if (!onlydelimited && start == (size_t)(line.b-src)) {
-          fwrite(src+dstart,1,dlength,output);
+          sink_write(output,src+dstart,dlength);
           goto PRINT;
         }
 
         start = dend;
         if (range_match(dcount+1,range,-1)^complement) {
           if (dprevendlength)
-            fwrite(src+dprevend,1,1,output);
+            sink_write(output,src+dprevend,1);
           if (dlength)
-            fwrite(src+dstart,1,dlength,output);
+            sink_write(output,src+dstart,dlength);
           dprevendlength = 1;
         }
         dprevend = dstart+dlength;
@@ -1837,13 +1916,13 @@ cut_edit(const char *src, const size_t size, FILE *output, const void *arg[4], c
         if (range_match(i+1-start,range,end-start)^complement) {
           buf[bufcurrent++] = src[i];
           if (bufcurrent == bufsize) {
-            fwrite(buf,1,bufcurrent,output);
+            sink_write(output,buf,bufcurrent);
             bufcurrent = 0;
           }
         }
       }
       if (bufcurrent) {
-        fwrite(buf,1,bufcurrent,output);
+        sink_write(output,buf,bufcurrent);
         bufcurrent = 0;
       }
     }
@@ -1857,9 +1936,9 @@ cut_edit(const char *src, const size_t size, FILE *output, const void *arg[4], c
     }
     if (printlinedelim) {
       if (!n || (delimited && onlydelimited)) {
-        fputc(linedelim,output);
+        sink_put(output,linedelim);
       } else for (size_t i = 0; i < n; i++)
-        fputc(linedelim,output);
+        sink_put(output,linedelim);
     }
   }
 
@@ -1867,7 +1946,7 @@ cut_edit(const char *src, const size_t size, FILE *output, const void *arg[4], c
 }
 
 reliq_error *
-tr_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const uint8_t flag)
+tr_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag)
 {
   uchar array[256] = {0};
   reliq_str *string[2] = {NULL};
@@ -1918,13 +1997,13 @@ tr_edit(const char *src, const size_t size, FILE *output, const void *arg[4], co
       if (!array[(uchar)src[i]]) {
         buf[bufcurrent++] = src[i];
         if (bufcurrent == bufsize) {
-          fwrite(buf,1,bufcurrent,output);
+          sink_write(output,buf,bufcurrent);
           bufcurrent = 0;
         }
       }
     }
     if (bufcurrent) {
-      fwrite(buf,1,bufcurrent,output);
+      sink_write(output,buf,bufcurrent);
       bufcurrent = 0;
     }
     return NULL;
@@ -1937,7 +2016,7 @@ tr_edit(const char *src, const size_t size, FILE *output, const void *arg[4], co
   for (size_t i = 0; i < size; i++) {
     buf[bufcurrent++] = (array_enabled[(uchar)src[i]]) ? array[(uchar)src[i]] : src[i];
     if (bufcurrent == bufsize) {
-      fwrite(buf,1,bufcurrent,output);
+      sink_write(output,buf,bufcurrent);
       bufcurrent = 0;
     }
     if (squeeze) {
@@ -1947,7 +2026,7 @@ tr_edit(const char *src, const size_t size, FILE *output, const void *arg[4], co
     }
   }
   if (bufcurrent) {
-    fwrite(buf,1,bufcurrent,output);
+    sink_write(output,buf,bufcurrent);
     bufcurrent = 0;
   }
 
@@ -1955,7 +2034,7 @@ tr_edit(const char *src, const size_t size, FILE *output, const void *arg[4], co
 }
 
 reliq_error *
-trim_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const uint8_t flag)
+trim_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag)
 {
   char delim = '\0';
   const char argv0[] = "trim";
@@ -1975,7 +2054,7 @@ trim_edit(const char *src, const size_t size, FILE *output, const void *arg[4], 
         while (line < size && src[line] == delim)
           line++;
         if (line-delimstart)
-          fwrite(src+delimstart,1,line-delimstart,output);
+          sink_write(output,src+delimstart,line-delimstart);
         lineend = line;
         while (lineend < size && src[lineend] != delim)
           lineend++;
@@ -1987,7 +2066,7 @@ trim_edit(const char *src, const size_t size, FILE *output, const void *arg[4], 
       size_t trimmedl = 0;
       memtrim((void const**)&trimmed,&trimmedl,src+line,lineend-line);
       if (trimmedl)
-        fwrite(trimmed,1,trimmedl,output);
+        sink_write(output,trimmed,trimmedl);
     }
 
     line = lineend;
@@ -1997,7 +2076,7 @@ trim_edit(const char *src, const size_t size, FILE *output, const void *arg[4], 
 }
 
 reliq_error *
-rev_edit(char *src, const size_t size, FILE *output, const void *arg[4], const uint8_t flag)
+rev_edit(char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag)
 {
   char delim = '\n';
   const char argv0[] = "rev";
@@ -2012,7 +2091,7 @@ rev_edit(char *src, const size_t size, FILE *output, const void *arg[4], const u
     while (line < size && src[line] == delim)
       line++;
     if (line-delimstart)
-      fwrite(src+delimstart,1,line-delimstart,output);
+      sink_write(output,src+delimstart,line-delimstart);
     lineend = line;
     while (lineend < size && src[lineend] != delim)
       lineend++;
@@ -2020,7 +2099,7 @@ rev_edit(char *src, const size_t size, FILE *output, const void *arg[4], const u
     size_t linel = lineend-line;
     if (linel) {
       strrev(src+line,linel);
-      fwrite(src+line,1,linel,output);
+      sink_write(output,src+line,linel);
     }
 
     line = lineend;
@@ -2030,7 +2109,7 @@ rev_edit(char *src, const size_t size, FILE *output, const void *arg[4], const u
 }
 
 reliq_error *
-tac_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const uint8_t flag)
+tac_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag)
 {
   char delim = '\n';
   const char argv0[] = "tac";
@@ -2052,14 +2131,14 @@ tac_edit(const char *src, const size_t size, FILE *output, const void *arg[4], c
   reliq_cstr *linesv = lines->v;
   const size_t linessize = lines->size;
   for (size_t i = linessize; i; i--)
-    fwrite(linesv[i-1].b,1,linesv[i-1].s,output);
+    sink_write(output,linesv[i-1].b,linesv[i-1].s);
 
   flexarr_free(lines);
   return NULL;
 }
 
 reliq_error *
-wc_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const uint8_t flag)
+wc_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag)
 {
   char delim = '\n';
   const char argv0[] = "wc";
@@ -2138,25 +2217,25 @@ wc_edit(const char *src, const size_t size, FILE *output, const void *arg[4], co
     for (uchar i = 0; i < 4; i++) {
       if (v[i]) {
         uint_to_str(numbuf,&numl,22,r[i]);
-        fwrite(numbuf,1,numl,output);
+        sink_write(output,numbuf,numl);
         break;
       }
     }
   } else for (uchar i = 0; i < 4; i++) {
     if (v[i]) {
       uint_to_str(numbuf,&numl,22,r[i]);
-      fputc('\t',output);
-      fwrite(numbuf,1,numl,output);
+      sink_put(output,'\t');
+      sink_write(output,numbuf,numl);
     }
   }
 
-  fputc('\n',output);
+  sink_put(output,'\n');
 
   return NULL;
 }
 
 reliq_error *
-decode_edit(const char *src, const size_t size, FILE *output, const void *arg[4], const uint8_t flag)
+decode_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag)
 {
   htmlescapecodes_file(src,size,output);
   return NULL;

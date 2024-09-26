@@ -36,7 +36,7 @@ typedef unsigned char uchar;
 #define FCOLLECTOR_OUT_INC (1<<4)
 #define OUTFIELDS_INC (1<<4)
 
-static void outfields_value_print(FILE *out, const reliq_output_field *field, const char *value, const size_t valuel);
+static void outfields_value_print(SINK *out, const reliq_output_field *field, const char *value, const size_t valuel);
 
 reliq_error *
 node_output(const reliq_hnode *hnode, const reliq_hnode *parent,
@@ -45,7 +45,7 @@ node_output(const reliq_hnode *hnode, const reliq_hnode *parent,
         #else
         const char *format
         #endif
-        , const size_t formatl, FILE *output, const reliq *rq) {
+        , const size_t formatl, SINK *output, const reliq *rq) {
   #ifdef RELIQ_EDITING
   return format_exec(NULL,0,output,hnode,parent,format,formatl,rq);
   #else
@@ -58,14 +58,14 @@ node_output(const reliq_hnode *hnode, const reliq_hnode *parent,
 }
 
 struct fcollector_out {
-  FILE *f;
+  SINK *f;
   char *v;
   size_t s;
   size_t current;
 };
 
 struct outfield {
-  FILE *f;
+  SINK *f;
   char *v;
   size_t s;
   reliq_output_field const *o;
@@ -106,7 +106,7 @@ fcollector_rearrange(flexarr *fcollector)
 }
 
 static reliq_error *
-fcollector_out_end(flexarr *outs, const size_t ncurrent, struct fcollector_expr *fcols, const reliq *rq, FILE *rout, FILE **fout)
+fcollector_out_end(flexarr *outs, const size_t ncurrent, struct fcollector_expr *fcols, const reliq *rq, SINK *rout, SINK **fout)
 {
   reliq_error *err = NULL;
   START: ;
@@ -127,10 +127,10 @@ fcollector_out_end(flexarr *outs, const size_t ncurrent, struct fcollector_expr 
     format = rqe->nodef;
     formatl = rqe->nodefl;
   }
-  FILE *tmp_out = (ecurrent->lvl == 0) ? rout : ((struct fcollector_out**)outs->v)[outs->size-2]->f;
+  SINK *tmp_out = (ecurrent->lvl == 0) ? rout : ((struct fcollector_out**)outs->v)[outs->size-2]->f;
   *fout = tmp_out;
 
-  fclose(fcol_out_last->f);
+  sink_close(fcol_out_last->f);
   err = format_exec(fcol_out_last->v,fcol_out_last->s,tmp_out,NULL,NULL,format,formatl,rq);
   free(fcol_out_last->v);
 
@@ -149,7 +149,7 @@ fcollector_out_end(flexarr *outs, const size_t ncurrent, struct fcollector_expr 
 #define OUTFIELDS_NUM_UNSIGNED 4
 
 static void
-outfields_num_print(FILE *out, const char *value, const size_t valuel, const uint8_t flags)
+outfields_num_print(SINK *out, const char *value, const size_t valuel, const uint8_t flags)
 {
   char const *start = value;
   size_t end = 0;
@@ -195,10 +195,10 @@ outfields_num_print(FILE *out, const char *value, const size_t valuel, const uin
       && !pointcount && (start[end] == ',' || start[end] == '.') && isdigit(start[end+1]))
       haspoint = 1;
     if (isminus && end && (haspoint || *start != '0'))
-      fputc('-',out);
-    fwrite(start,1,end,out);
+      sink_put(out,'-');
+    sink_write(out,start,end);
   } else if (!pointcount)
-    fputc('0',out);
+    sink_put(out,'0');
 
   start += end;
   end = 0;
@@ -208,13 +208,13 @@ outfields_num_print(FILE *out, const char *value, const size_t valuel, const uin
     haspoint = 0;
     start++;
     isminus = 0;
-    fputc('.',out);
+    sink_put(out,'.');
     goto GET_NUMBER;
   }
 }
 
 static void
-outfields_bool_print(FILE *out, const char *value, const size_t valuel)
+outfields_bool_print(SINK *out, const char *value, const size_t valuel)
 {
   int ret = 0;
 
@@ -236,11 +236,14 @@ outfields_bool_print(FILE *out, const char *value, const size_t valuel)
     ret = 1;
 
   END: ;
-  fputs(ret ? "true" : "false",out);
+  if (ret) {
+    sink_write(out,"true",4);
+  } else
+    sink_write(out,"false",5);
 }
 
 static void
-outfields_unicode_print(FILE *out, uint16_t character)
+outfields_unicode_print(SINK *out, uint16_t character)
 {
   char val[] = "\\u0000";
   const size_t vall = 6;
@@ -250,11 +253,11 @@ outfields_unicode_print(FILE *out, uint16_t character)
     character >>= 4;
     val[i] = (c < 10) ? c+'0' : c+'a'-10;
   }
-  fwrite(val,1,vall,out);
+  sink_write(out,val,vall);
 }
 
 static void
-outfields_str_print(FILE *out, const char *value, const size_t valuel)
+outfields_str_print(SINK *out, const char *value, const size_t valuel)
 {
   const uchar sub[256] = {
     128,129,130,131,132,133,134,135,'b','t','n',139,'f','r',142,143,144,145,146,147,148,149,150,
@@ -269,16 +272,16 @@ outfields_str_print(FILE *out, const char *value, const size_t valuel)
   char const *start = value;
   size_t end=0;
 
-  fputc('"',out);
+  sink_put(out,'"');
 
   for (size_t i = 0; i < valuel; i++) {
     uchar s = sub[(uchar)value[i]];
     if (s) {
       if (end)
-        fwrite(start,1,end,out);
+        sink_write(out,start,end);
       if (s < 128) {
-        fputc('\\',out);
-        fputc(s,out);
+        sink_put(out,'\\');
+        sink_put(out,s);
       } else
         outfields_unicode_print(out,s-128);
 
@@ -289,15 +292,15 @@ outfields_str_print(FILE *out, const char *value, const size_t valuel)
     end++;
   }
   if (end)
-    fwrite(start,1,end,out);
-  fputc('"',out);
+    sink_write(out,start,end);
+  sink_put(out,'"');
 }
 
 static void
-outfields_array_print(FILE *out, const reliq_output_field *field, const char *value, const size_t valuel)
+outfields_array_print(SINK *out, const reliq_output_field *field, const char *value, const size_t valuel)
 {
 
-  fputc('[',out);
+  sink_put(out,'[');
 
   char const *start=value,*end,*last=value+valuel;
   reliq_output_field f;
@@ -309,16 +312,16 @@ outfields_array_print(FILE *out, const reliq_output_field *field, const char *va
       end = last;
 
     if (start != value)
-      fputc(',',out);
+      sink_put(out,',');
     outfields_value_print(out,&f,start,end-start);
     start = end+1;
   }
 
-  fputc(']',out);
+  sink_put(out,']');
 }
 
 static void
-outfields_value_print(FILE *out, const reliq_output_field *field, const char *value, const size_t valuel)
+outfields_value_print(SINK *out, const reliq_output_field *field, const char *value, const size_t valuel)
 {
   switch (field->type) {
     case 's':
@@ -340,32 +343,32 @@ outfields_value_print(FILE *out, const reliq_output_field *field, const char *va
       outfields_array_print(out,field,value,valuel);
       break;
     default:
-      fputs("null",out);
+      sink_write(out,"null",4);
       break;
   }
 }
 
 static void
-outfields_print_pre(struct outfield **fields, size_t *pos, const size_t size, const uint16_t lvl, uchar isarray, FILE *out)
+outfields_print_pre(struct outfield **fields, size_t *pos, const size_t size, const uint16_t lvl, uchar isarray, SINK *out)
 {
   size_t i = *pos;
 
-  fputc(isarray ? '[' : '{',out);
+  sink_put(out,isarray ? '[' : '{');
   for (; i < size; i++) {
     struct outfield *field = fields[i];
     if (field->lvl < lvl)
         break;
 
     if (field->o && field->o->name.s) {
-      fputc('"',out);
-      fwrite(field->o->name.b,1,field->o->name.s,out);
-      fputc('"',out);
-      fputc(':',out);
+      sink_put(out,'"');
+      sink_write(out,field->o->name.b,field->o->name.s);
+      sink_put(out,'"');
+      sink_put(out,':');
     }
 
     if (field->code == ofNamed || field->code == ofNoFieldsBlock) {
       if (field->f)
-        fclose(field->f);
+        sink_close(field->f);
       field->f = NULL;
 
       outfields_value_print(out,field->o,field->v,field->s);
@@ -380,15 +383,15 @@ outfields_print_pre(struct outfield **fields, size_t *pos, const size_t size, co
     }
 
     if (i+1 < size && fields[i+1]->lvl >= lvl)
-      fputc(',',out);
+      sink_put(out,',');
   }
-  fputc(isarray ? ']' : '}',out);
+  sink_put(out,isarray ? ']' : '}');
 
   *pos = i;
 }
 
 static void
-outfields_print(flexarr *fields, FILE *out)
+outfields_print(flexarr *fields, SINK *out)
 {
   if (!fields->size)
     return;
@@ -403,7 +406,7 @@ outfields_free(flexarr *outfields)
   const size_t size = outfields->size;
   for (size_t i = 0; i < size; i++) {
     if (outfieldsv[i]->f)
-      fclose(outfieldsv[i]->f);
+      sink_close(outfieldsv[i]->f);
     if (outfieldsv[i]->s)
       free(outfieldsv[i]->v);
     free(outfieldsv[i]);
@@ -418,7 +421,7 @@ print_code_debug(const size_t nodeindex, uint16_t fieldlvl, const enum outfieldC
     fieldlvl--;
   if (nodeindex != 0 && (code != ofBlockEnd || prevcode != ofNamed))
     for (size_t k = 0; k < fieldlvl; k++)
-      fputc('\t',stderr);
+      sink_put(stderr,'\t');
 
   switch (code) {
     case ofUnnamed: fprintf(stderr,"|unnamed %lu| {}\n",nodeindex); break;
@@ -447,8 +450,8 @@ nodes_output(const reliq *rq, flexarr *compressed_nodes, flexarr *ncollector
   reliq_error *err = NULL;
   reliq_cstr *ncol = (reliq_cstr*)ncollector->v;
 
-  FILE *out = rq->output;
-  FILE *fout = out;
+  SINK *out = rq->output;
+  SINK *fout = out;
   size_t j=0, //iterator of compressed_nodes
       ncurrent=0, //iterator of ncollector
       g=0; //iterator of u in ncollector
@@ -461,7 +464,7 @@ nodes_output(const reliq *rq, flexarr *compressed_nodes, flexarr *ncollector
 
   flexarr *outfields = flexarr_init(sizeof(struct outfield*),OUTFIELDS_INC);
   uint16_t fieldlvl = 0;
-  FILE **oout = NULL; //outfields output
+  SINK **oout = NULL; //outfields output
   enum outfieldCode prevcode = ofUnnamed;
   size_t prev_j = j;
   uchar field_ended = 0;
@@ -474,7 +477,7 @@ nodes_output(const reliq *rq, flexarr *compressed_nodes, flexarr *ncollector
         ff_pre = flexarr_inc(outs);
         *ff_pre = malloc(sizeof(struct fcollector_out));
         ff = *ff_pre;
-        ff->f = open_memstream(&ff->v,&ff->s);
+        ff->f = sink_open(&ff->v,&ff->s);
         ff->current = fcurrent++;
         fout = ff->f;
       }
@@ -484,17 +487,17 @@ nodes_output(const reliq *rq, flexarr *compressed_nodes, flexarr *ncollector
 
       if (ncurrent < ncollector->size && ncol[ncurrent].b && ((reliq_expr*)ncol[ncurrent].b)->exprfl) {
         if (out != rq->output && out) {
-          fclose(out);
+          sink_close(out);
           free(ptr);
         }
-        out = open_memstream(&ptr,&fsize);
+        out = sink_open(&ptr,&fsize);
       }
     }
     #endif
     if (j >= compressed_nodes->size)
       break;
 
-    FILE *rout = (out == rq->output) ? fout : out;
+    SINK *rout = (out == rq->output) ? fout : out;
     if (rout == rq->output && oout)
       rout = *oout;
 
@@ -514,7 +517,7 @@ nodes_output(const reliq *rq, flexarr *compressed_nodes, flexarr *ncollector
 
       switch (code) {
         case ofUnnamed:
-          fputc('\n',rout);
+          sink_put(rout,'\n');
           break;
         case ofBlock:
         case ofArray:
@@ -526,7 +529,7 @@ nodes_output(const reliq *rq, flexarr *compressed_nodes, flexarr *ncollector
           field->s = 0;
           field->f = NULL;
           if (code == ofNamed || code == ofNoFieldsBlock) {
-            field->f = open_memstream(&field->v,&field->s);
+            field->f = sink_open(&field->v,&field->s);
             oout = &field->f;
           }
           field->lvl = fieldlvl;
@@ -565,7 +568,7 @@ nodes_output(const reliq *rq, flexarr *compressed_nodes, flexarr *ncollector
       NCOLLECTOR_END: ;
       #ifdef RELIQ_EDITING
       if (ncol[ncurrent].b && out != rq->output) {
-        fclose(out);
+        sink_close(out);
         out = NULL;
         err = format_exec(ptr,fsize,(oout && fout == rq->output) ? *oout : fout,NULL,NULL,
           ((reliq_expr*)ncol[ncurrent].b)->exprf,
@@ -588,7 +591,7 @@ nodes_output(const reliq *rq, flexarr *compressed_nodes, flexarr *ncollector
       if (field_ended) {
         FIELD_ENDED_FREE_OOUT: ;
         if (oout) {
-          fclose(*oout);
+          sink_close(*oout);
           *oout = NULL;
           oout = NULL;
         }
@@ -604,7 +607,7 @@ nodes_output(const reliq *rq, flexarr *compressed_nodes, flexarr *ncollector
   struct fcollector_out **outsv = (struct fcollector_out**)outs->v;
   size_t size = outs->size;
   for (size_t i = 0; i < size; i++) {
-    fclose(outsv[i]->f);
+    sink_close(outsv[i]->f);
     if (outsv[i]->s)
       free(outsv[i]->v);
     free(outsv[i]);

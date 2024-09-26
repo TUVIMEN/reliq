@@ -19,12 +19,16 @@
 #ifndef HTMLESCAPECODES_H
 #define HTMLESCAPECODES_H
 
+#include <stdio.h>
+#include <string.h>
+#include "sink.h"
+
 #define HTMLESCAPECODES_MAXSIZE_VAL 16
 #define HTMLESCAPECODES_MAXSIZE_NAME 31
 #define HTMLESCAPECODES_MAXSIZE_DIGITS 10
 #define HTMLESCAPECODES_MAXSIZE_XDIGITS 8
 
 int htmlescapecode(const char *src, const size_t srcl, size_t *traversed, char *result, const size_t resultl, size_t *written);
-void htmlescapecodes_file(const char *src, const size_t srcl, FILE *out);
+void htmlescapecodes_file(const char *src, const size_t srcl, SINK *out);
 
 #endif

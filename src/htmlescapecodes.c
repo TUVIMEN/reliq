@@ -30,6 +30,8 @@
 #include "utils.h"
 #include "htmlescapecodes.h"
 
+#define BUF_SIZE (1<<12)
+
 typedef unsigned char uchar;
 
 struct htmlcode {
@@ -2308,23 +2310,22 @@ htmlescapecode(const char *src, const size_t srcl, size_t *traversed, char *resu
 }
 
 void
-htmlescapecodes_file(const char *src, const size_t srcl, FILE *out)
+htmlescapecodes_file(const char *src, const size_t srcl, SINK *out)
 {
-  const size_t buf_size=4096;
-  char buf[buf_size];
+  char buf[BUF_SIZE];
   size_t buf_used = 0;
 
   for (size_t i = 0; i < srcl;) {
-    if (buf_size-buf_used < HTMLESCAPECODES_MAXSIZE_VAL) {
-      fwrite(buf,1,buf_used,out);
+    if (BUF_SIZE-buf_used < HTMLESCAPECODES_MAXSIZE_VAL) {
+      sink_write(out,buf,buf_used);
       buf_used = 0;
     }
 
     size_t traversed,written;
-    htmlescapecode(src+i,srcl-i,&traversed,buf+buf_used,buf_size-buf_used,&written);
+    htmlescapecode(src+i,srcl-i,&traversed,buf+buf_used,BUF_SIZE-buf_used,&written);
     i += traversed;
     buf_used += written;
   }
   if (buf_used)
-    fwrite(buf,1,buf_used,out);
+    sink_write(out,buf,buf_used);
 }

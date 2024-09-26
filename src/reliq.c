@@ -31,12 +31,12 @@ typedef unsigned char uchar;
 
 #include "reliq.h"
 #include "flexarr.h"
+#include "sink.h"
 #include "ctype.h"
 #include "utils.h"
 #include "edit.h"
 #include "output.h"
 #include "html.h"
-#include "htmlescapecodes.h"
 
 #define PASSED_INC (1<<8) //!! if increased causes huge allocation see val_mem1 file
 #define PATTERN_SIZE_INC (1<<8)
@@ -164,7 +164,7 @@ static reliq_error *reliq_exec_pre(const reliq *rq, const reliq_expr *exprs, siz
     , flexarr *fcollector
     #endif
     );
-reliq_error *reliq_exec_r(reliq *rq, FILE *output, reliq_compressed **outnodes, size_t *outnodesl, const reliq_exprs *exprs);
+reliq_error *reliq_exec_r(reliq *rq, SINK *output, reliq_compressed **outnodes, size_t *outnodesl, const reliq_exprs *exprs);
 
 struct reliq_match_hook {
   reliq_str8 name;
@@ -843,202 +843,6 @@ reliq_match_add(const reliq *rq, reliq_hnode const *hnode, reliq_hnode const *pa
     return;
   add_compressed(dest,(reliq_hnode *const)hnode,(reliq_hnode *const)parent);
   (*found)++;
-}
-
-#define PC_UNTRIM 0x1
-#define PC_DECODE 0x2
-
-static void
-print_chars(char const *src, size_t size, const uint8_t flags, FILE *outfile)
-{
-  if (!(flags&PC_UNTRIM))
-    memtrim((void const**)&src,&size,src,size);
-  if (!size)
-    return;
-  if (flags&PC_DECODE) {
-    htmlescapecodes_file(src,size,outfile);
-  } else
-    fwrite(src,1,size,outfile);
-}
-
-static void
-print_attribs(const reliq_hnode *hnode, const uint8_t flags, FILE *outfile)
-{
-  reliq_cstr_pair *a = hnode->attribs;
-  const size_t size = hnode->attribsl;
-  for (uint16_t j = 0; j < size; j++) {
-    fputc(' ',outfile);
-    fwrite(a[j].f.b,1,a[j].f.s,outfile);
-    fputs("=\"",outfile);
-    print_chars(a[j].s.b,a[j].s.s,flags,outfile);
-    fputc('"',outfile);
-  }
-}
-
-static void
-print_attrib_value(const reliq_cstr_pair *attribs, const size_t attribsl, const char *text, const size_t textl, const int num, const uint8_t flags, FILE *outfile)
-{
-  if (num != -1) {
-    if ((size_t)num < attribsl)
-      print_chars(attribs[num].s.b,attribs[num].s.s,flags,outfile);
-  } else if (textl != 0) {
-    for (size_t i = 0; i < attribsl; i++)
-      if (memcomp(attribs[i].f.b,text,textl,attribs[i].f.s))
-        print_chars(attribs[i].s.b,attribs[i].s.s,flags,outfile);
-  } else for (size_t i = 0; i < attribsl; i++) {
-    print_chars(attribs[i].s.b,attribs[i].s.s,flags,outfile);
-    fputc('"',outfile);
-  }
-}
-
-static void
-print_text(const reliq_hnode *nodes, const reliq_hnode *hnode, uint8_t flags, FILE *outfile, uchar recursive)
-{
-  char const *start = hnode->insides.b;
-  size_t end;
-  flags |= PC_UNTRIM;
-
-  const size_t size = hnode->desc_count;
-  for (size_t i = 1; i <= size; i++) {
-    const reliq_hnode *n = hnode+i;
-
-    end = n->all.b-start;
-    if (end)
-      print_chars(start,end,flags,outfile);
-
-    if (recursive)
-      print_text(nodes,n,flags,outfile,recursive);
-
-    i += n->desc_count;
-    start = n->all.b+n->all.s;
-  }
-
-  end = hnode->insides.s-(start-hnode->insides.b);
-  if (end)
-    print_chars(start,end,flags,outfile);
-}
-
-void
-reliq_printf(FILE *outfile, const char *format, const size_t formatl, const reliq_hnode *hnode, const reliq_hnode *parent, const reliq *rq)
-{
-  size_t i = 0;
-  char const *text=NULL;
-  size_t textl=0;
-  int num = -1;
-  while (i < formatl) {
-    if (format[i] == '\\') {
-      size_t resultl,traversed;
-      char result[8];
-      i++;
-      splchar3(format+i,formatl-i,result,&resultl,&traversed);
-      if (resultl != 0) {
-        fwrite(result,resultl,1,outfile);
-        i += traversed;
-        continue;
-      } else
-        i--;
-    }
-    if (format[i] == '%') {
-      if (++i >= formatl)
-        break;
-      if (isdigit(format[i])) {
-        num = number_handle(format,&i,formatl);
-      } else if (format[i] == '(') {
-        text = ++i+format;
-        char *t = memchr(format+i,')',formatl-i);
-        if (!t)
-          return;
-        textl = t-(format+i);
-        i = t-format+1;
-      }
-
-      uint8_t printflags=0, //PC_
-        endinsides=0;
-      char const *src;
-      size_t srcl;
-
-      REPEAT: ;
-      if (i >= formatl)
-          return;
-      switch (format[i++]) {
-        case '%': fputc('%',outfile); break;
-        case 'U': printflags |= PC_UNTRIM; goto REPEAT; break;
-        case 'D': printflags |= PC_DECODE; goto REPEAT; break;
-        case 'i': print_chars(hnode->insides.b,hnode->insides.s,printflags,outfile); break;
-        case 't': print_text(rq->nodes,hnode,printflags,outfile,0); break;
-        case 'T': print_text(rq->nodes,hnode,printflags,outfile,1); break;
-        case 'l': {
-          uint16_t lvl = hnode->lvl;
-          if (parent) {
-            if (lvl < parent->lvl) {
-              lvl = parent->lvl-lvl; //happens when passed from ancestor
-            } else
-              lvl -= parent->lvl;
-          }
-          print_uint(lvl,outfile);
-          }
-          break;
-        case 'L': print_uint(hnode->lvl,outfile); break;
-        case 'a':
-          print_attribs(hnode,printflags,outfile); break;
-        case 'v':
-          print_attrib_value(hnode->attribs,hnode->attribsl,text,textl,num,printflags,outfile);
-          break;
-        case 's': print_uint(hnode->all.s,outfile); break;
-        case 'c': print_uint(hnode->desc_count,outfile); break;
-        case 'C': print_chars(hnode->all.b,hnode->all.s,printflags|PC_UNTRIM,outfile); break;
-        case 'S':
-          src = hnode->all.b;
-          if (hnode->insides.b) {
-            srcl = hnode->insides.b-hnode->all.b;
-          } else
-            srcl = hnode->all.s;
-          print_chars(src,srcl,printflags|PC_UNTRIM,outfile);
-          break;
-        case 'e':
-          endinsides = 1;
-        case 'E':
-          if (!hnode->insides.b)
-            break;
-          srcl = hnode->all.s-(hnode->insides.b-hnode->all.b)-hnode->insides.s;
-          src = hnode->insides.b+hnode->insides.s;
-          if (!srcl)
-            break;
-          if (endinsides) {
-            if (srcl < 2)
-              break;
-            src++;
-            srcl -= 2;
-          }
-
-          print_chars(src,srcl,printflags|(endinsides ? 0 : PC_UNTRIM),outfile);
-          break;
-        case 'I': print_uint(hnode->all.b-rq->data,outfile); break;
-        case 'p': {
-          uint32_t pos = hnode-rq->nodes;
-          if (parent) {
-            if (hnode < parent) {
-              pos = parent-hnode;
-            } else
-              pos = hnode-parent;
-          }
-          print_uint(pos,outfile);
-          }
-          break;
-        case 'P': print_uint(hnode-rq->nodes,outfile); break;
-        case 'n': fwrite(hnode->tag.b,1,hnode->tag.s,outfile); break;
-      }
-      continue;
-    }
-    fputc(format[i++],outfile);
-  }
-}
-
-void
-reliq_print(FILE *outfile, const reliq_hnode *hnode)
-{
-  fwrite(hnode->all.b,1,hnode->all.s,outfile);
-  fputc('\n',outfile);
 }
 
 static reliq_error *
@@ -2589,7 +2393,7 @@ reliq_exec_pre(const reliq *rq, const reliq_expr *exprs, size_t exprsl, flexarr 
 }
 
 reliq_error *
-reliq_exec_r(reliq *rq, FILE *output, reliq_compressed **outnodes, size_t *outnodesl, const reliq_exprs *exprs)
+reliq_exec_r(reliq *rq, SINK *output, reliq_compressed **outnodes, size_t *outnodesl, const reliq_exprs *exprs)
 {
   if (!exprs)
     return NULL;
@@ -2634,8 +2438,9 @@ reliq_exec_file(reliq *rq, FILE *output, const reliq_exprs *exprs)
 {
   if (!exprs)
     return NULL;
-  reliq_error *err = reliq_exec_r(rq,output,NULL,NULL,exprs);
-  fflush(output);
+  SINK *out = sink_from_file(output);
+  reliq_error *err = reliq_exec_r(rq,out,NULL,NULL,exprs);
+  sink_close(out);
   return err;
 }
 
@@ -2644,9 +2449,9 @@ reliq_exec_str(reliq *rq, char **str, size_t *strl, const reliq_exprs *exprs)
 {
   if (!exprs)
     return NULL;
-  FILE *output = open_memstream(str,strl);
-  reliq_error *err = reliq_exec_file(rq,output,exprs);
-  fclose(output);
+  SINK *output = sink_open(str,strl);
+  reliq_error *err = reliq_exec_r(rq,output,NULL,NULL,exprs);
+  sink_close(output);
   return err;
 }
 
@@ -2667,7 +2472,7 @@ reliq_analyze(const char *data, const size_t size, flexarr *nodes, reliq *rq)
 }
 
 static reliq_error *
-reliq_fmatch(const char *data, const size_t size, FILE *output, const reliq_npattern *nodep,
+reliq_fmatch(const char *data, const size_t size, SINK *output, const reliq_npattern *nodep,
 #ifdef RELIQ_EDITING
   reliq_format_func *nodef,
 #else
@@ -2683,7 +2488,7 @@ reliq_fmatch(const char *data, const size_t size, FILE *output, const reliq_npat
   t.nodefl = nodefl;
   t.flags = 0;
   if (output == NULL)
-    output = stdout;
+    output = sink_from_file(stdout);
   t.output = output;
   t.nodes = NULL;
   t.nodesl = 0;
@@ -2699,31 +2504,32 @@ reliq_fmatch(const char *data, const size_t size, FILE *output, const reliq_npat
   return err;
 }
 
-reliq_error *
-reliq_fexec_file(char *data, size_t size, FILE *output, const reliq_exprs *exprs, int (*freedata)(void *addr, size_t len))
+static reliq_error *
+reliq_fexec_sink(char *data, size_t size, SINK *output, const reliq_exprs *exprs, int (*freedata)(void *addr, size_t len))
 {
   reliq_error *err = NULL;
   uchar was_unallocated = 0;
+  SINK *destination = output;
   if (!exprs || exprs->s == 0)
     goto END;
   if ((err = exprs_check_chain(exprs,1)))
     goto END;
 
-  FILE *destination = output;
-  char *ptr=data,*nptr = NULL;
+  char *ptr=data,*nptr;
   size_t fsize;
 
   flexarr *chain = (flexarr*)exprs->b[0].e;
   reliq_expr *chainv = (reliq_expr*)chain->v;
+  SINK *out;
 
   const size_t chainsize = chain->size;
   for (size_t i = 0; i < chainsize; i++) {
-    output = (i == chain->size-1) ? destination : open_memstream(&nptr,&fsize);
+    out = (i == chain->size-1) ? destination : sink_open(&nptr,&fsize);
 
-    err = reliq_fmatch(ptr,size,output,(reliq_npattern*)chainv[i].e,
+    err = reliq_fmatch(ptr,size,out,(reliq_npattern*)chainv[i].e,
       chainv[i].nodef,chainv[i].nodefl);
 
-    fflush(output);
+    sink_close(out);
 
     if (i == 0) {
       if (freedata)
@@ -2731,9 +2537,6 @@ reliq_fexec_file(char *data, size_t size, FILE *output, const reliq_exprs *exprs
       was_unallocated = 1;
     } else
       free(ptr);
-
-    if (i != chain->size-1)
-      fclose(output);
 
     if (err)
       return err;
@@ -2743,9 +2546,18 @@ reliq_fexec_file(char *data, size_t size, FILE *output, const reliq_exprs *exprs
   }
 
   END: ;
-  if (!was_unallocated && freedata)
-    (*freedata)(data,size);
+  if (!was_unallocated) {
+    sink_close(destination);
+    if (freedata)
+      (*freedata)(data,size);
+  }
   return err;
+}
+
+reliq_error *
+reliq_fexec_file(char *data, size_t size, FILE *output, const reliq_exprs *exprs, int (*freedata)(void *addr, size_t len))
+{
+  return reliq_fexec_sink(data,size,sink_from_file(output),exprs,freedata);
 }
 
 reliq_error *
@@ -2753,10 +2565,8 @@ reliq_fexec_str(char *data, const size_t size, char **str, size_t *strl, const r
 {
   if (!exprs)
     return NULL;
-  FILE *output = open_memstream(str,strl);
-  reliq_error *err = reliq_fexec_file(data,size,output,exprs,freedata);
-  fclose(output);
-  return err;
+  SINK *output = sink_open(str,strl);
+  return reliq_fexec_sink(data,size,output,exprs,freedata);
 }
 
 static void
@@ -2802,7 +2612,7 @@ reliq_from_compressed_independent(const reliq_compressed *compressed, const size
   char *ptr;
   size_t pos=0,size;
   uint16_t lvl;
-  FILE *out = open_memstream(&ptr,&size);
+  SINK *out = sink_open(&ptr,&size);
   flexarr *nodes = flexarr_init(sizeof(reliq_hnode),RELIQ_NODES_INC);
   reliq_hnode *current,*new;
 
@@ -2828,11 +2638,11 @@ reliq_from_compressed_independent(const reliq_compressed *compressed, const size
       new->lvl -= lvl;
     }
 
-    fwrite(current->all.b,1,current->all.s,out);
+    sink_write(out,current->all.b,current->all.s);
     pos += current->all.s;
   }
 
-  fclose(out);
+  sink_close(out);
 
   const size_t nodessize = nodes->size;
   for (size_t i = 0; i < nodessize; i++)

@@ -190,7 +190,7 @@ typedef struct {
   int (*freedata)(void *addr, size_t len);
   reliq_hnode *nodes;
 
-  FILE *output;
+  void *output;
   reliq_npattern const *expr; //node passed to process at parsing
 
   void *attrib_buffer; //used as temporary buffer for attribs
@@ -233,9 +233,6 @@ reliq_error *reliq_exec_str(reliq *rq, char **str, size_t *strl, const reliq_exp
 reliq_error *reliq_exec(reliq *rq, reliq_compressed **nodes, size_t *nodesl, const reliq_exprs *exprs);
 
 void reliq_efree(reliq_exprs *exprs);
-
-void reliq_printf(FILE *outfile, const char *format, const size_t formatl, const reliq_hnode *hnode, const reliq_hnode *parent, const reliq *rq);
-void reliq_print(FILE *outfile, const reliq_hnode *hnode);
 
 reliq_error *reliq_set_error(const int code, const char *fmt, ...);
 
