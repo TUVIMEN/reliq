@@ -22,18 +22,16 @@
 #define _XOPEN_SOURCE 600
 
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 
 #include "builtin.h"
 #include "ctype.h"
-#include "reliq.h"
 #include "utils.h"
 #include "htmlescapecodes.h"
 
-#define BUF_SIZE (1<<12)
+//!! This monstrosity takes 170KB of the binary ;)
 
-typedef unsigned char uchar;
+#define BUF_SIZE (1<<12)
 
 struct htmlcode {
   reliq_str8 name;

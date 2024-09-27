@@ -16,33 +16,22 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef EDIT_H
-#define EDIT_H
+#ifndef RELIQ_EDIT_H
+#define RELIQ_EDIT_H
 
-#include <stdio.h>
-#include <string.h>
 #include "flexarr.h"
 #include "sink.h"
-#include "reliq.h"
+#include "types.h"
 
-//reliq_format_func flags
-#define FORMAT_FUNC         0xf
-#define FORMAT_ARG0_ISSTR   0x10
-#define FORMAT_ARG1_ISSTR   0x20
-#define FORMAT_ARG2_ISSTR   0x40
-#define FORMAT_ARG3_ISSTR   0x80
+#include "edit_sed.h"
+#include "edit_wc.h"
+#include "edit_tr.h"
 
-typedef reliq_error *(*reliq_format_function_t)(char*,size_t,SINK*,const void*[4],const uint8_t);
-
-struct reliq_format_function {
-  reliq_str8 name;
-  reliq_format_function_t func;
-};
+int edit_get_arg_delim(const void *args[4], const int num, const uint8_t flag, char *delim);
+reliq_cstr edit_cstr_get_line(const char *src, const size_t size, size_t *saveptr, const char delim);
 
 reliq_error *trim_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag);
-reliq_error *tr_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag);
 reliq_error *cut_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag);
-reliq_error *sed_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag);
 reliq_error *line_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag);
 reliq_error *decode_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag);
 reliq_error *sort_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag);
@@ -50,12 +39,5 @@ reliq_error *uniq_edit(const char *src, const size_t size, SINK *output, const v
 reliq_error *echo_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag);
 reliq_error *rev_edit(char *src, size_t size, SINK *output, const void *arg[4], const uint8_t flag);
 reliq_error *tac_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag);
-reliq_error *wc_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag);
-
-extern const struct reliq_format_function format_functions[];
-
-reliq_error *format_exec(char *input, size_t inputl, SINK *output, const reliq_hnode *hnode, const reliq_hnode *parent, const reliq_format_func *format, const size_t formatl, const reliq *rq);
-void format_free(reliq_format_func *format, const size_t formatl);
-reliq_error *format_get_funcs(flexarr *format, const char *src, size_t *pos, const size_t size);
 
 #endif

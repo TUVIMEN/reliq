@@ -16,13 +16,11 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef HNODE_PRINT_H
-#define HNODE_PRINT_H
+#ifndef RELIQ_HNODE_PRINT_H
+#define RELIQ_HNODE_PRINT_H
 
-#include <stdio.h>
-#include <string.h>
-#include "reliq.h"
 #include "sink.h"
+#include "types.h"
 
 void hnode_printf(SINK *outfile, const char *format, const size_t formatl, const reliq_hnode *hnode, const reliq_hnode *parent, const reliq *rq);
 void hnode_print(SINK *outfile, const reliq_hnode *hnode);

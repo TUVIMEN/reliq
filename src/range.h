@@ -16,13 +16,32 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef RELIQ_HTML_H
-#define RELIQ_HTML_H
+#ifndef RELIQ_RANGE_H
+#define RELIQ_RANGE_H
 
-#include "flexarr.h"
+#include <stddef.h>
+#include <stdint.h>
 #include "types.h"
 
-uint64_t html_struct_handle(const char *f, size_t *pos, const size_t s, const uint16_t lvl, flexarr *nodes, reliq *rq, reliq_error **err);
+//reliq_range flags
+#define R_RELATIVE(x) (1<<(x))
+#define R_RANGE 0x8
+#define R_NOTEMPTY 0x10
+#define R_INVERT 0x20
+
+struct reliq_range_node {
+  uint32_t v[4];
+  uint8_t flags; //R_
+};
+
+typedef struct {
+  struct reliq_range_node *b;
+  size_t s;
+} reliq_range;
+
+reliq_error *range_comp(const char *src, size_t *pos, const size_t size, reliq_range *range);
+unsigned char range_match(const uint32_t matched, const reliq_range *range, const size_t last);
+void range_free(reliq_range *range);
+unsigned int predict_range_max(const reliq_range *range);
 
 #endif
-

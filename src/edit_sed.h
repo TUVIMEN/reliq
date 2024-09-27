@@ -16,13 +16,12 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef RELIQ_HTML_H
-#define RELIQ_HTML_H
+#ifndef RELIQ_EDIT_SED_H
+#define RELIQ_EDIT_SED_H
 
-#include "flexarr.h"
+#include "sink.h"
 #include "types.h"
 
-uint64_t html_struct_handle(const char *f, size_t *pos, const size_t s, const uint16_t lvl, flexarr *nodes, reliq *rq, reliq_error **err);
+reliq_error *sed_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag);
 
 #endif
-

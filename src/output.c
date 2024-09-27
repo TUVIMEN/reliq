@@ -22,16 +22,17 @@
 #define _XOPEN_SOURCE 600
 
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 
-typedef unsigned char uchar;
-
-#include "reliq.h"
 #include "flexarr.h"
 #include "ctype.h"
-#include "edit.h"
+#include "utils.h"
 #include "output.h"
+#ifdef RELIQ_EDITING
+#include "format.h"
+#else
+#include "hnode_print.h"
+#endif
 
 #define FCOLLECTOR_OUT_INC (1<<4)
 #define OUTFIELDS_INC (1<<4)
@@ -40,21 +41,166 @@ static void outfields_value_print(SINK *out, const reliq_output_field *field, co
 
 reliq_error *
 node_output(const reliq_hnode *hnode, const reliq_hnode *parent,
-        #ifdef RELIQ_EDITING
-        const reliq_format_func *format
-        #else
-        const char *format
-        #endif
-        , const size_t formatl, SINK *output, const reliq *rq) {
+#ifdef RELIQ_EDITING
+  const reliq_format_func *format,
+#else
+  const char *format,
+#endif
+  const size_t formatl, SINK *output, const reliq *rq)
+{
   #ifdef RELIQ_EDITING
   return format_exec(NULL,0,output,hnode,parent,format,formatl,rq);
   #else
   if (format) {
-    reliq_printf(output,format,formatl,hnode,parent,rq);
+    hnode_printf(output,format,formatl,hnode,parent,rq);
   } else
-    reliq_print(output,hnode);
+    hnode_print(output,hnode);
   return NULL;
   #endif
+}
+
+static reliq_error *
+reliq_output_type_get(const char *src, size_t *pos, const size_t s, uchar arraypossible, char const **type, size_t *typel)
+{
+  size_t i = *pos;
+  reliq_error *err = NULL;
+
+  *type = src+i;
+  while (i < s && isalnum(src[i]))
+    (i)++;
+  *typel = i-(*type-src);
+  if (i < s && !isspace(src[i]) && !(arraypossible && (**type == 'a' && (src[i] == '(' || src[i] == '.'))))
+    err = script_err("output field: unexpected character in type 0x%02x",src[i]);
+
+  *pos = i;
+  return err;
+}
+
+static reliq_error *
+reliq_output_type_array_get_delim(const char *src, size_t *pos, const size_t s, char *delim)
+{
+  reliq_error *err = NULL;
+  size_t i = *pos;
+
+  if (i >= s || src[i] != '(')
+    goto END;
+
+  i++;
+  char const *b_start = src+i;
+  char *b_end = memchr(b_start,')',s-i);
+  if (!b_end)
+    goto_script_seterr(END,"output field: array: could not find the end of '(' bracket");
+
+  while (b_start != b_end && isspace(*b_start))
+    b_start++;
+  if (b_start == b_end || *b_start != '"')
+    goto_script_seterr(END,"output field: array: expected argument in '(' bracket");
+
+  b_start++;
+  char *q_end = memchr(b_start,'"',s-i);
+  if (!q_end)
+    goto_script_seterr(END,"output field: array: could not find the end of '\"' quote");
+
+  *delim = *b_start;
+  if (*b_start == '\\' && b_start+1 != b_end) {
+    b_start++;
+    size_t traversed;
+    *delim = splchar2(b_start,b_end-b_start,&traversed);
+    if (*delim != '\\' && *delim == *b_start) {
+      *delim = '\\';
+      b_start--;
+    } else
+      b_start += traversed-1;
+  }
+  b_start++;
+  if (b_start != q_end)
+    goto_script_seterr(END,"output field: array: expected a single character argument");
+
+  q_end++;
+  while (q_end != b_end && isspace(*q_end))
+    q_end++;
+  if (q_end != b_end)
+    goto_script_seterr(END,"output field: array: expected only one argument");
+
+  i = b_end-src+1;
+
+  END: ;
+  *pos = i;
+  return err;
+}
+
+static reliq_error *
+reliq_output_type_array_get(const char *src, size_t *pos, const size_t s, reliq_output_field *outfield)
+{
+  reliq_error *err = NULL;
+  size_t i = *pos;
+
+  if (i >= s || (err = reliq_output_type_array_get_delim(src,&i,s,&outfield->arr_delim)))
+    goto END;
+
+  if (i < s && !isspace(src[i]) && src[i] != '.')
+    goto_script_seterr(END,"output field: array: unexpected character 0x%02x",src[i]);
+
+  if (i < s && src[i] == '.') {
+    i++;
+    char const *arr_type;
+    size_t arr_typel = 0;
+    if ((err = reliq_output_type_get(src,&i,s,0,&arr_type,&arr_typel)))
+      goto END;
+    if (arr_typel) {
+      if (*arr_type == 'a')
+        goto_script_seterr(END,"output field: array: array type in array is not allowed");
+      outfield->arr_type = *arr_type;
+    }
+  }
+  END:
+  *pos = i;
+  return err;
+}
+
+reliq_error *
+reliq_output_field_comp(const char *src, size_t *pos, const size_t s, reliq_output_field *outfield)
+{
+  if (*pos >= s || src[*pos] != '.')
+    return NULL;
+
+  reliq_error *err = NULL;
+  const char *name,*type;
+  size_t i=*pos,namel=0,typel=0;
+
+  outfield->arr_type = 's';
+  outfield->arr_delim = '\n';
+
+  i++;
+  name = src+i;
+  while (i < s && (isalnum(src[i]) || src[i] == '-' || src[i] == '_'))
+    i++;
+  namel = i-(name-src);
+  if (i < s && !isspace(src[i])) {
+    if (src[i] != '.')
+      goto_script_seterr(ERR,"output field: unexpected character in name 0x%02x",src[i]);
+    i++;
+
+    if ((err = reliq_output_type_get(src,&i,s,1,&type,&typel)))
+      goto ERR;
+
+    if (typel && *type == 'a')
+      if ((err = reliq_output_type_array_get(src,&i,s,outfield)))
+        goto ERR;
+  }
+
+  outfield->isset = 1;
+
+  if (!namel)
+    goto ERR;
+
+  outfield->type = typel ? *type : 's';
+  outfield->name.s = namel;
+  outfield->name.b = memdup(name,namel);
+
+  ERR:
+  *pos = i;
+  return err;
 }
 
 struct fcollector_out {

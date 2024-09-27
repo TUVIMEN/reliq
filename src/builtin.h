@@ -16,8 +16,8 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef BUILTIN_H
-#define BUILTIN_H
+#ifndef RELIQ_BUILTIN_H
+#define RELIQ_BUILTIN_H
 
 #define likely(x)	__builtin_expect(!!(x), 1)
 #define unlikely(x)	__builtin_expect(!!(x), 0)

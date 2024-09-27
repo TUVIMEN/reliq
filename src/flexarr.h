@@ -16,10 +16,10 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef FLEXARR_H
-#define FLEXARR_H
+#ifndef RELIQ_FLEXARR_H
+#define RELIQ_FLEXARR_H
 
-#include <string.h>
+#include <stddef.h>
 
 typedef struct {
   void *v;

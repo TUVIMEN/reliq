@@ -16,14 +16,13 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef OUTPUT_H
-#define OUTPUT_H
+#ifndef RELIQ_OUTPUT_H
+#define RELIQ_OUTPUT_H
 
-#include <stdint.h>
-#include <string.h>
+#include "types.h"
 #include "flexarr.h"
 #include "sink.h"
-#include "reliq.h"
+#include "exprs.h"
 
 struct fcollector_expr {
   const reliq_expr *e;
@@ -42,13 +41,16 @@ enum outfieldCode {
   ofBlockEnd //end of all the above
 };
 
+reliq_error *reliq_output_field_comp(const char *src, size_t *pos, const size_t s, reliq_output_field *outfield);
+
 reliq_error *node_output(const reliq_hnode *hnode, const reliq_hnode *parent,
-        #ifdef RELIQ_EDITING
-        const reliq_format_func *format
-        #else
-        const char *format
-        #endif
-        , const size_t formatl, SINK *output, const reliq *rq);
+#ifdef RELIQ_EDITING
+  const reliq_format_func *format,
+#else
+  const char *format,
+#endif
+  const size_t formatl, SINK *output, const reliq *rq);
+
 reliq_error *nodes_output(const reliq *rq, flexarr *compressed_nodes, flexarr *pcollector
         #ifdef RELIQ_EDITING
         , flexarr *fcollector

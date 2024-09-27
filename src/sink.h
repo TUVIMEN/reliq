@@ -16,12 +16,11 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef SINK_H
-#define SINK_H
+#ifndef RELIQ_SINK_H
+#define RELIQ_SINK_H
 
-#include <stdint.h>
 #include <stdio.h>
-#include <string.h>
+#include <stdint.h>
 #include "flexarr.h"
 
 /*

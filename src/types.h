@@ -16,19 +16,14 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef RELIQ_H
-#define RELIQ_H
+#ifndef RELIQ_TYPES_H
+#define RELIQ_TYPES_H
 
-#include <stddef.h>
-#include <stdarg.h>
 #include <stdint.h>
-#include <stdio.h>
+#include <stddef.h>
+#include "builtin.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-//#RELIQ_COMPILE_FLAGS
+typedef unsigned char uchar;
 
 #ifndef RELIQ_SMALL_STACK
 #define RELIQ_MAX_NODE_LEVEL 8192 //stack overflows at 32744 at 8192kb stack
@@ -83,19 +78,8 @@ typedef struct {
   uint16_t lvl;
 } reliq_hnode; //html node
 
-typedef struct reliq_expr reliq_expr;
-
-typedef struct {
-  reliq_expr *b;
-  size_t s;
-} reliq_exprs;
-
 typedef struct reliq_npattern reliq_npattern;
-
-typedef struct {
-  reliq_hnode *hnode;
-  reliq_hnode *parent;
-} reliq_compressed;
+typedef struct reliq_format_func reliq_format_func;
 
 typedef struct {
   char const *data;
@@ -109,7 +93,11 @@ typedef struct {
 
   reliq_hnode const *parent;
 
-  void *nodef;
+  #ifdef RELIQ_EDITING
+  reliq_format_func *nodef;
+  #else
+  char *nodef;
+  #endif
   size_t nodefl; //format used for output at parsing
 
   size_t nodesl;
@@ -122,30 +110,6 @@ int reliq_std_free(void *addr, size_t len); //mapping to free(3) that can be use
 reliq_error *reliq_init(const char *data, const size_t size, int (*freedata)(void *addr, size_t len), reliq *rq);
 int reliq_free(reliq *rq);
 
-reliq reliq_from_compressed(const reliq_compressed *compressed, const size_t compressedl, const reliq *rq);
-reliq reliq_from_compressed_independent(const reliq_compressed *compressed, const size_t compressedl);
-
-//node pattern
-reliq_error *reliq_ncomp(const char *script, const size_t size, reliq_npattern *nodep);
-int reliq_nexec(const reliq *rq, const reliq_hnode *hnode, const reliq_hnode *parent, const reliq_npattern *nodep);
-void reliq_nfree(reliq_npattern *nodep);
-
-//expression
-reliq_error *reliq_ecomp(const char *script, const size_t size, reliq_exprs *exprs);
-
-reliq_error *reliq_fexec_file(char *data, const size_t size, FILE *output, const reliq_exprs *exprs, int (*freedata)(void *addr, size_t len));
-reliq_error *reliq_fexec_str(char *data, const size_t size, char **str, size_t *strl, const reliq_exprs *exprs, int (*freedata)(void *addr, size_t len));
-
-reliq_error *reliq_exec_file(reliq *rq, FILE *output, const reliq_exprs *exprs);
-reliq_error *reliq_exec_str(reliq *rq, char **str, size_t *strl, const reliq_exprs *exprs);
-reliq_error *reliq_exec(reliq *rq, reliq_compressed **nodes, size_t *nodesl, const reliq_exprs *exprs);
-
-void reliq_efree(reliq_exprs *exprs);
-
 reliq_error *reliq_set_error(const int code, const char *fmt, ...);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

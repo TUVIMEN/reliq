@@ -16,13 +16,36 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef RELIQ_HTML_H
-#define RELIQ_HTML_H
+#ifndef RELIQ_FORMAT_H
+#define RELIQ_FORMAT_H
 
 #include "flexarr.h"
+#include "sink.h"
 #include "types.h"
 
-uint64_t html_struct_handle(const char *f, size_t *pos, const size_t s, const uint16_t lvl, flexarr *nodes, reliq *rq, reliq_error **err);
+#ifdef RELIQ_EDITING
+//reliq_format_func flags
+#define FORMAT_FUNC         0xf
+#define FORMAT_ARG0_ISSTR   0x10
+#define FORMAT_ARG1_ISSTR   0x20
+#define FORMAT_ARG2_ISSTR   0x40
+#define FORMAT_ARG3_ISSTR   0x80
 
+struct reliq_format_func {
+  void *arg[4];
+  uint8_t flags; //FORMAT_
+};
+
+reliq_error *format_exec(char *input, size_t inputl, SINK *output, const reliq_hnode *hnode, const reliq_hnode *parent, const reliq_format_func *format, const size_t formatl, const reliq *rq);
+void format_free(reliq_format_func *format, const size_t formatl);
 #endif
 
+reliq_error *format_comp(const char *src, size_t *pos, const size_t size,
+#ifdef RELIQ_EDITING
+  reliq_format_func **format,
+#else
+  char **format,
+#endif
+  size_t *formatl);
+
+#endif

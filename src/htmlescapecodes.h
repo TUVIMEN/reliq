@@ -16,12 +16,11 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef HTMLESCAPECODES_H
-#define HTMLESCAPECODES_H
+#ifndef RELIQ_HTMLESCAPECODES_H
+#define RELIQ_HTMLESCAPECODES_H
 
-#include <stdio.h>
-#include <string.h>
 #include "sink.h"
+#include "types.h"
 
 #define HTMLESCAPECODES_MAXSIZE_VAL 16
 #define HTMLESCAPECODES_MAXSIZE_NAME 31

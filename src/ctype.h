@@ -16,8 +16,8 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef CTYPE_H
-#define CTYPE_H
+#ifndef RELIQ_CTYPE_H
+#define RELIQ_CTYPE_H
 
 extern const char IS_ALNUM[];
 extern const char IS_ALPHA[];

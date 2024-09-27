@@ -24,9 +24,7 @@
 #include "ctype.h"
 #include "htmlescapecodes.h"
 #include "utils.h"
-#include "reliq.h"
-
-typedef unsigned char uchar;
+#include "hnode_print.h"
 
 #define PC_UNTRIM 0x1
 #define PC_DECODE 0x2

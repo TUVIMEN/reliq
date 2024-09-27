@@ -24,14 +24,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-typedef unsigned char uchar;
-
 #include "builtin.h"
-#include "reliq.h"
 #include "flexarr.h"
 #include "ctype.h"
 #include "utils.h"
 #include "output.h"
+#include "npattern.h"
 #include "html.h"
 
 const reliq_str8 selfclosing_s[] = { //tags that don't end with </tag>

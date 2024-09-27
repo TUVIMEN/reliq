@@ -16,20 +16,12 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef UTILS_H
-#define UTILS_H
+#ifndef RELIQ_UTILS_H
+#define RELIQ_UTILS_H
 
-#include <stdint.h>
-#include <stdio.h>
 #include <string.h>
 #include "sink.h"
-#include "reliq.h"
-
-//reliq_range flags
-#define R_RELATIVE(x) (1<<(x))
-#define R_RANGE 0x8
-#define R_NOTEMPTY 0x10
-#define R_INVERT 0x20
+#include "types.h"
 
 #define REGEX_PATTERN_SIZE (1<<9)
 
@@ -70,9 +62,5 @@ uint64_t get_fromhex(const char *src, const size_t srcl, size_t *traversed, cons
 unsigned int number_handle(const char *src, size_t *pos, const size_t size);
 reliq_error *get_quoted(const char *src, size_t *pos, const size_t size, const char delim, char **result, size_t *resultl);
 void splchars_conv(char *src, size_t *size);
-reliq_error *range_comp(const char *src, size_t *pos, const size_t size, reliq_range *range);
-unsigned char range_match(const uint matched, const reliq_range *range, const size_t last);
-void range_free(reliq_range *range);
-unsigned int predict_range_max(const reliq_range *range);
 
 #endif

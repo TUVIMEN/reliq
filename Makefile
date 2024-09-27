@@ -21,8 +21,7 @@ MANDIR = $(DESTDIR)${MANPREFIX}/man1
 LD_LIBRARY_PATH ?= ${PREFIX}/lib
 INCLUDE_PATH ?= ${PREFIX}/include
 
-LIB_SRC = src/flexarr.c src/sink.c src/html.c src/reliq.c src/hnode_print.c src/ctype.c src/utils.c src/output.c src/htmlescapecodes.c
-SRC = src/main.c ${LIB_SRC}
+LIB_SRC = src/flexarr.c src/sink.c src/html.c src/reliq.c src/hnode_print.c src/ctype.c src/utils.c src/output.c src/htmlescapecodes.c src/pattern.c src/range.c src/npattern.c src/exprs.c src/format.c
 
 ifeq ($(strip ${O_SMALL_STACK}),1)
 	CFLAGS_D += -DRELIQ_SMALL_STACK
@@ -37,10 +36,11 @@ ifeq ($(strip ${O_AUTOCLOSING}),1)
 endif
 
 ifeq ($(strip ${O_EDITING}),1)
-	SRC += src/edit.c
-	LIB_SRC += src/edit.c
+	LIB_SRC += src/edit.c src/edit_sed.c src/edit_wc.c src/edit_tr.c
 	CFLAGS_D += -DRELIQ_EDITING
 endif
+
+SRC = src/main.c ${LIB_SRC}
 
 ifeq ($(strip ${O_LIB}),1)
 	SRC = ${LIB_SRC}
