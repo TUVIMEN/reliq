@@ -254,7 +254,7 @@ regexec_match_str(const reliq_pattern *pattern, reliq_cstr *str)
   switch (match) {
     case RELIQ_PATTERN_MATCH_ALL:
       if (icase) {
-        if (memcasemem(str->b,str->s,p->match.str.b,p->match.str.s) != NULL)
+        if (memcasemem_r(str->b,str->s,p->match.str.b,p->match.str.s) != NULL)
           return 1;
       } else if (memmem(str->b,str->s,p->match.str.b,p->match.str.s) != NULL)
         return 1;

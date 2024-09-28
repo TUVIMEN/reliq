@@ -46,10 +46,10 @@ void uint_to_str(char *dest, size_t *destl, const size_t max_destl, unsigned lon
 void memtrim(void const **dest, size_t *destsize, const void *src, const size_t size);
 void memwordtok_r(const void *ptr, const size_t plen, void const **saveptr, size_t *saveptrlen, void const **word, size_t *wordlen);
 #if defined (__MINGW32__) || defined(__MINGW64__)
-void const *memmem(void const *haystack, size_t haystackl, const void *needle, const size_t needlel);
+char const *memmem(char const *haystack, size_t haystackl, const char *needle, const size_t needlel);
 #endif
 int memcasecmp(const void *v1, const void *v2, const size_t n);
-void const *memcasemem(void const *haystack, size_t const haystackl, const void *needle, const size_t needlel);
+char const *memcasemem_r(char const *restrict haystack, size_t haystackl, const char *restrict needle, const size_t needlel);
 void *memdup(void const *src, const size_t size);
 uint32_t enc16utf8(const uint16_t c);
 uint64_t enc32utf8(const uint32_t c);

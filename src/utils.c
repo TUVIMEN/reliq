@@ -156,42 +156,38 @@ print_uint(unsigned long num, SINK *outfile)
 }
 
 #if defined (__MINGW32__) || defined(__MINGW64__)
-void const *
-memmem(void const *haystack, size_t haystackl, const void *needle, const size_t needlel)
+char const *
+memmem(char const *haystack, size_t haystackl, const char *needle, const size_t needlel)
 {
   if (!haystackl || !needlel)
     return NULL;
-  const char *needle_s = needle;
   for (char const *h=haystack; needlel <= haystackl; h++, haystackl--) {
-    if (likely(needle_s[0] != h[0]))
-      break;
+    if (likely(needle[0] != h[0]))
+      continue;
 
-    size_t j=1,i=1;
-    for (; j < needlel; j++, i++)
-      if (likely(needle_s[j] != h[i]))
+    for (size_t i=1; i < needlel; i++)
+      if (likely(needle[i] != h[i]))
         goto CONTINUE;
-    return haystack+(i-j);
+    return h;
     CONTINUE: ;
   }
   return NULL;
 }
 #endif
 
-void const *
-memcasemem(void const *haystack, size_t haystackl, const void *needle, const size_t needlel)
+char const *
+memcasemem_r(char const *restrict haystack, size_t haystackl, const char *restrict needle, const size_t needlel)
 {
   if (!haystackl || !needlel)
     return NULL;
-  const char *needle_s = needle;
   for (char const *h=haystack; needlel <= haystackl; h++, haystackl--) {
-    if (likely(toupper_inline(needle_s[0]) != toupper_inline(h[0])))
-      break;
+    if (likely(toupper_inline(needle[0]) != toupper_inline(h[0])))
+      continue;
 
-    size_t j=1,i=1;
-    for (; j < needlel; j++, i++)
-      if (likely(toupper_inline(needle_s[j]) != toupper_inline(h[i])))
+    for (size_t i=1; i < needlel; i++)
+      if (likely(toupper_inline(needle[i]) != toupper_inline(h[i])))
         goto CONTINUE;
-    return haystack+(i-j);
+    return h;
     CONTINUE: ;
   }
   return NULL;
