@@ -28,7 +28,9 @@
 #include <sys/stat.h>
 #include <string.h>
 #include <stdarg.h>
+#if !(defined (__MINGW32__) || defined(__MINGW64__))
 #include <sys/mman.h>
+#endif
 #include <ftw.h>
 #include <errno.h>
 #include <libgen.h>
@@ -135,7 +137,12 @@ expr_exec(char *f, size_t s, const uchar inpipe)
     return;
 
   reliq_error *err;
-  void *freedata = inpipe ? reliq_std_free : munmap;
+  void *freedata = inpipe ? reliq_std_free :
+  #if defined (__MINGW32__) || defined(__MINGW64__)
+    reliq_std_free;
+  #else
+    munmap;
+  #endif
 
   if (settings&F_FAST) {
     err = reliq_fexec_file(f,s,outfile,&exprs,freedata);
@@ -214,9 +221,17 @@ file_handle(const char *f)
     return;
   }
 
+  #if defined (__MINGW32__) || defined(__MINGW64__)
+  file = malloc(st.st_size);
+  if (read(fd,file,st.st_size) == -1) {
+  #else
   file = mmap(NULL,st.st_size,PROT_READ|PROT_WRITE,MAP_PRIVATE,fd,0);
   if (file == MAP_FAILED) {
+  #endif
     xwarn("%s",f);
+    #if defined (__MINGW32__) || defined(__MINGW64__)
+    free(file);
+    #endif
     close(fd);
   } else {
     close(fd);

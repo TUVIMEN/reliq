@@ -155,6 +155,28 @@ print_uint(unsigned long num, SINK *outfile)
     sink_write(outfile,str,len);
 }
 
+#if defined (__MINGW32__) || defined(__MINGW64__)
+void const *
+memmem(void const *haystack, size_t haystackl, const void *needle, const size_t needlel)
+{
+  if (!haystackl || !needlel)
+    return NULL;
+  const char *needle_s = needle;
+  for (char const *h=haystack; needlel <= haystackl; h++, haystackl--) {
+    if (likely(needle_s[0] != h[0]))
+      break;
+
+    size_t j=1,i=1;
+    for (; j < needlel; j++, i++)
+      if (likely(needle_s[j] != h[i]))
+        goto CONTINUE;
+    return haystack+(i-j);
+    CONTINUE: ;
+  }
+  return NULL;
+}
+#endif
+
 void const *
 memcasemem(void const *haystack, size_t haystackl, const void *needle, const size_t needlel)
 {
