@@ -106,7 +106,7 @@ range_node_comp(const char *src, const size_t size, struct reliq_range_node *nod
 }
 
 static reliq_error *
-range_comp_pre(const char *src, size_t *pos, const size_t size, flexarr *nodes)
+range_comp_pre(const char *src, size_t *pos, const size_t size, flexarr *nodes) //nodes: struct reliq_range_node
 {
   if (*pos >= size || src[*pos] != '[')
     return NULL;

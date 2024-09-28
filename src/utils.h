@@ -41,7 +41,7 @@
 #define strcasecomp(x,y) memcasecomp(x.b,y.b,x.s,y.s)
 
 void print_uint(unsigned long num, SINK *outfile);
-void strrev(char *v, const size_t size);
+void strnrev(char *v, const size_t size); //was previously named strrev but mingw has it defined for some reason
 void uint_to_str(char *dest, size_t *destl, const size_t max_destl, unsigned long num);
 void memtrim(void const **dest, size_t *destsize, const void *src, const size_t size);
 void memwordtok_r(const void *ptr, const size_t plen, void const **saveptr, size_t *saveptrlen, void const **word, size_t *wordlen);

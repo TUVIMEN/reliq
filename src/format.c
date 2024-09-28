@@ -235,7 +235,7 @@ format_get_func_args(reliq_format_func *f, const char *src, size_t *pos, const s
 }
 
 static reliq_error *
-format_get_funcs(flexarr *format, const char *src, size_t *pos, const size_t size)
+format_get_funcs(flexarr *format, const char *src, size_t *pos, const size_t size) //format: reliq_format_func
 {
   reliq_format_func *f;
   char const *fname;

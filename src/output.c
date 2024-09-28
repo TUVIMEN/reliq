@@ -246,13 +246,13 @@ fcollector_rearrange_pre(struct fcollector_expr *fcols, size_t start, size_t end
 }
 
 void
-fcollector_rearrange(flexarr *fcollector)
+fcollector_rearrange(flexarr *fcollector) //fcollector: struct fcollector_expr
 {
   fcollector_rearrange_pre((struct fcollector_expr*)fcollector->v,0,fcollector->size,0);
 }
 
 static reliq_error *
-fcollector_out_end(flexarr *outs, const size_t ncurrent, struct fcollector_expr *fcols, const reliq *rq, SINK *rout, SINK **fout)
+fcollector_out_end(flexarr *outs, const size_t ncurrent, struct fcollector_expr *fcols, const reliq *rq, SINK *rout, SINK **fout) //outs: struct fcollector_out*
 {
   reliq_error *err = NULL;
   START: ;
@@ -537,7 +537,7 @@ outfields_print_pre(struct outfield **fields, size_t *pos, const size_t size, co
 }
 
 static void
-outfields_print(flexarr *fields, SINK *out)
+outfields_print(flexarr *fields, SINK *out) //fields: struct outfield*
 {
   if (!fields->size)
     return;
@@ -546,7 +546,7 @@ outfields_print(flexarr *fields, SINK *out)
 }
 
 static void
-outfields_free(flexarr *outfields)
+outfields_free(flexarr *outfields) //struct outfield*
 {
   struct outfield **outfieldsv = (struct outfield**)outfields->v;
   const size_t size = outfields->size;
@@ -582,9 +582,9 @@ print_code_debug(const size_t nodeindex, uint16_t fieldlvl, const enum outfieldC
 reliq_error *
 nodes_output(const reliq *rq, flexarr *compressed_nodes, flexarr *ncollector
         #ifdef RELIQ_EDITING
-        , flexarr *fcollector
+        , flexarr *fcollector //struct fcollector_expr
         #endif
-        )
+        ) //compressed_nodes: reliq_compressed, ncollector: reliq_cstr
 {
   #ifdef RELIQ_EDITING
   struct fcollector_expr *fcols = (struct fcollector_expr*)fcollector->v;

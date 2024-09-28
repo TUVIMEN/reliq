@@ -32,12 +32,12 @@
 #define QUOTE_INCR 512
 
 void
-strrev(char *v, const size_t size)
+strnrev(char *v, const size_t size)
 {
   if (!v || !size)
     return;
   for (size_t i = 0, j = size-1; i < j; i++, j--) {
-    char t = v[i];
+    const char t = v[i];
     v[i] = v[j];
     v[j] = t;
   }
@@ -56,7 +56,7 @@ uint_to_str(char *dest, size_t *destl, const size_t max_destl, unsigned long num
   }
   *destl = p;
   if (p) {
-    strrev(dest,p);
+    strnrev(dest,p);
   } else {
     dest[0] = '0';
     *destl = 1;
@@ -155,20 +155,22 @@ print_uint(unsigned long num, SINK *outfile)
     sink_write(outfile,str,len);
 }
 
-void const*
-memcasemem(void const *haystack, size_t const haystackl, const void *needle, const size_t needlel)
+void const *
+memcasemem(void const *haystack, size_t haystackl, const void *needle, const size_t needlel)
 {
-  if (haystackl < needlel || !haystackl || !needlel)
+  if (!haystackl || !needlel)
     return NULL;
-  const char *haystack_s = haystack,
-    *needle_s = needle;
-  for (size_t i=0,prev; i < haystackl; i++) {
-    prev = i;
-    for (size_t j=0; i < haystackl && j < needlel &&
-      toupper_inline(needle_s[j]) == toupper_inline(haystack_s[i]); i++, j++)
-      if (j == needlel-1)
-        return haystack+(i-j);
-    i = prev;
+  const char *needle_s = needle;
+  for (char const *h=haystack; needlel <= haystackl; h++, haystackl--) {
+    if (likely(toupper_inline(needle_s[0]) != toupper_inline(h[0])))
+      break;
+
+    size_t j=1,i=1;
+    for (; j < needlel; j++, i++)
+      if (likely(toupper_inline(needle_s[j]) != toupper_inline(h[i])))
+        goto CONTINUE;
+    return haystack+(i-j);
+    CONTINUE: ;
   }
   return NULL;
 }

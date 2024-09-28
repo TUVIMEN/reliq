@@ -209,7 +209,7 @@ sort_edit(const char *src, const size_t size, SINK *output, const void *arg[4], 
   if (edit_get_arg_delim(arg,1,flag,&delim) == -1)
     return script_err("%s: arg %d: incorrect type of argument, expected string",argv0,2);
 
-  flexarr *lines = flexarr_init(sizeof(reliq_cstr),(1<<10));
+  flexarr *lines = flexarr_init(sizeof(reliq_cstr),LINE_EDIT_INC);
   reliq_cstr line,previous;
   size_t saveptr = 0;
 
@@ -490,7 +490,7 @@ rev_edit(char *src, const size_t size, SINK *output, const void *arg[4], const u
 
     size_t linel = lineend-line;
     if (linel) {
-      strrev(src+line,linel);
+      strnrev(src+line,linel);
       sink_write(output,src+line,linel);
     }
 

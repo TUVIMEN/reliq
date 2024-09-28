@@ -23,6 +23,9 @@
 #include <stddef.h>
 #include "builtin.h"
 
+#include "flexarr.h"
+#include "sink.h"
+
 typedef unsigned char uchar;
 
 #ifndef RELIQ_SMALL_STACK
@@ -81,15 +84,16 @@ typedef struct {
 typedef struct reliq_npattern reliq_npattern;
 typedef struct reliq_format_func reliq_format_func;
 
+
 typedef struct {
   char const *data;
   int (*freedata)(void *addr, size_t len);
   reliq_hnode *nodes;
 
-  void *output;
+  SINK *output;
   reliq_npattern const *expr; //node passed to process at parsing
 
-  void *attrib_buffer; //used as temporary buffer for attribs
+  flexarr *attrib_buffer; //reliq_cstr_pair // used as temporary buffer for attribs
 
   reliq_hnode const *parent;
 

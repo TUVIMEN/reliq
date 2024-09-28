@@ -62,7 +62,7 @@ reliq_free(reliq *rq)
 }
 
 static reliq_error *
-reliq_analyze(const char *data, const size_t size, flexarr *nodes, reliq *rq)
+reliq_analyze(const char *data, const size_t size, flexarr *nodes, reliq *rq) //nodes: reliq_hnode
 {
   reliq_error *err;
   for (size_t i = 0; i < size; i++) {

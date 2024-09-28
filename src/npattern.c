@@ -138,7 +138,7 @@ const struct match_hook match_hooks[] = {
 };
 
 static inline void
-add_compressed(flexarr *dest, reliq_hnode *const hnode, reliq_hnode *const parent)
+add_compressed(flexarr *dest, reliq_hnode *const hnode, reliq_hnode *const parent) //dest: reliq_compressed
 {
   reliq_compressed *x = flexarr_inc(dest);
   x->hnode = hnode;
@@ -400,7 +400,7 @@ hook_handle_isname(char c)
 }
 
 static void
-match_add(const reliq *rq, reliq_hnode const *hnode, reliq_hnode const *parent, reliq_npattern const *nodep, flexarr *dest, uint32_t *found)
+match_add(const reliq *rq, reliq_hnode const *hnode, reliq_hnode const *parent, reliq_npattern const *nodep, flexarr *dest, uint32_t *found) //dest: reliq_compressed
 {
   if (!reliq_nexec(rq,hnode,parent,nodep))
     return;
@@ -516,7 +516,7 @@ match_hook_handle(const char *src, size_t *pos, const size_t size, reliq_hook *o
 }
 
 static void
-reliq_node_matches_node_add(flexarr *arr, uchar type, void *data, const size_t size)
+reliq_node_matches_node_add(flexarr *arr, uchar type, void *data, const size_t size) //arr: reliq_node_matches
 {
   reliq_node_matches_node *new = flexarr_inc(arr);
   new->type = type;
@@ -524,7 +524,7 @@ reliq_node_matches_node_add(flexarr *arr, uchar type, void *data, const size_t s
 }
 
 static void
-free_node_matches_flexarr(flexarr *groups_matches)
+free_node_matches_flexarr(flexarr *groups_matches) //group_matches: reliq_node_matches
 {
   reliq_node_matches *matchesv = (reliq_node_matches*)groups_matches->v;
   const size_t size = groups_matches->size;
@@ -799,7 +799,7 @@ reliq_ncomp(const char *script, const size_t size, reliq_npattern *nodep)
 }
 
 static void
-dest_match_position(const reliq_range *range, flexarr *dest, size_t start, size_t end) {
+dest_match_position(const reliq_range *range, flexarr *dest, size_t start, size_t end) { //dest: reliq_compressed
   reliq_compressed *x = (reliq_compressed*)dest->v;
 
   while (start < end && (void*)x[start].hnode < (void*)10)
@@ -819,7 +819,7 @@ dest_match_position(const reliq_range *range, flexarr *dest, size_t start, size_
 }
 
 static void
-match_full(const reliq *rq, reliq_npattern *nodep, const reliq_hnode *current, flexarr *dest, uint32_t *found, const uint32_t lasttofind)
+match_full(const reliq *rq, reliq_npattern *nodep, const reliq_hnode *current, flexarr *dest, uint32_t *found, const uint32_t lasttofind) //dest: reliq_compressed
 {
   const uint32_t childcount = current->desc_count;
   for (size_t i = 0; i <= childcount && *found < lasttofind; i++) {
@@ -828,7 +828,7 @@ match_full(const reliq *rq, reliq_npattern *nodep, const reliq_hnode *current, f
 }
 
 static void
-match_child(const reliq *rq, reliq_npattern *nodep, const reliq_hnode *current, flexarr *dest, uint32_t *found, const uint32_t lasttofind)
+match_child(const reliq *rq, reliq_npattern *nodep, const reliq_hnode *current, flexarr *dest, uint32_t *found, const uint32_t lasttofind) //dest: reliq_compressed
 {
   const uint32_t childcount = current->desc_count;
   for (size_t i = 1; i <= childcount && *found < lasttofind; i += current[i].desc_count+1)
@@ -836,7 +836,7 @@ match_child(const reliq *rq, reliq_npattern *nodep, const reliq_hnode *current, 
 }
 
 static void
-match_descendant(const reliq *rq, reliq_npattern *nodep, const reliq_hnode *current, flexarr *dest, uint32_t *found, const uint32_t lasttofind)
+match_descendant(const reliq *rq, reliq_npattern *nodep, const reliq_hnode *current, flexarr *dest, uint32_t *found, const uint32_t lasttofind) //dest: reliq_compressed
 {
   const uint32_t childcount = current->desc_count;
   for (size_t i = 1; i <= childcount && *found < lasttofind; i++)
@@ -844,7 +844,7 @@ match_descendant(const reliq *rq, reliq_npattern *nodep, const reliq_hnode *curr
 }
 
 static void
-match_sibling_preceding(const reliq *rq, reliq_npattern *nodep, const reliq_hnode *current, flexarr *dest, uint32_t *found, const uint32_t lasttofind, const uint16_t depth)
+match_sibling_preceding(const reliq *rq, reliq_npattern *nodep, const reliq_hnode *current, flexarr *dest, uint32_t *found, const uint32_t lasttofind, const uint16_t depth) //dest: reliq_compressed
 {
   reliq_hnode *nodes = rq->nodes;
   if (nodes == current)
@@ -863,7 +863,7 @@ match_sibling_preceding(const reliq *rq, reliq_npattern *nodep, const reliq_hnod
 }
 
 static void
-match_sibling_subsequent(const reliq *rq, reliq_npattern *nodep, const reliq_hnode *current, flexarr *dest, uint32_t *found, const uint32_t lasttofind, const uint16_t depth)
+match_sibling_subsequent(const reliq *rq, reliq_npattern *nodep, const reliq_hnode *current, flexarr *dest, uint32_t *found, const uint32_t lasttofind, const uint16_t depth) //dest: reliq_compressed
 {
   reliq_hnode *nodes = rq->nodes;
   const size_t nodesl = rq->nodesl;
@@ -884,14 +884,14 @@ match_sibling_subsequent(const reliq *rq, reliq_npattern *nodep, const reliq_hno
 }
 
 static void
-match_sibling(const reliq *rq, reliq_npattern *nodep, const reliq_hnode *current, flexarr *dest, uint32_t *found, const uint32_t lasttofind, const uint16_t depth)
+match_sibling(const reliq *rq, reliq_npattern *nodep, const reliq_hnode *current, flexarr *dest, uint32_t *found, const uint32_t lasttofind, const uint16_t depth) //dest: reliq_compressed
 {
   match_sibling_preceding(rq,nodep,current,dest,found,lasttofind,depth);
   match_sibling_subsequent(rq,nodep,current,dest,found,lasttofind,depth);
 }
 
 static void
-match_ancestor(const reliq *rq, reliq_npattern *nodep, const reliq_hnode *current, flexarr *dest, uint32_t *found, const uint32_t lasttofind, const uint16_t depth)
+match_ancestor(const reliq *rq, reliq_npattern *nodep, const reliq_hnode *current, flexarr *dest, uint32_t *found, const uint32_t lasttofind, const uint16_t depth) //dest: reliq_compressed
 {
   reliq_hnode *nodes=rq->nodes;
   const reliq_hnode *first=current;
@@ -916,7 +916,7 @@ match_ancestor(const reliq *rq, reliq_npattern *nodep, const reliq_hnode *curren
 }
 
 static void
-node_exec_first(const reliq *rq, reliq_npattern *nodep, flexarr *dest, const uint32_t lasttofind)
+node_exec_first(const reliq *rq, reliq_npattern *nodep, flexarr *dest, const uint32_t lasttofind) //dest: reliq_compressed
 {
   const size_t nodesl = rq->nodesl;
   uint32_t found = 0;
@@ -928,7 +928,7 @@ node_exec_first(const reliq *rq, reliq_npattern *nodep, flexarr *dest, const uin
 }
 
 void
-node_exec(const reliq *rq, reliq_npattern *nodep, flexarr *source, flexarr *dest)
+node_exec(const reliq *rq, reliq_npattern *nodep, flexarr *source, flexarr *dest) //source: reliq_compressed, dest: reliq_compressed
 {
   uint32_t found=0,lasttofind=nodep->position_max;
   if (lasttofind == (uint32_t)-1)

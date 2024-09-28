@@ -22,7 +22,7 @@
 #include "flexarr.h"
 #include "types.h"
 
-uint64_t html_struct_handle(const char *f, size_t *pos, const size_t s, const uint16_t lvl, flexarr *nodes, reliq *rq, reliq_error **err);
+uint64_t html_struct_handle(const char *f, size_t *pos, const size_t s, const uint16_t lvl, flexarr *nodes, reliq *rq, reliq_error **err); //nodes: reliq_hnode
 
 #endif
 

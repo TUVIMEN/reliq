@@ -92,7 +92,7 @@ name_handle(const char *f, size_t *pos, const size_t s, reliq_cstr *tag)
 }
 
 static void
-attrib_handle(const char *f, size_t *pos, const size_t s, flexarr *attribs)
+attrib_handle(const char *f, size_t *pos, const size_t s, flexarr *attribs) //attribs: reliq_cstr_pair
 {
   size_t i = *pos;
   reliq_cstr_pair *ac = (reliq_cstr_pair*)flexarr_inc(attribs);
@@ -195,7 +195,7 @@ phptag_handle(const char *f, size_t *pos, const size_t s, reliq_hnode *hnode)
 #endif
 
 uint64_t
-html_struct_handle(const char *f, size_t *pos, const size_t s, const uint16_t lvl, flexarr *nodes, reliq *rq, reliq_error **err)
+html_struct_handle(const char *f, size_t *pos, const size_t s, const uint16_t lvl, flexarr *nodes, reliq *rq, reliq_error **err) //nodes: reliq_hnode
 {
   *err = NULL;
   uint64_t ret = 1;
@@ -209,7 +209,7 @@ html_struct_handle(const char *f, size_t *pos, const size_t s, const uint16_t lv
   memset(hnode,0,sizeof(reliq_hnode));
   hnode->lvl = lvl;
   size_t index = nodes->size-1;
-  flexarr *a = (flexarr*)rq->attrib_buffer;
+  flexarr *a = rq->attrib_buffer;
   size_t attrib_start = a->size;
   uchar foundend=1;
 
@@ -407,7 +407,7 @@ html_struct_handle(const char *f, size_t *pos, const size_t s, const uint16_t lv
     hnode->attribs = a->v+(attrib_start*a->elsize);
     reliq_npattern const *expr = rq->expr;
     if (expr && reliq_nexec(rq,hnode,NULL,expr))
-      *err = node_output(hnode,NULL,rq->nodef,rq->nodefl,(SINK*)rq->output,rq);
+      *err = node_output(hnode,NULL,rq->nodef,rq->nodefl,rq->output,rq);
     flexarr_dec(nodes);
   }
   a->size = attrib_start;

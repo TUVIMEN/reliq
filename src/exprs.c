@@ -43,7 +43,7 @@
 #define EXPR_NEWCHAIN 0x4
 #define EXPR_SINGULAR 0x8
 
-reliq_error * reliq_fmatch(const char *data, const size_t size, SINK *output, const reliq_npattern *nodep,
+reliq_error *reliq_fmatch(const char *data, const size_t size, SINK *output, const reliq_npattern *nodep,
 #ifdef RELIQ_EDITING
   reliq_format_func *nodef,
 #else
@@ -53,13 +53,13 @@ reliq_error * reliq_fmatch(const char *data, const size_t size, SINK *output, co
 
 static reliq_error *reliq_exec_pre(const reliq *rq, const reliq_expr *exprs, size_t exprsl, flexarr *source, flexarr *dest, flexarr **out, const uint16_t childfields, uchar isempty, uchar noncol, flexarr *ncollector
     #ifdef RELIQ_EDITING
-    , flexarr *fcollector
+    , flexarr *fcollector //struct fcollector_expr
     #endif
-    );
+    ); //source: reliq_compressed, dest: reliq_compressed, out: reliq_compressed, ncollector: reliq_cstr
 reliq_error *reliq_exec_r(reliq *rq, SINK *output, reliq_compressed **outnodes, size_t *outnodesl, const reliq_exprs *exprs);
 
 static inline void
-add_compressed_blank(flexarr *dest, const enum outfieldCode val1, const void *val2)
+add_compressed_blank(flexarr *dest, const enum outfieldCode val1, const void *val2) //dest: reliq_compressed
 {
   reliq_compressed *x = flexarr_inc(dest);
   x->hnode = (reliq_hnode *const)val1;
@@ -74,7 +74,7 @@ exprs_check_chain(const reliq_exprs *exprs, const uchar noaccesshooks)
   if (exprs->s > 1)
     goto ERR;
 
-  flexarr *chain = exprs->b[0].e;
+  flexarr *chain = exprs->b[0].e; //reliq_expr
   reliq_expr *chainv = (reliq_expr*)chain->v;
 
   const size_t size = chain->size;
@@ -128,7 +128,7 @@ reliq_expr_free(reliq_expr *expr)
 }
 
 static void
-reliq_exprs_free_pre(flexarr *exprs)
+reliq_exprs_free_pre(flexarr *exprs) //exprs: reliq_expr
 {
   if (!exprs)
     return;
@@ -239,7 +239,7 @@ skip_comment(const char *src, size_t *pos, const size_t s)
 
 
 /*static reliq_error *
-ncollector_check(flexarr *ncollector, size_t correctsize)
+ncollector_check(flexarr *ncollector, size_t correctsize) //ncollector: reliq_cstr
 {
   size_t ncollector_sum = 0;
   reliq_cstr *pcol = (reliq_cstr*)ncollector->v;
@@ -251,7 +251,7 @@ ncollector_check(flexarr *ncollector, size_t correctsize)
 }*/
 
 static void
-ncollector_add(flexarr *ncollector, flexarr *dest, flexarr *source, size_t startn, size_t lastn, const reliq_expr *lastnode, uchar istable, uchar useformat, uchar isempty, uchar non)
+ncollector_add(flexarr *ncollector, flexarr *dest, flexarr *source, size_t startn, size_t lastn, const reliq_expr *lastnode, uchar istable, uchar useformat, uchar isempty, uchar non) //ncollector: reliq_cstr, dest: reliq_compressed, source: reliq_compressed
 {
   if (!source->size && !isempty)
     return;
@@ -276,7 +276,7 @@ ncollector_add(flexarr *ncollector, flexarr *dest, flexarr *source, size_t start
 
 #ifdef RELIQ_EDITING
 static void
-fcollector_add(const size_t lastn, const uchar isnodef, const reliq_expr *expr, flexarr *ncollector, flexarr *fcollector)
+fcollector_add(const size_t lastn, const uchar isnodef, const reliq_expr *expr, flexarr *ncollector, flexarr *fcollector) //ncollector: reliq_cstr, fcollector: struct fcollector_expr
 {
   struct fcollector_expr *fcols = (struct fcollector_expr*)fcollector->v;
   for (size_t i = fcollector->size; i > 0; i--) {
@@ -291,12 +291,12 @@ fcollector_add(const size_t lastn, const uchar isnodef, const reliq_expr *expr, 
 static reliq_error *
 reliq_exec_table(const reliq *rq, const reliq_expr *expr, const reliq_output_field *named, flexarr *source, flexarr *dest, flexarr **out, uchar isempty, uchar noncol, flexarr *ncollector
     #ifdef RELIQ_EDITING
-    , flexarr *fcollector
+    , flexarr *fcollector //struct fcollector_expr
     #endif
-    )
+    ) //source: reliq_compressed, dest: reliq_compressed, out: reliq_compressed, ncollector: reliq_cstr
 {
   reliq_error *err = NULL;
-  flexarr *exprs = (flexarr*)expr->e;
+  flexarr *exprs = (flexarr*)expr->e; //reliq_expr
   reliq_expr *exprsv = (reliq_expr*)exprs->v;
   size_t exprsl = exprs->size;
 
@@ -354,7 +354,7 @@ reliq_exec_table(const reliq *rq, const reliq_expr *expr, const reliq_output_fie
 }
 
 static flexarr *
-reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, const uint16_t lvl, uint16_t *childfields, reliq_error **err)
+reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, const uint16_t lvl, uint16_t *childfields, reliq_error **err) //reliq_expr
 {
   if (s == 0)
     return NULL;
@@ -708,9 +708,9 @@ reliq_ecomp(const char *src, const size_t size, reliq_exprs *exprs)
 static reliq_error *
 reliq_exec_pre(const reliq *rq, const reliq_expr *exprs, size_t exprsl, flexarr *source, flexarr *dest, flexarr **out, const uint16_t childfields, uchar noncol, uchar isempty, flexarr *ncollector
     #ifdef RELIQ_EDITING
-    , flexarr *fcollector
+    , flexarr *fcollector //struct fcollector_expr
     #endif
-    )
+    )   //source: reliq_compressed, dest: reliq_compressed, out: reliq_compressed, ncollector: reliq_cstr
 {
   flexarr *buf[3];
   reliq_error *err;
@@ -906,7 +906,7 @@ reliq_fexec_sink(char *data, size_t size, SINK *output, const reliq_exprs *exprs
   char *ptr=data,*nptr;
   size_t fsize;
 
-  flexarr *chain = (flexarr*)exprs->b[0].e;
+  flexarr *chain = (flexarr*)exprs->b[0].e; //reliq_expr
   reliq_expr *chainv = (reliq_expr*)chain->v;
   SINK *out;
 

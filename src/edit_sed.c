@@ -368,7 +368,7 @@ sed_get_command(char name)
 }
 
 static void
-sed_script_free(flexarr *script)
+sed_script_free(flexarr *script) //script: struct sed_expression
 {
   const size_t size = script->size;
   for (size_t i = 0; i < size; i++)
@@ -575,7 +575,7 @@ sed_comp_sy(const char *src, size_t *pos, const size_t size, const char name, in
 }
 
 static reliq_error *
-sed_comp_check_labels(flexarr *script)
+sed_comp_check_labels(flexarr *script) //script: struct sed_expression
 {
   struct sed_expression *scriptv = (struct sed_expression*)script->v;
   const size_t size = script->size;
@@ -597,7 +597,7 @@ sed_comp_check_labels(flexarr *script)
 }
 
 static reliq_error *
-sed_script_comp_pre(const char *src, const size_t size, int eflags, flexarr **script)
+sed_script_comp_pre(const char *src, const size_t size, int eflags, flexarr **script) //script: struct sed_expression
 {
   reliq_error *err;
   size_t pos = 0;
@@ -695,7 +695,7 @@ sed_script_comp_pre(const char *src, const size_t size, int eflags, flexarr **sc
 }
 
 static reliq_error *
-sed_script_comp(const char *src, const size_t size, int eflags, flexarr **script)
+sed_script_comp(const char *src, const size_t size, int eflags, flexarr **script) //script: script: struct sed_expression
 {
   reliq_error *err = NULL;
   if ((err = sed_script_comp_pre(src,size,eflags,script))) {
@@ -706,7 +706,7 @@ sed_script_comp(const char *src, const size_t size, int eflags, flexarr **script
 }
 
 static reliq_error *
-sed_pre_edit(const char *src, const size_t size, SINK *output, char *buffers[3], flexarr *script, const char linedelim, uchar silent)
+sed_pre_edit(const char *src, const size_t size, SINK *output, char *buffers[3], flexarr *script, const char linedelim, uchar silent) //script: struct sed_expression
 {
   char *patternsp = buffers[0],
     *buffersp = buffers[1],
@@ -1011,7 +1011,7 @@ sed_edit(const char *src, const size_t size, SINK *output, const void *arg[4], c
   reliq_error *err;
   const char argv0[] = "sed";
   uchar extendedregex=0,silent=0;
-  flexarr *script = NULL;
+  flexarr *script = NULL; //struct sed_expression
 
   char linedelim = '\n';
 
