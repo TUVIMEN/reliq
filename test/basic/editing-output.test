@@ -1,9 +1,9 @@
 % RELIQ_EDITING
-$ editing-output.html
+< editing-output.html
 f7f9aceacd3eecf24ff6b94ce1ea9d55,'.l { { { img /sed "s/s/S/g", dt /sed "s/v/V/g", h3 /sed "s/i/I/g" } /sed "s/t/T/g", li / sed "s/a/A/g;s/e/E/g", } /sed "s/o/O/g" } / sed "s/l/L/g"'
 abcaf694f74658261d347b735245c23c,'.a li; { img | "%l\n", a | "%(href)v\n" / sed "s/b/B/g" }'
 bd0ed95fa83ab68330f263d412f21e5f,'li; { .u img | "%l\n", .b a | "%(href)v\n" / sed "s/b/B/g" }'
-$ output.html
+< output.html
 af3b12b8865727b29a9a62549831eb77,'.va ul1 .n1; { .title h21 | "%i", .values ul1 l@[1]; { uas, li1, rka } ; { .value span1 | "%i" / sed "s/u/U/g", .nothing p1 | "%i" / sed "s/g/G/g" } | } |'
 cef559f2bdc283b4913a5aa48c0a579a,'.u.n d1 #num5 | "%i" sed "s/.*-/-/"'
 51dc1bdc629dea38aa7b0947e3e7c76b,'.u.u d1 #num5 | "%i" sed "s/.*-/-/"'

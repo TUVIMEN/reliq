@@ -1,4 +1,4 @@
-$ editing.html
+< editing.html
 3772eed96bb94448eb9775ff189a2e05,'li; [0] img ; * rparent@'
 d41d8cd98f00b204e9800998ecf8427e,'li; [0] img nnn ; * rparent@'
 fdac6d4441868dc70bdc10394814b550,'li; [0] img; * ancestor@; [1] * self@; * fssub@; img self@'
@@ -10,5 +10,5 @@ ed8eb0e77512de535ad2565267cb2dbe,'li; [0] img; * ancestor@; [1] * self@; * fsibl
 2f572e59f5478af6c4a427dcb0bb0aae,'li; [0] img; * ancestor@; [1] * self@; * fsibl@ | "%l\n"'
 3772eed96bb94448eb9775ff189a2e05,'li; [0] img; * parent@'
 
-$ 2.html
+< 2.html
 b2d1440b8bb1749fe92ed310fc3de87a,'encoding | "%Di\n"'

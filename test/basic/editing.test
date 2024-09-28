@@ -1,5 +1,5 @@
 % RELIQ_EDITING
-$ editing.html
+< editing.html
 6fd5c7dc1ce3e9419b65a1e5eb23a45a,'{ { ul; li / sed "s/a/A/g;s/e/E/g", { img /sed "s/s/S/g", dt /sed "s/v/V/g" } /sed "s/t/T/g" } /sed "s/o/O/g" } /sed "s/l/L/g"'
 e1add09cfa59b7e3a812014bae962121,'{ { { img /sed "s/s/S/g", dt /sed "s/v/V/g", h3 /sed "s/i/I/g" } /sed "s/t/T/g", li / sed "s/a/A/g;s/e/E/g", } /sed "s/o/O/g" } /sed "s/l/L/g"'
 8df0e8439189ee750515074d775270db,'{ { { img /sed "s/s/S/g", dt /sed "s/v/V/g", h3 /sed "s/i/I/g" } /sed "s/t/T/g", li / sed "s/a/A/g;s/e/E/g", } /sed "s/o/O/g" } /sed "s/l/L/g", li, { img /sed "s/s/S/g", h3 /sed "s/i/I/g" } /sed "s/r/R/g"'
@@ -69,5 +69,5 @@ a1baa078ce966b3022b8c760e4f3516e,'li | "%i l\\a\j \U204 \xa \u \u000 \n"'
 def5318b05f50c5472d92563bda00818,'li | tr "\x61-\x64" tr "\k\x22" "\o12" tr "[\x20*3]" "$"'
 60b130f6c4b64ba1b2899b0284a615f2,'li / line [1:3] "\o141", li  / line [1] "\P"'
 
-$ 2.html
+< 2.html
 741ed4c871a5f8ca395a07a82d2c117e,'encoding / decode'
