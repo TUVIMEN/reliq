@@ -580,11 +580,11 @@ print_code_debug(const size_t nodeindex, uint16_t fieldlvl, const enum outfieldC
 }*/
 
 reliq_error *
-nodes_output(const reliq *rq, flexarr *compressed_nodes, flexarr *ncollector
-        #ifdef RELIQ_EDITING
-        , flexarr *fcollector //struct fcollector_expr
-        #endif
-        ) //compressed_nodes: reliq_compressed, ncollector: reliq_cstr
+nodes_output(const reliq *rq, SINK *output, flexarr *compressed_nodes, flexarr *ncollector
+  #ifdef RELIQ_EDITING
+  , flexarr *fcollector //struct fcollector_expr
+  #endif
+  ) //compressed_nodes: reliq_compressed, ncollector: reliq_cstr
 {
   #ifdef RELIQ_EDITING
   struct fcollector_expr *fcols = (struct fcollector_expr*)fcollector->v;
@@ -596,7 +596,7 @@ nodes_output(const reliq *rq, flexarr *compressed_nodes, flexarr *ncollector
   reliq_error *err = NULL;
   reliq_cstr *ncol = (reliq_cstr*)ncollector->v;
 
-  SINK *out = rq->output;
+  SINK *out = output;
   SINK *fout = out;
   size_t j=0, //iterator of compressed_nodes
       ncurrent=0, //iterator of ncollector
@@ -632,7 +632,7 @@ nodes_output(const reliq *rq, flexarr *compressed_nodes, flexarr *ncollector
         break;
 
       if (ncurrent < ncollector->size && ncol[ncurrent].b && ((reliq_expr*)ncol[ncurrent].b)->exprfl) {
-        if (out != rq->output && out) {
+        if (out != output && out) {
           sink_close(out);
           free(ptr);
         }
@@ -643,8 +643,8 @@ nodes_output(const reliq *rq, flexarr *compressed_nodes, flexarr *ncollector
     if (j >= compressed_nodes->size)
       break;
 
-    SINK *rout = (out == rq->output) ? fout : out;
-    if (rout == rq->output && oout)
+    SINK *rout = (out == output) ? fout : out;
+    if (rout == output && oout)
       rout = *oout;
 
     reliq_compressed *x = &((reliq_compressed*)compressed_nodes->v)[j];
@@ -713,22 +713,22 @@ nodes_output(const reliq *rq, flexarr *compressed_nodes, flexarr *ncollector
     if (ncurrent < ncollector->size && ncol[ncurrent].s == g) {
       NCOLLECTOR_END: ;
       #ifdef RELIQ_EDITING
-      if (ncol[ncurrent].b && out != rq->output) {
+      if (ncol[ncurrent].b && out != output) {
         sink_close(out);
         out = NULL;
-        err = format_exec(ptr,fsize,(oout && fout == rq->output) ? *oout : fout,NULL,NULL,
+        err = format_exec(ptr,fsize,(oout && fout == output) ? *oout : fout,NULL,NULL,
           ((reliq_expr*)ncol[ncurrent].b)->exprf,
           ((reliq_expr*)ncol[ncurrent].b)->exprfl,rq);
         free(ptr);
         if (err)
           goto END;
-        out = rq->output;
+        out = output;
       }
 
-      if ((err = fcollector_out_end(outs,ncurrent,fcols,rq,oout ? *oout : rq->output,&fout)))
+      if ((err = fcollector_out_end(outs,ncurrent,fcols,rq,oout ? *oout : output,&fout)))
         goto END;
       if (oout && fout == *oout)
-        fout = rq->output;
+        fout = output;
       #endif
 
       g = 0;
@@ -746,7 +746,7 @@ nodes_output(const reliq *rq, flexarr *compressed_nodes, flexarr *ncollector
     }
   }
 
-  outfields_print(outfields,rq->output);
+  outfields_print(outfields,output);
 
   END: ;
   #ifdef RELIQ_EDITING

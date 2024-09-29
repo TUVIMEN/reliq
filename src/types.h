@@ -38,8 +38,6 @@ typedef unsigned char uchar;
 #define RELIQ_MAX_BLOCK_LEVEL 256
 #endif
 
-#define RELIQ_SAVE 0x1
-
 #define RELIQ_ERROR_MESSAGE_LENGTH 512
 
 #define RELIQ_ERROR_SYS 5
@@ -84,34 +82,19 @@ typedef struct {
 typedef struct reliq_npattern reliq_npattern;
 typedef struct reliq_format_func reliq_format_func;
 
-
 typedef struct {
   char const *data;
   int (*freedata)(void *addr, size_t len);
   reliq_hnode *nodes;
 
-  SINK *output;
-  reliq_npattern const *expr; //node passed to process at parsing
-
-  flexarr *attrib_buffer; //reliq_cstr_pair // used as temporary buffer for attribs
-
-  reliq_hnode const *parent;
-
-  #ifdef RELIQ_EDITING
-  reliq_format_func *nodef;
-  #else
-  char *nodef;
-  #endif
-  size_t nodefl; //format used for output at parsing
-
   size_t nodesl;
   size_t datal; //length of data
-  uint8_t flags; //RELIQ_
 } reliq;
 
 int reliq_std_free(void *addr, size_t len); //mapping to free(3) that can be used for freedata
 
 reliq_error *reliq_init(const char *data, const size_t size, int (*freedata)(void *addr, size_t len), reliq *rq);
+void reliq_free_hnodes(reliq_hnode *nodes, const size_t nodesl);
 int reliq_free(reliq *rq);
 
 reliq_error *reliq_set_error(const int code, const char *fmt, ...);

@@ -21,6 +21,8 @@
 
 #include "types.h"
 
+#include "sink.h"
+
 typedef struct {
   reliq_str name;
   char type;
@@ -66,6 +68,9 @@ reliq_error *reliq_fexec_str(char *data, const size_t size, char **str, size_t *
 reliq_error *reliq_exec_file(reliq *rq, FILE *output, const reliq_exprs *exprs);
 reliq_error *reliq_exec_str(reliq *rq, char **str, size_t *strl, const reliq_exprs *exprs);
 reliq_error *reliq_exec(reliq *rq, reliq_compressed **nodes, size_t *nodesl, const reliq_exprs *exprs);
+
+reliq_error *exprs_check_chain(const reliq_exprs *exprs, const uchar noaccesshooks);
+reliq_error *reliq_exec_r(reliq *rq, const reliq_hnode *parent, SINK *output, reliq_compressed **outnodes, size_t *outnodesl, const reliq_exprs *exprs);
 
 void reliq_efree(reliq_exprs *exprs);
 

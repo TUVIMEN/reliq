@@ -40,8 +40,6 @@ extern "C" {
 #define RELIQ_MAX_BLOCK_LEVEL 256
 #endif
 
-#define RELIQ_SAVE 0x1
-
 #define RELIQ_ERROR_MESSAGE_LENGTH 512
 
 #define RELIQ_ERROR_SYS 5
@@ -102,19 +100,8 @@ typedef struct {
   int (*freedata)(void *addr, size_t len);
   reliq_hnode *nodes;
 
-  void *output;
-  reliq_npattern const *expr; //node passed to process at parsing
-
-  void *attrib_buffer; //used as temporary buffer for attribs
-
-  reliq_hnode const *parent;
-
-  void *nodef;
-  size_t nodefl; //format used for output at parsing
-
   size_t nodesl;
   size_t datal; //length of data
-  uint8_t flags; //RELIQ_
 } reliq;
 
 int reliq_std_free(void *addr, size_t len); //mapping to free(3) that can be used for freedata

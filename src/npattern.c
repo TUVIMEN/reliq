@@ -30,6 +30,7 @@
 #include "utils.h"
 #include "range.h"
 #include "pattern.h"
+#include "exprs.h"
 #include "npattern.h"
 
 #define PATTRIB_INC 8
@@ -86,9 +87,6 @@ struct match_hook {
   reliq_str8 name;
   uint16_t flags; //H_
 };
-
-reliq_error *exprs_check_chain(const reliq_exprs *exprs, const uchar noaccesshooks);
-reliq_error *reliq_exec_r(reliq *rq, SINK *output, reliq_compressed **outnodes, size_t *outnodesl, const reliq_exprs *exprs);
 
 const struct match_hook match_hooks[] = {
     {{"m",1},H_PATTERN|H_MATCH_INSIDES},
@@ -316,10 +314,9 @@ match_hook(const reliq *rq, const reliq_hnode *hnode, const reliq_hnode *parent,
     memset(&r,0,sizeof(reliq));
     r.nodes = (reliq_hnode*)hnode;
     r.nodesl = hnode->desc_count+1;
-    r.parent = hnode;
 
     size_t compressedl = 0;
-    reliq_error *err = reliq_exec_r(&r,NULL,NULL,&compressedl,&hook->match.exprs);
+    reliq_error *err = reliq_exec_r(&r,hnode,NULL,NULL,&compressedl,&hook->match.exprs);
     if (err)
       free(err);
     if ((err || !compressedl)^invert)
@@ -916,19 +913,19 @@ match_ancestor(const reliq *rq, reliq_npattern *nodep, const reliq_hnode *curren
 }
 
 static void
-node_exec_first(const reliq *rq, reliq_npattern *nodep, flexarr *dest, const uint32_t lasttofind) //dest: reliq_compressed
+node_exec_first(const reliq *rq, const reliq_hnode *parent, reliq_npattern *nodep, flexarr *dest, const uint32_t lasttofind) //dest: reliq_compressed
 {
   const size_t nodesl = rq->nodesl;
   uint32_t found = 0;
   for (size_t i = 0; i < nodesl && found < lasttofind; i++)
-    match_add(rq,rq->nodes+i,rq->parent,nodep,dest,&found);
+    match_add(rq,rq->nodes+i,parent,nodep,dest,&found);
 
   if (nodep->position.s)
     dest_match_position(&nodep->position,dest,0,dest->size);
 }
 
 void
-node_exec(const reliq *rq, reliq_npattern *nodep, flexarr *source, flexarr *dest) //source: reliq_compressed, dest: reliq_compressed
+node_exec(const reliq *rq, const reliq_hnode *parent, reliq_npattern *nodep, flexarr *source, flexarr *dest) //source: reliq_compressed, dest: reliq_compressed
 {
   uint32_t found=0,lasttofind=nodep->position_max;
   if (lasttofind == (uint32_t)-1)
@@ -937,7 +934,7 @@ node_exec(const reliq *rq, reliq_npattern *nodep, flexarr *source, flexarr *dest
     lasttofind = -1;
 
   if (source->size == 0) {
-    node_exec_first(rq,nodep,dest,lasttofind);
+    node_exec_first(rq,parent,nodep,dest,lasttofind);
     return;
   }
 

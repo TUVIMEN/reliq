@@ -31,8 +31,7 @@
 #include "html.h"
 #include "npattern.h"
 
-#define ATTRIB_INC (1<<4)
-#define RELIQ_NODES_INC (1<<13)
+#define FROM_COMPRESSED_NODES_INC (1<<10)
 
 reliq_error *
 reliq_set_error(const int code, const char *fmt, ...)
@@ -46,35 +45,26 @@ reliq_set_error(const int code, const char *fmt, ...)
   return err;
 }
 
+void
+reliq_free_hnodes(reliq_hnode *nodes, const size_t nodesl)
+{
+  for (size_t i = 0; i < nodesl; i++)
+    free(nodes[i].attribs);
+  if (nodesl)
+    free(nodes);
+}
+
 int
 reliq_free(reliq *rq)
 {
   if (rq == NULL)
     return -1;
-  const size_t size = rq->nodesl;
-  for (size_t i = 0; i < size; i++)
-    free(rq->nodes[i].attribs);
-  if (rq->nodesl)
-    free(rq->nodes);
+
+  reliq_free_hnodes(rq->nodes,rq->nodesl);
+
   if (rq->freedata)
       return (*rq->freedata)((void*)rq->data,rq->datal);
   return 0;
-}
-
-static reliq_error *
-reliq_analyze(const char *data, const size_t size, flexarr *nodes, reliq *rq) //nodes: reliq_hnode
-{
-  reliq_error *err;
-  for (size_t i = 0; i < size; i++) {
-    while (i < size && data[i] != '<')
-        i++;
-    while (i < size && data[i] == '<') {
-      html_struct_handle(data,&i,size,0,nodes,rq,&err);
-      if (err)
-        return err;
-    }
-  }
-  return NULL;
 }
 
 reliq_error *
@@ -89,24 +79,25 @@ reliq_fmatch(const char *data, const size_t size, SINK *output, const reliq_npat
   reliq t;
   t.data = data;
   t.datal = size;
-  t.expr = nodep;
-  t.nodef = nodef;
-  t.nodefl = nodefl;
-  t.flags = 0;
-  if (output == NULL)
-    output = sink_from_file(stdout);
-  t.output = output;
   t.nodes = NULL;
   t.nodesl = 0;
-  t.parent = NULL;
 
-  flexarr *nodes = flexarr_init(sizeof(reliq_hnode),RELIQ_NODES_INC);
-  t.attrib_buffer = (void*)flexarr_init(sizeof(reliq_cstr_pair),ATTRIB_INC);
+  SINK *out = output;
+  if (output == NULL)
+    out = sink_from_file(stdout);
 
-  reliq_error *err = reliq_analyze(data,size,nodes,&t);
+  struct html_process_expr expr = {
+    .rq = &t,
+    .output = out,
+    .expr = nodep,
+    .nodef = nodef,
+    .nodefl = nodefl
+  };
+  reliq_error *err = html_handle(data,size,NULL,NULL,&expr);
 
-  flexarr_free(nodes);
-  flexarr_free((flexarr*)t.attrib_buffer);
+  if (output == NULL)
+    sink_close(out);
+
   return err;
 }
 
@@ -145,16 +136,12 @@ reliq
 reliq_from_compressed_independent(const reliq_compressed *compressed, const size_t compressedl)
 {
   reliq t;
-  t.expr = NULL;
-  t.flags = RELIQ_SAVE;
-  t.output = NULL;
-  t.parent = NULL;
 
   char *ptr;
   size_t pos=0,size;
   uint16_t lvl;
   SINK *out = sink_open(&ptr,&size);
-  flexarr *nodes = flexarr_init(sizeof(reliq_hnode),RELIQ_NODES_INC);
+  flexarr *nodes = flexarr_init(sizeof(reliq_hnode),FROM_COMPRESSED_NODES_INC);
   reliq_hnode *current,*new;
 
   for (size_t i = 0; i < compressedl; i++) {
@@ -200,16 +187,12 @@ reliq
 reliq_from_compressed(const reliq_compressed *compressed, const size_t compressedl, const reliq *rq)
 {
   reliq t;
-  t.expr = NULL;
-  t.flags = RELIQ_SAVE;
-  t.output = NULL;
   t.freedata = NULL;
   t.data = rq->data;
   t.datal = rq->datal;
-  t.parent = NULL;
 
   uint16_t lvl;
-  flexarr *nodes = flexarr_init(sizeof(reliq_hnode),RELIQ_NODES_INC);
+  flexarr *nodes = flexarr_init(sizeof(reliq_hnode),FROM_COMPRESSED_NODES_INC);
   reliq_hnode *current,*new;
 
   for (size_t i = 0; i < compressedl; i++) {
@@ -249,20 +232,9 @@ reliq_init(const char *data, const size_t size, int (*freedata)(void *addr, size
   rq->data = data;
   rq->datal = size;
   rq->freedata = freedata;
-  rq->expr = NULL;
-  rq->flags = RELIQ_SAVE;
-  rq->output = NULL;
-  rq->nodef = NULL;
-  rq->nodefl = 0;
-  rq->parent = NULL;
 
-  flexarr *nodes = flexarr_init(sizeof(reliq_hnode),RELIQ_NODES_INC);
-  rq->attrib_buffer = (void*)flexarr_init(sizeof(reliq_cstr_pair),ATTRIB_INC);
+  reliq_error *err = html_handle(data,size,&rq->nodes,&rq->nodesl,NULL);
 
-  reliq_error *err = reliq_analyze(data,size,nodes,rq);
-
-  flexarr_conv(nodes,(void**)&rq->nodes,&rq->nodesl);
-  flexarr_free((flexarr*)rq->attrib_buffer);
   if (err)
     reliq_free(rq);
   return err;

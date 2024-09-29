@@ -51,11 +51,11 @@ reliq_error *node_output(const reliq_hnode *hnode, const reliq_hnode *parent,
 #endif
   const size_t formatl, SINK *output, const reliq *rq);
 
-reliq_error *nodes_output(const reliq *rq, flexarr *compressed_nodes, flexarr *ncollector
-        #ifdef RELIQ_EDITING
-        , flexarr *fcollector //struct fcollector_expr
-        #endif
-        ); //compressed_nodes: reliq_compressed, ncollector: reliq_cstr
+reliq_error *nodes_output(const reliq *rq, SINK *output, flexarr *compressed_nodes, flexarr *ncollector
+  #ifdef RELIQ_EDITING
+  , flexarr *fcollector //struct fcollector_expr
+  #endif
+  ); //compressed_nodes: reliq_compressed, ncollector: reliq_cstr
 
 #endif
 
