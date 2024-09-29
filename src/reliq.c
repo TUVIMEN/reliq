@@ -132,6 +132,47 @@ reliq_hnode_shift_finalize(reliq_hnode *node, char *ref)
   }
 }
 
+/*
+  reliq_from_compressed functions can be optimized by eliminating repeating or descendant tags.
+
+  static int
+  compressed_cmp(const reliq_compressed *c1, const reliq_compressed *c2)
+  {
+    return c1->hnode < c2->hnode;
+  }
+
+  reliq_compressed *ncomp = memdup(compressed,compressedl*sizeof(reliq_compressed));
+  qsort(ncomp,compressedl,sizeof(reliq_compressed),(int(*)(const void*,const void*)compressed_cmp));
+
+  reliq_hnode *current,*previous=NULL;
+  for (size_t i = 0; i < compressedl; i++) {
+    current = ncomp[i].hnode;
+    if ((void)current < (void*)10)
+      continue;
+
+    uchar passed = 0;
+
+    if (!previous) {
+      previous = current;
+      continue;
+    } else if (current <= previous) {
+      if (previous <= current+current->desc_count) {
+        previous = current;
+        continue;
+      }
+    }
+
+    ...
+
+    if (current > previous+previous->desc_count)
+      previous = current;
+  }
+  if (previous)
+    ...
+
+  This however will not allow for changing levels to be relative to parent.
+*/
+
 reliq
 reliq_from_compressed_independent(const reliq_compressed *compressed, const size_t compressedl)
 {
