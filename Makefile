@@ -69,7 +69,7 @@ options:
 	@echo "CC       = ${CC}"
 
 reliq-h:
-	@echo ${CFLAGS_D} | cat - src/reliq.h | sed '1{s/ /\n/g; s/-D/#define /g; s/=/ /; h; d}; /^\/\/#RELIQ_COMPILE_FLAGS/{s/.*//;G;D}' > reliq.h
+	@echo ${CFLAGS_D} | cat - src/reliq.h | sed '1{ s/ /\n/g; s/-D/#define /g; s/=/ /; h; d; }; /^\/\/#RELIQ_COMPILE_FLAGS/{ s/.*//;G;D; }' > reliq.h
 
 
 lib: clean reliq-h
@@ -86,7 +86,7 @@ linked: lib lib-install
 	@make O_LINKED=1
 
 reliq: ${OBJ}
-	${CC} ${CFLAGS_ALL} ${LDFLAGS} $^ -o ${TARGET}
+	${CC} ${CFLAGS_ALL} $^ ${LDFLAGS} -o ${TARGET}
 	strip ${TARGET}
 
 %.o: %.c
