@@ -155,7 +155,7 @@ print_uint(unsigned long num, SINK *outfile)
     sink_write(outfile,str,len);
 }
 
-#if defined (__MINGW32__) || defined(__MINGW64__)
+#if defined(__MINGW32__) || defined(__MINGW64__) || defined(__APPLE__)
 char const *
 memmem(char const *haystack, size_t haystackl, const char *needle, const size_t needlel)
 {
