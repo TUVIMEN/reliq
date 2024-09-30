@@ -1,5 +1,5 @@
 VERSION = 2.7
-CC = gcc -std=c99
+CC = gcc -std=c18
 CFLAGS = -O3 -march=native -Wall -Wextra -Wno-implicit-fallthrough
 LDFLAGS =
 TARGET = reliq
