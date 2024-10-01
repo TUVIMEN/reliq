@@ -45,7 +45,7 @@ void strnrev(char *v, const size_t size); //was previously named strrev but ming
 void uint_to_str(char *dest, size_t *destl, const size_t max_destl, unsigned long num);
 void memtrim(void const **dest, size_t *destsize, const void *src, const size_t size);
 void memwordtok_r(const void *ptr, const size_t plen, void const **saveptr, size_t *saveptrlen, void const **word, size_t *wordlen);
-#if defined(__MINGW32__) || defined(__MINGW64__) || defined(__APPLE__)
+#if defined(__MINGW32__) || defined(__MINGW64__)
 char const *memmem(char const *haystack, size_t haystackl, const char *needle, const size_t needlel);
 #endif
 int memcasecmp(const void *v1, const void *v2, const size_t n);
