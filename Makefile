@@ -87,7 +87,7 @@ linked: lib lib-install
 
 reliq: ${OBJ}
 	${CC} ${CFLAGS_ALL} $^ ${LDFLAGS} -o ${TARGET}
-	strip ${TARGET}
+	if [ $(shell uname -s) = "Darwin" ]; then strip -x ${TARGET}; else strip ${TARGET}; fi
 
 %.o: %.c
 	${CC} ${CFLAGS_ALL} -c $< -o $@
