@@ -16,10 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#define _GNU_SOURCE
-#define __USE_XOPEN
-#define __USE_XOPEN_EXTENDED
-#define _XOPEN_SOURCE 600
+#include "ext.h"
 
 #include <stdlib.h>
 #include <stdio.h>
