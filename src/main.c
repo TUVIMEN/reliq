@@ -134,7 +134,7 @@ expr_exec(char *f, size_t s, const uchar inpipe)
     return;
 
   reliq_error *err;
-  void *freedata = inpipe ? reliq_std_free :
+  int (*freedata)(void*,size_t) = inpipe ? reliq_std_free :
   #if defined(__MINGW32__) || defined(__MINGW64__)
     reliq_std_free;
   #else

@@ -451,9 +451,9 @@ trim_edit(const char *src, const size_t size, SINK *output, const void *arg[4], 
       lineend = size;
 
     if (lineend-line) {
-      char *trimmed;
+      char const *trimmed;
       size_t trimmedl = 0;
-      memtrim((void const**)&trimmed,&trimmedl,src+line,lineend-line);
+      memtrim(&trimmed,&trimmedl,src+line,lineend-line);
       if (trimmedl)
         sink_write(output,trimmed,trimmedl);
     }

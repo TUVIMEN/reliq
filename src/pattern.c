@@ -318,7 +318,7 @@ regexec_match_word(const reliq_pattern *pattern, reliq_cstr *str)
   size_t saveptrlen,wordlen;
 
   while (1) {
-    memwordtok_r(ptr,plen,(void const**)&saveptr,&saveptrlen,(void const**)&word,&wordlen);
+    memwordtok_r(ptr,plen,&saveptr,&saveptrlen,&word,&wordlen);
     if (!word)
       return 0;
 
@@ -356,7 +356,7 @@ reliq_regexec(const reliq_pattern *pattern, const char *src, const size_t size)
     return regexec_match_word(pattern,&str)^invert;
 
   if (pattern->flags&RELIQ_PATTERN_TRIM)
-    memtrim((void const**)&str.b,&str.s,src,size);
+    memtrim(&str.b,&str.s,src,size);
 
   return regexec_match_pattern(pattern,&str)^invert;
 }

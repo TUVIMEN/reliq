@@ -30,7 +30,7 @@ static void
 print_chars(char const *src, size_t size, const uint8_t flags, SINK *outfile)
 {
   if (!(flags&PC_UNTRIM))
-    memtrim((void const**)&src,&size,src,size);
+    memtrim(&src,&size,src,size);
   if (!size)
     return;
   if (flags&PC_DECODE) {

@@ -400,13 +400,13 @@ html_struct_handle(const char *f, size_t *pos, const size_t s, const uint16_t lv
   hnode->attribsl = size;
   hnode->desc_count = ret-1;
   if (expr) {
-    hnode->attribs = a->v+(attrib_start*a->elsize);
+    hnode->attribs = (reliq_cstr_pair*)((char*)a->v+(attrib_start*a->elsize));
     if (expr->expr && reliq_nexec(expr->rq,hnode,NULL,expr->expr))
       *err = node_output(hnode,NULL,expr->nodef,expr->nodefl,expr->output,expr->rq);
     flexarr_dec(nodes);
   } else {
     hnode->attribs = size ?
-        memdup(a->v+(attrib_start*a->elsize),size*a->elsize)
+        memdup((char*)a->v+(attrib_start*a->elsize),size*a->elsize)
         : NULL;
   }
   a->size = attrib_start;

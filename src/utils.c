@@ -61,7 +61,7 @@ uint_to_str(char *dest, size_t *destl, const size_t max_destl, unsigned long num
 }
 
 void
-memtrim(void const **dest, size_t *destsize, const void *src, const size_t size)
+memtrim(char const **dest, size_t *destsize, const char *src, const size_t size)
 {
   *destsize = 0;
   if (!src || !size)
@@ -74,8 +74,8 @@ memtrim(void const **dest, size_t *destsize, const void *src, const size_t size)
   while (end-1 > start && isspace(((char*)src)[end-1]))
     end--;
 
-  *dest = (void*)src+start;
-  *(size_t*)destsize = end-start;
+  *dest = src+start;
+  *destsize = end-start;
 }
 
 static size_t
@@ -96,13 +96,13 @@ memwordtok_r_get_word(const char *ptr, const size_t plen, char const **word, siz
 }
 
 void
-memwordtok_r(const void *ptr, const size_t plen, void const **saveptr, size_t *saveptrlen, void const **word, size_t *wordlen)
+memwordtok_r(const char *ptr, const size_t plen, char const **saveptr, size_t *saveptrlen, char const **word, size_t *wordlen)
 {
   *word = NULL;
   *wordlen = 0;
 
   if (ptr) {
-    size_t size = memwordtok_r_get_word((char*)ptr,plen,(char const**)word,wordlen);
+    size_t size = memwordtok_r_get_word(ptr,plen,word,wordlen);
     if (*wordlen) {
       *saveptr = ptr+size;
       *saveptrlen = plen-size;
@@ -113,7 +113,7 @@ memwordtok_r(const void *ptr, const size_t plen, void const **saveptr, size_t *s
   if (!*saveptr)
     return;
 
-  size_t size = memwordtok_r_get_word((char*)*saveptr,*saveptrlen,(char const**)word,wordlen);
+  size_t size = memwordtok_r_get_word(*saveptr,*saveptrlen,word,wordlen);
   if (*wordlen) {
     *saveptr += size;
     *saveptrlen -= size;
@@ -403,10 +403,14 @@ splchar3(const char *src, const size_t srcl, char *result, size_t *resultl, size
     return;
   }
 
-  if (*src == 'u')
-    return splchar3_unicode(src,srcl,result,resultl,traversed,4);
-  if (*src == 'U')
-    return splchar3_unicode(src,srcl,result,resultl,traversed,8);
+  if (*src == 'u') {
+    splchar3_unicode(src,srcl,result,resultl,traversed,4);
+    return;
+  }
+  if (*src == 'U') {
+    splchar3_unicode(src,srcl,result,resultl,traversed,8);
+    return;
+  }
 
   char r = splchar2(src,srcl,traversed);
   if (r != *src || r == '\\') {

@@ -1,8 +1,9 @@
 VERSION = 2.7
 CC = gcc -std=c18
-CFLAGS = -O3 -march=native -Wall -Wextra -Wno-implicit-fallthrough
+CFLAGS = -O3 -march=native -Wall -Wextra -Wno-implicit-fallthrough -Wpedantic
 LDFLAGS =
 TARGET = reliq
+STRIP_ARGS =
 
 CFLAGS_D = -DRELIQ_VERSION=\"${VERSION}\"
 
@@ -22,6 +23,10 @@ LD_LIBRARY_PATH ?= ${PREFIX}/lib
 INCLUDE_PATH ?= ${PREFIX}/include
 
 LIB_SRC = src/flexarr.c src/sink.c src/html.c src/reliq.c src/hnode_print.c src/ctype.c src/utils.c src/output.c src/htmlescapecodes.c src/pattern.c src/range.c src/npattern.c src/exprs.c src/format.c
+
+ifeq ("$(shell uname -s)","Darwin")
+	STRIP_ARGS += -x
+endif
 
 ifeq ($(strip ${O_SMALL_STACK}),1)
 	CFLAGS_D += -DRELIQ_SMALL_STACK
@@ -59,6 +64,8 @@ CFLAGS_ALL = ${CFLAGS} ${CFLAGS_D}
 
 OBJ = ${SRC:.c=.o}
 
+.PHONY: all options reliq lib lib-install install linked test test-errors test-update dist uninstall
+
 all: options reliq
 
 options:
@@ -87,15 +94,15 @@ linked: lib lib-install
 
 reliq: ${OBJ}
 	${CC} ${CFLAGS_ALL} $^ ${LDFLAGS} -o ${TARGET}
-	if [ $(shell uname -s) = "Darwin" ]; then strip -x ${TARGET}; else strip ${TARGET}; fi
+	strip ${STRIP_ARGS} ${TARGET}
 
 %.o: %.c
 	${CC} ${CFLAGS_ALL} -c $< -o $@
 
-test: clean all
+test: all
 	@./test.sh test/basic.test . "${TEST_FLAGS}" || true
 
-test-errors: clean all
+test-errors: all
 	@./test.sh test/errors.test . "${TEST_FLAGS}" || true
 
 test-update: test
@@ -104,7 +111,7 @@ test-update: test
 
 dist: clean
 	mkdir -p ${TARGET}-${VERSION}
-	cp -r LICENSE Makefile README.md src reliq.1 ${TARGET}-${VERSION}
+	cp -r test LICENSE Makefile README.md src reliq.1 ${TARGET}-${VERSION}
 	tar -c ${TARGET}-${VERSION} | xz -e9 > ${TARGET}-${VERSION}.tar.xz
 	rm -rf ${TARGET}-${VERSION}
 

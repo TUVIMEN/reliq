@@ -50,7 +50,7 @@ flexarr_inc(flexarr *f)
     if (unlikely(!f->v))
       return NULL;
   }
-  return f->v+(f->size++*f->elsize);
+  return ((char*)f->v)+(f->size++*f->elsize);
 }
 
 void *
@@ -69,7 +69,7 @@ flexarr_append(flexarr *f, const void *v, const size_t count)
     if (unlikely(f->v == NULL))
       return NULL;
   }
-  void *ret = memcpy(f->v+f->size,v,count);
+  void *ret = memcpy(((char*)f->v)+f->size,v,count);
   f->size += count;
   return ret;
 }
@@ -79,7 +79,7 @@ flexarr_dec(flexarr *f)
 {
   if (unlikely(f->size == 0))
     return NULL;
-  return f->v+(f->size--*f->elsize);
+  return ((char*)f->v)+(f->size--*f->elsize);
 }
 
 void *
@@ -108,7 +108,7 @@ flexarr_add(flexarr *dst, const flexarr *src) //append contents of src to dst
   if (dst->size+src->size > dst->asize &&
     unlikely(flexarr_alloc(dst,src->size) == NULL))
     return NULL;
-  memcpy(dst->v+(dst->size*dst->elsize),src->v,src->size*dst->elsize);
+  memcpy(((char*)dst->v)+(dst->size*dst->elsize),src->v,src->size*dst->elsize);
   dst->size += src->size;
   return dst->v;
 }
