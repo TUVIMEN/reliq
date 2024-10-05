@@ -266,6 +266,12 @@ int
 main(int argc, char **argv)
 {
   int opt;
+
+  #if defined(__MINGW32__) || defined(__MINGW64__)
+  _setmode(1,O_BINARY);
+  _setmode(2,O_BINARY);
+  #endif
+
   outfile = stdout;
   errfile = stderr;
 
@@ -279,12 +285,12 @@ main(int argc, char **argv)
         handle_reliq_error(reliq_ecomp("| \"%n%Ua - desc(%c) lvl(%L) size(%s) pos(%I)\\n\"",47,&exprs));
         break;
       case 'o':
-        outfile = fopen(optarg,"w");
+        outfile = fopen(optarg,"wb");
         if (outfile == NULL)
           xerr(RELIQ_ERROR_SYS,"%s",optarg);
         break;
       case 'e':
-        errfile = fopen(optarg,"w");
+        errfile = fopen(optarg,"wb");
         if (errfile == NULL) {
           errfile = stderr;
           xerr(RELIQ_ERROR_SYS,"%s",optarg);

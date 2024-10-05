@@ -3,17 +3,11 @@ CC = gcc -std=c18
 CFLAGS = -O3 -march=native -Wall -Wextra -Wno-implicit-fallthrough -Wpedantic
 LDFLAGS =
 TARGET = reliq
-STRIP_ARGS =
-
-CFLAGS_D = -DRELIQ_VERSION=\"${VERSION}\"
 
 O_SMALL_STACK := 0 # limits for small stack
 O_PHPTAGS := 1 # support for <?php ?>
 O_AUTOCLOSING := 1 # support for autoclosing tags (tag ommission https://html.spec.whatwg.org/multipage/syntax.html#optional-tags)
 O_EDITING := 1 #support for editing
-
-O_LIB := 0 # compile libreliq
-O_LINKED := 0 # link reliq to libreliq
 
 PREFIX ?= /usr
 MANPREFIX ?= ${PREFIX}/share/man
@@ -21,6 +15,15 @@ BINDIR = ${DESTDIR}${PREFIX}/bin
 MANDIR = $(DESTDIR)${MANPREFIX}/man1
 LD_LIBRARY_PATH ?= ${PREFIX}/lib
 INCLUDE_PATH ?= ${PREFIX}/include
+
+# all of the above variables can be changed from cli
+
+O_LIB := 0 # compile libreliq
+O_LINKED := 0 # link reliq to libreliq
+
+STRIP_ARGS =
+LDFLAGS_R = ${LDFLAGS}
+CFLAGS_D = -DRELIQ_VERSION=\"${VERSION}\"
 
 LIB_SRC = src/flexarr.c src/sink.c src/html.c src/reliq.c src/hnode_print.c src/ctype.c src/utils.c src/output.c src/htmlescapecodes.c src/pattern.c src/range.c src/npattern.c src/exprs.c src/format.c
 
@@ -49,14 +52,14 @@ SRC = src/main.c ${LIB_SRC}
 
 ifeq ($(strip ${O_LIB}),1)
 	SRC = ${LIB_SRC}
-	LDFLAGS = -shared
+	LDFLAGS_R += -shared
 	CFLAGS_D += -fPIC
 endif
 
 ifeq ($(strip ${O_LINKED}),1)
 	CFLAGS_D += -DLINKED
 	SRC = src/main.c
-	LDFLAGS += -lreliq
+	LDFLAGS_R += -lreliq
 endif
 
 TEST_FLAGS=$(shell echo "${CFLAGS_D}" | sed -E 's/(^| )-D/\1/g; s/(^| )[a-zA-Z0-9_]+=("[^"]*")?[^ ]*( |$$)//')
@@ -72,7 +75,7 @@ options:
 	@echo ${SRC}
 	@echo ${TARGET} build options:
 	@echo "CFLAGS   = ${CFLAGS_ALL}"
-	@echo "LDFLAGS  = ${LDFLAGS}"
+	@echo "LDFLAGS  = $(strip ${LDFLAGS_R})"
 	@echo "CC       = ${CC}"
 
 reliq-h:
@@ -93,7 +96,7 @@ linked: lib lib-install
 	@make O_LINKED=1
 
 reliq: ${OBJ}
-	${CC} ${CFLAGS_ALL} $^ ${LDFLAGS} -o ${TARGET}
+	${CC} ${CFLAGS_ALL} $^ ${LDFLAGS_R} -o ${TARGET}
 	strip ${STRIP_ARGS} ${TARGET}
 
 %.o: %.c
