@@ -24,4 +24,6 @@
 
 #define ATTR_MALLOC __attribute__((__malloc__))
 
+#define UNUSED __attribute__((unused))
+
 #endif

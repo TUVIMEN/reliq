@@ -21,7 +21,6 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include "builtin.h"
 
 #include "flexarr.h"
 #include "sink.h"

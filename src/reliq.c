@@ -258,7 +258,7 @@ reliq_from_compressed(const reliq_compressed *compressed, const size_t compresse
 }
 
 int
-reliq_std_free(void *addr, size_t len)
+reliq_std_free(void *addr, size_t UNUSED len)
 {
     free(addr);
     return 0;

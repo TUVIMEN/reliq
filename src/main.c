@@ -254,7 +254,7 @@ load_expr_from_file(char *filename)
 }
 
 int
-nftw_func(const char *fpath, const struct stat *sb, int typeflag, struct FTW *ftwbuf)
+nftw_func(const char *fpath, const struct stat UNUSED *sb, int typeflag, struct FTW UNUSED *ftwbuf)
 {
   if (typeflag == FTW_F || typeflag == FTW_SL)
     file_handle(fpath);

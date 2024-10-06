@@ -527,7 +527,7 @@ tac_edit(const char *src, const size_t size, SINK *output, const void *arg[4], c
 }
 
 reliq_error *
-decode_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag)
+decode_edit(const char *src, const size_t size, SINK *output, const void UNUSED *arg[4], const uint8_t UNUSED flag)
 {
   htmlescapecodes_file(src,size,output);
   return NULL;
