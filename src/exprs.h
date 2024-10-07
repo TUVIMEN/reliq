@@ -33,7 +33,7 @@ typedef struct {
 
 typedef struct {
   reliq_output_field outfield;
-  void *e; //either points to reliq_exprs or reliq_npattern
+  void *e; //either points to flexarr*(reliq_expr) or reliq_npattern
   #ifdef RELIQ_EDITING
   reliq_format_func *nodef; //node format
   reliq_format_func *exprf; //expression format

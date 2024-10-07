@@ -446,8 +446,9 @@ outfields_array_print(SINK *out, const reliq_output_field *field, const char *va
   sink_put(out,'[');
 
   char const *start=value,*end,*last=value+valuel;
-  reliq_output_field f;
-  f.type = field->arr_type;
+  reliq_output_field f = {
+    .type = field->arr_type
+  };
 
   while (start < last) {
     end = memchr(start,field->arr_delim,last-start);
@@ -466,6 +467,8 @@ outfields_array_print(SINK *out, const reliq_output_field *field, const char *va
 static void
 outfields_value_print(SINK *out, const reliq_output_field *field, const char *value, const size_t valuel)
 {
+  if (!field)
+    return;
   switch (field->type) {
     case 's':
       outfields_str_print(out,value,valuel);

@@ -88,7 +88,7 @@ exprs_check_chain(const reliq_exprs *exprs, const uchar noaccesshooks)
 }
 
 /*void //just for debugging
-reliq_expr_print(flexarr *exprs, size_t tab)
+reliq_exprs_print(flexarr *exprs, size_t tab)
 {
   reliq_expr *a = (reliq_expr*)exprs->v;
   for (size_t j = 0; j < tab; j++)
@@ -100,10 +100,10 @@ reliq_expr_print(flexarr *exprs, size_t tab)
     for (size_t j = 0; j < tab; j++)
       fputs("  ",stderr);
     if (a[i].flags&EXPR_TABLE) {
-      fprintf(stderr,"table %d node(%u) expr(%u)\n",a[i].flags,a[i].nodefl,a[i].exprfl);
-      reliq_expr_print((flexarr*)a[i].e,tab);
+      fprintf(stderr,"table %d node(%lu) expr(%lu)\n",a[i].flags,a[i].nodefl,a[i].exprfl);
+      reliq_exprs_print((flexarr*)a[i].e,tab);
     } else {
-      fprintf(stderr,"nodes node(%u) expr(%u)\n",a[i].nodefl,a[i].exprfl);
+      fprintf(stderr,"nodes node(%lu) expr(%lu)\n",a[i].nodefl,a[i].exprfl);
     }
   }
 }*/
@@ -689,13 +689,78 @@ reliq_ecomp_pre(const char *csrc, size_t *pos, size_t s, const uint16_t lvl, uin
   return ret;
 }
 
+static reliq_error *block_check(flexarr *exprs);
+
+static uchar
+block_is_str(flexarr *exprs)
+{
+  reliq_expr *a = (reliq_expr*)exprs->v;
+  const size_t s = exprs->size;
+  for (size_t i = 0; i < s; i++) {
+    if (a[i].nodefl || a[i].exprfl)
+      return 1;
+    if (a[i].flags&EXPR_TABLE && block_is_str((flexarr*)a[i].e))
+      return 1;
+  }
+  return 0;
+}
+
+static reliq_error *
+chain_check(flexarr* exprs)
+{
+  reliq_error *err = NULL;
+  reliq_expr *a = (reliq_expr*)exprs->v;
+  const size_t s = exprs->size;
+  for (size_t i = 0; i < s; i++) {
+    if (i < s-1) {
+      if (a[i].childfields)
+        return script_err("expression: chains cannot have fields in the middle, %lu %lu, passed to other expression",i,s);
+      if (a[i].flags&EXPR_TABLE && block_is_str((flexarr*)a[i].e))
+        return script_err("expression: chains cannot have string type in the middle, %lu %lu, passed to other exprssion",i,s);
+    }
+    if (a[i].flags&EXPR_NEWBLOCK || a[i].flags&EXPR_SINGULAR) {
+      err = block_check((flexarr*)a[i].e);
+      if (err)
+        break;
+    }
+  }
+  return err;
+}
+
+static reliq_error *
+block_check(flexarr *exprs)
+{
+  reliq_error *err = NULL;
+  reliq_expr *a = (reliq_expr*)exprs->v;
+  for (size_t i = 0; i < exprs->size; i++) {
+    if (!(a[i].flags&EXPR_TABLE))
+      continue;
+
+    if (a[i].flags&EXPR_NEWCHAIN) {
+        err = chain_check((flexarr*)a[i].e);
+        if (err)
+          break;
+    }
+  }
+  return err;
+}
+
+static reliq_error *
+exprs_check_integrity(flexarr *exprs)
+{
+  return block_check(exprs);
+}
+
 reliq_error *
 reliq_ecomp(const char *src, const size_t size, reliq_exprs *exprs)
 {
   reliq_error *err = NULL;
   flexarr *ret = reliq_ecomp_pre(src,NULL,size,0,NULL,&err);
   if (ret) {
-    //reliq_expr_print(ret,0);
+    if (!err) {
+        //reliq_exprs_print(ret,0);
+        err = exprs_check_integrity(ret);
+    }
     flexarr_conv(ret,(void**)&exprs->b,&exprs->s);
   } else
     exprs->s = 0;

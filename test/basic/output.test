@@ -36,3 +36,4 @@ fe8552a3f6522e529d2c6de9d3334371,'.va ul1 .n1; { .title h21 | "%i", .values ul1 
 6c00a4f25001c4845898ed3a2699370c,'.g ul1 .n1; { .r p1, .h ul1 l@[0],  .c ul1 l@[1]; { la, ua } ; { p1  } | , .k span1 }'
 05a7e3fb87a143edff739ee7c844bd39,'.covers.a("\o7") img | "%(src)v\a", .links.a("\x5C") a | "%(href)v \\ \U0e0a"'
 3a1d2c6246fb18294dc3e02591d143a3,'.u ; li, ; li, , li, .c , li'
+c5c16b0ba4667635c662d78db10e98c2,'li; { .u li | "%i" } |'
