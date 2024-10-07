@@ -2,3 +2,5 @@
 *.so
 /reliq
 /reliq.h
+test/advanced/boards-forums/*/
+test/advanced/users/*/

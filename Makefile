@@ -67,7 +67,7 @@ CFLAGS_ALL = ${CFLAGS} ${CFLAGS_D}
 
 OBJ = ${SRC:.c=.o}
 
-.PHONY: all options reliq lib lib-install install linked test test-errors test-update dist uninstall
+.PHONY: all options reliq lib lib-install install linked test test-advanced test-errors test-update dist uninstall
 
 all: options reliq
 
@@ -105,12 +105,16 @@ reliq: ${OBJ}
 test: all
 	@./test.sh test/basic.test . "${TEST_FLAGS}" || true
 
+test-advanced: all
+	@./test.sh test/advanced.test . "${TEST_FLAGS}" || true
+
 test-errors: all
 	@./test.sh test/errors.test . "${TEST_FLAGS}" || true
 
 test-update: test
 	@./test.sh test/basic.test update "${TEST_FLAGS}" || true
 	@./test.sh test/errors.test update "${TEST_FLAGS}" || true
+	@./test.sh test/advanced.test update "${TEST_FLAGS}" || true
 
 dist: clean
 	mkdir -p ${TARGET}-${VERSION}

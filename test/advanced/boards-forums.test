@@ -1,0 +1,8 @@
+@boards-forums/invision.test
+@boards-forums/phpbb.test
+@boards-forums/smf1.test
+@boards-forums/smf2.test
+@boards-forums/xenforo1.test
+@boards-forums/xenforo2.test
+@boards-forums/xmb.test
+@boards-forums/stackexchange.test
