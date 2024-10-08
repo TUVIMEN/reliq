@@ -478,7 +478,8 @@ get_quoted(const char *src, size_t *pos, const size_t size, const char delim, ch
       if (src[i+1] == '\\') {
         *(char*)flexarr_inc(res) = src[++i];
         continue;
-      }
+      } else if (isspace(src[i+1]) || src[i+1] == delim)
+        i++;
     } else if (src[i] == '"' || src[i] == '\'') {
       char tf = src[i++];
       for (; i < size && src[i] != tf; i++) {

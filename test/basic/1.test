@@ -87,6 +87,7 @@ ae90273077454a8d04787d0d76eaaf3b,'* | "NN %n - %S - %e - %E\n"'
 f6b160095d29236b39e39656c17e6db3,'ul; li [0]; ul ancestor@ p@[2] P@[18] I@[798] | "%n - %p - %P - %I\n"'
 8b1431981d981e10344492019cdcc434,'li /* src */ | /*"lk"*/ "kas %a\n" /*"%(src)Dv\n"*/ // , li'
 abf03b57d4cf180519283d5198c1e736,'div m@i>"COMME"'
+7001f6d7a9d63328f9c159db3bcd7c17,'div class=bW>annointed\ extra'
 
 < unclosed-tag.html
 18c53a8a802f5c7ca3f883a2ed89f8ce,'td .tablerow | "%i"'
