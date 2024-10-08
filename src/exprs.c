@@ -697,7 +697,11 @@ block_is_str(flexarr *exprs)
   reliq_expr *a = (reliq_expr*)exprs->v;
   const size_t s = exprs->size;
   for (size_t i = 0; i < s; i++) {
-    if (a[i].nodefl || a[i].exprfl)
+    if (a[i].nodefl
+      #ifdef RELIQ_EDITING
+      || a[i].exprfl
+      #endif
+      )
       return 1;
     if (a[i].flags&EXPR_TABLE && block_is_str((flexarr*)a[i].e))
       return 1;
