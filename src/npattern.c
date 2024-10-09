@@ -922,7 +922,7 @@ node_exec_first(const reliq *rq, const reliq_hnode *parent, reliq_npattern *node
 }
 
 void
-node_exec(const reliq *rq, const reliq_hnode *parent, reliq_npattern *nodep, flexarr *source, flexarr *dest) //source: reliq_compressed, dest: reliq_compressed
+node_exec(const reliq *rq, const reliq_hnode *parent, reliq_npattern *nodep, const flexarr *source, flexarr *dest) //source: reliq_compressed, dest: reliq_compressed
 {
   uint32_t found=0,lasttofind=nodep->position_max;
   if (lasttofind == (uint32_t)-1)
@@ -937,8 +937,8 @@ node_exec(const reliq *rq, const reliq_hnode *parent, reliq_npattern *nodep, fle
 
   const size_t size = source->size;
   for (size_t i = 0; i < size; i++) {
-    reliq_compressed *x = &((reliq_compressed*)source->v)[i];
-    reliq_hnode *current = x->hnode;
+    const reliq_compressed *x = &((reliq_compressed*)source->v)[i];
+    const reliq_hnode *current = x->hnode;
     if ((void*)current < (void*)10)
       continue;
     size_t prevdestsize = dest->size;
