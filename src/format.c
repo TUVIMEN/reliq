@@ -219,7 +219,7 @@ format_get_func_args(reliq_format_func *f, const char *src, size_t *pos, const s
       break;
 
     if (src[i] != '[' && src[i] != '"' && src[i] != '\'') {
-      if (isalnum(src[i]) || src[i] == '/' || src[i] == '|')
+      if (isalnum(src[i]))
         break;
       *argcount = arg+1;
       goto_script_seterr(END,"bad argument at %lu(0x%02x)",i,src[i]);
@@ -243,9 +243,6 @@ format_get_funcs(flexarr *format, const char *src, size_t *pos, const size_t siz
     while_is(isspace,src,i,size);
     if (i >= size)
       break;
-
-    if (src[i] == '|' || src[i] == '/')
-      goto END;
 
     if (isalnum(src[i])) {
       fname = src+i;
@@ -316,6 +313,8 @@ format_comp(const char *src, size_t *pos, const size_t size,
   size_t *formatl)
 {
   reliq_error *err = NULL;
+  *format = NULL;
+  *formatl = 0;
   size_t i = *pos;
   if (i >= size || !src)
     goto END;

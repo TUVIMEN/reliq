@@ -25,7 +25,7 @@ STRIP_ARGS =
 LDFLAGS_R = ${LDFLAGS}
 CFLAGS_D = -DRELIQ_VERSION=\"${VERSION}\"
 
-LIB_SRC = src/flexarr.c src/sink.c src/html.c src/reliq.c src/hnode_print.c src/ctype.c src/utils.c src/output.c src/htmlescapecodes.c src/pattern.c src/range.c src/npattern.c src/exprs.c src/format.c
+LIB_SRC = src/flexarr.c src/sink.c src/html.c src/reliq.c src/hnode_print.c src/ctype.c src/utils.c src/output.c src/htmlescapecodes.c src/pattern.c src/range.c src/npattern.c src/exprs_comp.c src/exprs_exec.c src/format.c
 
 ifeq ("$(shell uname -s)","Darwin")
 	STRIP_ARGS += -x

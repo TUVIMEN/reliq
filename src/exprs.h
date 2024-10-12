@@ -23,6 +23,16 @@
 
 #include "sink.h"
 
+//reliq_expr flags
+//.e = reliq_npattern
+#define EXPR_NPATTERN 0x1
+
+//.e = flexarr*(reliq_expr)
+#define EXPR_BLOCK 0x2
+#define EXPR_CHAIN 0x4
+#define EXPR_SINGULAR 0x8
+#define EXPR_TABLE (EXPR_BLOCK|EXPR_CHAIN|EXPR_SINGULAR)
+
 typedef struct {
   reliq_str name;
   char type;
@@ -45,6 +55,7 @@ typedef struct {
   size_t exprfl;
   #endif
   uint16_t childfields;
+  uint16_t childformats;
   uint8_t flags; //EXPR_
 } reliq_expr;
 
