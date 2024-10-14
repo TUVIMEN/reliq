@@ -45,7 +45,7 @@
 
 typedef struct {
   union {
-    reliq_exprs exprs;
+    reliq_expr expr;
     reliq_pattern pattern;
     reliq_range range;
   } match;

@@ -1,6 +1,7 @@
 @basic/1.test
-@basic/editing-output.test
-@basic/output.test
-@basic/2.test
-@basic/editing.test
 @basic/php.test
+@basic/2.test
+@basic/conditionals.test
+@basic/editing.test
+@basic/output.test
+@basic/editing-output.test

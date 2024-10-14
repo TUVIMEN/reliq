@@ -81,19 +81,41 @@ typedef struct {
   uint16_t lvl;
 } reliq_hnode; //html node
 
-typedef struct reliq_expr reliq_expr;
-
-typedef struct {
-  reliq_expr *b;
-  size_t s;
-} reliq_exprs;
-
-typedef struct reliq_npattern reliq_npattern;
-
 typedef struct {
   reliq_hnode *hnode;
   reliq_hnode *parent;
 } reliq_compressed;
+
+typedef struct {
+  reliq_str name;
+  char type;
+  char arr_delim;
+  char arr_type;
+  unsigned char isset;
+} reliq_output_field;
+
+typedef struct reliq_npattern reliq_npattern;
+#ifdef RELIQ_EDITING
+typedef struct reliq_format_func reliq_format_func;
+#endif
+
+typedef struct {
+  reliq_output_field outfield;
+  void *e; //either points to flexarr*(reliq_expr) or reliq_npattern
+  #ifdef RELIQ_EDITING
+  reliq_format_func *nodef; //node format
+  reliq_format_func *exprf; //expression format
+  #else
+  char *nodef;
+  #endif
+  size_t nodefl;
+  #ifdef RELIQ_EDITING
+  size_t exprfl;
+  #endif
+  uint16_t childfields;
+  uint16_t childformats;
+  uint8_t flags; //EXPR_
+} reliq_expr;
 
 typedef struct {
   char const *data;
@@ -118,16 +140,16 @@ int reliq_nexec(const reliq *rq, const reliq_hnode *hnode, const reliq_hnode *pa
 void reliq_nfree(reliq_npattern *nodep);
 
 //expression
-reliq_error *reliq_ecomp(const char *script, const size_t size, reliq_exprs *exprs);
+reliq_error *reliq_ecomp(const char *script, const size_t size, reliq_expr *expr);
 
-reliq_error *reliq_fexec_file(char *data, const size_t size, FILE *output, const reliq_exprs *exprs, int (*freedata)(void *addr, size_t len));
-reliq_error *reliq_fexec_str(char *data, const size_t size, char **str, size_t *strl, const reliq_exprs *exprs, int (*freedata)(void *addr, size_t len));
+reliq_error *reliq_fexec_file(char *data, const size_t size, FILE *output, const reliq_expr *expr, int (*freedata)(void *addr, size_t len));
+reliq_error *reliq_fexec_str(char *data, const size_t size, char **str, size_t *strl, const reliq_expr *expr, int (*freedata)(void *addr, size_t len));
 
-reliq_error *reliq_exec_file(reliq *rq, FILE *output, const reliq_exprs *exprs);
-reliq_error *reliq_exec_str(reliq *rq, char **str, size_t *strl, const reliq_exprs *exprs);
-reliq_error *reliq_exec(reliq *rq, reliq_compressed **nodes, size_t *nodesl, const reliq_exprs *exprs);
+reliq_error *reliq_exec_file(reliq *rq, FILE *output, const reliq_expr *expr);
+reliq_error *reliq_exec_str(reliq *rq, char **str, size_t *strl, const reliq_expr *expr);
+reliq_error *reliq_exec(reliq *rq, reliq_compressed **nodes, size_t *nodesl, const reliq_expr *expr);
 
-void reliq_efree(reliq_exprs *exprs);
+void reliq_efree(reliq_expr *expr);
 
 reliq_error *reliq_set_error(const int code, const char *fmt, ...);
 

@@ -33,7 +33,19 @@
 #define PATTERN_SIZE_INC (1<<5)
 
 static void
-reliq_expr_free(reliq_expr *expr)
+reliq_expr_free_pre(flexarr *exprs) //exprs: reliq_expr
+{
+  if (!exprs)
+    return;
+  reliq_expr *e = (reliq_expr*)exprs->v;
+  const size_t size = exprs->size;
+  for (size_t i = 0; i < size; i++)
+    reliq_efree(&e[i]);
+  flexarr_free(exprs);
+}
+
+void
+reliq_efree(reliq_expr *expr)
 {
   #ifdef RELIQ_EDITING
   format_free(expr->nodef,expr->nodefl);
@@ -42,71 +54,34 @@ reliq_expr_free(reliq_expr *expr)
   if (expr->nodef)
     free(expr->nodef);
   #endif
-  reliq_nfree((reliq_npattern*)expr->e);
-  free(expr->e);
   if (expr->outfield.name.b)
     free(expr->outfield.name.b);
-}
 
-static void
-reliq_exprs_free_pre(flexarr *exprs) //exprs: reliq_expr
-{
-  if (!exprs)
-    return;
-  reliq_expr *e = (reliq_expr*)exprs->v;
-  const size_t size = exprs->size;
-  for (size_t i = 0; i < size; i++) {
-    if (e[i].flags&EXPR_TABLE) {
-      if (e[i].outfield.name.b)
-        free(e[i].outfield.name.b);
-      #ifdef RELIQ_EDITING
-      format_free(e[i].nodef,e[i].nodefl);
-      format_free(e[i].exprf,e[i].exprfl);
-      #else
-      if (e[i].nodef)
-        free(e[i].nodef);
-      #endif
-
-      reliq_exprs_free_pre((flexarr*)e[i].e);
-    } else
-      reliq_expr_free(&e[i]);
+  if (EXPR_IS_TABLE(expr->flags)) {
+    reliq_expr_free_pre(expr->e);
+  } else {
+    reliq_nfree((reliq_npattern*)expr->e);
+    free(expr->e);
   }
-  flexarr_free(exprs);
 }
-
-void
-reliq_efree(reliq_exprs *exprs)
-{
-  const size_t size = exprs->s;
-  for (size_t i = 0; i < size; i++) {
-    if (exprs->b[i].flags&EXPR_TABLE) {
-      if (exprs->b[i].outfield.name.b)
-        free(exprs->b[i].outfield.name.b);
-      reliq_exprs_free_pre((flexarr*)exprs->b[i].e);
-    } else
-      reliq_expr_free(&exprs->b[i]);
-  }
-  free(exprs->b);
-}
-
 
 /*static void //just for debugging
-reliq_exprs_print(flexarr *exprs, size_t tab)
+reliq_expr_print(flexarr *expr, size_t tab)
 {
-  reliq_expr *a = (reliq_expr*)exprs->v;
+  reliq_expr *a = (reliq_expr*)expr->v;
   for (size_t j = 0; j < tab; j++)
     fputs("  ",stderr);
-  fprintf(stderr,"%% %lu",exprs->size);
+  fprintf(stderr,"%% %lu",expr->size);
   fputc('\n',stderr);
   tab++;
-  for (size_t i = 0; i < exprs->size; i++) {
+  for (size_t i = 0; i < expr->size; i++) {
     for (size_t j = 0; j < tab; j++)
       fputs("  ",stderr);
-    if (a[i].flags&EXPR_TABLE) {
-      fprintf(stderr,"table %d node(%lu) expr(%lu)\n",a[i].flags,a[i].nodefl,a[i].exprfl);
-      reliq_exprs_print((flexarr*)a[i].e,tab);
+    if (EXPR_IS_TABLE(a[i].flags)) {
+      fprintf(stderr,"table %d node(%lu) expr(%lu) field('%.*s')\n",a[i].flags,a[i].nodefl,a[i].exprfl,(int)a[i].outfield.name.s,a[i].outfield.name.b);
+      reliq_expr_print((flexarr*)a[i].e,tab);
     } else {
-      fprintf(stderr,"nodes node(%lu) expr(%lu)\n",a[i].nodefl,a[i].exprfl);
+      fprintf(stderr,"nodes node(%lu) expr(%lu) field('%.*s')\n",a[i].nodefl,a[i].exprfl,(int)a[i].outfield.name.s,a[i].outfield.name.b);
     }
   }
 }*/
@@ -118,7 +93,10 @@ enum tokenName {
   tChainLink,
   tNodeFormat,
   tExprFormat,
-  tText
+  tText,
+  tConditionOr,
+  tConditionAnd,
+  tConditionAndBlank,
 };
 
 typedef struct {
@@ -138,6 +116,9 @@ token_name(enum tokenName name)
     case tChainLink: return "tChainLink";
     case tNodeFormat: return "tNodeFormat";
     case tExprFormat: return "tExprFormat";
+    case tConditionOr: return "tConditionOr";
+    case tConditionAnd: return "tConditionAnd";
+    case tConditionAndBlank: return "tConditionAndBlank";
   }
   return NULL;
 }
@@ -152,7 +133,7 @@ tokens_print(const token *tokens, const size_t tokensl)
       lvl--;
     for (size_t k = 0; k < lvl; k++)
       fwrite("  ",1,2,stderr);
-    fprintf(stderr,"%s - %lu - '%.*s'\n",name,tokens[i].size,tokens[i].size,tokens[i].start);
+    fprintf(stderr,"%s - %lu - '%.*s'\n",name,tokens[i].size,(int)tokens[i].size,tokens[i].start);
     if (tokens[i].name == tBlockStart)
       lvl++;
   }
@@ -312,6 +293,23 @@ tokenize(const char *src, const size_t size, token **tokens, size_t *tokensl) //
     if (src[i] == ';')
       token_found(tChainLink,1);
 
+    if (i && isspace(src[i-1])) {
+      if (i+1 < size && src[i] == '&' && isspace(src[i+1])) {
+        i--;
+        token_found(tConditionAnd,3);
+      }
+      if (i+2 < size && isspace(src[i+2])) {
+        if (src[i] == '&' && src[i+1] == '&') {
+          i--;
+          token_found(tConditionAndBlank,4);
+        }
+        if (src[i] == '|' && src[i+1] == '|') {
+          i--;
+          token_found(tConditionOr,4);
+        }
+      }
+    }
+
     if ((i == 0 || isspace(src[i-1])) && (src[i] == '/' || src[i] == '|')) {
       size_t s = 1;
       enum tokenName n = tNodeFormat;
@@ -369,7 +367,7 @@ add_chainlink(flexarr *exprs, reliq_expr *cl, const uchar noerr) //exprs: reliq_
   }
 
   if (cl->e == NULL) {
-    cl->flags |= EXPR_NPATTERN;
+    EXPR_TYPE_SET(cl->flags,EXPR_NPATTERN);
     cl->e = malloc(sizeof(reliq_npattern));
     assert(reliq_ncomp(NULL,0,cl->e) == NULL);
   }
@@ -398,7 +396,7 @@ from_token_comp(const token *tokens, size_t *pos, const size_t tokensl, const ui
   memset(current,0,sizeof(reliq_expr));
 
   current->e = flexarr_init(sizeof(reliq_expr),PATTERN_SIZE_INC);
-  current->flags = EXPR_CHAIN;
+  EXPR_TYPE_SET(current->flags,EXPR_CHAIN);
 
   reliq_expr expr = (reliq_expr){0};
   uchar first_in_node=1,expr_has_nformat=0,expr_has_eformat=0,lasttext_nonempty=0;
@@ -413,7 +411,7 @@ from_token_comp(const token *tokens, size_t *pos, const size_t tokensl, const ui
           goto_script_seterr_p(END,"block: %lu: unexpected text before opening of the block",i);
       }
       i++;
-      expr.flags |= EXPR_BLOCK;
+      EXPR_TYPE_SET(expr.flags,EXPR_BLOCK);
       expr.e = from_token_comp(tokens,&i,tokensl,lvl+1,&expr.childfields,&expr.childformats,err);
       if (*err)
         goto END;
@@ -427,6 +425,11 @@ from_token_comp(const token *tokens, size_t *pos, const size_t tokensl, const ui
       current->childfields += expr.childfields;
       *childformats += expr.childformats;
       current->childformats += expr.childformats;
+
+      if (current->childfields && current->flags&EXPR_CONDITION_EXPR) {
+        FIELD_IN_CONDITION: ;
+        goto_script_seterr_p(END,"conditional: fields cannot be inside conditional expression");
+      }
       continue;
     } else if (name == tBlockEnd) {
       if (!lvl) {
@@ -452,7 +455,7 @@ from_token_comp(const token *tokens, size_t *pos, const size_t tokensl, const ui
           if (i+2 < tokensl && tokens[i+2].name == tChainLink)
             goto FORMAT_IN_CHAIN;
 
-         lasttext_nonempty = 1;
+          lasttext_nonempty = 1;
           size_t g=0;
           void *format = &expr.nodef;
           size_t *formatl = &expr.nodefl;
@@ -472,8 +475,8 @@ from_token_comp(const token *tokens, size_t *pos, const size_t tokensl, const ui
         }
       }
 
-      if (expr.flags&EXPR_BLOCK && name == tNodeFormat)
-        expr.flags |= EXPR_SINGULAR;
+      if (EXPR_TYPE_IS(expr.flags,EXPR_BLOCK) && name == tNodeFormat)
+        EXPR_TYPE_SET(expr.flags,EXPR_SINGULAR);
 
       if (name == tExprFormat || expr.nodefl) {
         if (expr.childfields)
@@ -488,24 +491,34 @@ from_token_comp(const token *tokens, size_t *pos, const size_t tokensl, const ui
       size_t len = tokens[i].size;
       if (first_in_node && tokens[i].start[0] == '.') {
         size_t g=0;
-        if ((*err = reliq_output_field_comp(start,&g,len,&expr.outfield)))
+        if ((*err = reliq_output_field_comp(start,&g,len,&current->outfield))) //&current->outfield
           goto END;
-        if (expr.outfield.name.b) {
+        if (current->outfield.name.b) {
+          /*if the above condition is removed protected fields fill work as normal fields
+            i.e. '{ .li }; li' will be impossible but '{ . li } / line [1]' will also be,
+            and it will break it's functionality*/
           (*childfields)++;
           current->childfields++;
         }
+
+        if (current->flags&EXPR_CONDITION_EXPR)
+          goto FIELD_IN_CONDITION;
+
         while_is(isspace,start,g,len);
         start += g;
         len -= g;
 
-        if (!len)
+        if (!len) {
+          if (i+1 >= tokensl || tokens[i+1].name == tNextNode || tokens[i+1].name == tBlockEnd)
+            goto_script_seterr_p(END,"field: %lu: empty expression",i);
           continue;
+        }
       }
 
       if (i+1 < tokensl && tokens[i+1].name == tBlockStart)
         goto_script_seterr_p(END,"block: %lu: unexpected text before opening of the block",i);
       lasttext_nonempty = 1;
-      expr.flags |= EXPR_NPATTERN;
+      EXPR_TYPE_SET(expr.flags,EXPR_NPATTERN);
 
       expr.e = malloc(sizeof(reliq_npattern));
       if ((*err = reliq_ncomp(start,len,(reliq_npattern*)expr.e))) {
@@ -530,8 +543,52 @@ from_token_comp(const token *tokens, size_t *pos, const size_t tokensl, const ui
         current = (reliq_expr*)flexarr_inc(ret);
         memset(current,0,sizeof(reliq_expr));
         current->e = flexarr_init(sizeof(reliq_expr),PATTERN_SIZE_INC);
-        current->flags = EXPR_CHAIN;
+        EXPR_TYPE_SET(current->flags,EXPR_CHAIN);
       }
+    } else if (name == tConditionOr || name == tConditionAnd || name == tConditionAndBlank) {
+      lasttext_nonempty = 0;
+      first_in_node = 1;
+      expr_has_nformat=0;
+      expr_has_eformat=0;
+      if ((*err = add_chainlink(current->e,&expr,0)))
+        goto END;
+
+      if (((flexarr*)current->e)->size == 0)
+        goto_script_seterr_p(END,"conditional: expected expression before %.*s",(int)tokens[i].size-1,tokens[i].start+1);
+      if (i+1 >= tokensl || tokens[i+1].name == tNextNode
+        || tokens[i+1].name == tConditionOr || tokens[i+1].name == tConditionAnd
+        || tokens[i+1].name == tConditionAndBlank || tokens[i+1].name == tChainLink)
+        goto_script_seterr_p(END,"conditional: expected expression after %.*s",(int)tokens[i].size-1,tokens[i].start+1);
+
+      if (name == tConditionOr) {
+        current->flags |= EXPR_OR;
+      } else if (name == tConditionAnd) {
+        current->flags |= EXPR_AND;
+      } else
+        current->flags |= EXPR_AND_BLANK;
+
+      reliq_expr *lastret = &((reliq_expr*)ret->v)[ret->size-1];
+      if (!EXPR_TYPE_IS(lastret->flags,EXPR_BLOCK_CONDITION)) {
+        reliq_output_field field = current->outfield;
+        if (current->childfields-(field.name.b != NULL))
+          goto FIELD_IN_CONDITION;
+
+        reliq_expr t = *current;
+        memset(&t.outfield,0,sizeof(reliq_output_field));
+
+        memset(current,0,sizeof(reliq_expr));
+        current->e = flexarr_init(sizeof(reliq_expr),PATTERN_SIZE_INC);
+        *(reliq_expr*)flexarr_inc(current->e) = t;
+
+        EXPR_TYPE_SET(current->flags,EXPR_BLOCK_CONDITION);
+        current->outfield = field;
+      }
+
+      current = (reliq_expr*)flexarr_inc(lastret->e);
+      memset(current,0,sizeof(reliq_expr));
+      current->e = flexarr_init(sizeof(reliq_expr),PATTERN_SIZE_INC);
+      EXPR_TYPE_SET(current->flags,EXPR_CHAIN);
+      current->flags |= EXPR_CONDITION_EXPR;
     }
   }
 
@@ -557,10 +614,9 @@ tokens_free(token *tokens, const size_t tokensl)
 }
 
 reliq_error *
-reliq_ecomp(const char *src, const size_t size, reliq_exprs *exprs)
+reliq_ecomp(const char *src, const size_t size, reliq_expr *expr)
 {
   reliq_error *err = NULL;
-  exprs->s = 0;
 
   token *tokens;
   size_t tokensl = 0;
@@ -571,17 +627,20 @@ reliq_ecomp(const char *src, const size_t size, reliq_exprs *exprs)
 
   uint16_t childfields=0,childformats=0;
   size_t pos=0;
-  flexarr *ret = from_token_comp(tokens,&pos,tokensl,0,&childfields,&childformats,&err);
+  flexarr *res = from_token_comp(tokens,&pos,tokensl,0,&childfields,&childformats,&err);
 
   tokens_free(tokens,tokensl);
 
-  if (ret) {
-    //reliq_exprs_print(ret,0);
+  if (res) {
+    //reliq_expr_print(res,0);
 
     if (err) {
-      reliq_exprs_free_pre(ret);
-    } else
-      flexarr_conv(ret,(void**)&exprs->b,&exprs->s);
+      reliq_expr_free_pre(res);
+    } else {
+      memset(expr,0,sizeof(reliq_expr));
+      EXPR_TYPE_SET(expr->flags,EXPR_BLOCK);
+      expr->e = res;
+    }
   }
   return err;
 }

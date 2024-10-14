@@ -23,6 +23,7 @@
 #include <string.h>
 #include <limits.h>
 #include <stdint.h>
+#include <assert.h>
 
 #include "ctype.h"
 #include "utils.h"
@@ -33,6 +34,20 @@
 #define NCOLLECTOR_INC (1<<8)
 #define FCOLLECTOR_INC (1<<5)
 
+typedef struct {
+  const reliq *rq;
+  const reliq_hnode *parent;
+  SINK *output;
+  flexarr *ncollector; //reliq_cstr
+  #ifdef RELIQ_EDITING
+  flexarr *fcollector; //struct fcollector_expr
+  #endif
+  flexarr **out; //reliq_compressed
+  uchar isempty;
+  uchar noncol;
+  uchar found;
+} exec_state;
+
 reliq_error *reliq_fmatch(const char *data, const size_t size, SINK *output, const reliq_npattern *nodep,
 #ifdef RELIQ_EDITING
   reliq_format_func *nodef,
@@ -41,12 +56,8 @@ reliq_error *reliq_fmatch(const char *data, const size_t size, SINK *output, con
 #endif
   size_t nodefl);
 
-static reliq_error *reliq_exec_pre(const reliq *rq, const reliq_hnode *parent, SINK *output, const reliq_expr *exprs, size_t exprsl, const flexarr *source, flexarr *dest, flexarr **out, const uint16_t childfields, uchar isempty, uchar noncol, flexarr *ncollector
-    #ifdef RELIQ_EDITING
-    , flexarr *fcollector //struct fcollector_expr
-    #endif
-    ); //source: reliq_compressed, dest: reliq_compressed, out: reliq_compressed, ncollector: reliq_cstr
-reliq_error *reliq_exec_r(reliq *rq, const reliq_hnode *parent, SINK *output, reliq_compressed **outnodes, size_t *outnodesl, const reliq_exprs *exprs);
+static reliq_error *exec_chain(const reliq_expr *expr, const flexarr *source, flexarr *dest, exec_state *st); //source: reliq_compressed, dest: reliq_compressed
+reliq_error *reliq_exec_r(reliq *rq, const reliq_hnode *parent, SINK *output, reliq_compressed **outnodes, size_t *outnodesl, const reliq_expr *expr);
 
 static inline void
 add_compressed_blank(flexarr *dest, const enum outfieldCode val1, const void *val2) //dest: reliq_compressed
@@ -57,19 +68,26 @@ add_compressed_blank(flexarr *dest, const enum outfieldCode val1, const void *va
 }
 
 reliq_error *
-exprs_check_chain(const reliq_exprs *exprs, const uchar noaccesshooks)
+expr_check_chain(const reliq_expr *expr, const uchar noaccesshooks)
 {
-  if (!exprs->s)
+  if (!EXPR_TYPE_IS(expr->flags,EXPR_BLOCK))
     return NULL;
-  if (exprs->s > 1)
+  flexarr *v = expr->e;
+  if (!v->size)
+    return NULL;
+  if (v->size > 1)
     goto ERR;
 
-  flexarr *chain = exprs->b[0].e; //reliq_expr
+  reliq_expr *e = &((reliq_expr*)v->v)[0];
+  if (!EXPR_TYPE_IS(e->flags,EXPR_CHAIN))
+    goto ERR;
+
+  flexarr *chain = e->e; //reliq_expr
   reliq_expr *chainv = (reliq_expr*)chain->v;
 
   const size_t size = chain->size;
   for (size_t i = 0; i < size; i++) {
-    if (chainv[i].flags&EXPR_TABLE)
+    if (EXPR_IS_TABLE(chainv[i].flags))
       goto ERR;
     if (noaccesshooks && (((reliq_npattern*)chainv[i].e)->flags&N_MATCHED_TYPE) > 1)
       return script_err("illegal use of access hooks in fast mode",((reliq_npattern*)chainv[i].e)->flags&N_MATCHED_TYPE);
@@ -93,15 +111,15 @@ ncollector_check(flexarr *ncollector, size_t correctsize) //ncollector: reliq_cs
 }*/
 
 static void
-ncollector_add(flexarr *ncollector, flexarr *dest, flexarr *source, size_t startn, size_t lastn, const reliq_expr *lastnode, uchar flags, uchar useformat, uchar isempty, uchar non) //ncollector: reliq_cstr, dest: reliq_compressed, source: reliq_compressed
+ncollector_add(flexarr *ncollector, flexarr *dest, flexarr *source, size_t startn, size_t lastn, const reliq_expr *lastnode, uchar flags, uchar useformat, uchar isempty, uchar noncollector) //ncollector: reliq_cstr, dest: reliq_compressed, source: reliq_compressed
 {
   if (!source->size && !isempty)
     return;
   size_t prevsize = dest->size;
   flexarr_add(dest,source);
-  if (non || (useformat && !lastnode))
+  if (noncollector || (useformat && !lastnode))
     goto END;
-  if (flags&EXPR_TABLE && !isempty) {
+  if (EXPR_IS_TABLE(flags) && !isempty) {
     if (startn != lastn) { //truncate previously added, now useless ncollector
       const size_t size = ncollector->size;
       for (size_t i = lastn; i < size; i++)
@@ -130,19 +148,145 @@ fcollector_add(const size_t lastn, const uchar isnodef, const reliq_expr *expr, 
 }
 #endif
 
-static reliq_error *
-reliq_exec_table(const reliq *rq, const reliq_hnode *parent, SINK *output, const reliq_expr *expr, const reliq_output_field *named, const flexarr *source, flexarr *dest, flexarr **out, uchar isempty, uchar noncol, flexarr *ncollector
+/*static reliq_error *
+exec_chainlink(const reliq *rq, const reliq_hnode *parent, SINK *output, const reliq_expr *expr, const flexarr *source, flexarr *dest, flexarr **out, uchar noncol, uchar isempty, flexarr *ncollector
     #ifdef RELIQ_EDITING
     , flexarr *fcollector //struct fcollector_expr
     #endif
-    ) //source: reliq_compressed, dest: reliq_compressed, out: reliq_compressed, ncollector: reliq_cstr
+    )   //source: reliq_compressed, dest: reliq_compressed, out: reliq_compressed, ncollector: reliq_cstr
+{
+  if (current->e) {
+    lastnode = current;
+    reliq_npattern *nodep = (reliq_npattern*)current->e;
+    if (outnamed)
+      add_compressed_blank(buf[1],ofNamed,outnamed);
+
+    if (!isempty)
+      node_exec(rq,parent,nodep,src,buf[1]);
+
+    if (outnamed)
+      add_compressed_blank(buf[1],ofBlockEnd,NULL);
+
+    if (!noncol && outprotected && buf[1]->size == 0) {
+      add_compressed_blank(buf[1],ofUnnamed,NULL);
+      ncollector_add(ncollector,buf[2],buf[1],startn,lastn,NULL,current->flags,0,0,noncol);
+      break;
+    }
+  }
+}*/
+
+static reliq_error *
+exec_block_conditional(const reliq_expr *expr, const flexarr *source, flexarr *dest, exec_state *st) //source: reliq_compressed, dest: reliq_compressed
+{
+  flexarr *expr_e = (flexarr*)expr->e;
+  const reliq_expr *exprs = expr_e->v;
+  const size_t exprsl = expr_e->size;
+  reliq_error *err = NULL;
+
+  if (expr->outfield.name.b)
+    add_compressed_blank(dest,expr->childfields ? ofBlock : ofNoFieldsBlock,&expr->outfield);
+
+  flexarr *desttemp = flexarr_init(sizeof(reliq_compressed),PASSED_INC);
+
+  size_t startn = st->ncollector->size;
+  size_t lastn = st->ncollector->size;
+  size_t prevfcolsize = st->fcollector->size;
+
+  reliq_expr const *lastnode = NULL;
+
+  for (size_t i = 0; i < exprsl; i++) {
+    reliq_expr const *current = &exprs[i];
+    assert(EXPR_TYPE_IS(current->flags,EXPR_CHAIN));
+
+    if ((err = exec_chain(current,source,desttemp,st)))
+      goto END;
+
+    if (!st->found)
+      st->fcollector->size = prevfcolsize;
+
+    if (current->flags&(EXPR_AND|EXPR_AND_BLANK) && !st->found)
+      break;
+
+    if ((current->flags&EXPR_AND_BLANK && st->found) || (current->flags&EXPR_OR && !st->found)) {
+      desttemp->size = 0;
+      st->ncollector->size = lastn;
+      st->fcollector->size = prevfcolsize;
+      continue;
+    }
+
+    if (current->flags&EXPR_OR && st->found)
+      break;
+  }
+
+  ncollector_add(st->ncollector,dest,desttemp,startn,lastn,lastnode,expr->flags,1,st->isempty,st->noncol);
+
+  END: ;
+  if (expr->outfield.name.b)
+    add_compressed_blank(dest,ofBlockEnd,NULL);
+
+  flexarr_free(desttemp);
+  return err;
+}
+
+static reliq_error *
+exec_block(const reliq_expr *expr, const flexarr *source, flexarr *dest, exec_state *st) //source: reliq_compressed, dest: reliq_compressed
+{
+  flexarr *expr_e = (flexarr*)expr->e;
+  const reliq_expr *exprs = expr_e->v;
+  const size_t exprsl = expr_e->size;
+  reliq_error *err = NULL;
+
+  flexarr *desttemp = flexarr_init(sizeof(reliq_compressed),PASSED_INC);
+  flexarr *destfinal = dest ? dest : flexarr_init(sizeof(reliq_compressed),PASSED_INC);
+
+  size_t startn = st->ncollector->size;
+  size_t lastn;
+
+  reliq_expr const *lastnode = NULL;
+
+  for (size_t i = 0; i < exprsl; i++) {
+    reliq_expr const *current = &exprs[i];
+    lastn = st->ncollector->size;
+
+    if (EXPR_TYPE_IS(current->flags,EXPR_CHAIN)) {
+      if ((err = exec_chain(current,source,desttemp,st)))
+        goto END;
+    } else {
+      assert(EXPR_TYPE_IS(current->flags,EXPR_BLOCK_CONDITION));
+
+      if ((err = exec_block_conditional(current,source,desttemp,st)))
+        goto END;
+    }
+
+    ncollector_add(st->ncollector,destfinal,desttemp,startn,lastn,lastnode,current->flags,1,st->isempty,st->noncol);
+  }
+
+  if (!dest) {
+    if (st->output) {
+      if ((err = nodes_output(st->rq,st->output,destfinal,st->ncollector
+          #ifdef RELIQ_EDITING
+          ,st->fcollector
+          #endif
+          )))
+        goto END;
+      flexarr_free(destfinal);
+    } else
+      *st->out = destfinal;
+  }
+
+  END: ;
+  flexarr_free(desttemp);
+  if (err)
+    flexarr_free(destfinal);
+  return err;
+}
+
+static reliq_error *
+exec_table(const reliq_expr *expr, const reliq_output_field *named, const flexarr *source, flexarr *dest, exec_state *st) //source: reliq_compressed, dest: reliq_compressed, out: reliq_compressed, ncollector: reliq_cstr
 {
   reliq_error *err = NULL;
-  flexarr *exprs = (flexarr*)expr->e; //reliq_expr
-  reliq_expr *exprsv = (reliq_expr*)exprs->v;
-  const size_t exprsl = exprs->size;
 
-  if (expr->flags&EXPR_SINGULAR) {
+  if (EXPR_TYPE_IS(expr->flags,EXPR_SINGULAR)) {
     if (named)
       add_compressed_blank(dest,expr->childfields ? ofArray : ofNoFieldsBlock,named);
     if (!source->size)
@@ -158,21 +302,17 @@ reliq_exec_table(const reliq *rq, const reliq_hnode *parent, SINK *output, const
       if ((void*)inv->hnode < (void*)10)
         continue;
       #ifdef RELIQ_EDITING
-      size_t lastn = ncollector->size;
+      size_t lastn = st->ncollector->size;
       #endif
       if (named && expr->childfields)
         add_compressed_blank(dest,ofBlock,NULL);
-      if ((err = reliq_exec_pre(rq,parent,output,exprsv,exprsl,in,dest,out,0,isempty,noncol,ncollector
-        #ifdef RELIQ_EDITING
-        ,fcollector
-        #endif
-        )))
+      if ((err = exec_block(expr,in,dest,st)))
         break;
       if (named && expr->childfields)
         add_compressed_blank(dest,ofBlockEnd,NULL);
       #ifdef RELIQ_EDITING
-      if (!noncol && ncollector->size-lastn && expr->nodefl)
-        fcollector_add(lastn,ofNamed,expr,ncollector,fcollector);
+      if (!st->noncol && st->ncollector->size-lastn && expr->nodefl)
+        fcollector_add(lastn,ofNamed,expr,st->ncollector,st->fcollector);
       #endif
     }
 
@@ -183,11 +323,7 @@ reliq_exec_table(const reliq *rq, const reliq_hnode *parent, SINK *output, const
   if (named)
     add_compressed_blank(dest,expr->childfields ? ofBlock : ofNoFieldsBlock,named);
 
-  err = reliq_exec_pre(rq,parent,output,exprsv,exprsl,source,dest,out,expr->childfields,noncol,isempty,ncollector
-    #ifdef RELIQ_EDITING
-    ,fcollector
-    #endif
-    );
+  err = exec_block(expr,source,dest,st);
 
   END: ;
   if (named)
@@ -196,134 +332,120 @@ reliq_exec_table(const reliq *rq, const reliq_hnode *parent, SINK *output, const
 }
 
 static reliq_error *
-reliq_exec_pre(const reliq *rq, const reliq_hnode *parent, SINK *output, const reliq_expr *exprs, size_t exprsl, const flexarr *source, flexarr *dest, flexarr **out, const uint16_t childfields, uchar noncol, uchar isempty, flexarr *ncollector
-    #ifdef RELIQ_EDITING
-    , flexarr *fcollector //struct fcollector_expr
-    #endif
-    )   //source: reliq_compressed, dest: reliq_compressed, out: reliq_compressed, ncollector: reliq_cstr
+exec_chain(const reliq_expr *expr, const flexarr *source, flexarr *dest, exec_state *st) //source: reliq_compressed, dest: reliq_compressed
 {
-  flexarr *buf[3];
-  reliq_error *err;
+  flexarr *expr_e = (flexarr*)expr->e;
+  const reliq_expr *exprs = expr_e->v;
+  const size_t exprsl = expr_e->size;
+  if (exprsl == 0)
+    return NULL;
+  reliq_error *err = NULL;
+  flexarr *srctemp = NULL;
+  uchar src_alloc = (exprsl > 1 || !source);
+  if (src_alloc)
+    srctemp = flexarr_init(sizeof(reliq_compressed),PASSED_INC);
+  flexarr *desttemp = flexarr_init(sizeof(reliq_compressed),PASSED_INC);
 
-  buf[0] = flexarr_init(sizeof(reliq_compressed),PASSED_INC);
-  buf[1] = flexarr_init(sizeof(reliq_compressed),PASSED_INC);
-  buf[2] = dest ? dest : flexarr_init(sizeof(reliq_compressed),PASSED_INC);
-  flexarr *buf_unchanged[2];
-  buf_unchanged[0] = buf[0];
-  buf_unchanged[1] = buf[1];
-
-  size_t startn = ncollector->size;
+  size_t startn = st->ncollector->size;
   size_t lastn = startn;
-
   reliq_expr const *lastnode = NULL;
+  uchar fieldprotected=0,copied_state=0;
+  reliq_output_field const *fieldnamed = NULL;
+  if (expr->outfield.isset) {
+    if (expr->outfield.name.b) {
+      fieldnamed = &expr->outfield;
+    } else
+      fieldprotected = 1;
+  }
 
-  uchar outprotected = 0;
-  reliq_output_field const *outnamed = NULL;
-  uchar samesource = 1;
+  const flexarr *src = source ? source : srctemp;
+  st->found = 1;
 
   for (size_t i = 0; i < exprsl; i++) {
-    if (exprs[i].outfield.isset) {
-      if (exprs[i].outfield.name.b) {
-        outnamed = &exprs[i].outfield;
-      } else
-        outprotected = 1;
-    }
+    reliq_expr const *current = &exprs[i];
 
-    const flexarr *src = buf[0];
-    if (samesource && source)
-      src = source;
+    if (EXPR_IS_TABLE(current->flags)) {
+      lastn = st->ncollector->size;
+      size_t prevsize = desttemp->size;
+      uchar prev_noncol = st->noncol;
 
+      if (i != exprsl-1)
+        st->noncol |= 1;
 
-    if (exprs[i].flags&EXPR_TABLE) {
-      lastn = ncollector->size;
-      size_t prevsize = buf[1]->size;
-      uchar noncol_r = noncol;
+      if ((err = exec_table(current,fieldnamed,src,desttemp,st)))
+        goto END;
 
-      if (i != exprsl-1 && !(exprs[i].flags&EXPR_TABLE && !(exprs[i].flags&EXPR_BLOCK)))
-        noncol_r |= 1;
+      if (desttemp->size-prevsize <= 2) {
+        st->found = 0;
 
-      if ((err = reliq_exec_table(rq,parent,output,&exprs[i],outnamed,src,buf[1],out,noncol_r,isempty,ncollector
-        #ifdef RELIQ_EDITING
-        ,fcollector
-        #endif
-        )))
-        goto ERR;
+        if (!st->noncol && fieldnamed) {
+          ncollector_add(st->ncollector,dest,desttemp,startn,lastn,NULL,current->flags,0,1,0);
+          break;
+        }
+      }
+      st->noncol = prev_noncol;
 
-      if (!noncol_r && outnamed && buf[1]->size-prevsize <= 2) {
-        //isempty = 1;
-        ncollector_add(ncollector,buf[2],buf[1],startn,lastn,NULL,exprs[i].flags,0,1,noncol);
+      #ifdef RELIQ_EDITING
+      if (!st->noncol && (EXPR_TYPE_IS(current->flags,EXPR_BLOCK) ||
+        EXPR_TYPE_IS(current->flags,EXPR_SINGULAR) ||
+        EXPR_TYPE_IS(current->flags,EXPR_BLOCK_CONDITION)) && current->exprfl)
+        fcollector_add(lastn,0,&exprs[i],st->ncollector,st->fcollector);
+      #endif
+    } else if (current->e) {
+      lastnode = current;
+      reliq_npattern *nodep = (reliq_npattern*)current->e;
+      if (fieldnamed)
+        add_compressed_blank(desttemp,ofNamed,fieldnamed);
+
+      if (!st->isempty) {
+        size_t prevsize = desttemp->size;
+        node_exec(st->rq,st->parent,nodep,src,desttemp);
+        if (desttemp->size-prevsize == 0)
+          st->found = 0;
+      }
+
+      if (fieldnamed)
+        add_compressed_blank(desttemp,ofBlockEnd,NULL);
+
+      if (!st->noncol && fieldprotected && desttemp->size == 0) {
+        add_compressed_blank(desttemp,ofUnnamed,NULL);
+        ncollector_add(st->ncollector,dest,desttemp,startn,lastn,NULL,current->flags,0,0,st->noncol);
         break;
       }
-    } else if (exprs[i].e) {
-      lastnode = &exprs[i];
-      reliq_npattern *nodep = (reliq_npattern*)exprs[i].e;
-      if (outnamed)
-        add_compressed_blank(buf[1],ofNamed,outnamed);
-
-      if (!isempty)
-        node_exec(rq,parent,nodep,src,buf[1]);
-
-      if (outnamed)
-        add_compressed_blank(buf[1],ofBlockEnd,NULL);
-
-      if (!noncol && outprotected && buf[1]->size == 0) {
-        add_compressed_blank(buf[1],ofUnnamed,NULL);
-        ncollector_add(ncollector,buf[2],buf[1],startn,lastn,NULL,exprs[i].flags,0,0,noncol);
-        break;
-      }
     }
 
-    #ifdef RELIQ_EDITING
-    if (!noncol && exprs[i].flags&EXPR_BLOCK && exprs[i].exprfl)
-      fcollector_add(lastn,0,&exprs[i],ncollector,fcollector);
-    #endif
-
-    if ((exprs[i].flags&EXPR_TABLE &&
-      !(exprs[i].flags&EXPR_BLOCK)) || i == exprsl-1) {
-      ncollector_add(ncollector,buf[2],buf[1],startn,lastn,lastnode,exprs[i].flags&EXPR_TABLE,1,isempty,noncol);
+    if (i == exprsl-1) {
+      ncollector_add(st->ncollector,dest,desttemp,startn,lastn,lastnode,current->flags,1,st->isempty,st->noncol);
       continue;
     }
-    if (!buf[1]->size) {
-      isempty = 1;
-      if (!childfields)
+    if (!desttemp->size) {
+      if (!copied_state) {
+        copied_state = 1;
+        st = memcpy(alloca(sizeof(exec_state)),st,sizeof(exec_state));
+      }
+      st->isempty = 1;
+      if (!expr->childfields)
         break;
     }
 
-    samesource = 0;
-    buf[0]->size = 0;
-    flexarr *tmp = buf[0];
-    buf[0] = buf[1];
-    buf[1] = tmp;
+    srctemp->size = 0;
+    flexarr *tmp = srctemp;
+    srctemp = desttemp;
+    desttemp = tmp;
+    src = srctemp;
   }
 
-  if (!dest) {
-    if (output) {
-      if ((err = nodes_output(rq,output,buf[2],ncollector
-          #ifdef RELIQ_EDITING
-          ,fcollector
-          #endif
-          )))
-        goto ERR;
-      flexarr_free(buf[2]);
-    } else
-      *out = buf[2];
-  }
-
-  flexarr_free(buf_unchanged[0]);
-  flexarr_free(buf_unchanged[1]);
-  return NULL;
-
-  ERR: ;
-  flexarr_free(buf_unchanged[0]);
-  flexarr_free(buf_unchanged[1]);
-  flexarr_free(buf[2]);
+  END: ;
+  if (src_alloc)
+    flexarr_free(srctemp);
+  flexarr_free(desttemp);
   return err;
 }
 
 reliq_error *
-reliq_exec_r(reliq *rq, const reliq_hnode *parent, SINK *output, reliq_compressed **outnodes, size_t *outnodesl, const reliq_exprs *exprs)
+reliq_exec_r(reliq *rq, const reliq_hnode *parent, SINK *output, reliq_compressed **outnodes, size_t *outnodesl, const reliq_expr *expr)
 {
-  if (!exprs)
+  if (!expr)
     return NULL;
   flexarr *compressed=NULL;
   reliq_error *err;
@@ -333,11 +455,18 @@ reliq_exec_r(reliq *rq, const reliq_hnode *parent, SINK *output, reliq_compresse
   flexarr *fcollector = flexarr_init(sizeof(struct fcollector_expr),FCOLLECTOR_INC);
   #endif
 
-  err = reliq_exec_pre(rq,parent,output,exprs->b,exprs->s,NULL,NULL,&compressed,0,0,0,ncollector
-      #ifdef RELIQ_EDITING
-      ,fcollector
-      #endif
-      );
+  exec_state state = {
+    .rq = rq,
+    .parent = parent,
+    .output = output,
+    .ncollector = ncollector,
+    #ifdef RELIQ_EDITING
+    .fcollector = fcollector,
+    #endif
+    .out = &compressed,
+  };
+
+  err = exec_block(expr,NULL,NULL,&state);
 
   if (compressed && !err && !output) {
     *outnodesl = compressed->size;
@@ -355,48 +484,48 @@ reliq_exec_r(reliq *rq, const reliq_hnode *parent, SINK *output, reliq_compresse
 }
 
 reliq_error *
-reliq_exec(reliq *rq, reliq_compressed **nodes, size_t *nodesl, const reliq_exprs *exprs)
+reliq_exec(reliq *rq, reliq_compressed **nodes, size_t *nodesl, const reliq_expr *expr)
 {
-  return reliq_exec_r(rq,NULL,NULL,nodes,nodesl,exprs);
+  return reliq_exec_r(rq,NULL,NULL,nodes,nodesl,expr);
 }
 
 reliq_error *
-reliq_exec_file(reliq *rq, FILE *output, const reliq_exprs *exprs)
+reliq_exec_file(reliq *rq, FILE *output, const reliq_expr *expr)
 {
-  if (!exprs)
+  if (!expr)
     return NULL;
   SINK *out = sink_from_file(output);
-  reliq_error *err = reliq_exec_r(rq,NULL,out,NULL,NULL,exprs);
+  reliq_error *err = reliq_exec_r(rq,NULL,out,NULL,NULL,expr);
   sink_close(out);
   return err;
 }
 
 reliq_error *
-reliq_exec_str(reliq *rq, char **str, size_t *strl, const reliq_exprs *exprs)
+reliq_exec_str(reliq *rq, char **str, size_t *strl, const reliq_expr *expr)
 {
-  if (!exprs)
+  if (!expr)
     return NULL;
   SINK *output = sink_open(str,strl);
-  reliq_error *err = reliq_exec_r(rq,NULL,output,NULL,NULL,exprs);
+  reliq_error *err = reliq_exec_r(rq,NULL,output,NULL,NULL,expr);
   sink_close(output);
   return err;
 }
 
 static reliq_error *
-reliq_fexec_sink(char *data, size_t size, SINK *output, const reliq_exprs *exprs, int (*freedata)(void *addr, size_t len))
+reliq_fexec_sink(char *data, size_t size, SINK *output, const reliq_expr *expr, int (*freedata)(void *addr, size_t len))
 {
   reliq_error *err = NULL;
   uchar was_unallocated = 0;
   SINK *destination = output;
-  if (!exprs || exprs->s == 0)
+  if (!expr || !EXPR_TYPE_IS(expr->flags,EXPR_BLOCK))
     goto END;
-  if ((err = exprs_check_chain(exprs,1)))
+  if ((err = expr_check_chain(expr,1)))
     goto END;
 
   char *ptr=data,*nptr;
   size_t fsize;
 
-  flexarr *chain = (flexarr*)exprs->b[0].e; //reliq_expr
+  flexarr *chain = ((reliq_expr*)((flexarr*)expr->e)->v)[0].e;
   reliq_expr *chainv = (reliq_expr*)chain->v;
   SINK *out;
 
@@ -433,16 +562,16 @@ reliq_fexec_sink(char *data, size_t size, SINK *output, const reliq_exprs *exprs
 }
 
 reliq_error *
-reliq_fexec_file(char *data, size_t size, FILE *output, const reliq_exprs *exprs, int (*freedata)(void *addr, size_t len))
+reliq_fexec_file(char *data, size_t size, FILE *output, const reliq_expr *expr, int (*freedata)(void *addr, size_t len))
 {
-  return reliq_fexec_sink(data,size,sink_from_file(output),exprs,freedata);
+  return reliq_fexec_sink(data,size,sink_from_file(output),expr,freedata);
 }
 
 reliq_error *
-reliq_fexec_str(char *data, const size_t size, char **str, size_t *strl, const reliq_exprs *exprs, int (*freedata)(void *data, size_t len))
+reliq_fexec_str(char *data, const size_t size, char **str, size_t *strl, const reliq_expr *expr, int (*freedata)(void *data, size_t len))
 {
-  if (!exprs)
+  if (!expr)
     return NULL;
   SINK *output = sink_open(str,strl);
-  return reliq_fexec_sink(data,size,output,exprs,freedata);
+  return reliq_fexec_sink(data,size,output,expr,freedata);
 }

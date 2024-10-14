@@ -42,7 +42,7 @@
 typedef unsigned char uchar;
 
 char *argv0;
-reliq_exprs exprs = {0};
+reliq_expr expr = {0};
 
 unsigned int settings = 0; //F_
 int nftwflags = FTW_PHYS;
@@ -142,7 +142,7 @@ expr_exec(char *f, size_t s, const uchar inpipe)
   #endif
 
   if (settings&F_FAST) {
-    err = reliq_fexec_file(f,s,outfile,&exprs,freedata);
+    err = reliq_fexec_file(f,s,outfile,&expr,freedata);
     if (err)
       goto ERR;
     return;
@@ -151,13 +151,13 @@ expr_exec(char *f, size_t s, const uchar inpipe)
   reliq rq;
   if ((err = reliq_init(f,s,freedata,&rq)))
     goto ERR;
-  err = reliq_exec_file(&rq,outfile,&exprs);
+  err = reliq_exec_file(&rq,outfile,&expr);
 
   reliq_free(&rq);
   ERR: ;
 
   if (err) {
-    reliq_efree(&exprs);
+    reliq_efree(&expr);
     handle_reliq_error(err);
   }
 }
@@ -248,7 +248,7 @@ load_expr_from_file(char *filename)
   size_t filel;
   pipe_to_str(fd,&file,&filel);
   close(fd);
-  reliq_error *err = reliq_ecomp(file,filel,&exprs);
+  reliq_error *err = reliq_ecomp(file,filel,&expr);
   free(file);
   handle_reliq_error(err);
 }
@@ -282,7 +282,7 @@ main(int argc, char **argv)
   while ((opt = getopt(argc,argv,"lo:e:f:HrRFvh")) != -1) {
     switch (opt) {
       case 'l':
-        handle_reliq_error(reliq_ecomp("| \"%n%Ua - desc(%c) lvl(%L) size(%s) pos(%I)\\n\"",47,&exprs));
+        handle_reliq_error(reliq_ecomp("| \"%n%Ua - desc(%c) lvl(%L) size(%s) pos(%I)\\n\"",47,&expr));
         break;
       case 'o':
         outfile = fopen(optarg,"wb");
@@ -307,12 +307,12 @@ main(int argc, char **argv)
     }
   }
 
-  if (!exprs.b && optind < argc) {
-    handle_reliq_error(reliq_ecomp(argv[optind],strlen(argv[optind]),&exprs));
+  if (!expr.e && optind < argc) {
+    handle_reliq_error(reliq_ecomp(argv[optind],strlen(argv[optind]),&expr));
     optind++;
   }
-  if (!exprs.b)
-      return -1;
+  if (!expr.e)
+    return -1;
   int g = optind;
   for (; g < argc; g++)
     file_handle(argv[g]);
@@ -321,7 +321,7 @@ main(int argc, char **argv)
 
   if (outfile != stdout)
     fclose(outfile);
-  reliq_efree(&exprs);
+  reliq_efree(&expr);
 
   return 0;
 }

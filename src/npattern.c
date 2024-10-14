@@ -80,6 +80,8 @@
 #define H_FLAG 0x400
 #define H_EMPTY 0x800
 
+reliq_error *reliq_exec_r(reliq *rq, const reliq_hnode *parent, SINK *output, reliq_compressed **outnodes, size_t *outnodesl, const reliq_expr *expr);
+
 struct match_hook {
   reliq_str8 name;
   uint16_t flags; //H_
@@ -156,7 +158,7 @@ reliq_free_hook(reliq_hook *hook)
   if (hook->flags&H_RANGE) {
     range_free(&hook->match.range);
   } if (hook->flags&H_EXPRS) {
-    reliq_efree(&hook->match.exprs);
+    reliq_efree(&hook->match.expr);
   } else if (hook->flags&H_PATTERN)
     reliq_regfree(&hook->match.pattern);
 }
@@ -313,7 +315,7 @@ match_hook(const reliq *rq, const reliq_hnode *hnode, const reliq_hnode *parent,
     r.nodesl = hnode->desc_count+1;
 
     size_t compressedl = 0;
-    reliq_error *err = reliq_exec_r(&r,hnode,NULL,NULL,&compressedl,&hook->match.exprs);
+    reliq_error *err = reliq_exec_r(&r,hnode,NULL,NULL,&compressedl,&hook->match.expr);
     if (err)
       free(err);
     if ((err || !compressedl)^invert)
@@ -479,12 +481,12 @@ match_hook_handle(const char *src, size_t *pos, const size_t size, reliq_hook *o
      size_t strl;
      if ((err = get_quoted(src,&p,size,' ',&str,&strl)) || !strl)
        goto ERR;
-     err = reliq_ecomp(str,strl,&hook.match.exprs);
+     err = reliq_ecomp(str,strl,&hook.match.expr);
      free(str);
      if (err)
        goto ERR;
-     if ((err = exprs_check_chain(&hook.match.exprs,0))) {
-       reliq_efree(&hook.match.exprs);
+     if ((err = expr_check_chain(&hook.match.expr,0))) {
+       reliq_efree(&hook.match.expr);
        goto ERR;
      }
   } else {

@@ -25,64 +25,27 @@
 
 //reliq_expr flags
 //.e = reliq_npattern
-#define EXPR_NPATTERN 0x1
+#define EXPR_NPATTERN 1
 
 //.e = flexarr*(reliq_expr)
-#define EXPR_BLOCK 0x2
-#define EXPR_CHAIN 0x4
-#define EXPR_SINGULAR 0x8
-#define EXPR_TABLE (EXPR_BLOCK|EXPR_CHAIN|EXPR_SINGULAR)
+#define EXPR_BLOCK 2
+#define EXPR_BLOCK_CONDITION 3
+#define EXPR_CHAIN 4
+#define EXPR_SINGULAR 5
+#define EXPR_TYPE 0x7
 
-typedef struct {
-  reliq_str name;
-  char type;
-  char arr_delim;
-  char arr_type;
-  unsigned char isset;
-} reliq_output_field;
+#define EXPR_TYPE_IS(x,y) (((x)&EXPR_TYPE) == (y))
+#define EXPR_IS_TABLE(x) (((x)&EXPR_TYPE) >= EXPR_BLOCK && ((x)&EXPR_TYPE) <= EXPR_SINGULAR)
+#define EXPR_TYPE_SET(x,y) (x = ((y)|((x)&(~EXPR_TYPE))))
 
-typedef struct {
-  reliq_output_field outfield;
-  void *e; //either points to flexarr*(reliq_expr) or reliq_npattern
-  #ifdef RELIQ_EDITING
-  reliq_format_func *nodef; //node format
-  reliq_format_func *exprf; //expression format
-  #else
-  char *nodef;
-  #endif
-  size_t nodefl;
-  #ifdef RELIQ_EDITING
-  size_t exprfl;
-  #endif
-  uint16_t childfields;
-  uint16_t childformats;
-  uint8_t flags; //EXPR_
-} reliq_expr;
+#define EXPR_CONDITION_EXPR 0x8
+#define EXPR_AND 0x10
+#define EXPR_AND_BLANK 0x20
+#define EXPR_OR 0x40
+#define EXPR_CONDITION (EXPR_CONDITION_EXPR|EXPR_AND|EXPR_AND_BLANK|EXPR_OR)
 
 #include "output.h"
 
-typedef struct {
-  reliq_hnode *hnode;
-  reliq_hnode *parent;
-} reliq_compressed;
-
-typedef struct {
-  reliq_expr *b;
-  size_t s;
-} reliq_exprs;
-
-reliq_error *reliq_ecomp(const char *script, const size_t size, reliq_exprs *exprs);
-
-reliq_error *reliq_fexec_file(char *data, const size_t size, FILE *output, const reliq_exprs *exprs, int (*freedata)(void *addr, size_t len));
-reliq_error *reliq_fexec_str(char *data, const size_t size, char **str, size_t *strl, const reliq_exprs *exprs, int (*freedata)(void *addr, size_t len));
-
-reliq_error *reliq_exec_file(reliq *rq, FILE *output, const reliq_exprs *exprs);
-reliq_error *reliq_exec_str(reliq *rq, char **str, size_t *strl, const reliq_exprs *exprs);
-reliq_error *reliq_exec(reliq *rq, reliq_compressed **nodes, size_t *nodesl, const reliq_exprs *exprs);
-
-reliq_error *exprs_check_chain(const reliq_exprs *exprs, const uchar noaccesshooks);
-reliq_error *reliq_exec_r(reliq *rq, const reliq_hnode *parent, SINK *output, reliq_compressed **outnodes, size_t *outnodesl, const reliq_exprs *exprs);
-
-void reliq_efree(reliq_exprs *exprs);
+reliq_error *expr_check_chain(const reliq_expr *expr, const uchar noaccesshooks);
 
 #endif

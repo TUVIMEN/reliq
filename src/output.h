@@ -22,7 +22,6 @@
 #include "types.h"
 #include "flexarr.h"
 #include "sink.h"
-#include "exprs.h"
 
 struct fcollector_expr {
   const reliq_expr *e;

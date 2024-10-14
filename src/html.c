@@ -31,6 +31,8 @@
 #define ATTRIB_INC (1<<4)
 #define NODES_INC (1<<13)
 
+void reliq_free_hnodes(reliq_hnode *nodes, const size_t nodesl);
+
 const reliq_str8 selfclosing_s[] = { //tags that don't end with </tag>
   {"br",2},{"hr",2},{"img",3},{"input",5},{"col",3},{"embed",5},
   {"area",4},{"base",4},{"link",4},{"meta",4},{"param",5},
