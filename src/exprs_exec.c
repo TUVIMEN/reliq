@@ -190,7 +190,9 @@ exec_block_conditional(const reliq_expr *expr, const flexarr *source, flexarr *d
 
   size_t startn = st->ncollector->size;
   size_t lastn = st->ncollector->size;
+  #ifdef RELIQ_EDITING
   size_t prevfcolsize = st->fcollector->size;
+  #endif
 
   reliq_expr const *lastnode = NULL;
 
@@ -201,8 +203,10 @@ exec_block_conditional(const reliq_expr *expr, const flexarr *source, flexarr *d
     if ((err = exec_chain(current,source,desttemp,st)))
       goto END;
 
+    #ifdef RELIQ_EDITING
     if (!st->found)
       st->fcollector->size = prevfcolsize;
+    #endif
 
     if (current->flags&(EXPR_AND|EXPR_AND_BLANK) && !st->found)
       break;
@@ -210,7 +214,9 @@ exec_block_conditional(const reliq_expr *expr, const flexarr *source, flexarr *d
     if ((current->flags&EXPR_AND_BLANK && st->found) || (current->flags&EXPR_OR && !st->found)) {
       desttemp->size = 0;
       st->ncollector->size = lastn;
+      #ifdef RELIQ_EDITING
       st->fcollector->size = prevfcolsize;
+      #endif
       continue;
     }
 
