@@ -16,6 +16,10 @@ reliq is a html parsing and searching tool.
 
     make linked
 
+### AUR
+
+    yay -S reliq
+
 ## Usage
 
 Get some help
