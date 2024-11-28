@@ -183,10 +183,12 @@ hnode_printf(SINK *outfile, const char *format, const size_t formatl, const reli
           if (!srcl)
             break;
           if (endinsides) {
-            if (srcl < 2)
+            if (srcl < 1)
               break;
             src++;
-            srcl -= 2;
+            srcl--;
+            if (srcl > 0 && src[srcl-1] == '>')
+              srcl--;
           }
 
           print_chars(src,srcl,printflags|(endinsides ? 0 : PC_UNTRIM),outfile);
