@@ -381,7 +381,8 @@ exec_chain(const reliq_expr *expr, const flexarr *source, flexarr *dest, exec_st
       if ((err = exec_table(current,fieldnamed,src,desttemp,st)))
         goto END;
 
-      if (desttemp->size-prevsize <= 2) {
+      if (desttemp->size-prevsize <= 2
+        && (desttemp->size == 0 || (void*)((reliq_compressed*)desttemp->v)[0].hnode < (void*)10)) {
         st->found = 0;
 
         if (!st->noncol && fieldnamed) {
