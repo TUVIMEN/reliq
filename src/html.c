@@ -106,11 +106,10 @@ attrib_handle(const char *f, size_t *pos, const size_t s, flexarr *attribs) //at
   reliq_cstr_pair *ac = (reliq_cstr_pair*)flexarr_inc(attribs);
   name_handle(f,&i,s,&ac->f);
   while_is(isspace,f,i,s);
-  if (unlikely(f[i] != '=')) {
-    ac->s.b = NULL;
-    ac->s.s = 0;
+  ac->s.b = NULL;
+  ac->s.s = 0;
+  if (unlikely(f[i] != '='))
     goto END;
-  }
   i++;
   while_is(isspace,f,i,s);
   if (unlikely(f[i] == '>')) {
