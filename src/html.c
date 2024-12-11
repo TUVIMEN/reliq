@@ -386,8 +386,8 @@ html_struct_handle(const char *f, size_t *pos, const size_t s, const uint16_t lv
       #endif
     } else if (!script) {
       if (f[i] == '!') {
-        i++;
         comment_handle(f,&i,s);
+        i--;
         continue;
       } else {
         #ifdef RELIQ_AUTOCLOSING
