@@ -641,6 +641,30 @@ Examples:
 
 Basic C style comments are implemented, although they have to be preceded by whitespace.
 
+.SS CONDITIONALS
+
+Are placed in between expressions and have to be surrounded by whitespace. They influence execution of the second expression based on success of the first.
+
+.nf
+\&
+.in +4m
+\fB&\fR - execute second expression if first succeedes
+\fB&&\fR - execute second expression if first succeedes and ignore output of the first
+\fB||\fR - execute second expression if first fails
+\fB^&\fR
+\fB^&&\fR
+\fB^||\fR
+.in
+\&
+
+Expression succeedes if anything inside of it matches html, e.g. \fB{ div, li | "" } && tr | "%i"\fR will print insides of \fBtr\fR tag if either div or \fBli\fR tags are found, even though li tag outputs nothing it will match because only matching html matters.
+
+If the described conditionals are preceded by '\fB^\fR' they will succeed only if everything matches, e.g. \fB{ div, li | "" } ^&& tr | "%i"\fR both \fBdiv\fR and \fBli\fR would have to match for \fBtr | "%li"\fR to happen.
+
+Output fields take precedence over conditionals so \fB.name a .user | "%i" / tr "\\n" || h1 | "%i"\fR is the same as \fB.name { a .user | "%i" / tr "\\n" || h1 | "%i" }\fR.
+
+Output fields cannot be embedded in conditionals e.g. \fB{ .likes.u * #likes | "%i" } & { .dlikes.u * #dislikes | "%i" }\fR.
+
 .SH NOTES
 
 UTF-8 \fI\eu\fR and \fI\eU\fR escape directives don't work in any place where delimiter is to be specified i.e. array separator in fields, in translasion tables of \fBtr\fR, in \fIy\fR \fBsed\fR command, in delimiters of \fBsed\fR, \fBtr\fR, \fBline\fR, \fBtrim\fR, \fBuniq\fR, \fBsort\fR, \fBecho\fR, \fBcut\fR, \fBrev\fR, \fBtac\fR, \fBwc\fR commands.
