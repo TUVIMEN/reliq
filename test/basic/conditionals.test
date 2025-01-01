@@ -1,10 +1,14 @@
 < editing.html
 8977b8874205c303a7c3d52818786d74,'la || li, lg || h1 || li , li || ul, li & ul & la & img, in & a, li && ul && p, li && p && img'
 5e181063e72ff0f81b64127867e33886,'li && ul & img || li, lp && ul & img || li, { li && lk & img} || li'
-7a7a509b4e8a78c4f98b4f1f9c4a266f,'.g { .a li; { { img | "img - %C\n" , a | "a - %C\n", c } | || img }, .b li; { { img | "img - %C\n" , a | "a - %C\n" } | || img } }'
+7a7a509b4e8a78c4f98b4f1f9c4a266f,'.g { .a li; { { img | "img - %C\n" , a | "a - %C\n", c } | ^|| img }, .b li; { { img | "img - %C\n" , a | "a - %C\n" } | || img } }'
 0892a8d86466b8ef9b9e1d3a67dafdf8,'li & a & ia'
 4ba2aa670b154b8d77afe78ea5c2ff32,'.g { .a { img || li }; a, .b { li || img }; a }'
 8035d7850ff38af2f69e1a928693a726,'{ a && li & img || ul }; * c@[:3]'
+f9fa8f0f0b01ed823361b95aceba8cca,'{ li, h1, h2 } && footer, { li, h1, h2 } ^&& footer, { li, h1, h2 } & footer, { li, h1, h2 } ^& footer, { li, h1, h2 } || footer, { li, h1, h2 } ^|| footer'
+7231751070453f526002b6c93da0cb86,'{ h1, h9, h2 } ^&& footer, { h1, h9, h2 } && footer, { h1, h9, h2 } || footer, { h1, h9, h2 } ^|| footer, { h1, h9, h2 } & footer, { h1, h9, h2 } ^& footer'
+c2decb865c3c916d144dead88148c345,'{ h1, h9, h2 } ^|| footer && ul'
+175141becb995cb6f8fc8196b33588e0,'header; h2 || h3'
 
 % RELIQ_EDITING
 55112482c8d724654a5ef04e3c232570,'{ li | "%C -- namel\n" / line [1] } / sed "s/l/L/g" & img, { li | "%C -- namel\n" / line [1] } / sed "s/l/L/g" && img, { li | "%C -- namel\n" / line [1] } / sed "s/l/L/g" || img'

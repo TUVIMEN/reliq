@@ -87,7 +87,8 @@ reliq_expr_print(flexarr *expr, size_t tab)
 }*/
 
 enum tokenName {
-  tBlockStart = 1,
+  tInvalidThing = 0,
+  tBlockStart,
   tBlockEnd,
   tNextNode,
   tChainLink,
@@ -99,6 +100,9 @@ enum tokenName {
   tConditionOr,
   tConditionAnd,
   tConditionAndBlank,
+  tConditionOrAll,
+  tConditionAndAll,
+  tConditionAndBlankAll,
 };
 
 typedef struct {
@@ -123,6 +127,9 @@ token_name(enum tokenName name)
     case tConditionOr: return "tConditionOr";
     case tConditionAnd: return "tConditionAnd";
     case tConditionAndBlank: return "tConditionAndBlank";
+    case tConditionOrAll: return "tConditionOrAll";
+    case tConditionAndAll: return "tConditionAndAll";
+    case tConditionAndBlankAll: return "tConditionAndBlankAll";
   }
   return NULL;
 }
@@ -242,6 +249,70 @@ token_text(flexarr *tokens, const char *src, const size_t size) //tokens: token
     *(token*)flexarr_inc(tokens) = t;
 }
 
+static enum tokenName
+tokenize_conditionals_normal(const char *src, const size_t i, const size_t size, size_t *tk_size)
+{
+  enum tokenName ret = tInvalidThing;
+
+  if (i+1 < size && src[i] == '&' && isspace(src[i+1])) {
+    *tk_size = 3;
+    ret = tConditionAnd;
+  } else if (i+2 < size && isspace(src[i+2])) {
+    if (src[i] == '&' && src[i+1] == '&') {
+      *tk_size = 4;
+      ret = tConditionAndBlank;
+    } else if (src[i] == '|' && src[i+1] == '|') {
+      *tk_size = 4;
+      ret = tConditionOr;
+    }
+  }
+
+  return ret;
+}
+
+static enum tokenName
+tokenize_conditionals(const char *src, size_t i, const size_t size, size_t *tk_size)
+{
+  uchar all = 0;
+  if (src[i] == '^') {
+      all = 1;
+      i++;
+  }
+
+  enum tokenName name = tokenize_conditionals_normal(src,i,size,tk_size);
+  if (!all || name == tInvalidThing)
+      return name;
+
+  (*tk_size) += all;
+
+  switch (name) {
+    case tConditionOr:
+      return tConditionOrAll;
+    case tConditionAnd:
+      return tConditionAndAll;
+    case tConditionAndBlank:
+      return tConditionAndBlankAll;
+    default:
+      return name;
+  }
+}
+
+static uchar
+isconditional(const enum tokenName name)
+{
+    switch (name) {
+        case tConditionOr:
+        case tConditionOrAll:
+        case tConditionAnd:
+        case tConditionAndAll:
+        case tConditionAndBlank:
+        case tConditionAndBlankAll:
+            return 1;
+        default:
+            return 0;
+    }
+}
+
 static reliq_error *
 tokenize(const char *src, const size_t size, token **tokens, size_t *tokensl) //tokens: token
 {
@@ -298,19 +369,11 @@ tokenize(const char *src, const size_t size, token **tokens, size_t *tokensl) //
       token_found(tChainLink,1);
 
     if (i && isspace(src[i-1])) {
-      if (i+1 < size && src[i] == '&' && isspace(src[i+1])) {
-        i--;
-        token_found(tConditionAnd,3);
-      }
-      if (i+2 < size && isspace(src[i+2])) {
-        if (src[i] == '&' && src[i+1] == '&') {
-          i--;
-          token_found(tConditionAndBlank,4);
-        }
-        if (src[i] == '|' && src[i+1] == '|') {
-          i--;
-          token_found(tConditionOr,4);
-        }
+      size_t tk_size = 0;
+      enum tokenName tk_name = tokenize_conditionals(src,i,size,&tk_size);
+      if (tk_name != tInvalidThing) {
+          i--; //conditionals start and end with space, this accounts for first, already found
+          token_found(tk_name,tk_size);
       }
     }
 
@@ -392,6 +455,32 @@ add_chainlink(flexarr *exprs, reliq_expr *cl, const uchar noerr) //exprs: reliq_
   END: ;
   memset(cl,0,sizeof(reliq_expr));
   return err;
+}
+
+static uint8_t
+from_tokenname_conditional(const enum tokenName name)
+{
+  uint8_t ret = 0;
+  switch (name) {
+    case tConditionOrAll:
+      ret |= EXPR_ALL;
+    case tConditionOr:
+      ret |= EXPR_OR;
+      break;
+    case tConditionAndAll:
+      ret |= EXPR_ALL;
+    case tConditionAnd:
+      ret |= EXPR_AND;
+      break;
+    case tConditionAndBlankAll:
+      ret |= EXPR_ALL;
+    case tConditionAndBlank:
+      ret |= EXPR_AND_BLANK;
+      break;
+    default:
+      return 0;
+  }
+  return ret;
 }
 
 static flexarr *
@@ -580,7 +669,7 @@ from_token_comp(const token *tokens, size_t *pos, const size_t tokensl, const ui
         current->e = flexarr_init(sizeof(reliq_expr),PATTERN_SIZE_INC);
         EXPR_TYPE_SET(current->flags,EXPR_CHAIN);
       }
-    } else if (name == tConditionOr || name == tConditionAnd || name == tConditionAndBlank) {
+    } else if (isconditional(name)) {
       lasttext_nonempty = 0;
       first_in_node = 1;
       expr_has_nformat=0;
@@ -591,16 +680,10 @@ from_token_comp(const token *tokens, size_t *pos, const size_t tokensl, const ui
       if (((flexarr*)current->e)->size == 0)
         goto_script_seterr_p(END,"conditional: expected expression before %.*s",(int)tokens[i].size-1,tokens[i].start+1);
       if (i+1 >= tokensl || tokens[i+1].name == tNextNode
-        || tokens[i+1].name == tConditionOr || tokens[i+1].name == tConditionAnd
-        || tokens[i+1].name == tConditionAndBlank || tokens[i+1].name == tChainLink)
+        || isconditional(tokens[i+1].name) || tokens[i+1].name == tChainLink)
         goto_script_seterr_p(END,"conditional: expected expression after %.*s",(int)tokens[i].size-1,tokens[i].start+1);
 
-      if (name == tConditionOr) {
-        current->flags |= EXPR_OR;
-      } else if (name == tConditionAnd) {
-        current->flags |= EXPR_AND;
-      } else
-        current->flags |= EXPR_AND_BLANK;
+      current->flags |= from_tokenname_conditional(name);
 
       reliq_expr *lastret = &((reliq_expr*)ret->v)[ret->size-1];
       if (!EXPR_TYPE_IS(lastret->flags,EXPR_BLOCK_CONDITION)) {

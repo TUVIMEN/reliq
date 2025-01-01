@@ -39,10 +39,11 @@
 #define EXPR_TYPE_SET(x,y) (x = ((y)|((x)&(~EXPR_TYPE))))
 
 #define EXPR_CONDITION_EXPR 0x8
-#define EXPR_AND 0x10
-#define EXPR_AND_BLANK 0x20
-#define EXPR_OR 0x40
-#define EXPR_CONDITION (EXPR_CONDITION_EXPR|EXPR_AND|EXPR_AND_BLANK|EXPR_OR)
+#define EXPR_AND 0x10 // &
+#define EXPR_AND_BLANK 0x20 // &&
+#define EXPR_OR 0x40 // ||
+#define EXPR_ALL 0x80 // ^ succeed if everything succeedes. If not set, succeed if anything succeedes
+#define EXPR_CONDITION (EXPR_CONDITION_EXPR|EXPR_AND|EXPR_AND_BLANK|EXPR_OR|EXPR_ALL)
 
 #include "output.h"
 

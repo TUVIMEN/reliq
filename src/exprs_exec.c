@@ -43,9 +43,10 @@ typedef struct {
   flexarr *fcollector; //struct fcollector_expr
   #endif
   flexarr **out; //reliq_compressed
-  uchar isempty;
-  uchar noncol;
-  uchar found;
+  uchar isempty : 1;
+  uchar noncol : 1; //no ncollector
+  uchar something_found : 1;
+  uchar something_failed : 1;
 } exec_state;
 
 reliq_error *reliq_fmatch(const char *data, const size_t size, SINK *output, const reliq_npattern *nodep,
@@ -200,27 +201,34 @@ exec_block_conditional(const reliq_expr *expr, const flexarr *source, flexarr *d
     reliq_expr const *current = &exprs[i];
     assert(EXPR_TYPE_IS(current->flags,EXPR_CHAIN));
 
+    st->something_found = 0;
+    st->something_failed = 0;
     if ((err = exec_chain(current,source,desttemp,st)))
       goto END;
 
+    uchar success = st->something_found;
+    if (current->flags&EXPR_ALL)
+        success = (success && !st->something_failed);
+
     #ifdef RELIQ_EDITING
-    if (!st->found)
+    if (!success)
       st->fcollector->size = prevfcolsize;
     #endif
 
-    if (current->flags&(EXPR_AND|EXPR_AND_BLANK) && !st->found)
-      break;
-
-    if ((current->flags&EXPR_AND_BLANK && st->found) || (current->flags&EXPR_OR && !st->found)) {
+    // if first part is replaced by (current->flags&EXPR_AND_BLOCK && success) then "{ p, nothing } ^&& li" will print failed output of first expression,
+    // i have not decided which behaviour is better
+    if (current->flags&EXPR_AND_BLANK || (current->flags&EXPR_OR && !success)) {
       desttemp->size = 0;
       st->ncollector->size = lastn;
       #ifdef RELIQ_EDITING
       st->fcollector->size = prevfcolsize;
       #endif
-      continue;
     }
 
-    if (current->flags&EXPR_OR && st->found)
+    if (current->flags&(EXPR_AND|EXPR_AND_BLANK) && !success)
+      break;
+
+    if (current->flags&EXPR_OR && success)
       break;
   }
 
@@ -365,9 +373,12 @@ exec_chain(const reliq_expr *expr, const flexarr *source, flexarr *dest, exec_st
   }
 
   const flexarr *src = source ? source : srctemp;
-  st->found = 1;
+  uchar something_failed = 0,
+        something_found = 0;
 
   for (size_t i = 0; i < exprsl; i++) {
+    something_failed = 0;
+    something_found = 0;
     reliq_expr const *current = &exprs[i];
 
     if (EXPR_IS_TABLE(current->flags)) {
@@ -383,13 +394,14 @@ exec_chain(const reliq_expr *expr, const flexarr *source, flexarr *dest, exec_st
 
       if (desttemp->size-prevsize <= 2
         && (desttemp->size == 0 || (void*)((reliq_compressed*)desttemp->v)[0].hnode < (void*)10)) {
-        st->found = 0;
+        something_failed = 1;
 
         if (!st->noncol && fieldnamed) {
           ncollector_add(st->ncollector,dest,desttemp,startn,lastn,NULL,current->flags,0,1,0);
           break;
         }
-      }
+      } else
+        something_found = 1;
       st->noncol = prev_noncol;
 
       #ifdef RELIQ_EDITING
@@ -407,8 +419,10 @@ exec_chain(const reliq_expr *expr, const flexarr *source, flexarr *dest, exec_st
       if (!st->isempty) {
         size_t prevsize = desttemp->size;
         node_exec(st->rq,st->parent,nodep,src,desttemp);
-        if (desttemp->size-prevsize == 0)
-          st->found = 0;
+        if (desttemp->size-prevsize == 0) {
+          something_failed = 1;
+        } else
+          something_found = 1;
       }
 
       if (fieldnamed)
@@ -443,6 +457,9 @@ exec_chain(const reliq_expr *expr, const flexarr *source, flexarr *dest, exec_st
   }
 
   END: ;
+  st->something_failed |= something_failed;
+  st->something_found |= something_found;
+
   if (src_alloc)
     flexarr_free(srctemp);
   flexarr_free(desttemp);
