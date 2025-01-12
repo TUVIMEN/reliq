@@ -3,4 +3,5 @@
 /reliq
 /reliq.h
 test/advanced/boards-forums/*/
+test/advanced/threads/*/
 test/advanced/users/*/

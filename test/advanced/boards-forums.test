@@ -6,3 +6,4 @@
 @boards-forums/xenforo2.test
 @boards-forums/xmb.test
 @boards-forums/stackexchange.test
+@boards-forums/vbulletin.test

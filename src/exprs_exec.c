@@ -527,6 +527,8 @@ reliq_exec_file(reliq *rq, FILE *output, const reliq_expr *expr)
 reliq_error *
 reliq_exec_str(reliq *rq, char **str, size_t *strl, const reliq_expr *expr)
 {
+  *str = NULL;
+  *strl = 0;
   if (!expr)
     return NULL;
   SINK *output = sink_open(str,strl);
