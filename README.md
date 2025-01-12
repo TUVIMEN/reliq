@@ -330,7 +330,7 @@ Because of parsing and processing on the go the order of output might look rever
 - [forumscraper](https://github.com/TUVIMEN/forumscraper)
 - [torge](https://github.com/TUVIMEN/torge)
 - [wordpress-madara-scraper](https://github.com/TUVIMEN/wordpress-madara-scraper)
-- [stackexchange-scraper](https://github.com/TUVIMEN/stackexchange-scraper)
+- [mangabuddy-scraper](https://github.com/TUVIMEN/mangabuddy-scraper)
 - [elektroda-scraper](https://github.com/TUVIMEN/elektroda-scraper)
 - and many others of my repositories
 
