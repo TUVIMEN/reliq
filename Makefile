@@ -117,6 +117,10 @@ test-all: all
 test-update: test
 	@./test.sh test/all.test update "${TEST_FLAGS}" || true
 
+test-speed: lib
+	@gcc -O3 testspeed.c -o testspeed ./libreliq.so
+	@./testspeed
+
 dist: clean
 	mkdir -p ${TARGET}-${VERSION}
 	cp -r test LICENSE Makefile README.md src reliq.1 ${TARGET}-${VERSION}
