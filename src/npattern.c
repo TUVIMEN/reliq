@@ -493,7 +493,7 @@ match_hook_handle(const char *src, size_t *pos, const size_t size, reliq_hook *o
     HOOK_EXPECT(H_PATTERN);
     char *rflags = "uWcas";
     if ((hook.flags&H_KINDS) == H_MATCH_END)
-      rflags = "uWcnfs";
+      rflags = "tWcnfs";
     if ((err = reliq_regcomp(&hook.match.pattern,src,&p,size,' ',rflags,NULL)))
       goto ERR;
     if (!hook.match.pattern.range.s && hook.match.pattern.flags&RELIQ_PATTERN_ALL) { //ignore if it matches everything
