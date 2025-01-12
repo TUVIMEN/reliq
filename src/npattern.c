@@ -52,24 +52,25 @@
 #define H_LEVEL_RELATIVE 3
 #define H_CHILD_COUNT 4
 #define H_MATCH_INSIDES 5
-#define H_CHILD_MATCH 6
-#define H_MATCH_END 7
-#define H_INDEX 8
-#define H_POSITION 9
-#define H_POSITION_RELATIVE 10
-#define H_FULL 11
-#define H_SELF 12
-#define H_CHILD 13
-#define H_DESCENDANT 14
-#define H_ANCESTOR 15
-#define H_PARENT 16
-#define H_RELATIVE_PARENT 17
-#define H_SIBLING 18
-#define H_SIBLING_PRECEDING 19
-#define H_SIBLING_SUBSEQUENT 20
-#define H_FULL_SIBLING 21
-#define H_FULL_SIBLING_PRECEDING 22
-#define H_FULL_SIBLING_SUBSEQUENT 23
+#define H_MATCH_TAG 6
+#define H_CHILD_MATCH 7
+#define H_MATCH_END 8
+#define H_INDEX 9
+#define H_POSITION 10
+#define H_POSITION_RELATIVE 11
+#define H_FULL 12
+#define H_SELF 13
+#define H_CHILD 14
+#define H_DESCENDANT 15
+#define H_ANCESTOR 16
+#define H_PARENT 17
+#define H_RELATIVE_PARENT 18
+#define H_SIBLING 19
+#define H_SIBLING_PRECEDING 20
+#define H_SIBLING_SUBSEQUENT 21
+#define H_FULL_SIBLING 22
+#define H_FULL_SIBLING_PRECEDING 23
+#define H_FULL_SIBLING_SUBSEQUENT 24
 
 #define H_RANGE 0x20
 #define H_PATTERN 0x40
@@ -89,6 +90,7 @@ struct match_hook {
 
 const struct match_hook match_hooks[] = {
     {{"m",1},H_PATTERN|H_MATCH_INSIDES},
+    {{"M",1},H_PATTERN|H_MATCH_TAG},
     {{"a",1},H_RANGE|H_ATTRIBUTES},
     {{"l",1},H_RANGE|H_LEVEL_RELATIVE},
     {{"L",1},H_RANGE|H_LEVEL},
@@ -100,6 +102,7 @@ const struct match_hook match_hooks[] = {
     {{"I",1},H_RANGE|H_INDEX},
 
     {{"match",5},H_PATTERN|H_MATCH_INSIDES},
+    {{"tagmatch",8},H_PATTERN|H_MATCH_TAG},
     {{"attributes",10},H_RANGE|H_ATTRIBUTES},
     {{"levelrelative",13},H_RANGE|H_LEVEL_RELATIVE},
     {{"level",5},H_RANGE|H_LEVEL},
@@ -272,6 +275,10 @@ match_hook(const reliq *rq, const reliq_hnode *hnode, const reliq_hnode *parent,
     case H_MATCH_INSIDES:
       src = hnode->insides.b;
       srcl = hnode->insides.s;
+      break;
+    case H_MATCH_TAG:
+      src = hnode->all.b;
+      srcl = hnode->all.s;
       break;
     case H_POSITION_RELATIVE:
       if (parent) {
