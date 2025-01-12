@@ -279,14 +279,17 @@ line_edit(const char *src, const size_t size, SINK *output, const void *arg[4], 
     linecount++;
   }
 
+  if (linecount)
+      linecount--;
+
   saveptr = 0;
   while (1) {
     line = edit_cstr_get_line(src,size,&saveptr,delim);
     if (!line.b)
       break;
-    currentline++;
     if (range_match(currentline,range,linecount))
       sink_write(output,line.b,line.s);
+    currentline++;
   }
   return NULL;
 }
@@ -376,7 +379,7 @@ cut_edit(const char *src, const size_t size, SINK *output, const void *arg[4], c
         }
 
         start = dend;
-        if (range_match(dcount+1,range,-1)^complement) {
+        if (range_match(dcount,range,-1)^complement) {
           if (dprevendlength)
             sink_write(output,src+dprevend,1);
           if (dlength)
@@ -390,7 +393,7 @@ cut_edit(const char *src, const size_t size, SINK *output, const void *arg[4], c
       }
     } else {
       for (size_t i = start; i < end; i++) {
-        if (range_match(i+1-start,range,end-start)^complement) {
+        if (range_match(i-start,range,end-start-1)^complement) {
           buf[bufcurrent++] = src[i];
           if (bufcurrent == bufsize) {
             sink_write(output,buf,bufcurrent);

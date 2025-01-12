@@ -82,7 +82,7 @@ Get `tr` with either `title` attribute with class `x1` or `x2`, or if it has one
 
 Process output using `cut` for each tag, and with `sed` and `tr` for the whole output.
 
-    reliq 'div #B>msg_[0-9-]* | "%(id)v" cut [2] "-" / sed "s/^msg_//" tr "\n" "\t"' index.html
+    reliq 'div #B>msg_[0-9-]* | "%(id)v" cut [1] "-" / sed "s/^msg_//" tr "\n" "\t"' index.html
 
 Process output in a block (note that things in blocks have to be separated by `,` as just newline is not enough).
 

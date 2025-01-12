@@ -168,7 +168,7 @@ Consists of \fBATTRIBUTE_NAME\fR followed by '=' and \fBPATTERN\fR of attribute'
 .SS RANGE
 Is always embedded in square brackets. Consists of groups of four numbers separated by ':', that can be practically endlessly separated by ','. Empty values will be complemented. Putting '-' before two first values (even if they are not specified) makes them subtracted from the maximal value. If '!' is found before the first value the matching will be inversed.
 
-By default the minimal matching value is 0 (exceptions are documented at definition).
+By default the minimal matching value is 0.
 
 Specifying only one value equals to matching only to that value.
 
@@ -187,7 +187,7 @@ Specifying three values additionally matches only values of which modulo of thir
 \fB[::w]\fR                 - match to values from which modulo of w is equal to 0
 \fB[x:y:w]\fR               - match to range from x to y from which modulo of w is equal to 0
 \fB[x:y:w:z]\fR             - match to range from x to y with value increased by z from which modulo of w is equal to 0
-\fB[::2:1]\fR               - match to uneven values (assuming that the minimal value is 0)
+\fB[::2:1]\fR               - match to uneven values
 .in
 \&
 .SS HOOK
@@ -414,7 +414,7 @@ List of implemented functions:
 
 .B line \fI[SELECTED]\fR \fI"DELIM"\fR
 .IP
-Return selected lines. Lines start from 1 and such is the minimal value in \fISELECTED\fR.
+Return selected lines.
 
 Lines are separated by \fIDELIM\fR (by default '\\n').
 .TP
@@ -464,7 +464,6 @@ Flags:
 .B cut \fI[SELECTED]\fR \fI"DELIMS"\fR \fI"FLAGS"\fR \fI"DELIM"\fR
 .IP
 Return selected parts from input delimited by \fIDELIM\fR (by default '\\n').
-The minimal value in \fISELECTED\fR is 1.
 
 \fIDELIMS\fR specifies delimiters for fields and selects fields, if none are specified selection is based on bytes.
 
