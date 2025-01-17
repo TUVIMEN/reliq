@@ -71,19 +71,36 @@ const reliq_str8 inescapable_s[] = {
 };
 #endif
 
+typedef struct {
+    struct html_process_expr *expr;
+    flexarr *nodes; //reliq_hnode
+    flexarr *attribs; //reliq_cstr_pair
+    reliq_error *err;
+    const char *f;
+    const size_t s;
+} html_state;
+
 static void
 comment_handle(const char *f, size_t *pos, const size_t s)
 {
   size_t i = *pos;
   i++;
+
+  size_t diff = 0;
+
   if (f[i] == '-' && f[i+1] == '-') {
     i += 2;
-    while (s-i > 2 && memcmp(f+i,"-->",3) != 0)
+    diff = 2;
+    while (s-i > diff && (f[i] != '-' || f[i+1] != '-' || f[i+2] != '>'))
       i++;
-    i += 3;
   } else {
     while (i < s && f[i] != '>')
       i++;
+  }
+  if (s-i > diff) {
+      i += diff+1;
+  } else {
+      i = s-1;
   }
   *pos = i;
 }
@@ -201,114 +218,45 @@ phptag_handle(const char *f, size_t *pos, const size_t s, reliq_hnode *hnode)
 }
 #endif
 
-
 #ifdef RELIQ_AUTOCLOSING
-uchar
+static uchar
 isinescapable(reliq_cstr str)
 {
   for (size_t g = 0; g < LENGTH(inescapable_s); g++)
-      if (strcasecomp(str,inescapable_s[g]))
-          return 1;
-
+    if (strcasecomp(str,inescapable_s[g]))
+      return 1;
   return 0;
 }
 #endif
 
 static uint64_t
-html_struct_handle(const char *f, size_t *pos, const size_t s, const uint16_t lvl, flexarr *nodes, flexarr *attribs, struct html_process_expr *expr, reliq_error **err) //nodes: reliq_hnode, attribs: reliq_cstr_pair
+html_struct_handle(size_t *pos, const uint16_t lvl, html_state *st);
+
+struct tag_info {
+    #ifdef RELIQ_AUTOCLOSING
+    uchar autoclosing;
+    #endif
+    uchar foundend : 1;
+    uchar script : 1;
+};
+
+static uchar
+tag_insides_handle(size_t *pos, const size_t hnindex, uint64_t *ret, struct tag_info *taginfo, html_state *st)
 {
-  *err = NULL;
-  uint64_t ret = 1;
+  const char *f = st->f;
+  const size_t s = st->s;
+  flexarr *nodes = st->nodes; //reliq_hnode
   size_t i = *pos;
-  if (unlikely(lvl >= RELIQ_MAX_NODE_LEVEL)) {
-    *err = reliq_set_error(RELIQ_ERROR_HTML,"html: %lu: reached %u level of recursion in document",i,lvl);
-    ret = 0;
-    goto ERR;
-  }
-  reliq_hnode *hnode = flexarr_inc(nodes);
-  memset(hnode,0,sizeof(reliq_hnode));
-  hnode->lvl = lvl;
-  size_t index = nodes->size-1;
-  flexarr *a = attribs;
-  size_t attrib_start = a->size;
-  uchar foundend=1;
-
-  hnode->all.b = f+i;
-  hnode->all.s = 0;
-  i++;
-  while_is(isspace,f,i,s);
-  if (unlikely(f[i] == '!')) {
-    comment_handle(f,&i,s);
-    flexarr_dec(nodes);
-    ret = 0;
-    goto ERR;
-  }
-
-  #ifdef RELIQ_PHPTAGS
-  if (unlikely(f[i] == '?')) {
-    phptag_handle(f,&i,s,hnode);
-    goto END;
-  }
-  #endif
-
-  name_handle(f,&i,s,&hnode->tag);
-  for (; i < s && f[i] != '>';) {
-    if (isspace(f[i])) {
-      i++;
-      continue;
-    }
-
-    if (unlikely(f[i] == '/')) {
-      char *r = memchr(f+i,'>',s-i);
-      if (likely(r != NULL))
-        hnode->all.s = r-hnode->all.b+1;
-      goto END;
-    }
-
-    if (unlikely(f[i] == '>'))
-       break;
-
-    if (unlikely(!isalpha(f[i]))) {
-      i++;
-      continue;
-    }
-
-    attrib_handle(f,&i,s,a);
-  }
-
-  #define search_array(x,y) for (uchar _j = 0; _j < (uchar)LENGTH(x); _j++) \
-    if (strcasecomp(x[_j],y))
-
-  search_array(selfclosing_s,hnode->tag) {
-    hnode->all.s = f+i-hnode->all.b+1;
-    goto END;
-  }
-
-  uchar script = 0;
-  search_array(script_s,hnode->tag) {
-    script = 1;
-    goto FOUND_AND_SKIP_OTHERS;
-  }
-
-  #ifdef RELIQ_AUTOCLOSING
-  uchar autoclosing = -1;
-  for (uchar j = 0; j < (uchar)LENGTH(autoclosing_s); j++) {
-    if (strcasecomp(autoclosing_s[j][0],hnode->tag)) {
-      autoclosing = j;
-      goto FOUND_AND_SKIP_OTHERS;
-    }
-  }
-  #endif
-
-  FOUND_AND_SKIP_OTHERS: ;
-  i++;
-  hnode->insides.b = f+i;
-  hnode->insides.s = i;
+  reliq_hnode *hnode = ((reliq_hnode*)nodes->v)+hnindex;
+  uint16_t lvl = hnode->lvl;
   size_t tagend;
+
   for (; i < s; i++) {
     if (f[i] != '<')
       continue;
 
+
+    hnode = ((reliq_hnode*)nodes->v)+hnindex;
     FINAL_TAG_END: ;
     tagend=i;
     i++;
@@ -331,7 +279,7 @@ html_struct_handle(const char *f, size_t *pos, const size_t s, const uint16_t lv
             i++;
         if (unlikely(i >= s)) {
           i = s;
-          ret = 0;
+          *ret = 0;
           hnode->all.s = f+s-hnode->all.b;
           goto ERR;
         }
@@ -344,18 +292,17 @@ html_struct_handle(const char *f, size_t *pos, const size_t s, const uint16_t lv
 
       reliq_hnode *nodesv = (reliq_hnode*)nodes->v;
 
-      if (unlikely(!index || hnode->lvl == 0)) {
-        foundend = 0;
+      if (unlikely(!hnindex || hnode->lvl == 0)) {
+        taginfo->foundend = 0;
         continue;
       }
 
       #ifdef RELIQ_AUTOCLOSING
-      uchar inescapable = isinescapable(hnode->tag);
-      if (inescapable)
-        goto INESCAPABLE;
+      if (isinescapable(hnode->tag))
+        continue;
       #endif
 
-      for (size_t j = index-1;; j--) {
+      for (size_t j = hnindex-1;; j--) {
         if (nodesv[j].all.s || nodesv[j].lvl >= lvl) {
           if (!j)
             break;
@@ -365,70 +312,200 @@ html_struct_handle(const char *f, size_t *pos, const size_t s, const uint16_t lv
         if (strcasecomp(tag,endname)) {
           i = tagend;
           hnode->insides.s = i-(hnode->insides.b-f);
-          ret = (ret&0xffffffff)+((uint64_t)(lvl-nodesv[j].lvl)<<32);
+          *ret = (*ret&0xffffffff)+((uint64_t)(lvl-nodesv[j].lvl)<<32);
           goto END;
         }
 
         #ifdef RELIQ_AUTOCLOSING
-        inescapable = isinescapable(tag);
-        if (inescapable)
-            goto INESCAPABLE;
+        if (isinescapable(tag))
+          break;
         #endif
 
         if (!j || !nodesv[j].lvl)
           break;
       }
 
-      #ifdef RELIQ_AUTOCLOSING
-      INESCAPABLE: ;
-      if (inescapable)
-        continue;
-      #endif
-    } else if (!script) {
+      continue;
+    }
+
+    if (!taginfo->script) {
       if (f[i] == '!') {
         comment_handle(f,&i,s);
         i--;
         continue;
-      } else {
-        #ifdef RELIQ_AUTOCLOSING
-        if (autoclosing != (uchar)-1) {
-          const reliq_str8 *arr = autoclosing_s[autoclosing];
-          reliq_cstr name;
+      }
 
-          while_is(isspace,f,i,s);
-          name_handle(f,&i,s,&name);
+      #ifdef RELIQ_AUTOCLOSING
+      if (taginfo->autoclosing != (uchar)-1) {
+        const reliq_str8 *arr = autoclosing_s[taginfo->autoclosing];
+        reliq_cstr name;
 
-          for (uchar j = 1; arr[j].b; j++) {
-            if (strcasecomp(arr[j],name)) {
-              i = tagend-1;
-              hnode->insides.s = i-hnode->insides.s+1;
-              hnode->all.s = (f+i+1)-hnode->all.b;
-              goto END;
-            }
+        while_is(isspace,f,i,s);
+        name_handle(f,&i,s,&name);
+
+        for (uchar j = 1; arr[j].b; j++) {
+          if (strcasecomp(arr[j],name)) {
+            i = tagend-1;
+            hnode->insides.s = i-hnode->insides.s+1;
+            hnode->all.s = (f+i+1)-hnode->all.b;
+            goto END;
           }
         }
-        #endif
-        i = tagend;
-        uint64_t rettmp = html_struct_handle(f,&i,s,lvl+1,nodes,attribs,expr,err);
-        if (unlikely(*err)) {
-          ret = 0;
-          goto ERR;
-        }
-        ret += rettmp&0xffffffff;
-        hnode = &((reliq_hnode*)nodes->v)[index];
-        uint32_t lvldiff = rettmp>>32;
-        if (likely(lvldiff)) {
-          if (lvldiff > 1) {
-            hnode->insides.s = i-(hnode->insides.b-f);
-            ret |= ((rettmp>>32)-1)<<32;
-            goto END;
-          } else
-            goto FINAL_TAG_END;
-        }
-        ret |= rettmp&0xffffffff00000000;
       }
+      #endif
+      i = tagend;
+      uint64_t rettmp = html_struct_handle(&i,lvl+1,st);
+      if (unlikely(st->err)) {
+        *ret = 0;
+        goto ERR;
+      }
+      *ret += rettmp&0xffffffff;
+      hnode = ((reliq_hnode*)nodes->v)+hnindex;
+      uint32_t lvldiff = rettmp>>32;
+      if (likely(lvldiff)) {
+        if (lvldiff > 1) {
+          hnode->insides.s = i-(hnode->insides.b-f);
+          *ret |= ((rettmp>>32)-1)<<32;
+          goto END;
+        } else
+          goto FINAL_TAG_END;
+      }
+      *ret |= rettmp&0xffffffff00000000;
     }
   }
+
+  END: ;
+  *pos = i;
+  return 0;
+
+  ERR: ;
+  *pos = i;
+  return 1;
+}
+
+static uchar
+attribs_handle(const char *f, size_t *pos, const size_t s, reliq_hnode *hnode, flexarr *attribs) //attribs: reliq_cstr_pair
+{
+  size_t i = *pos;
+  uchar ended = 0;
+
+  for (; i < s && f[i] != '>';) {
+    if (isspace(f[i])) {
+      i++;
+      continue;
+    }
+
+    if (unlikely(f[i] == '/')) {
+      char *r = memchr(f+i,'>',s-i);
+      if (likely(r != NULL))
+        hnode->all.s = r-hnode->all.b+1;
+      ended = 1;
+      break;
+    }
+
+    if (unlikely(f[i] == '>'))
+       break;
+
+    if (unlikely(!isalpha(f[i]))) {
+      i++;
+      continue;
+    }
+
+    attrib_handle(f,&i,s,attribs);
+  }
+
+  *pos = i;
+  return ended;
+}
+
+static reliq_error *
+exec_hnode(const reliq_hnode *hn, struct html_process_expr *expr)
+{
+  if (expr->expr && reliq_nexec(expr->rq,hn,NULL,expr->expr))
+    return node_output(hn,NULL,expr->nodef,expr->nodefl,expr->output,expr->rq);
+  return NULL;
+}
+
+static uint64_t
+html_struct_handle(size_t *pos, const uint16_t lvl, html_state *st) //nodes: reliq_hnode, attribs: reliq_cstr_pair
+{
+  size_t i = *pos;
+  uint64_t ret = 1;
+  if (unlikely(lvl >= RELIQ_MAX_NODE_LEVEL)) {
+    st->err = reliq_set_error(RELIQ_ERROR_HTML,"html: %lu: reached %u level of recursion in document",i,lvl);
+    ret = 0;
+    goto ERR;
+  }
+
+  const char *f = st->f;
+  const size_t s = st->s;
+  flexarr *nodes = st->nodes;
+  flexarr *attribs = st->attribs;
+
+  size_t attrib_start = attribs->size;
+  struct tag_info taginfo = {
+    .foundend = 1
+  };
+
+  reliq_hnode *hnode = flexarr_incz(nodes);
+  hnode->lvl = lvl;
+  hnode->all.b = f+i;
+  hnode->all.s = 0;
+  size_t hnindex = hnode-(reliq_hnode*)nodes->v;
+
+  i++;
+  while_is(isspace,f,i,s);
+  if (unlikely(f[i] == '!')) {
+    comment_handle(f,&i,s);
+    flexarr_dec(nodes);
+
+    ret = 0;
+    goto ERR;
+  }
+
+  #ifdef RELIQ_PHPTAGS
+  if (unlikely(f[i] == '?')) {
+    phptag_handle(f,&i,s,hnode);
+    goto END;
+  }
+  #endif
+
+  name_handle(f,&i,s,&hnode->tag);
+  if (attribs_handle(f,&i,s,hnode,attribs))
+    goto END;
+
+  #define search_array(x,y) for (uchar _j = 0; _j < (uchar)LENGTH(x); _j++) \
+    if (strcasecomp(x[_j],y))
+
+  search_array(selfclosing_s,hnode->tag) {
+    hnode->all.s = f+i-hnode->all.b+1;
+    goto END;
+  }
+
+  search_array(script_s,hnode->tag) {
+    taginfo.script = 1;
+    goto FOUND_AND_SKIP_OTHERS;
+  }
+
+  #ifdef RELIQ_AUTOCLOSING
+  taginfo.autoclosing = -1;
+  for (uchar j = 0; j < (uchar)LENGTH(autoclosing_s); j++) {
+    if (strcasecomp(autoclosing_s[j][0],hnode->tag)) {
+      taginfo.autoclosing = j;
+      goto FOUND_AND_SKIP_OTHERS;
+    }
+  }
+  #endif
+
+  FOUND_AND_SKIP_OTHERS: ;
+  i++;
+  hnode->insides.b = f+i;
+  hnode->insides.s = i;
+
+  if (tag_insides_handle(&i,hnindex,&ret,&taginfo,st))
+    goto ERR;
+
+  hnode = ((reliq_hnode*)nodes->v)+hnindex;
 
   END: ;
   if (i >= s) {
@@ -438,23 +515,28 @@ html_struct_handle(const char *f, size_t *pos, const size_t s, const uint16_t lv
     hnode->all.s = f+i-hnode->all.b;
     hnode->insides.s = f+i-hnode->insides.b;
   }
-  if (!foundend)
+  if (!taginfo.foundend)
     hnode->insides.s = hnode->all.s;
 
-  size_t size = a->size-attrib_start;
-  hnode->attribsl = size;
+  const size_t attribsl = attribs->size-attrib_start;
+  hnode->attribsl = attribsl;
   hnode->desc_count = ret-1;
-  if (expr) {
-    hnode->attribs = (reliq_cstr_pair*)((char*)a->v+(attrib_start*a->elsize));
-    if (expr->expr && reliq_nexec(expr->rq,hnode,NULL,expr->expr))
-      *err = node_output(hnode,NULL,expr->nodef,expr->nodefl,expr->output,expr->rq);
-    flexarr_dec(nodes);
+
+  const size_t attrib_elsize = attribs->elsize;
+  const void *attribsv = attribs->v;
+  hnode->attribs = (reliq_cstr_pair*)((const char*)attribsv+(attrib_start*attrib_elsize));
+
+  if (st->expr) {
+    st->err = exec_hnode(hnode,st->expr);
+
+    nodes->size = hnode-(reliq_hnode*)nodes->v;
   } else {
-    hnode->attribs = size ?
-        memdup((char*)a->v+(attrib_start*a->elsize),size*a->elsize)
+    hnode->attribs = attribsl ?
+        memdup(hnode->attribs,attribsl*attrib_elsize)
         : NULL;
   }
-  a->size = attrib_start;
+  attribs->size = attrib_start;
+
   ERR: ;
   *pos = i;
   return ret;
@@ -463,16 +545,24 @@ html_struct_handle(const char *f, size_t *pos, const size_t s, const uint16_t lv
 reliq_error *
 html_handle(const char *data, const size_t size, reliq_hnode **nodes, size_t *nodesl, struct html_process_expr *expr)
 {
-  reliq_error *err = NULL;
   flexarr *nodes_buffer = flexarr_init(sizeof(reliq_hnode),NODES_INC);
   flexarr *attrib_buffer = (void*)flexarr_init(sizeof(reliq_cstr_pair),ATTRIB_INC);
+  html_state st = {
+    .expr = expr,
+    .f = data,
+    .s = size,
+    .nodes = nodes_buffer,
+    .attribs = attrib_buffer,
+  };
 
   for (size_t i = 0; i < size; i++) {
-    while (i < size && data[i] != '<')
+    while (i < size && data[i] != '<') {
         i++;
+    }
+
     while (i < size && data[i] == '<') {
-      html_struct_handle(data,&i,size,0,nodes_buffer,attrib_buffer,expr,&err);
-      if (err)
+      html_struct_handle(&i,0,&st);
+      if (st.err)
         goto END;
     }
   }
@@ -480,7 +570,7 @@ html_handle(const char *data, const size_t size, reliq_hnode **nodes, size_t *no
   END: ;
   flexarr_free(attrib_buffer);
 
-  if (err) {
+  if (st.err) {
     reliq_free_hnodes(nodes_buffer->v,nodes_buffer->size);
     free(nodes_buffer);
     if (!expr) {
@@ -492,5 +582,5 @@ html_handle(const char *data, const size_t size, reliq_hnode **nodes, size_t *no
   } else {
     flexarr_conv(nodes_buffer,(void**)nodes,nodesl);
   }
-  return err;
+  return st.err;
 }

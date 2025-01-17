@@ -53,6 +53,14 @@ flexarr_inc(flexarr *f)
   return ((char*)f->v)+(f->size++*f->elsize);
 }
 
+void * flexarr_incz(flexarr *f)
+{
+    void *v = flexarr_inc(f);
+    if (unlikely(!v))
+        return v;
+    return memset(v,0,f->elsize);
+}
+
 void *
 flexarr_append(flexarr *f, const void *v, const size_t count)
 {

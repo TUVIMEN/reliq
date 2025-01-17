@@ -32,6 +32,7 @@ typedef struct {
 flexarr *flexarr_init(const size_t elsize, const size_t inc_r);
 
 void *flexarr_inc(flexarr *f);
+void *flexarr_incz(flexarr *f); //same as above but zeroes the memory
 void *flexarr_append(flexarr *f, const void *v, const size_t count);
 void *flexarr_add(flexarr *dst, const flexarr *src);
 
