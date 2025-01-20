@@ -333,24 +333,36 @@ enc16utf8(const uint16_t c)
   return d;
 }
 
+static uchar
+most_significant_bit(uint32_t n)
+{
+  uchar ret = 0;
+  while (n >>= 1)
+      ret++;
+  return ret;
+}
+
 uint64_t
 enc32utf8(const uint32_t c)
 {
-  char msf = 31;
-  while (msf != -1 && ((c>>msf)&1) == 0)
-    msf--;
-  msf++;
-  if (msf < 8) {
+  char msb = most_significant_bit(c);
+
+  if (msb < 7)
     return c;
-  } else if (msf < 12) {
-    return 0xc081|(c&0x3f)|((c&0x7c0)<<2);
-  } else if (msf < 17) {
-    return 0xe08080|(c&0x3f)|((c&0xfc0)<<2)|((c&0xf000)<<4);
-  } else if (msf < 22) {
-    return 0xf0808080|(c&0x3f)|((c&0xfc0)<<2)|((c&0x3f000)<<4)|((c&0x1c0000)<<6);
-  } else if (msf < 27)
-    return 0xf480808080|(c&0x3f)|((c&0xfc0)<<2)|((c&0x3f000)<<4)|((c&0xfc0000)<<6)|((c&0x3000000)<<8);
-  return 0xf68080808080|(c&0x3f)|((c&0xfc0)<<2)|((c&0x3f000)<<4)|((c&0xfc0000)<<6)|((c&0xcf000000)<<8)|((c&400000000)<<10);
+
+  uint64_t ret = (c&0x3f);
+  if (msb < 11)
+    return ret|0xc081|((c&0x7c0)<<2);
+  ret |= (c&0xfc0)<<2;
+  if (msb < 16)
+    return ret|0xe08080|((c&0xf000)<<4);
+  ret |= (c&0x3f000)<<4;
+  if (msb < 21)
+    return ret|0xf0808080|((c&0x1c0000)<<6);
+  ret |= (c&0xfc0000)<<6;
+  if (msb < 26)
+    return ret|0xf480808080|((c&0x3000000)<<8);
+  return ret|0xf68080808080|((c&0xcf000000)<<8)|((c&400000000)<<10);
 }
 
 int
