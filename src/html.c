@@ -106,13 +106,57 @@ comment_handle(const char *f, size_t *pos, const size_t s)
 }
 
 static inline void
-name_handle(const char *f, size_t *pos, const size_t s, reliq_cstr *tag)
+tagname_handle(const char *f, size_t *pos, const size_t s, reliq_cstr *tag)
 {
   size_t i = *pos;
   tag->b = f+i;
-  while (i < s && (isalnum(f[i]) || f[i] == '-' || f[i] == '_' || f[i] == ':'))
+  if (i < s && isalpha(f[i])) {
+    i++;
+    while (i < s && !isspace(f[i]) && f[i] != '>' && f[i] != '/')
+      i++;
+  }
+  tag->s = (f+i)-tag->b;
+  *pos = i;
+}
+
+static inline void
+attribname_handle(const char *f, size_t *pos, const size_t s, reliq_cstr *tag)
+{
+  size_t i = *pos;
+  tag->b = f+i;
+  while (i < s && f[i] != '=' && f[i] != '>' && f[i] != '/' && !isspace(f[i]))
     i++;
   tag->s = (f+i)-tag->b;
+  *pos = i;
+}
+
+static void
+attrib_value_handle(const char *f, size_t *pos, const size_t s, reliq_cstr *value)
+{
+  size_t i = *pos;
+  i++;
+  while_is(isspace,f,i,s);
+
+  if (likely(f[i] == '\'' || f[i] == '"')) {
+    char delim = f[i++];
+    value->b = f+i;
+    char *ending = memchr(f+i,delim,s-i);
+    if (unlikely(!ending)) {
+      i = s;
+      goto END;
+    }
+    i = ending-f;
+    value->s = (f+i)-value->b;
+    if (likely(f[i] == delim))
+      i++;
+  } else {
+    value->b = f+i;
+    while (i < s && !isspace(f[i]) && f[i] != '>')
+      i++;
+     value->s = (f+i)-value->b;
+  }
+
+  END: ;
   *pos = i;
 }
 
@@ -121,39 +165,12 @@ attrib_handle(const char *f, size_t *pos, const size_t s, flexarr *attribs) //at
 {
   size_t i = *pos;
   reliq_cstr_pair *ac = (reliq_cstr_pair*)flexarr_inc(attribs);
-  name_handle(f,&i,s,&ac->f);
+  attribname_handle(f,&i,s,&ac->f);
   while_is(isspace,f,i,s);
   ac->s.b = NULL;
   ac->s.s = 0;
-  if (unlikely(f[i] != '='))
-    goto END;
-  i++;
-  while_is(isspace,f,i,s);
-  if (unlikely(f[i] == '>')) {
-    attribs->size--;
-    i++;
-    goto END;
-  }
-  if (likely(f[i] == '\'' || f[i] == '"')) {
-    char delim = f[i++];
-    ac->s.b = f+i;
-    char *ending = memchr(f+i,delim,s-i);
-    if (unlikely(!ending)) {
-      i = s;
-      goto END;
-    }
-    i = ending-f;
-    ac->s.s = (f+i)-ac->s.b;
-    if (likely(f[i] == delim))
-      i++;
-  } else {
-    ac->s.b = f+i;
-    while (i < s && !isspace(f[i]) && f[i] != '>')
-      i++;
-     ac->s.s = (f+i)-ac->s.b;
-  }
-
-  END: ;
+  if (unlikely(f[i] == '='))
+    attrib_value_handle(f,&i,s,&ac->s);
   *pos = i;
 }
 
@@ -164,7 +181,12 @@ phptag_handle(const char *f, size_t *pos, const size_t s, reliq_hnode *hnode)
   size_t i = *pos;
   i++;
   while_is(isspace,f,i,s);
-  name_handle(f,&i,s,&hnode->tag);
+  tagname_handle(f,&i,s,&hnode->tag);
+  if (!hnode->tag.s) {
+    flexarr_dec(nodes);
+    return;
+  }
+
   hnode->insides.b = f+i;
   hnode->insides.s = 0;
 
@@ -266,7 +288,7 @@ tag_insides_handle(size_t *pos, const size_t hnindex, uint64_t *ret, struct tag_
       while_is(isspace,f,i,s);
 
       reliq_cstr endname;
-      name_handle(f,&i,s,&endname);
+      tagname_handle(f,&i,s,&endname);
       if (unlikely(!endname.s)) {
         i++;
         continue;
@@ -341,7 +363,7 @@ tag_insides_handle(size_t *pos, const size_t hnindex, uint64_t *ret, struct tag_
         reliq_cstr name;
 
         while_is(isspace,f,i,s);
-        name_handle(f,&i,s,&name);
+        tagname_handle(f,&i,s,&name);
 
         for (uchar j = 1; arr[j].b; j++) {
           if (strcasecomp(arr[j],name)) {
@@ -396,9 +418,17 @@ attribs_handle(const char *f, size_t *pos, const size_t s, reliq_hnode *hnode, f
     }
 
     if (unlikely(f[i] == '/')) {
-      char *r = memchr(f+i,'>',s-i);
-      if (likely(r != NULL))
-        hnode->all.s = r-hnode->all.b+1;
+      size_t j = i+1;
+      for (; j < s && f[j] != '>'; j++) {
+        if (isspace(f[j]))
+          continue;
+
+        i = j;
+        goto CONTINUE;
+      }
+
+      i = j;
+      hnode->all.s = f+i-hnode->all.b+1;
       ended = 1;
       break;
     }
@@ -406,12 +436,9 @@ attribs_handle(const char *f, size_t *pos, const size_t s, reliq_hnode *hnode, f
     if (unlikely(f[i] == '>'))
        break;
 
-    if (unlikely(!isalpha(f[i]))) {
-      i++;
-      continue;
-    }
-
     attrib_handle(f,&i,s,attribs);
+
+    CONTINUE: ;
   }
 
   *pos = i;
@@ -427,10 +454,11 @@ exec_hnode(const reliq_hnode *hn, struct html_process_expr *expr)
 }
 
 static uint64_t
-html_struct_handle(size_t *pos, const uint16_t lvl, html_state *st) //nodes: reliq_hnode, attribs: reliq_cstr_pair
+html_struct_handle(size_t *pos, const uint16_t lvl, html_state *st)
 {
   size_t i = *pos;
   uint64_t ret = 1;
+
   if (unlikely(lvl >= RELIQ_MAX_NODE_LEVEL)) {
     st->err = reliq_set_error(RELIQ_ERROR_HTML,"html: %lu: reached %u level of recursion in document",i,lvl);
     ret = 0;
@@ -446,15 +474,22 @@ html_struct_handle(size_t *pos, const uint16_t lvl, html_state *st) //nodes: rel
   struct tag_info taginfo = {
     .foundend = 1
   };
-
-  reliq_hnode *hnode = flexarr_incz(nodes);
-  hnode->lvl = lvl;
-  hnode->all.b = f+i;
-  hnode->all.s = 0;
-  size_t hnindex = hnode-(reliq_hnode*)nodes->v;
+  char const *all_b = f+i;
 
   i++;
   while_is(isspace,f,i,s);
+
+  if (unlikely(f[i] == '/')) {
+    ret = 0;
+    goto ERR;
+  }
+
+  reliq_hnode *hnode = flexarr_incz(nodes);
+  hnode->lvl = lvl;
+  hnode->all.b = all_b;
+  hnode->all.s = 0;
+  size_t hnindex = hnode-(reliq_hnode*)nodes->v;
+
   if (unlikely(f[i] == '!')) {
     comment_handle(f,&i,s);
     flexarr_dec(nodes);
@@ -470,7 +505,12 @@ html_struct_handle(size_t *pos, const uint16_t lvl, html_state *st) //nodes: rel
   }
   #endif
 
-  name_handle(f,&i,s,&hnode->tag);
+  tagname_handle(f,&i,s,&hnode->tag);
+  if (!hnode->tag.s) {
+    flexarr_dec(nodes); //!!
+    goto END;
+  }
+
   if (attribs_handle(f,&i,s,hnode,attribs))
     goto END;
 

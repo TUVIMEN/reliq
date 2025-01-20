@@ -74,7 +74,7 @@ typedef struct {
 
 int reliq_regexec(const reliq_pattern *pattern, const char *src, const size_t size);
 
-reliq_error *reliq_regcomp(reliq_pattern *pattern, const char *src, size_t *pos, const size_t size, const char delim, const char *flags, unsigned char (*checkstrclass)(char));
+reliq_error *reliq_regcomp(reliq_pattern *pattern, const char *src, size_t *pos, const size_t size, const char delim, const char *flags, size_t (*checkstrclass)(const char*,size_t));
 
 void reliq_regfree(reliq_pattern *pattern);
 

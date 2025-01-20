@@ -536,14 +536,28 @@ free_node_matches_flexarr(flexarr *groups_matches) //group_matches: reliq_node_m
   flexarr_free(groups_matches);
 }
 
-static uchar
-strclass_attrib(char c)
+static size_t
+strclass_tag(const char *str, size_t strl)
 {
-  if (isalnum(c))
-    return 1;
-  if (c == '_' || c == '-' || c == ':')
-    return 1;
-  return 0;
+  if (strl < 1)
+    return -1;
+
+  if (!isalpha(str[0]))
+    return 0;
+
+  for (size_t i = 1; i < strl; i++)
+    if (str[i] == '>' || str[i] == '/' || isspace(str[i]))
+      return i;
+  return -1;
+}
+
+static size_t
+strclass_attrib(const char *str, size_t strl)
+{
+  for (size_t i = 0; i < strl; i++)
+    if (str[i] == '=' || str[i] == '>' || str[i] == '/' || isspace(str[i]))
+      return i;
+  return -1;
 }
 
 static reliq_error *
@@ -712,7 +726,7 @@ get_node_matches(const char *src, size_t *pos, const size_t size, const uint16_t
     if (!*hastag) {
       GET_TAG_NAME: ;
       reliq_pattern tag;
-      if ((err = reliq_regcomp(&tag,src,&i,size,' ',NULL,strclass_attrib)))
+      if ((err = reliq_regcomp(&tag,src,&i,size,' ',NULL,strclass_tag)))
         break;
       *hastag = 1;
       reliq_node_matches_node_add(result,MATCHES_TYPE_TAG,&tag,sizeof(reliq_pattern));
@@ -732,7 +746,7 @@ get_node_matches(const char *src, size_t *pos, const size_t size, const uint16_t
         break;
       attrib.flags |= A_VAL_MATTERS;
     } else {
-      if ((err = reliq_regcomp(&attrib.r[0],src,&i,size,'=',NULL,strclass_attrib))) //!
+      if ((err = reliq_regcomp(&attrib.r[0],src,&i,size,'=',NULL,strclass_attrib)))
         break;
 
       while_is(isspace,src,i,size);

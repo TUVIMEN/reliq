@@ -29,7 +29,7 @@ a411ae972b7d0128494039f8b7fa1c91,"div m@>[::2] | '%s\n'"
 8f959f14fbd5492ebdb39c525fa951b1,'div a@[0,3]'
 8e02fa0272153d2edaff0099ee710ed2,'* a@[3]'
 5955b395862add15b4885f9a49bf6b64,'span'
-ba8d2b9408ed255ee92a112fe7ba59be,'div +xml:ss | "%(xml:ss)Uv\n"'
+ba8d2b9408ed255ee92a112fe7ba59be,'div +"+xml:ss" | "%(+xml:ss)Uv\n"'
 97eec0dac19c3a1d23126fdc17f03f0d,'div -.extra id'
 eda6e68de1ab8a712c52a4000ffbfda8,'div #learn-more .right .foldable'
 7001f6d7a9d63328f9c159db3bcd7c17,'div +#search ."annointed"'
@@ -52,8 +52,8 @@ c9d21d2b070462cbc481dd338bceb8ce,'div *=index'
 878f8551765dabf76df6d7580138ef29,'li m@fB>"[Ss]econd"'
 252bcac417f8fa4abe1e394499cfa2c2,'li m@eE>"(t|d)"'
 576a3a45c7af6f7ca27a1a65153109b2,'li m@biE>"(s|t)"'
-50fba18ceb481645ce178ad2b8cc99b4,'* | "%a\n"'
-af77cdc630866f7821cbeffcc7db9628,'* | "%Ua\n"'
+201ed1716f086e2012e18248a8055adb,'* | "%a\n"'
+8fd529764c27ee8ebe68fe3ea1539218,'* | "%Ua\n"'
 f2f48f41d71b7139a55b484bfeb4a1a5,'* | "%v\n"'
 6af594ebea40d6298a6a4c20192266a5,'* | "%Uv\n"'
 ef30bf351de1d0cd95f7d7d167dc2b81,'div | "%(class)v\n"'
@@ -98,8 +98,8 @@ e47d4d3285c95618f1efb1bc71132fb8,'{ li m@\, }'
 < 1.html
 % RELIQ_AUTOCLOSING
 # example file was build to test tag ommission, the following tests fail only because of that
-5b1fd1bec0eca8bc27f56a29d1cf3bf4,-l
-17274115d3cf302655faefd8a11670d8,-Fl
+8842e94289ddc6646ae8c3550333c19b,-l
+a148de2553f228ef3efa6842bdcbc9c3,-Fl
 4b598550215418bab967d2d9614cea93,-F 'div;li;a'
 0f278918c0ad665cb78b28b995cad495,'* m@v>"<" m@>[1:]'
 45570f89bc1aa25501382114c37a8893,'li'

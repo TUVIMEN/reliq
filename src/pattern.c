@@ -125,7 +125,7 @@ regcomp_get_flags(reliq_pattern *pattern, const char *src, size_t *pos, const si
 }
 
 static reliq_error *
-regcomp_add_pattern(reliq_pattern *pattern, const char *src, const size_t size, uchar (*checkstrclass)(char))
+regcomp_add_pattern(reliq_pattern *pattern, const char *src, const size_t size, size_t (*checkstrclass)(const char*,size_t))
 {
   uint16_t match = pattern->flags&RELIQ_PATTERN_MATCH,
     type = pattern->flags&RELIQ_PATTERN_TYPE;
@@ -136,10 +136,11 @@ regcomp_add_pattern(reliq_pattern *pattern, const char *src, const size_t size, 
   }
 
   if (type == RELIQ_PATTERN_TYPE_STR) {
-    if (checkstrclass)
-      for (size_t i = 0; i < size; i++)
-        if (!checkstrclass(src[i]))
-          return script_err("pattern %lu: '%c' is a character impossible to find in searched field",i,src[i]);
+    if (checkstrclass) {
+      size_t e = checkstrclass(src,size);
+      if (e != (size_t)-1)
+        return script_err("pattern %lu: '%c' is a character impossible to find in searched field",e,src[e]);
+    }
     pattern->match.str.b = memdup(src,size);
     pattern->match.str.s = size;
   } else {
@@ -197,7 +198,7 @@ reliq_regfree(reliq_pattern *pattern)
 }
 
 reliq_error *
-reliq_regcomp(reliq_pattern *pattern, const char *src, size_t *pos, const size_t size, const char delim, const char *flags, uchar (*checkstrclass)(char))
+reliq_regcomp(reliq_pattern *pattern, const char *src, size_t *pos, const size_t size, const char delim, const char *flags, size_t (*checkstrclass)(const char*, size_t))
 {
   reliq_error *err=NULL;
   size_t i = *pos;
