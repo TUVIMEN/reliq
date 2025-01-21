@@ -176,7 +176,7 @@ attrib_handle(const char *f, size_t *pos, const size_t s, flexarr *attribs) //at
 
 #ifdef RELIQ_PHPTAGS
 static void
-phptag_handle(const char *f, size_t *pos, const size_t s, reliq_hnode *hnode)
+phptag_handle(const char *f, size_t *pos, const size_t s, reliq_hnode *hnode, flexarr *nodes) //nodes: reliq_hnode
 {
   size_t i = *pos;
   i++;
@@ -500,7 +500,7 @@ html_struct_handle(size_t *pos, const uint16_t lvl, html_state *st)
 
   #ifdef RELIQ_PHPTAGS
   if (unlikely(f[i] == '?')) {
-    phptag_handle(f,&i,s,hnode);
+    phptag_handle(f,&i,s,hnode,nodes);
     goto END;
   }
   #endif
