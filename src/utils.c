@@ -316,23 +316,6 @@ splchar2(const char *src, const size_t srcl, size_t *traversed)
   return ret;
 }
 
-uint32_t
-enc16utf8(const uint16_t c)
-{
-  uint32_t d = 0;
-  char bcount = 15;
-  while (bcount != -1 && ((c>>bcount)&1) == 0)
-    bcount--;
-  bcount++;
-  if (bcount < 8) {
-    d = c;
-  } else if (bcount < 12) {
-    d |= 0xc080|(c&0x3f)|((c&0x7c0)<<2);
-  } else
-    d |= 0xe08080|(c&0x3f)|((c&0xfc0)<<2)|((c&0xf000)<<4);
-  return d;
-}
-
 static uchar
 most_significant_bit(uint32_t n)
 {
@@ -340,6 +323,22 @@ most_significant_bit(uint32_t n)
   while (n >>= 1)
     ret++;
   return ret;
+}
+
+uint32_t
+enc16utf8(const uint16_t c)
+{
+  uint32_t ret = 0;
+  char msb = most_significant_bit(c);
+
+  if (msb < 7)
+    return c;
+
+  ret |= c&0x3f;
+
+  if (msb < 11)
+    return ret|0xc080|((c&0x7c0)<<2);
+  return ret|0xe08080|((c&0xfc0)<<2)|((c&0xf000)<<4);
 }
 
 uint64_t
@@ -352,7 +351,7 @@ enc32utf8(const uint32_t c)
 
   uint64_t ret = (c&0x3f);
   if (msb < 11)
-    return ret|0xc081|((c&0x7c0)<<2);
+    return ret|0xc080|((c&0x7c0)<<2);
   ret |= (c&0xfc0)<<2;
   if (msb < 16)
     return ret|0xe08080|((c&0xf000)<<4);
