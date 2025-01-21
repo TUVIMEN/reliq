@@ -62,7 +62,7 @@ b23af3ea1d179b7a6f825bde007ed3b2,'a href=b>blog | "%(href)v\n" sed "s/\(.*\)ht.*
 9d94e2c60d07499dc56b690ec204c045,'a / wc'
 d21256f48e2385650c20e1d2c84a37e1,'a / wc "Lcwl"'
 d7ee07e0ea14d000b4bb8fea226d28dc,'a / wc "wc"'
-a1baa078ce966b3022b8c760e4f3516e,'li | "%i l\\a\j \U204 \xa \u \u000 \n"'
+86d5b4452238cd2dd05564f03d192849,'li | "%i l\\a\j \U204 \xa \u \u000 \n"'
 63b8adc195d312913d03d0c105b856eb,'li | "%i\taa\n" / sed "y/\x09k/\nL/"'
 60f1112bf3c2d1cca9431fa8cc8ec58f,'li | "%i\n" / sed "\#\U0001f4e7#p" "n"'
 4429af3e442723009725527261d86453,'li | "%i\n" / sed "s/\x61/|\ua0a|/g; s/\i/\J/g; s/=\o42p/=\x27p/g; s/\o143/\o322/g"'
