@@ -125,58 +125,104 @@ regcomp_get_flags(reliq_pattern *pattern, const char *src, size_t *pos, const si
 }
 
 static reliq_error *
+regcomp_add_pattern_str(reliq_pattern *pattern, const char *src, const size_t size, size_t (*checkstrclass)(const char*,size_t))
+{
+  if (checkstrclass) {
+    size_t e = checkstrclass(src,size);
+    if (e != (size_t)-1)
+      return script_err("pattern %lu: '%c' is a character impossible to find in searched field",e,src[e]);
+  }
+  reliq_str *s = &pattern->match.str;
+  s->b = memdup(src,size);
+  s->s = size;
+  splchars_conv(s->b,&s->s);
+  return NULL;
+}
+
+static uint32_t
+escapes_of_escapes_count(const char *src, const size_t size)
+{
+  uint32_t ret = 0;
+  for (size_t i = 1; i < size; i++) {
+    if (src[i-1] == '\\' && src[i] == '\\') {
+      i++;
+      ret++;
+    }
+  }
+  return ret;
+}
+
+static size_t
+escapes_of_escapes_add(char *dest, const char *src, const size_t size)
+{
+  size_t ret = size;
+  for (size_t i = 0, j = 0; i < size; i++, j++) {
+    dest[j] = src[i];
+    if (src[i] == '\\' && i+1 < size && src[i+1] == '\\') {
+      dest[++j] = src[++i];
+      dest[++j] = src[i];
+      dest[++j] = src[i];
+      ret += 2;
+    }
+  }
+  return ret;
+}
+
+static reliq_error *
+regcomp_add_pattern_regex(reliq_pattern *pattern, const char *src, const size_t size, const uint16_t type)
+{
+  uint16_t match = pattern->flags&RELIQ_PATTERN_MATCH;
+  int regexflags = REG_NOSUB;
+
+  if (pattern->flags&RELIQ_PATTERN_CASE_INSENSITIVE)
+    regexflags |= REG_ICASE;
+  if (type == RELIQ_PATTERN_TYPE_ERE)
+    regexflags |= REG_EXTENDED;
+
+  size_t addedspace = 0;
+  uchar fullmatch = (match == RELIQ_PATTERN_MATCH_FULL) ? 1 : 0;
+
+  if (fullmatch)
+    addedspace = 2;
+  else if (match == RELIQ_PATTERN_MATCH_BEGINNING || match == RELIQ_PATTERN_MATCH_ENDING)
+    addedspace = 1;
+
+  //both reliq and regex library have escaping systems, because of that every '\\' has to be converted to '\\\\'
+  addedspace += escapes_of_escapes_count(src,size)<<1;
+
+  char *tmp = malloc(size+addedspace+1);
+  size_t patternl = 0;
+
+  if (fullmatch || match == RELIQ_PATTERN_MATCH_BEGINNING)
+    tmp[patternl++] = '^';
+
+  patternl += escapes_of_escapes_add(tmp+patternl,src,size); //it also behaves like memcpy
+  splchars_conv(tmp,&patternl);
+
+  if (fullmatch || match == RELIQ_PATTERN_MATCH_ENDING)
+    tmp[patternl++] = '$';
+  tmp[patternl] = 0;
+
+  int r = regcomp(&pattern->match.reg,tmp,regexflags);
+  free(tmp);
+  if (r != 0)
+    return script_err("pattern: regcomp: could not compile pattern");
+  return NULL;
+}
+
+static reliq_error *
 regcomp_add_pattern(reliq_pattern *pattern, const char *src, const size_t size, size_t (*checkstrclass)(const char*,size_t))
 {
-  uint16_t match = pattern->flags&RELIQ_PATTERN_MATCH,
-    type = pattern->flags&RELIQ_PATTERN_TYPE;
-
   if (!size) {
     pattern->flags |= RELIQ_PATTERN_EMPTY;
     return NULL;
   }
 
-  if (type == RELIQ_PATTERN_TYPE_STR) {
-    if (checkstrclass) {
-      size_t e = checkstrclass(src,size);
-      if (e != (size_t)-1)
-        return script_err("pattern %lu: '%c' is a character impossible to find in searched field",e,src[e]);
-    }
-    pattern->match.str.b = memdup(src,size);
-    pattern->match.str.s = size;
-  } else {
-    int regexflags = REG_NOSUB;
-    if (pattern->flags&RELIQ_PATTERN_CASE_INSENSITIVE)
-      regexflags |= REG_ICASE;
-    if (type == RELIQ_PATTERN_TYPE_ERE)
-      regexflags |= REG_EXTENDED;
+  uint16_t type = pattern->flags&RELIQ_PATTERN_TYPE;
+  if (type == RELIQ_PATTERN_TYPE_STR)
+    return regcomp_add_pattern_str(pattern,src,size,checkstrclass);
 
-    size_t addedspace = 0;
-    uchar fullmatch = (match == RELIQ_PATTERN_MATCH_FULL) ? 1 : 0;
-
-    if (fullmatch)
-      addedspace = 2;
-    else if (match == RELIQ_PATTERN_MATCH_BEGINNING || match == RELIQ_PATTERN_MATCH_ENDING)
-      addedspace = 1;
-
-    char *tmp = malloc(size+addedspace+1);
-    size_t p = 0;
-
-    if (fullmatch || match == RELIQ_PATTERN_MATCH_BEGINNING)
-      tmp[p++] = '^';
-
-    memcpy(tmp+p,src,size);
-    p += size;
-
-    if (fullmatch || match == RELIQ_PATTERN_MATCH_ENDING)
-      tmp[p++] = '$';
-    tmp[p] = 0;
-
-    int r = regcomp(&pattern->match.reg,tmp,regexflags);
-    free(tmp);
-    if (r != 0)
-      return script_err("pattern: regcomp: could not compile pattern");
-  }
-  return NULL;
+  return regcomp_add_pattern_regex(pattern,src,size,type);
 }
 
 void

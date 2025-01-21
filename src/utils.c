@@ -338,7 +338,7 @@ most_significant_bit(uint32_t n)
 {
   uchar ret = 0;
   while (n >>= 1)
-      ret++;
+    ret++;
   return ret;
 }
 
@@ -415,12 +415,8 @@ splchar3(const char *src, const size_t srcl, char *result, size_t *resultl, size
     return;
   }
 
-  if (*src == 'u') {
-    splchar3_unicode(src,srcl,result,resultl,traversed,4);
-    return;
-  }
-  if (*src == 'U') {
-    splchar3_unicode(src,srcl,result,resultl,traversed,8);
+  if (*src == 'u' || *src == 'U') {
+    splchar3_unicode(src,srcl,result,resultl,traversed,(*src == 'u') ? 4 : 8);
     return;
   }
 
@@ -443,8 +439,8 @@ delstr(char *src, const size_t pos, size_t *size, const size_t count)
   }
 
   const size_t s = *size-count;
-  for (size_t i = pos; i < s; i++)
-    src[i] = src[i+count];
+  memmove(src+pos,src+pos+count,s);
+
   src[s] = 0;
   *size = s;
   return src;
