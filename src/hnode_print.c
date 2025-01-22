@@ -21,6 +21,7 @@
 #include "ctype.h"
 #include "htmlescapecodes.h"
 #include "utils.h"
+#include "hnode.h"
 #include "hnode_print.h"
 
 #define PC_UNTRIM 0x1
@@ -40,11 +41,12 @@ print_chars(char const *src, size_t size, const uint8_t flags, SINK *outfile)
 }
 
 static void
-print_attribs(const reliq_hnode *hnode, const uint8_t flags, SINK *outfile)
+print_attribs(const reliq_cstr_pair *attribs, const uint32_t attribsl, const uint8_t flags, SINK *outfile)
 {
-  reliq_cstr_pair *a = hnode->attribs;
-  const size_t size = hnode->attribsl;
-  for (uint16_t j = 0; j < size; j++) {
+  const reliq_cstr_pair *a = attribs;
+  if (!a)
+    return;
+  for (uint32_t j = 0; j < attribsl; j++) {
     sink_put(outfile,' ');
     sink_write(outfile,a[j].f.b,a[j].f.s);
     sink_write(outfile,"=\"",2);
@@ -103,6 +105,11 @@ hnode_printf(SINK *outfile, const char *format, const size_t formatl, const reli
   char const *text=NULL;
   size_t textl=0;
   int num = -1;
+  reliq_cstr_pair *attribs = rq->attribs;
+  uint32_t attribsl = hnode_attribsl(rq,hnode);
+  if (hnode->attribs)
+    attribs += hnode->attribs;
+
   while (i < formatl) {
     if (format[i] == '\\') {
       size_t resultl,traversed;
@@ -158,9 +165,9 @@ hnode_printf(SINK *outfile, const char *format, const size_t formatl, const reli
           break;
         case 'L': print_uint(hnode->lvl,outfile); break;
         case 'a':
-          print_attribs(hnode,printflags,outfile); break;
+          print_attribs(attribs,attribsl,printflags,outfile); break;
         case 'v':
-          print_attrib_value(hnode->attribs,hnode->attribsl,text,textl,num,printflags,outfile);
+          print_attrib_value(attribs,attribsl,text,textl,num,printflags,outfile);
           break;
         case 's': print_uint(hnode->all.s,outfile); break;
         case 'c': print_uint(hnode->desc_count,outfile); break;

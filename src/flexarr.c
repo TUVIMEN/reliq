@@ -53,7 +53,8 @@ flexarr_inc(flexarr *f)
   return ((char*)f->v)+(f->size++*f->elsize);
 }
 
-void * flexarr_incz(flexarr *f)
+void *
+flexarr_incz(flexarr *f)
 {
     void *v = flexarr_inc(f);
     if (unlikely(!v))

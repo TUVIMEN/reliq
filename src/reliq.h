@@ -75,9 +75,10 @@ typedef struct {
   reliq_cstr all;
   reliq_cstr tag;
   reliq_cstr insides;
-  reliq_cstr_pair *attribs;
+  uint32_t attribs;
+  //reliq_cstr_pair *attribs;
   uint32_t desc_count; //count of descendants
-  uint16_t attribsl;
+  //uint16_t attribsl;
   uint16_t lvl;
 } reliq_hnode; //html node
 
@@ -118,12 +119,14 @@ typedef struct {
 } reliq_expr;
 
 typedef struct {
-  char const *data;
   int (*freedata)(void *addr, size_t len);
+  char const *data;
   reliq_hnode *nodes;
+  reliq_cstr_pair *attribs;
 
-  size_t nodesl;
   size_t datal; //length of data
+  size_t nodesl;
+  size_t attribsl;
 } reliq;
 
 int reliq_std_free(void *addr, size_t len); //mapping to free(3) that can be used for freedata
@@ -132,7 +135,7 @@ reliq_error *reliq_init(const char *data, const size_t size, int (*freedata)(voi
 int reliq_free(reliq *rq);
 
 reliq reliq_from_compressed(const reliq_compressed *compressed, const size_t compressedl, const reliq *rq);
-reliq reliq_from_compressed_independent(const reliq_compressed *compressed, const size_t compressedl);
+reliq reliq_from_compressed_independent(const reliq_compressed *compressed, const size_t compressedl, const reliq *rq);
 
 //node pattern
 reliq_error *reliq_ncomp(const char *script, const size_t size, reliq_npattern *nodep);

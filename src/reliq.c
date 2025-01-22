@@ -26,9 +26,11 @@
 #include "sink.h"
 #include "utils.h"
 #include "html.h"
+#include "hnode.h"
 #include "npattern.h"
 
 #define FROM_COMPRESSED_NODES_INC (1<<10)
+#define FROM_COMPRESSED_ATTRIBS_INC (1<<10)
 
 reliq_error *
 reliq_set_error(const int code, const char *fmt, ...)
@@ -42,25 +44,20 @@ reliq_set_error(const int code, const char *fmt, ...)
   return err;
 }
 
-void
-reliq_free_hnodes(reliq_hnode *nodes, const size_t nodesl)
-{
-  for (size_t i = 0; i < nodesl; i++)
-    free(nodes[i].attribs);
-  if (nodesl)
-    free(nodes);
-}
-
 int
 reliq_free(reliq *rq)
 {
   if (rq == NULL)
     return -1;
 
-  reliq_free_hnodes(rq->nodes,rq->nodesl);
+  if (rq->nodesl)
+    free(rq->nodes);
+
+  if (rq->attribsl)
+    free(rq->attribs);
 
   if (rq->freedata)
-      return (*rq->freedata)((void*)rq->data,rq->datal);
+    return (*rq->freedata)((void*)rq->data,rq->datal);
   return 0;
 }
 
@@ -73,11 +70,10 @@ reliq_fmatch(const char *data, const size_t size, SINK *output, const reliq_npat
 #endif
   size_t nodefl)
 {
-  reliq t;
-  t.data = data;
-  t.datal = size;
-  t.nodes = NULL;
-  t.nodesl = 0;
+  reliq t = {
+    .data = data,
+    .datal = size
+  };
 
   SINK *out = output;
   if (output == NULL)
@@ -90,7 +86,7 @@ reliq_fmatch(const char *data, const size_t size, SINK *output, const reliq_npat
     .nodef = nodef,
     .nodefl = nodefl
   };
-  reliq_error *err = html_handle(data,size,NULL,NULL,&expr);
+  reliq_error *err = html_handle(data,size,NULL,NULL,NULL,NULL,&expr);
 
   if (output == NULL)
     sink_close(out);
@@ -99,33 +95,33 @@ reliq_fmatch(const char *data, const size_t size, SINK *output, const reliq_npat
 }
 
 static void
-reliq_hnode_shift(reliq_hnode *node, const size_t pos)
+reliq_hnode_shift(reliq_cstr_pair *attribs, reliq_hnode *node, const size_t pos, const uint32_t attribsl)
 {
   char const *ref = node->all.b;
-  #define shift_cstr(x) x.b = (char const*)(x.b-ref)+pos
+  #define shift_cstr(x) (x).b = (char const*)((x).b-ref)+pos
 
   shift_cstr(node->all);
   shift_cstr(node->tag);
   shift_cstr(node->insides);
-  const size_t size = node->attribsl;
-  for (size_t i = 0; i < size; i++) {
-    shift_cstr(node->attribs[i].f);
-    shift_cstr(node->attribs[i].s);
+  reliq_cstr_pair *a = attribs+node->attribs;
+  for (size_t i = 0; i < attribsl; i++) {
+    shift_cstr(a[i].f);
+    shift_cstr(a[i].s);
   }
 }
 
 static void
-reliq_hnode_shift_finalize(reliq_hnode *node, char *ref)
+reliq_hnode_shift_finalize(reliq_cstr_pair *attribs, reliq_hnode *node, char *ref, const uint32_t attribsl)
 {
-  #define shift_cstr_p(x) x.b = ref+(size_t)x.b
+  #define shift_cstr_p(x) (x).b = ref+(size_t)(x).b
 
   shift_cstr_p(node->all);
   shift_cstr_p(node->tag);
   shift_cstr_p(node->insides);
-  const size_t size = node->attribsl;
-  for (size_t i = 0; i < size; i++) {
-    shift_cstr_p(node->attribs[i].f);
-    shift_cstr_p(node->attribs[i].s);
+  reliq_cstr_pair *a = attribs+node->attribs;
+  for (size_t i = 0; i < attribsl; i++) {
+    shift_cstr_p(a[i].f);
+    shift_cstr_p(a[i].s);
   }
 }
 
@@ -170,91 +166,87 @@ reliq_hnode_shift_finalize(reliq_hnode *node, char *ref)
   This however will not allow for changing levels to be relative to parent.
 */
 
-reliq
-reliq_from_compressed_independent(const reliq_compressed *compressed, const size_t compressedl)
+void
+convert_from_compressed_add_descendants(const reliq *rq, const reliq_hnode *root, flexarr *nodes, flexarr *attribs, const size_t pos, const uchar independent)
 {
-  reliq t;
+  const size_t desc_count = root->desc_count;
+  const uint16_t lvl = root->lvl;
+  reliq_hnode *new;
+  for (size_t j = 0; j <= desc_count; j++) {
+    new = (reliq_hnode*)flexarr_inc(nodes);
+    const reliq_hnode *hnode = root+j;
+    memcpy(new,root+j,sizeof(reliq_hnode));
+
+    uint32_t attribsl = hnode_attribsl(rq,hnode);
+    if (attribsl)
+      flexarr_append(attribs,rq->attribs+hnode->attribs,attribsl);
+
+    size_t tpos = pos+(new->all.b-root->all.b);
+
+    if (independent)
+      reliq_hnode_shift(attribs->v,new,tpos,attribsl);
+    new->lvl -= lvl;
+  }
+}
+
+static reliq
+convert_from_compressed(const reliq_compressed *compressed, const size_t compressedl, const reliq *rq, const uchar independent)
+{
+  reliq ret;
 
   char *ptr;
   size_t pos=0,size;
-  uint16_t lvl;
-  SINK *out = sink_open(&ptr,&size);
+  SINK *out = NULL;
+  if (independent)
+    out = sink_open(&ptr,&size);
   flexarr *nodes = flexarr_init(sizeof(reliq_hnode),FROM_COMPRESSED_NODES_INC);
-  reliq_hnode *current,*new;
+  flexarr *attribs = flexarr_init(sizeof(reliq_cstr_pair),FROM_COMPRESSED_ATTRIBS_INC);
+  reliq_hnode *current;
 
   for (size_t i = 0; i < compressedl; i++) {
     current = compressed[i].hnode;
     if ((void*)current < (void*)10)
       continue;
 
-    lvl = current->lvl;
+    convert_from_compressed_add_descendants(rq,current,nodes,attribs,pos,independent);
 
-    const size_t desc_count = current->desc_count;
-    for (size_t j = 0; j <= desc_count; j++) {
-      new = (reliq_hnode*)flexarr_inc(nodes);
-      memcpy(new,current+j,sizeof(reliq_hnode));
-
-      new->attribs = NULL;
-      if ((current+j)->attribsl)
-        new->attribs = memdup((current+j)->attribs,sizeof(reliq_cstr_pair)*(current+j)->attribsl);
-
-      size_t tpos = pos+(new->all.b-current->all.b);
-
-      reliq_hnode_shift(new,tpos);
-      new->lvl -= lvl;
-    }
-
-    sink_write(out,current->all.b,current->all.s);
+    if (independent)
+      sink_write(out,current->all.b,current->all.s);
     pos += current->all.s;
   }
 
-  sink_close(out);
+  flexarr_conv(nodes,(void**)&ret.nodes,&ret.nodesl);
+  flexarr_conv(attribs,(void**)&ret.attribs,&ret.attribsl);
 
-  const size_t nodessize = nodes->size;
-  for (size_t i = 0; i < nodessize; i++)
-    reliq_hnode_shift_finalize(&((reliq_hnode*)nodes->v)[i],ptr);
+  if (independent) {
+    ret.freedata = reliq_std_free;
+    sink_close(out);
+    ret.data = ptr;
+    ret.datal = size;
 
-  flexarr_conv(nodes,(void**)&t.nodes,&t.nodesl);
-  t.freedata = reliq_std_free;
-  t.data = ptr;
-  t.datal = size;
-  return t;
+    const size_t nodessize = ret.nodesl;
+    for (size_t i = 0; i < nodessize; i++) {
+      reliq_hnode *hn = ret.nodes+i;
+      reliq_hnode_shift_finalize(ret.attribs,hn,ptr,hnode_attribsl(&ret,hn));
+    }
+  } else {
+    ret.freedata = NULL;
+    ret.data = rq->data;
+    ret.datal = rq->datal;
+  }
+  return ret;
+}
+
+reliq
+reliq_from_compressed_independent(const reliq_compressed *compressed, const size_t compressedl, const reliq *rq)
+{
+  return convert_from_compressed(compressed,compressedl,rq,1);
 }
 
 reliq
 reliq_from_compressed(const reliq_compressed *compressed, const size_t compressedl, const reliq *rq)
 {
-  reliq t;
-  t.freedata = NULL;
-  t.data = rq->data;
-  t.datal = rq->datal;
-
-  uint16_t lvl;
-  flexarr *nodes = flexarr_init(sizeof(reliq_hnode),FROM_COMPRESSED_NODES_INC);
-  reliq_hnode *current,*new;
-
-  for (size_t i = 0; i < compressedl; i++) {
-    current = compressed[i].hnode;
-    if ((void*)current < (void*)10)
-      continue;
-
-    lvl = current->lvl;
-
-    const size_t desc_count = current->desc_count;
-    for (size_t j = 0; j <= desc_count; j++) {
-      new = (reliq_hnode*)flexarr_inc(nodes);
-      memcpy(new,current+j,sizeof(reliq_hnode));
-
-      new->attribs = NULL;
-      if ((current+j)->attribsl)
-        new->attribs = memdup((current+j)->attribs,sizeof(reliq_cstr_pair)*(current+j)->attribsl);
-
-      new->lvl -= lvl;
-    }
-  }
-
-  flexarr_conv(nodes,(void**)&t.nodes,&t.nodesl);
-  return t;
+  return convert_from_compressed(compressed,compressedl,rq,0);
 }
 
 int
@@ -271,7 +263,7 @@ reliq_init(const char *data, const size_t size, int (*freedata)(void *addr, size
   rq->datal = size;
   rq->freedata = freedata;
 
-  reliq_error *err = html_handle(data,size,&rq->nodes,&rq->nodesl,NULL);
+  reliq_error *err = html_handle(data,size,&rq->nodes,&rq->nodesl,&rq->attribs,&rq->attribsl,NULL);
 
   if (err)
     reliq_free(rq);

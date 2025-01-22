@@ -28,10 +28,8 @@
 #include "npattern.h"
 #include "html.h"
 
-#define ATTRIB_INC (1<<4)
+#define ATTRIB_INC (1<<13)
 #define NODES_INC (1<<13)
-
-void reliq_free_hnodes(reliq_hnode *nodes, const size_t nodesl);
 
 const reliq_str8 selfclosing_s[] = { //tags that don't end with </tag>
   {"br",2},{"img",3},{"input",5},{"link",4},{"meta",4},{"hr",2},{"col",3},{"embed",5},
@@ -446,11 +444,29 @@ attribs_handle(const char *f, size_t *pos, const size_t s, reliq_hnode *hnode, f
 }
 
 static reliq_error *
-exec_hnode(const reliq_hnode *hn, struct html_process_expr *expr)
+exec_hnode(const reliq_hnode *hn, struct html_process_expr *expr, flexarr *nodes, flexarr *attribs)
 {
-  if (expr->expr && reliq_nexec(expr->rq,hn,NULL,expr->expr))
-    return node_output(hn,NULL,expr->nodef,expr->nodefl,expr->output,expr->rq);
-  return NULL;
+  if (!expr->expr)
+    return NULL;
+
+  reliq *rq = expr->rq;
+  rq->nodes = (reliq_hnode*)nodes->v;
+  rq->nodesl = nodes->size;
+  rq->attribs = (reliq_cstr_pair*)attribs->v;
+  rq->attribsl = attribs->size;
+
+  int r = reliq_nexec(expr->rq,hn,NULL,expr->expr);
+  if (!r)
+    return NULL;
+
+  reliq_error *err = node_output(hn,NULL,expr->nodef,expr->nodefl,expr->output,expr->rq);
+
+  rq->nodes = NULL;
+  rq->nodesl = 0;
+  rq->attribs = NULL;
+  rq->attribsl = 0;
+
+  return err;
 }
 
 static uint64_t
@@ -470,7 +486,7 @@ html_struct_handle(size_t *pos, const uint16_t lvl, html_state *st)
   flexarr *nodes = st->nodes;
   flexarr *attribs = st->attribs;
 
-  size_t attrib_start = attribs->size;
+  const uint32_t attrib_start = attribs->size;
   struct tag_info taginfo = {
     .foundend = 1
   };
@@ -511,7 +527,8 @@ html_struct_handle(size_t *pos, const uint16_t lvl, html_state *st)
     goto END;
   }
 
-  if (attribs_handle(f,&i,s,hnode,attribs))
+  uchar r = attribs_handle(f,&i,s,hnode,attribs);
+  if (r)
     goto END;
 
   #define search_array(x,y) for (uchar _j = 0; _j < (uchar)LENGTH(x); _j++) \
@@ -558,24 +575,16 @@ html_struct_handle(size_t *pos, const uint16_t lvl, html_state *st)
   if (!taginfo.foundend)
     hnode->insides.s = hnode->all.s;
 
-  const size_t attribsl = attribs->size-attrib_start;
-  hnode->attribsl = attribsl;
   hnode->desc_count = ret-1;
 
-  const size_t attrib_elsize = attribs->elsize;
-  const void *attribsv = attribs->v;
-  hnode->attribs = (reliq_cstr_pair*)((const char*)attribsv+(attrib_start*attrib_elsize));
+  hnode->attribs = attrib_start;
 
   if (st->expr) {
-    st->err = exec_hnode(hnode,st->expr);
+    st->err = exec_hnode(hnode,st->expr,nodes,attribs);
 
     nodes->size = hnode-(reliq_hnode*)nodes->v;
-  } else {
-    hnode->attribs = attribsl ?
-        memdup(hnode->attribs,attribsl*attrib_elsize)
-        : NULL;
+    attribs->size = attrib_start;
   }
-  attribs->size = attrib_start;
 
   ERR: ;
   *pos = i;
@@ -583,16 +592,16 @@ html_struct_handle(size_t *pos, const uint16_t lvl, html_state *st)
 }
 
 reliq_error *
-html_handle(const char *data, const size_t size, reliq_hnode **nodes, size_t *nodesl, struct html_process_expr *expr)
+html_handle(const char *data, const size_t size, reliq_hnode **nodes, size_t *nodesl, reliq_cstr_pair **attribs, size_t *attribsl, struct html_process_expr *expr)
 {
   flexarr *nodes_buffer = flexarr_init(sizeof(reliq_hnode),NODES_INC);
-  flexarr *attrib_buffer = (void*)flexarr_init(sizeof(reliq_cstr_pair),ATTRIB_INC);
+  flexarr *attribs_buffer = (void*)flexarr_init(sizeof(reliq_cstr_pair),ATTRIB_INC);
   html_state st = {
     .expr = expr,
     .f = data,
     .s = size,
     .nodes = nodes_buffer,
-    .attribs = attrib_buffer,
+    .attribs = attribs_buffer,
   };
 
   for (size_t i = 0; i < size; i++) {
@@ -608,19 +617,20 @@ html_handle(const char *data, const size_t size, reliq_hnode **nodes, size_t *no
   }
 
   END: ;
-  flexarr_free(attrib_buffer);
 
-  if (st.err) {
-    reliq_free_hnodes(nodes_buffer->v,nodes_buffer->size);
-    free(nodes_buffer);
+  if (st.err || expr) {
+    flexarr_free(nodes_buffer);
+    flexarr_free(attribs_buffer);
+
     if (!expr) {
       *nodes = NULL;
       *nodesl = 0;
+      *attribs = NULL;
+      *attribsl = 0;
     }
-  } else if (expr) {
-    flexarr_free(nodes_buffer);
   } else {
     flexarr_conv(nodes_buffer,(void**)nodes,nodesl);
+    flexarr_conv(attribs_buffer,(void**)attribs,attribsl);
   }
   return st.err;
 }

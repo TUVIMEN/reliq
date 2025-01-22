@@ -28,6 +28,7 @@
 #include "range.h"
 #include "pattern.h"
 #include "exprs.h"
+#include "hnode.h"
 #include "npattern.h"
 
 #define PATTRIB_INC 8
@@ -222,13 +223,14 @@ reliq_nfree(reliq_npattern *nodep)
 }
 
 static int
-pattrib_match(const reliq_hnode *hnode, const struct reliq_pattrib *attrib)
+pattrib_match(const reliq *rq, const reliq_hnode *hnode, const struct reliq_pattrib *attrib)
 {
-  const reliq_cstr_pair *a = hnode->attribs;
+  reliq_cstr_pair *a = rq->attribs+hnode->attribs;
   uchar found = 0;
-  const size_t size = hnode->attribsl;
-  for (uint16_t i = 0; i < size; i++) {
-    if (!range_match(i,&attrib->position,hnode->attribsl-1))
+  uint32_t attribsl = hnode_attribsl(rq,hnode);
+
+  for (uint16_t i = 0; i < attribsl; i++) {
+    if (!range_match(i,&attrib->position,attribsl-1))
       continue;
 
     if (!reliq_regexec(&attrib->r[0],a[i].f.b,a[i].f.s))
@@ -255,7 +257,7 @@ match_hook(const reliq *rq, const reliq_hnode *hnode, const reliq_hnode *parent,
 
   switch (flags&H_KINDS) {
     case H_ATTRIBUTES:
-      srcl = hnode->attribsl;
+      srcl = hnode_attribsl(rq,hnode);
       break;
     case H_LEVEL_RELATIVE:
       if (parent) {
@@ -320,6 +322,9 @@ match_hook(const reliq *rq, const reliq_hnode *hnode, const reliq_hnode *parent,
     memset(&r,0,sizeof(reliq));
     r.nodes = (reliq_hnode*)hnode;
     r.nodesl = hnode->desc_count+1;
+    r.attribs = rq->attribs;
+    const reliq_hnode *last = hnode+hnode->desc_count;
+    r.attribsl = last->attribs+hnode_attribsl(rq,last);
 
     size_t compressedl = 0;
     reliq_error *err = reliq_exec_r(&r,hnode,NULL,NULL,&compressedl,&hook->match.expr);
@@ -360,7 +365,7 @@ reliq_node_matched_match(const reliq *rq, const reliq_hnode *hnode, const reliq_
           return 0;
         break;
       case MATCHES_TYPE_ATTRIB:
-        if (!pattrib_match(hnode,list[i].data.attrib))
+        if (!pattrib_match(rq,hnode,list[i].data.attrib))
           return 0;
         break;
       case MATCHES_TYPE_GROUPS:
