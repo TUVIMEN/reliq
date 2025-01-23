@@ -47,9 +47,9 @@ extern "C" {
 #define RELIQ_ERROR_SCRIPT 15
 
 typedef struct {
-  char *b;
+  char *const b;
   uint8_t s;
-} reliq_str8;
+} reliq_cstr8;
 
 typedef struct {
   char *b;

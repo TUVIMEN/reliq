@@ -85,7 +85,7 @@
 reliq_error *reliq_exec_r(reliq *rq, const reliq_hnode *parent, SINK *output, reliq_compressed **outnodes, size_t *outnodesl, const reliq_expr *expr);
 
 struct match_hook {
-  reliq_str8 name;
+  reliq_cstr8 name;
   uint16_t flags; //H_
 };
 
