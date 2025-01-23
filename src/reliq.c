@@ -95,7 +95,7 @@ reliq_fmatch(const char *data, const size_t size, SINK *output, const reliq_npat
 }
 
 static void
-reliq_hnode_shift(reliq_cstr_pair *attribs, reliq_hnode *node, const size_t pos, const uint32_t attribsl)
+reliq_hnode_shift(reliq_attrib *attribs, reliq_hnode *node, const size_t pos, const uint32_t attribsl)
 {
   char const *ref = node->all.b;
   #define shift_cstr(x) (x).b = (char const*)((x).b-ref)+pos
@@ -103,7 +103,7 @@ reliq_hnode_shift(reliq_cstr_pair *attribs, reliq_hnode *node, const size_t pos,
   shift_cstr(node->all);
   shift_cstr(node->tag);
   shift_cstr(node->insides);
-  reliq_cstr_pair *a = attribs+node->attribs;
+  reliq_attrib *a = attribs+node->attribs;
   for (size_t i = 0; i < attribsl; i++) {
     shift_cstr(a[i].f);
     shift_cstr(a[i].s);
@@ -111,14 +111,14 @@ reliq_hnode_shift(reliq_cstr_pair *attribs, reliq_hnode *node, const size_t pos,
 }
 
 static void
-reliq_hnode_shift_finalize(reliq_cstr_pair *attribs, reliq_hnode *node, char *ref, const uint32_t attribsl)
+reliq_hnode_shift_finalize(reliq_attrib *attribs, reliq_hnode *node, char *ref, const uint32_t attribsl)
 {
   #define shift_cstr_p(x) (x).b = ref+(size_t)(x).b
 
   shift_cstr_p(node->all);
   shift_cstr_p(node->tag);
   shift_cstr_p(node->insides);
-  reliq_cstr_pair *a = attribs+node->attribs;
+  reliq_attrib *a = attribs+node->attribs;
   for (size_t i = 0; i < attribsl; i++) {
     shift_cstr_p(a[i].f);
     shift_cstr_p(a[i].s);
@@ -200,7 +200,7 @@ convert_from_compressed(const reliq_compressed *compressed, const size_t compres
   if (independent)
     out = sink_open(&ptr,&size);
   flexarr *nodes = flexarr_init(sizeof(reliq_hnode),FROM_COMPRESSED_NODES_INC);
-  flexarr *attribs = flexarr_init(sizeof(reliq_cstr_pair),FROM_COMPRESSED_ATTRIBS_INC);
+  flexarr *attribs = flexarr_init(sizeof(reliq_attrib),FROM_COMPRESSED_ATTRIBS_INC);
   reliq_hnode *current;
 
   for (size_t i = 0; i < compressedl; i++) {

@@ -41,9 +41,9 @@ print_chars(char const *src, size_t size, const uint8_t flags, SINK *outfile)
 }
 
 static void
-print_attribs(const reliq_cstr_pair *attribs, const uint32_t attribsl, const uint8_t flags, SINK *outfile)
+print_attribs(const reliq_attrib *attribs, const uint32_t attribsl, const uint8_t flags, SINK *outfile)
 {
-  const reliq_cstr_pair *a = attribs;
+  const reliq_attrib *a = attribs;
   if (!a)
     return;
   for (uint32_t j = 0; j < attribsl; j++) {
@@ -56,7 +56,7 @@ print_attribs(const reliq_cstr_pair *attribs, const uint32_t attribsl, const uin
 }
 
 static void
-print_attrib_value(const reliq_cstr_pair *attribs, const size_t attribsl, const char *text, const size_t textl, const int num, const uint8_t flags, SINK *outfile)
+print_attrib_value(const reliq_attrib *attribs, const size_t attribsl, const char *text, const size_t textl, const int num, const uint8_t flags, SINK *outfile)
 {
   if (num != -1) {
     if ((size_t)num < attribsl)
@@ -105,7 +105,7 @@ hnode_printf(SINK *outfile, const char *format, const size_t formatl, const reli
   char const *text=NULL;
   size_t textl=0;
   int num = -1;
-  reliq_cstr_pair *attribs = rq->attribs;
+  reliq_attrib *attribs = rq->attribs;
   uint32_t attribsl = hnode_attribsl(rq,hnode);
   if (hnode->attribs)
     attribs += hnode->attribs;

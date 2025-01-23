@@ -225,7 +225,7 @@ reliq_nfree(reliq_npattern *nodep)
 static int
 pattrib_match(const reliq *rq, const reliq_hnode *hnode, const struct reliq_pattrib *attrib)
 {
-  reliq_cstr_pair *a = rq->attribs+hnode->attribs;
+  reliq_attrib *a = rq->attribs+hnode->attribs;
   uchar found = 0;
   uint32_t attribsl = hnode_attribsl(rq,hnode);
 

@@ -64,7 +64,7 @@ typedef struct {
 typedef struct {
   reliq_cstr f;
   reliq_cstr s;
-} reliq_cstr_pair;
+} reliq_attrib;
 
 typedef struct {
   char msg[RELIQ_ERROR_MESSAGE_LENGTH];
@@ -76,7 +76,7 @@ typedef struct {
   reliq_cstr tag;
   reliq_cstr insides;
   uint32_t attribs;
-  //reliq_cstr_pair *attribs;
+  //reliq_attrib *attribs;
   uint32_t desc_count; //count of descendants
   //uint16_t attribsl;
   uint16_t lvl;
@@ -122,7 +122,7 @@ typedef struct {
   int (*freedata)(void *addr, size_t len);
   char const *data;
   reliq_hnode *nodes;
-  reliq_cstr_pair *attribs;
+  reliq_attrib *attribs;
 
   size_t datal; //length of data
   size_t nodesl;

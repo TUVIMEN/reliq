@@ -72,7 +72,7 @@ const reliq_cstr8 inescapable_s[] = {
 typedef struct {
     struct html_process_expr *expr;
     flexarr *nodes; //reliq_hnode
-    flexarr *attribs; //reliq_cstr_pair
+    flexarr *attribs; //reliq_attrib
     reliq_error *err;
     const char *f;
     const size_t s;
@@ -159,10 +159,10 @@ attrib_value_handle(const char *f, size_t *pos, const size_t s, reliq_cstr *valu
 }
 
 static void
-attrib_handle(const char *f, size_t *pos, const size_t s, flexarr *attribs) //attribs: reliq_cstr_pair
+attrib_handle(const char *f, size_t *pos, const size_t s, flexarr *attribs) //attribs: reliq_attrib
 {
   size_t i = *pos;
-  reliq_cstr_pair *ac = (reliq_cstr_pair*)flexarr_inc(attribs);
+  reliq_attrib *ac = (reliq_attrib*)flexarr_inc(attribs);
   attribname_handle(f,&i,s,&ac->f);
   while_is(isspace,f,i,s);
   ac->s.b = NULL;
@@ -404,7 +404,7 @@ tag_insides_handle(size_t *pos, const size_t hnindex, uint64_t *ret, struct tag_
 }
 
 static uchar
-attribs_handle(const char *f, size_t *pos, const size_t s, reliq_hnode *hnode, flexarr *attribs) //attribs: reliq_cstr_pair
+attribs_handle(const char *f, size_t *pos, const size_t s, reliq_hnode *hnode, flexarr *attribs) //attribs: reliq_attrib
 {
   size_t i = *pos;
   uchar ended = 0;
@@ -452,7 +452,7 @@ exec_hnode(const reliq_hnode *hn, struct html_process_expr *expr, flexarr *nodes
   reliq *rq = expr->rq;
   rq->nodes = (reliq_hnode*)nodes->v;
   rq->nodesl = nodes->size;
-  rq->attribs = (reliq_cstr_pair*)attribs->v;
+  rq->attribs = (reliq_attrib*)attribs->v;
   rq->attribsl = attribs->size;
 
   int r = reliq_nexec(expr->rq,hn,NULL,expr->expr);
@@ -592,10 +592,10 @@ html_struct_handle(size_t *pos, const uint16_t lvl, html_state *st)
 }
 
 reliq_error *
-html_handle(const char *data, const size_t size, reliq_hnode **nodes, size_t *nodesl, reliq_cstr_pair **attribs, size_t *attribsl, struct html_process_expr *expr)
+html_handle(const char *data, const size_t size, reliq_hnode **nodes, size_t *nodesl, reliq_attrib **attribs, size_t *attribsl, struct html_process_expr *expr)
 {
   flexarr *nodes_buffer = flexarr_init(sizeof(reliq_hnode),NODES_INC);
-  flexarr *attribs_buffer = (void*)flexarr_init(sizeof(reliq_cstr_pair),ATTRIB_INC);
+  flexarr *attribs_buffer = (void*)flexarr_init(sizeof(reliq_attrib),ATTRIB_INC);
   html_state st = {
     .expr = expr,
     .f = data,
