@@ -105,8 +105,8 @@ reliq_hnode_shift(reliq_attrib *attribs, reliq_hnode *node, const size_t pos, co
   shift_cstr(node->insides);
   reliq_attrib *a = attribs+node->attribs;
   for (size_t i = 0; i < attribsl; i++) {
-    shift_cstr(a[i].f);
-    shift_cstr(a[i].s);
+    shift_cstr(a[i].key);
+    shift_cstr(a[i].value);
   }
 }
 
@@ -120,8 +120,8 @@ reliq_hnode_shift_finalize(reliq_attrib *attribs, reliq_hnode *node, char *ref, 
   shift_cstr_p(node->insides);
   reliq_attrib *a = attribs+node->attribs;
   for (size_t i = 0; i < attribsl; i++) {
-    shift_cstr_p(a[i].f);
-    shift_cstr_p(a[i].s);
+    shift_cstr_p(a[i].key);
+    shift_cstr_p(a[i].value);
   }
 }
 

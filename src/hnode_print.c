@@ -48,9 +48,9 @@ print_attribs(const reliq_attrib *attribs, const uint32_t attribsl, const uint8_
     return;
   for (uint32_t j = 0; j < attribsl; j++) {
     sink_put(outfile,' ');
-    sink_write(outfile,a[j].f.b,a[j].f.s);
+    sink_write(outfile,a[j].key.b,a[j].key.s);
     sink_write(outfile,"=\"",2);
-    print_chars(a[j].s.b,a[j].s.s,flags,outfile);
+    print_chars(a[j].value.b,a[j].value.s,flags,outfile);
     sink_put(outfile,'"');
   }
 }
@@ -60,13 +60,13 @@ print_attrib_value(const reliq_attrib *attribs, const size_t attribsl, const cha
 {
   if (num != -1) {
     if ((size_t)num < attribsl)
-      print_chars(attribs[num].s.b,attribs[num].s.s,flags,outfile);
+      print_chars(attribs[num].value.b,attribs[num].value.s,flags,outfile);
   } else if (textl != 0) {
     for (size_t i = 0; i < attribsl; i++)
-      if (memcomp(attribs[i].f.b,text,textl,attribs[i].f.s))
-        print_chars(attribs[i].s.b,attribs[i].s.s,flags,outfile);
+      if (memcomp(attribs[i].key.b,text,textl,attribs[i].key.s))
+        print_chars(attribs[i].value.b,attribs[i].value.s,flags,outfile);
   } else for (size_t i = 0; i < attribsl; i++) {
-    print_chars(attribs[i].s.b,attribs[i].s.s,flags,outfile);
+    print_chars(attribs[i].value.b,attribs[i].value.s,flags,outfile);
     sink_put(outfile,'"');
   }
 }

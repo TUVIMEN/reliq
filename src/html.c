@@ -163,12 +163,12 @@ attrib_handle(const char *f, size_t *pos, const size_t s, flexarr *attribs) //at
 {
   size_t i = *pos;
   reliq_attrib *ac = (reliq_attrib*)flexarr_inc(attribs);
-  attribname_handle(f,&i,s,&ac->f);
+  attribname_handle(f,&i,s,&ac->key);
   while_is(isspace,f,i,s);
-  ac->s.b = NULL;
-  ac->s.s = 0;
+  ac->value.b = NULL;
+  ac->value.s = 0;
   if (unlikely(f[i] == '='))
-    attrib_value_handle(f,&i,s,&ac->s);
+    attrib_value_handle(f,&i,s,&ac->value);
   *pos = i;
 }
 

@@ -233,10 +233,10 @@ pattrib_match(const reliq *rq, const reliq_hnode *hnode, const struct reliq_patt
     if (!range_match(i,&attrib->position,attribsl-1))
       continue;
 
-    if (!reliq_regexec(&attrib->r[0],a[i].f.b,a[i].f.s))
+    if (!reliq_regexec(&attrib->r[0],a[i].key.b,a[i].key.s))
       continue;
 
-    if (attrib->flags&A_VAL_MATTERS && !reliq_regexec(&attrib->r[1],a[i].s.b,a[i].s.s))
+    if (attrib->flags&A_VAL_MATTERS && !reliq_regexec(&attrib->r[1],a[i].value.b,a[i].value.s))
       continue;
 
     found = 1;

@@ -62,8 +62,8 @@ typedef struct {
 } reliq_cstr;
 
 typedef struct {
-  reliq_cstr f;
-  reliq_cstr s;
+  reliq_cstr key;
+  reliq_cstr value;
 } reliq_attrib;
 
 typedef struct {
