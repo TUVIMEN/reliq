@@ -103,11 +103,11 @@ reliq_hnode_shift(reliq_attrib *attribs, reliq_hnode *node, const size_t pos, co
   shift_cstr(node->all);
   shift_cstr(node->tag);
   shift_cstr(node->insides);
-  reliq_attrib *a = attribs+node->attribs;
+  /*reliq_attrib *a = attribs+node->attribs;
   for (size_t i = 0; i < attribsl; i++) {
     shift_cstr(a[i].key);
     shift_cstr(a[i].value);
-  }
+  }*/
 }
 
 static void
@@ -118,11 +118,11 @@ reliq_hnode_shift_finalize(reliq_attrib *attribs, reliq_hnode *node, char *ref, 
   shift_cstr_p(node->all);
   shift_cstr_p(node->tag);
   shift_cstr_p(node->insides);
-  reliq_attrib *a = attribs+node->attribs;
+  /*reliq_attrib *a = attribs+node->attribs;
   for (size_t i = 0; i < attribsl; i++) {
     shift_cstr_p(a[i].key);
     shift_cstr_p(a[i].value);
-  }
+  }*/
 }
 
 /*
@@ -175,16 +175,16 @@ convert_from_compressed_add_descendants(const reliq *rq, const reliq_hnode *root
   for (size_t j = 0; j <= desc_count; j++) {
     new = (reliq_hnode*)flexarr_inc(nodes);
     const reliq_hnode *hnode = root+j;
-    memcpy(new,root+j,sizeof(reliq_hnode));
+    memcpy(new,hnode,sizeof(reliq_hnode));
 
     uint32_t attribsl = hnode_attribsl(rq,hnode);
     if (attribsl)
       flexarr_append(attribs,rq->attribs+hnode->attribs,attribsl);
 
-    size_t tpos = pos+(new->all.b-root->all.b);
-
-    if (independent)
+    if (independent) {
+      size_t tpos = pos+(hnode->all.b-root->all.b);
       reliq_hnode_shift(attribs->v,new,tpos,attribsl);
+    }
     new->lvl -= lvl;
   }
 }
@@ -211,9 +211,10 @@ convert_from_compressed(const reliq_compressed *compressed, const size_t compres
 
     convert_from_compressed_add_descendants(rq,hn,nodes,attribs,pos,independent);
 
-    if (independent)
+    if (independent) {
       sink_write(out,hn->all.b,hn->all.s);
-    pos += hn->all.s;
+      pos += hn->all.s;
+    }
   }
 
   flexarr_conv(nodes,(void**)&ret.nodes,&ret.nodesl);

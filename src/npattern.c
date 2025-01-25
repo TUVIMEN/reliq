@@ -223,21 +223,25 @@ reliq_nfree(reliq_npattern *nodep)
 }
 
 static int
-pattrib_match(const reliq *rq, const reliq_hnode *hnode, const struct reliq_pattrib *attrib)
+attrib_match(const reliq *rq, const reliq_hnode *hnode, const struct reliq_pattrib *attrib)
 {
-  reliq_attrib *a = rq->attribs+hnode->attribs;
+  const reliq_attrib *a = rq->attribs+hnode->attribs;
   uchar found = 0;
   uint32_t attribsl = hnode_attribsl(rq,hnode);
 
-  for (uint16_t i = 0; i < attribsl; i++) {
+  for (uint32_t i = 0; i < attribsl; i++) {
     if (!range_match(i,&attrib->position,attribsl-1))
       continue;
 
-    if (!reliq_regexec(&attrib->r[0],a[i].key.b,a[i].key.s))
+    char const* base = rq->data+a[i].key;
+    if (!reliq_regexec(&attrib->r[0],base,a[i].keyl))
       continue;
 
-    if (attrib->flags&A_VAL_MATTERS && !reliq_regexec(&attrib->r[1],a[i].value.b,a[i].value.s))
-      continue;
+    if (attrib->flags&A_VAL_MATTERS) {
+      base += a[i].keyl+a[i].value;
+      if (!reliq_regexec(&attrib->r[1],base,a[i].valuel))
+        continue;
+    }
 
     found = 1;
     break;
@@ -320,6 +324,8 @@ match_hook(const reliq *rq, const reliq_hnode *hnode, const reliq_hnode *parent,
   } else if ((flags&H_KINDS) == H_CHILD_MATCH && flags&H_EXPRS) {
     reliq r;
     memset(&r,0,sizeof(reliq));
+    r.data = rq->data;
+    r.datal = rq->datal;
     r.nodes = (reliq_hnode*)hnode;
     r.nodesl = hnode->desc_count+1;
     r.attribs = rq->attribs;
@@ -365,7 +371,7 @@ reliq_node_matched_match(const reliq *rq, const reliq_hnode *hnode, const reliq_
           return 0;
         break;
       case MATCHES_TYPE_ATTRIB:
-        if (!pattrib_match(rq,hnode,list[i].data.attrib))
+        if (!attrib_match(rq,hnode,list[i].data.attrib))
           return 0;
         break;
       case MATCHES_TYPE_GROUPS:

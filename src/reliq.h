@@ -61,10 +61,14 @@ typedef struct {
   size_t s;
 } reliq_cstr;
 
+#pragma pack(push,1)
 typedef struct {
-  reliq_cstr key;
-  reliq_cstr value;
+  uint32_t key;
+  uint32_t value; // value+key+keyl
+  uint32_t valuel;
+  uint32_t keyl;
 } reliq_attrib;
+#pragma pack(pop)
 
 typedef struct {
   char msg[RELIQ_ERROR_MESSAGE_LENGTH];

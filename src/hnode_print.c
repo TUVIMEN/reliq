@@ -41,32 +41,42 @@ print_chars(char const *src, size_t size, const uint8_t flags, SINK *outfile)
 }
 
 static void
-print_attribs(const reliq_attrib *attribs, const uint32_t attribsl, const uint8_t flags, SINK *outfile)
+print_attribs(const reliq *rq, const reliq_attrib *attribs, const uint32_t attribsl, const uint8_t flags, SINK *outfile)
 {
   const reliq_attrib *a = attribs;
   if (!a)
     return;
   for (uint32_t j = 0; j < attribsl; j++) {
     sink_put(outfile,' ');
-    sink_write(outfile,a[j].key.b,a[j].key.s);
+    char const *base = rq->data+a[j].key;
+    sink_write(outfile,base,a[j].keyl);
     sink_write(outfile,"=\"",2);
-    print_chars(a[j].value.b,a[j].value.s,flags,outfile);
+    base += a[j].keyl+a[j].value;
+    print_chars(base,a[j].valuel,flags,outfile);
     sink_put(outfile,'"');
   }
 }
 
 static void
-print_attrib_value(const reliq_attrib *attribs, const size_t attribsl, const char *text, const size_t textl, const int num, const uint8_t flags, SINK *outfile)
+print_attrib_value(const reliq *rq, const reliq_attrib *attribs, const size_t attribsl, const char *text, const size_t textl, const int num, const uint8_t flags, SINK *outfile)
 {
+  const reliq_attrib *a = attribs;
   if (num != -1) {
-    if ((size_t)num < attribsl)
-      print_chars(attribs[num].value.b,attribs[num].value.s,flags,outfile);
+    if ((size_t)num < attribsl) {
+      const char *base = rq->data+a[num].key+a[num].keyl+a[num].value;
+      print_chars(base,a[num].valuel,flags,outfile);
+    }
   } else if (textl != 0) {
-    for (size_t i = 0; i < attribsl; i++)
-      if (memcomp(attribs[i].key.b,text,textl,attribs[i].key.s))
-        print_chars(attribs[i].value.b,attribs[i].value.s,flags,outfile);
+    for (size_t i = 0; i < attribsl; i++) {
+      char const *base = rq->data+a[i].key;
+      if (memcomp(base,text,textl,a[i].keyl)) {
+        base += a[i].keyl+a[i].value;
+        print_chars(base,a[i].valuel,flags,outfile);
+      }
+    }
   } else for (size_t i = 0; i < attribsl; i++) {
-    print_chars(attribs[i].value.b,attribs[i].value.s,flags,outfile);
+    char const *base = rq->data+a[i].key+a[i].keyl+a[i].value;
+    print_chars(base,a[i].valuel,flags,outfile);
     sink_put(outfile,'"');
   }
 }
@@ -165,9 +175,9 @@ hnode_printf(SINK *outfile, const char *format, const size_t formatl, const reli
           break;
         case 'L': print_uint(hnode->lvl,outfile); break;
         case 'a':
-          print_attribs(attribs,attribsl,printflags,outfile); break;
+          print_attribs(rq,attribs,attribsl,printflags,outfile); break;
         case 'v':
-          print_attrib_value(attribs,attribsl,text,textl,num,printflags,outfile);
+          print_attrib_value(rq,attribs,attribsl,text,textl,num,printflags,outfile);
           break;
         case 's': print_uint(hnode->all.s,outfile); break;
         case 'c': print_uint(hnode->desc_count,outfile); break;

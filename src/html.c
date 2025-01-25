@@ -118,40 +118,42 @@ tagname_handle(const char *f, size_t *pos, const size_t s, reliq_cstr *tag)
 }
 
 static inline void
-attribname_handle(const char *f, size_t *pos, const size_t s, reliq_cstr *tag)
+attribname_handle(const char *f, size_t *pos, const size_t s, reliq_attrib *a)
 {
   size_t i = *pos;
-  tag->b = f+i;
+  a->key = i;
   while (i < s && f[i] != '=' && f[i] != '>' && f[i] != '/' && !isspace(f[i]))
     i++;
-  tag->s = (f+i)-tag->b;
+  a->keyl = i-a->key;
   *pos = i;
 }
 
 static void
-attrib_value_handle(const char *f, size_t *pos, const size_t s, reliq_cstr *value)
+attrib_value_handle(const char *f, size_t *pos, const size_t s, reliq_attrib *a)
 {
   size_t i = *pos;
+  const size_t base = a->key+a->keyl;
   i++;
   while_is(isspace,f,i,s);
 
   if (likely(f[i] == '\'' || f[i] == '"')) {
     char delim = f[i++];
-    value->b = f+i;
+    a->value = i-base;
     char *ending = memchr(f+i,delim,s-i);
     if (unlikely(!ending)) {
       i = s;
+      a->valuel = i-(base+a->value);
       goto END;
     }
     i = ending-f;
-    value->s = (f+i)-value->b;
+    a->valuel = i-(base+a->value);
     if (likely(f[i] == delim))
       i++;
   } else {
-    value->b = f+i;
+    a->value = i-base;
     while (i < s && !isspace(f[i]) && f[i] != '>')
       i++;
-     value->s = (f+i)-value->b;
+    a->valuel = i-(base+a->value);
   }
 
   END: ;
@@ -163,12 +165,12 @@ attrib_handle(const char *f, size_t *pos, const size_t s, flexarr *attribs) //at
 {
   size_t i = *pos;
   reliq_attrib *ac = (reliq_attrib*)flexarr_inc(attribs);
-  attribname_handle(f,&i,s,&ac->key);
+  attribname_handle(f,&i,s,ac);
   while_is(isspace,f,i,s);
-  ac->value.b = NULL;
-  ac->value.s = 0;
+  ac->value = 0;
+  ac->valuel = 0;
   if (unlikely(f[i] == '='))
-    attrib_value_handle(f,&i,s,&ac->value);
+    attrib_value_handle(f,&i,s,ac);
   *pos = i;
 }
 
