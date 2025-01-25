@@ -595,6 +595,7 @@ nodes_output(const reliq *rq, SINK *output, flexarr *compressed_nodes, flexarr *
     return NULL;
   reliq_error *err = NULL;
   reliq_cstr *ncol = (reliq_cstr*)ncollector->v;
+  reliq_hnode *nodes = rq->nodes;
 
   SINK *out = output;
   SINK *fout = out;
@@ -648,8 +649,8 @@ nodes_output(const reliq *rq, SINK *output, flexarr *compressed_nodes, flexarr *
       rout = *oout;
 
     reliq_compressed *x = &((reliq_compressed*)compressed_nodes->v)[j];
-    if ((void*)x->hnode < (void*)10) {
-      enum outfieldCode code = (enum outfieldCode)x->hnode;
+    enum outfieldCode code = OUTFIELDCODE(x->hnode);
+    if (code) {
       struct outfield *field,**field_pre;
 
       //print_code_debug(j,fieldlvl,code,prevcode);
@@ -698,12 +699,16 @@ nodes_output(const reliq *rq, SINK *output, flexarr *compressed_nodes, flexarr *
           if (g == 0) //the first node in ncol[ncurrent] was ending block, so the previous one did not free oout
             goto FIELD_ENDED_FREE_OOUT;
           break;
+        default:
+          break;
       }
 
       if (code != ofUnnamed && code != ofNamed && (prevcode_r != ofNamed || code != ofBlockEnd))
          continue;
     } else if (ncurrent < ncollector->size && ncol[ncurrent].b) {
-      err = node_output(x->hnode,x->parent,((reliq_expr*)ncol[ncurrent].b)->nodef,
+      err = node_output(x->hnode+nodes,
+        (x->parent == (uint32_t)-1) ? NULL : x->parent+nodes,
+        ((reliq_expr*)ncol[ncurrent].b)->nodef,
         ((reliq_expr*)ncol[ncurrent].b)->nodefl,rout,rq);
       if (err)
         goto END;

@@ -201,18 +201,19 @@ convert_from_compressed(const reliq_compressed *compressed, const size_t compres
     out = sink_open(&ptr,&size);
   flexarr *nodes = flexarr_init(sizeof(reliq_hnode),FROM_COMPRESSED_NODES_INC);
   flexarr *attribs = flexarr_init(sizeof(reliq_attrib),FROM_COMPRESSED_ATTRIBS_INC);
-  reliq_hnode *current;
+  reliq_hnode *hnodes = rq->nodes;
 
   for (size_t i = 0; i < compressedl; i++) {
-    current = compressed[i].hnode;
-    if ((void*)current < (void*)10)
+    uint32_t current = compressed[i].hnode;
+    if (OUTFIELDCODE(current))
       continue;
+    const reliq_hnode *hn = hnodes+current;
 
-    convert_from_compressed_add_descendants(rq,current,nodes,attribs,pos,independent);
+    convert_from_compressed_add_descendants(rq,hn,nodes,attribs,pos,independent);
 
     if (independent)
-      sink_write(out,current->all.b,current->all.s);
-    pos += current->all.s;
+      sink_write(out,hn->all.b,hn->all.s);
+    pos += hn->all.s;
   }
 
   flexarr_conv(nodes,(void**)&ret.nodes,&ret.nodesl);

@@ -28,6 +28,7 @@
 #include "ctype.h"
 #include "utils.h"
 #include "npattern.h"
+#include "output.h"
 #include "format.h"
 
 #define PASSED_INC (1<<8) //!! if increased causes huge allocation see val_mem1 file
@@ -64,8 +65,8 @@ static inline void
 add_compressed_blank(flexarr *dest, const enum outfieldCode val1, const void *val2) //dest: reliq_compressed
 {
   reliq_compressed *x = flexarr_inc(dest);
-  x->hnode = (reliq_hnode *const)val1;
-  x->parent = (void *const)val2;
+  x->hnode = (uint32_t)val1+OUTFIELDCODE_OFFSET;
+  x->parent = (uintptr_t)val2;
 }
 
 reliq_error *
@@ -313,7 +314,7 @@ exec_table(const reliq_expr *expr, const reliq_output_field *named, const flexar
     const size_t size = source->size;
     for (size_t i = 0; i < size; i++) {
       *inv = sourcev[i];
-      if ((void*)inv->hnode < (void*)10)
+      if (OUTFIELDCODE(inv->hnode))
         continue;
       #ifdef RELIQ_EDITING
       size_t lastn = st->ncollector->size;
@@ -393,7 +394,7 @@ exec_chain(const reliq_expr *expr, const flexarr *source, flexarr *dest, exec_st
         goto END;
 
       if (desttemp->size-prevsize <= 2
-        && (desttemp->size == 0 || (void*)((reliq_compressed*)desttemp->v)[0].hnode < (void*)10)) {
+        && (desttemp->size == 0 || OUTFIELDCODE(((reliq_compressed*)desttemp->v)[0].hnode))) {
         something_failed = 1;
 
         if (!st->noncol && fieldnamed) {

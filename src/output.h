@@ -31,7 +31,11 @@ struct fcollector_expr {
   unsigned char isnodef;
 };
 
+#define OUTFIELDCODE_OFFSET (UINT32_MAX-6)
+#define OUTFIELDCODE(z) (((z) <= OUTFIELDCODE_OFFSET) ? 0 : (z)-OUTFIELDCODE_OFFSET)
+
 enum outfieldCode {
+  ofNULL = 0,
   ofUnnamed = 1, //start of unnamed field that manifests only when search fails, it's not terminated by ofBlockEnd
   ofNamed, //start of the named field
   ofBlock, //start of block with fields

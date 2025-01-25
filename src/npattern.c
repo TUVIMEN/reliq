@@ -139,7 +139,7 @@ const struct match_hook match_hooks[] = {
 };
 
 static inline void
-add_compressed(flexarr *dest, reliq_hnode *const hnode, reliq_hnode *const parent) //dest: reliq_compressed
+add_compressed(flexarr *dest, const uint32_t hnode, const uint32_t parent) //dest: reliq_compressed
 {
   reliq_compressed *x = flexarr_inc(dest);
   x->hnode = hnode;
@@ -407,12 +407,13 @@ hook_handle_isname(char c)
   return isalpha(c);
 }
 
-static void
+static inline void
 match_add(const reliq *rq, reliq_hnode const *hnode, reliq_hnode const *parent, reliq_npattern const *nodep, flexarr *dest, uint32_t *found) //dest: reliq_compressed
 {
   if (!reliq_nexec(rq,hnode,parent,nodep))
     return;
-  add_compressed(dest,(reliq_hnode *const)hnode,(reliq_hnode *const)parent);
+  add_compressed(dest,hnode-rq->nodes,
+    parent ? parent-rq->nodes : (uint32_t)-1);
   (*found)++;
 }
 
@@ -824,9 +825,9 @@ static void
 dest_match_position(const reliq_range *range, flexarr *dest, size_t start, size_t end) { //dest: reliq_compressed
   reliq_compressed *x = (reliq_compressed*)dest->v;
 
-  while (start < end && (void*)x[start].hnode < (void*)10)
+  while (start < end && OUTFIELDCODE(x[start].hnode))
     start++;
-  while (end != start && (void*)x[end-1].hnode < (void*)10)
+  while (end != start && OUTFIELDCODE(x[end-1].hnode))
     end--;
 
   size_t found = start;
@@ -844,9 +845,8 @@ static void
 match_full(const reliq *rq, reliq_npattern *nodep, const reliq_hnode *current, flexarr *dest, uint32_t *found, const uint32_t lasttofind) //dest: reliq_compressed
 {
   const uint32_t childcount = current->desc_count;
-  for (size_t i = 0; i <= childcount && *found < lasttofind; i++) {
+  for (size_t i = 0; i <= childcount && *found < lasttofind; i++)
     match_add(rq,current+i,current,nodep,dest,found);
-  }
 }
 
 static void
@@ -963,53 +963,55 @@ node_exec(const reliq *rq, const reliq_hnode *parent, reliq_npattern *nodep, con
     return;
   }
 
+  const reliq_hnode *nodes = rq->nodes;
   const size_t size = source->size;
   for (size_t i = 0; i < size; i++) {
     const reliq_compressed *x = &((reliq_compressed*)source->v)[i];
-    const reliq_hnode *current = x->hnode;
-    if ((void*)current < (void*)10)
+    const reliq_hnode *hn = nodes+x->hnode;
+    if (OUTFIELDCODE(x->hnode))
       continue;
     size_t prevdestsize = dest->size;
+    const reliq_hnode *hn_parent = nodes+x->parent;
 
     switch (nodep->flags&N_MATCHED_TYPE) {
       case N_FULL:
-        match_full(rq,nodep,current,dest,&found,lasttofind);
+        match_full(rq,nodep,hn,dest,&found,lasttofind);
         break;
       case N_SELF:
-        match_add(rq,current,x->parent,nodep,dest,&found); //!!
+        match_add(rq,hn,hn_parent,nodep,dest,&found); //!!
         break;
       case N_CHILD:
-        match_child(rq,nodep,current,dest,&found,lasttofind);
+        match_child(rq,nodep,hn,dest,&found,lasttofind);
         break;
       case N_DESCENDANT:
-        match_descendant(rq,nodep,current,dest,&found,lasttofind);
+        match_descendant(rq,nodep,hn,dest,&found,lasttofind);
         break;
       case N_ANCESTOR:
-        match_ancestor(rq,nodep,current,dest,&found,lasttofind,-1);
+        match_ancestor(rq,nodep,hn,dest,&found,lasttofind,-1);
         break;
       case N_PARENT:
-        match_ancestor(rq,nodep,current,dest,&found,lasttofind,0);
+        match_ancestor(rq,nodep,hn,dest,&found,lasttofind,0);
         break;
       case N_RELATIVE_PARENT:
-        match_add(rq,x->parent,current,nodep,dest,&found);
+        match_add(rq,hn_parent,hn,nodep,dest,&found);
         break;
       case N_SIBLING:
-        match_sibling(rq,nodep,current,dest,&found,lasttofind,0);
+        match_sibling(rq,nodep,hn,dest,&found,lasttofind,0);
         break;
       case N_SIBLING_PRECEDING:
-        match_sibling_preceding(rq,nodep,current,dest,&found,lasttofind,0);
+        match_sibling_preceding(rq,nodep,hn,dest,&found,lasttofind,0);
         break;
       case N_SIBLING_SUBSEQUENT:
-        match_sibling_subsequent(rq,nodep,current,dest,&found,lasttofind,0);
+        match_sibling_subsequent(rq,nodep,hn,dest,&found,lasttofind,0);
         break;
       case N_FULL_SIBLING:
-        match_sibling(rq,nodep,current,dest,&found,lasttofind,-1);
+        match_sibling(rq,nodep,hn,dest,&found,lasttofind,-1);
         break;
       case N_FULL_SIBLING_PRECEDING:
-        match_sibling_preceding(rq,nodep,current,dest,&found,lasttofind,-1);
+        match_sibling_preceding(rq,nodep,hn,dest,&found,lasttofind,-1);
         break;
       case N_FULL_SIBLING_SUBSEQUENT:
-        match_sibling_subsequent(rq,nodep,current,dest,&found,lasttofind,-1);
+        match_sibling_subsequent(rq,nodep,hn,dest,&found,lasttofind,-1);
         break;
       /*case N_TEXT: break;*/
       /*case N_NODE: break;*/

@@ -71,21 +71,23 @@ typedef struct {
   int code;
 } reliq_error;
 
+#pragma pack(push,1)
 typedef struct {
   reliq_cstr all;
   reliq_cstr tag;
   reliq_cstr insides;
   uint32_t attribs;
-  //reliq_attrib *attribs;
   uint32_t desc_count; //count of descendants
-  //uint16_t attribsl;
   uint16_t lvl;
 } reliq_hnode; //html node
+#pragma pack(pop)
 
+#pragma pack(push,1)
 typedef struct {
-  reliq_hnode *hnode;
-  reliq_hnode *parent;
+  uint32_t hnode;
+  uintptr_t parent; //uint32_t
 } reliq_compressed;
+#pragma pack(pop)
 
 typedef struct {
   reliq_str name;
