@@ -90,8 +90,8 @@ struct reliq_npattern {
 };
 
 reliq_error *reliq_ncomp(const char *script, const size_t size, reliq_npattern *nodep);
-void node_exec(const reliq *rq, const reliq_hnode *parent, reliq_npattern *nodep, const flexarr *source, flexarr *dest); //source: reliq_compressed, dest: reliq_compressed
-int reliq_nexec(const reliq *rq, const reliq_hnode *hnode, const reliq_hnode *parent, const reliq_npattern *nodep);
+void node_exec(const reliq *rq, const reliq_chnode *parent, reliq_npattern *nodep, const flexarr *source, flexarr *dest); //source: reliq_compressed, dest: reliq_compressed
+int reliq_nexec(const reliq *rq, const reliq_chnode *chnode, const reliq_chnode *parent, const reliq_npattern *nodep);
 void reliq_nfree(reliq_npattern *nodep);
 
 #endif

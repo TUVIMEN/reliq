@@ -22,7 +22,7 @@
 #include "sink.h"
 #include "types.h"
 
-void hnode_printf(SINK *outfile, const char *format, const size_t formatl, const reliq_hnode *hnode, const reliq_hnode *parent, const reliq *rq);
-void hnode_print(SINK *outfile, const reliq_hnode *hnode);
+void chnode_printf(SINK *outfile, const char *format, const size_t formatl, const reliq_chnode *chnode, const reliq_chnode *parent, const reliq *rq);
+void chnode_print(SINK *outfile, const reliq_chnode *chnode, const reliq *rq);
 
 #endif

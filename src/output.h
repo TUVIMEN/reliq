@@ -46,7 +46,7 @@ enum outfieldCode {
 
 reliq_error *reliq_output_field_comp(const char *src, size_t *pos, const size_t s, reliq_output_field *outfield);
 
-reliq_error *node_output(const reliq_hnode *hnode, const reliq_hnode *parent,
+reliq_error *node_output(const reliq_chnode *hnode, const reliq_chnode *parent,
 #ifdef RELIQ_EDITING
   const reliq_format_func *format,
 #else

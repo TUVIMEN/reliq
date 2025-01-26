@@ -37,7 +37,7 @@
 
 typedef struct {
   const reliq *rq;
-  const reliq_hnode *parent;
+  const reliq_chnode *parent;
   SINK *output;
   flexarr *ncollector; //reliq_cstr
   #ifdef RELIQ_EDITING
@@ -59,7 +59,7 @@ reliq_error *reliq_fmatch(const char *data, const size_t size, SINK *output, con
   size_t nodefl);
 
 static reliq_error *exec_chain(const reliq_expr *expr, const flexarr *source, flexarr *dest, exec_state *st); //source: reliq_compressed, dest: reliq_compressed
-reliq_error *reliq_exec_r(reliq *rq, const reliq_hnode *parent, SINK *output, reliq_compressed **outnodes, size_t *outnodesl, const reliq_expr *expr);
+reliq_error *reliq_exec_r(reliq *rq, const reliq_chnode *parent, SINK *output, reliq_compressed **outnodes, size_t *outnodesl, const reliq_expr *expr);
 
 static inline void
 add_compressed_blank(flexarr *dest, const enum outfieldCode val1, const void *val2) //dest: reliq_compressed
@@ -151,7 +151,7 @@ fcollector_add(const size_t lastn, const uchar isnodef, const reliq_expr *expr, 
 #endif
 
 /*static reliq_error *
-exec_chainlink(const reliq *rq, const reliq_hnode *parent, SINK *output, const reliq_expr *expr, const flexarr *source, flexarr *dest, flexarr **out, uchar noncol, uchar isempty, flexarr *ncollector
+exec_chainlink(const reliq *rq, const reliq_chnode *parent, SINK *output, const reliq_expr *expr, const flexarr *source, flexarr *dest, flexarr **out, uchar noncol, uchar isempty, flexarr *ncollector
     #ifdef RELIQ_EDITING
     , flexarr *fcollector //struct fcollector_expr
     #endif
@@ -468,7 +468,7 @@ exec_chain(const reliq_expr *expr, const flexarr *source, flexarr *dest, exec_st
 }
 
 reliq_error *
-reliq_exec_r(reliq *rq, const reliq_hnode *parent, SINK *output, reliq_compressed **outnodes, size_t *outnodesl, const reliq_expr *expr)
+reliq_exec_r(reliq *rq, const reliq_chnode *parent, SINK *output, reliq_compressed **outnodes, size_t *outnodesl, const reliq_expr *expr)
 {
   if (!expr)
     return NULL;

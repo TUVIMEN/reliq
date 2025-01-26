@@ -37,7 +37,7 @@
 static void outfields_value_print(SINK *out, const reliq_output_field *field, const char *value, const size_t valuel);
 
 reliq_error *
-node_output(const reliq_hnode *hnode, const reliq_hnode *parent,
+node_output(const reliq_chnode *hnode, const reliq_chnode *parent,
 #ifdef RELIQ_EDITING
   const reliq_format_func *format,
 #else
@@ -49,9 +49,9 @@ node_output(const reliq_hnode *hnode, const reliq_hnode *parent,
   return format_exec(NULL,0,output,hnode,parent,format,formatl,rq);
   #else
   if (format) {
-    hnode_printf(output,format,formatl,hnode,parent,rq);
+    chnode_printf(output,format,formatl,hnode,parent,rq);
   } else
-    hnode_print(output,hnode);
+    chnode_print(output,hnode,rq);
   return NULL;
   #endif
 }
@@ -595,7 +595,7 @@ nodes_output(const reliq *rq, SINK *output, flexarr *compressed_nodes, flexarr *
     return NULL;
   reliq_error *err = NULL;
   reliq_cstr *ncol = (reliq_cstr*)ncollector->v;
-  reliq_hnode *nodes = rq->nodes;
+  reliq_chnode *nodes = rq->nodes;
 
   SINK *out = output;
   SINK *fout = out;

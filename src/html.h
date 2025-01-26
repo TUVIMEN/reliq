@@ -30,7 +30,7 @@ struct html_process_expr {
   size_t nodefl;
 };
 
-reliq_error *html_handle(const char *data, const size_t size, reliq_hnode **nodes, size_t *nodesl, reliq_attrib **attribs, size_t *attribsl, struct html_process_expr *expr);
+reliq_error *html_handle(const char *data, const size_t size, reliq_chnode **nodes, size_t *nodesl, reliq_cattrib **attribs, size_t *attribsl, struct html_process_expr *expr);
 
 #endif
 

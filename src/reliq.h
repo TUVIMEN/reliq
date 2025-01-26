@@ -61,13 +61,18 @@ typedef struct {
   size_t s;
 } reliq_cstr;
 
+typedef struct {
+  reliq_cstr key;
+  reliq_cstr value;
+} reliq_attrib;
+
 #pragma pack(push,1)
 typedef struct {
-  uint32_t key;
+  uint32_t key; //key+hnode.all.b
   uint32_t value; // value+key+keyl
   uint32_t valuel;
   uint32_t keyl;
-} reliq_attrib;
+} reliq_cattrib; //compressed reliq_attrib
 #pragma pack(pop)
 
 typedef struct {
@@ -75,15 +80,37 @@ typedef struct {
   int code;
 } reliq_error;
 
-#pragma pack(push,1)
-typedef struct {
+/*typedef struct {
   reliq_cstr all;
   reliq_cstr tag;
   reliq_cstr insides;
   uint32_t attribs;
   uint32_t desc_count; //count of descendants
   uint16_t lvl;
+} reliq_chnode;*/
+
+typedef struct {
+  reliq_cstr all;
+  reliq_cstr tag;
+  reliq_cstr insides;
+  reliq_cattrib const *attribs;
+  uint32_t attribsl;
+  uint32_t desc_count; //count of descendants
+  uint16_t lvl;
 } reliq_hnode; //html node
+
+#pragma pack(push,1)
+typedef struct {
+  uint32_t all;
+  uint32_t all_len; //length of all
+  uint32_t insides; //insides+tag+tagl+all
+  uint32_t insidesl;
+  uint32_t attribs;
+  uint32_t desc_count; //count of descendants
+  uint32_t tag; //tag+all
+  uint32_t tagl;
+  uint16_t lvl;
+} reliq_chnode; //compressed reliq_hnode
 #pragma pack(pop)
 
 #pragma pack(push,1)
@@ -127,8 +154,8 @@ typedef struct {
 typedef struct {
   int (*freedata)(void *addr, size_t len);
   char const *data;
-  reliq_hnode *nodes;
-  reliq_attrib *attribs;
+  reliq_chnode *nodes;
+  reliq_cattrib *attribs;
 
   size_t datal; //length of data
   size_t nodesl;
@@ -145,7 +172,7 @@ reliq reliq_from_compressed_independent(const reliq_compressed *compressed, cons
 
 //node pattern
 reliq_error *reliq_ncomp(const char *script, const size_t size, reliq_npattern *nodep);
-int reliq_nexec(const reliq *rq, const reliq_hnode *hnode, const reliq_hnode *parent, const reliq_npattern *nodep);
+int reliq_nexec(const reliq *rq, const reliq_chnode *hnode, const reliq_chnode *parent, const reliq_npattern *nodep);
 void reliq_nfree(reliq_npattern *nodep);
 
 //expression

@@ -41,9 +41,9 @@ print_chars(char const *src, size_t size, const uint8_t flags, SINK *outfile)
 }
 
 static void
-print_attribs(const reliq *rq, const reliq_attrib *attribs, const uint32_t attribsl, const uint8_t flags, SINK *outfile)
+print_attribs(const reliq *rq, const reliq_cattrib *attribs, const uint32_t attribsl, const uint8_t flags, SINK *outfile)
 {
-  const reliq_attrib *a = attribs;
+  const reliq_cattrib *a = attribs;
   if (!a)
     return;
   for (uint32_t j = 0; j < attribsl; j++) {
@@ -58,9 +58,9 @@ print_attribs(const reliq *rq, const reliq_attrib *attribs, const uint32_t attri
 }
 
 static void
-print_attrib_value(const reliq *rq, const reliq_attrib *attribs, const size_t attribsl, const char *text, const size_t textl, const int num, const uint8_t flags, SINK *outfile)
+print_attrib_value(const reliq *rq, const reliq_cattrib *attribs, const size_t attribsl, const char *text, const size_t textl, const int num, const uint8_t flags, SINK *outfile)
 {
-  const reliq_attrib *a = attribs;
+  const reliq_cattrib *a = attribs;
   if (num != -1) {
     if ((size_t)num < attribsl) {
       const char *base = rq->data+a[num].key+a[num].keyl+a[num].value;
@@ -82,43 +82,46 @@ print_attrib_value(const reliq *rq, const reliq_attrib *attribs, const size_t at
 }
 
 static void
-print_text(const reliq_hnode *nodes, const reliq_hnode *hnode, uint8_t flags, SINK *outfile, uchar recursive)
+print_text(const reliq *rq, const reliq_chnode *hnode, uint8_t flags, SINK *outfile, uchar recursive)
 {
-  char const *start = hnode->insides.b;
+  if (hnode->insides == 0 && hnode->insidesl == 0)
+    return;
+
+  const char *data = rq->data;
+  const size_t start = hnode->all+hnode->tag+hnode->tagl+hnode->insides;
+  size_t last = start;
   size_t end;
   flags |= PC_UNTRIM;
 
   const size_t size = hnode->desc_count;
   for (size_t i = 1; i <= size; i++) {
-    const reliq_hnode *n = hnode+i;
+    const reliq_chnode *n = hnode+i;
 
-    end = n->all.b-start;
+    end = n->all-last;
     if (end)
-      print_chars(start,end,flags,outfile);
+      print_chars(data+last,end,flags,outfile);
 
     if (recursive)
-      print_text(nodes,n,flags,outfile,recursive);
+      print_text(rq,n,flags,outfile,recursive);
 
     i += n->desc_count;
-    start = n->all.b+n->all.s;
+    last = n->all+n->all_len;
   }
 
-  end = hnode->insides.s-(start-hnode->insides.b);
+  end = hnode->insidesl-(last-start);
   if (end)
-    print_chars(start,end,flags,outfile);
+    print_chars(data+last,end,flags,outfile);
 }
 
 void
-hnode_printf(SINK *outfile, const char *format, const size_t formatl, const reliq_hnode *hnode, const reliq_hnode *parent, const reliq *rq)
+chnode_printf(SINK *outfile, const char *format, const size_t formatl, const reliq_chnode *chnode, const reliq_chnode *parent, const reliq *rq)
 {
   size_t i = 0;
   char const *text=NULL;
   size_t textl=0;
   int num = -1;
-  reliq_attrib *attribs = rq->attribs;
-  uint32_t attribsl = hnode_attribsl(rq,hnode);
-  if (hnode->attribs)
-    attribs += hnode->attribs;
+  reliq_hnode hnode;
+  chnode_conv(rq,chnode,&hnode);
 
   while (i < formatl) {
     if (format[i] == '\\') {
@@ -159,11 +162,11 @@ hnode_printf(SINK *outfile, const char *format, const size_t formatl, const reli
         case '%': sink_put(outfile,'%'); break;
         case 'U': printflags |= PC_UNTRIM; goto REPEAT; break;
         case 'D': printflags |= PC_DECODE; goto REPEAT; break;
-        case 'i': print_chars(hnode->insides.b,hnode->insides.s,printflags,outfile); break;
-        case 't': print_text(rq->nodes,hnode,printflags,outfile,0); break;
-        case 'T': print_text(rq->nodes,hnode,printflags,outfile,1); break;
+        case 'i': print_chars(hnode.insides.b,hnode.insides.s,printflags,outfile); break;
+        case 't': print_text(rq,chnode,printflags,outfile,0); break;
+        case 'T': print_text(rq,chnode,printflags,outfile,1); break;
         case 'l': {
-          uint16_t lvl = hnode->lvl;
+          uint16_t lvl = hnode.lvl;
           if (parent) {
             if (lvl < parent->lvl) {
               lvl = parent->lvl-lvl; //happens when passed from ancestor
@@ -173,30 +176,30 @@ hnode_printf(SINK *outfile, const char *format, const size_t formatl, const reli
           print_uint(lvl,outfile);
           }
           break;
-        case 'L': print_uint(hnode->lvl,outfile); break;
+        case 'L': print_uint(hnode.lvl,outfile); break;
         case 'a':
-          print_attribs(rq,attribs,attribsl,printflags,outfile); break;
+          print_attribs(rq,hnode.attribs,hnode.attribsl,printflags,outfile); break;
         case 'v':
-          print_attrib_value(rq,attribs,attribsl,text,textl,num,printflags,outfile);
+          print_attrib_value(rq,hnode.attribs,hnode.attribsl,text,textl,num,printflags,outfile);
           break;
-        case 's': print_uint(hnode->all.s,outfile); break;
-        case 'c': print_uint(hnode->desc_count,outfile); break;
-        case 'C': print_chars(hnode->all.b,hnode->all.s,printflags|PC_UNTRIM,outfile); break;
+        case 's': print_uint(hnode.all.s,outfile); break;
+        case 'c': print_uint(hnode.desc_count,outfile); break;
+        case 'C': print_chars(hnode.all.b,hnode.all.s,printflags|PC_UNTRIM,outfile); break;
         case 'S':
-          src = hnode->all.b;
-          if (hnode->insides.b) {
-            srcl = hnode->insides.b-hnode->all.b;
+          src = hnode.all.b;
+          if (hnode.insides.b) {
+            srcl = hnode.insides.b-hnode.all.b;
           } else
-            srcl = hnode->all.s;
+            srcl = hnode.all.s;
           print_chars(src,srcl,printflags|PC_UNTRIM,outfile);
           break;
         case 'e':
           endinsides = 1;
         case 'E':
-          if (!hnode->insides.b)
+          if (!hnode.insides.b)
             break;
-          srcl = hnode->all.s-(hnode->insides.b-hnode->all.b)-hnode->insides.s;
-          src = hnode->insides.b+hnode->insides.s;
+          srcl = hnode.all.s-(hnode.insides.b-hnode.all.b)-hnode.insides.s;
+          src = hnode.insides.b+hnode.insides.s;
           if (!srcl)
             break;
           if (endinsides) {
@@ -210,20 +213,20 @@ hnode_printf(SINK *outfile, const char *format, const size_t formatl, const reli
 
           print_chars(src,srcl,printflags|(endinsides ? 0 : PC_UNTRIM),outfile);
           break;
-        case 'I': print_uint(hnode->all.b-rq->data,outfile); break;
+        case 'I': print_uint(hnode.all.b-rq->data,outfile); break;
         case 'p': {
-          uint32_t pos = hnode-rq->nodes;
+          uint32_t pos = chnode-rq->nodes;
           if (parent) {
-            if (hnode < parent) {
-              pos = parent-hnode;
+            if (chnode < parent) {
+              pos = parent-chnode;
             } else
-              pos = hnode-parent;
+              pos = chnode-parent;
           }
           print_uint(pos,outfile);
           }
           break;
-        case 'P': print_uint(hnode-rq->nodes,outfile); break;
-        case 'n': sink_write(outfile,hnode->tag.b,hnode->tag.s); break;
+        case 'P': print_uint(chnode-rq->nodes,outfile); break;
+        case 'n': sink_write(outfile,hnode.tag.b,hnode.tag.s); break;
       }
       continue;
     }
@@ -232,8 +235,8 @@ hnode_printf(SINK *outfile, const char *format, const size_t formatl, const reli
 }
 
 void
-hnode_print(SINK *outfile, const reliq_hnode *hnode)
+chnode_print(SINK *outfile, const reliq_chnode *chnode, const reliq *rq)
 {
-  sink_write(outfile,hnode->all.b,hnode->all.s);
+  sink_write(outfile,chnode->all+rq->data,chnode->all_len);
   sink_put(outfile,'\n');
 }
