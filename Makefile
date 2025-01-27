@@ -4,6 +4,11 @@ CFLAGS = -O3 -march=native -Wall -Wextra -Wno-implicit-fallthrough -Wpedantic
 LDFLAGS =
 TARGET = reliq
 
+HTML_SIZE = 1 #limit max size of html tag names, attrib names, attrib values etc. , set to O_HTML_SMALL
+O_HTML_FULL := 0
+O_HTML_SMALL := 0
+O_HTML_VERY_SMALL := 0
+
 O_SMALL_STACK := 0 # limits for small stack
 O_PHPTAGS := 1 # support for <?php ?>
 O_AUTOCLOSING := 1 # support for autoclosing tags (tag ommission https://html.spec.whatwg.org/multipage/syntax.html#optional-tags)
@@ -30,6 +35,16 @@ LIB_SRC = src/flexarr.c src/sink.c src/html.c src/hnode.c src/reliq.c src/hnode_
 ifeq ("$(shell uname -s)","Darwin")
 	STRIP_ARGS += -x
 endif
+ifeq ($(strip ${O_HTML_VERY_SMALL}),1)
+	HTML_SIZE=0
+endif
+ifeq ($(strip ${O_HTML_SMALL}),1)
+	HTML_SIZE=1
+endif
+ifeq ($(strip ${O_HTML_FULL}),1)
+	HTML_SIZE=2
+endif
+CFLAGS_D += -DRELIQ_HTML_SIZE=${HTML_SIZE}
 
 ifeq ($(strip ${O_SMALL_STACK}),1)
 	CFLAGS_D += -DRELIQ_SMALL_STACK

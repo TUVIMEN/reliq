@@ -40,6 +40,14 @@ extern "C" {
 #define RELIQ_MAX_BLOCK_LEVEL 256
 #endif
 
+#if RELIQ_HTML_SIZE == 2
+#define RELIQ_HTML_OTHERSIZE(x,y)
+#elif RELIQ_HTML_SIZE == 1
+#define RELIQ_HTML_OTHERSIZE(x,y) : x
+#elif RELIQ_HTML_SIZE == 0
+#define RELIQ_HTML_OTHERSIZE(x,y) : y
+#endif
+
 #define RELIQ_ERROR_MESSAGE_LENGTH 512
 
 #define RELIQ_ERROR_SYS 5
@@ -69,9 +77,9 @@ typedef struct {
 #pragma pack(push,1)
 typedef struct {
   uint32_t key; //key+hnode.all.b
-  uint32_t value; // value+key+keyl
-  uint32_t valuel;
-  uint32_t keyl;
+  uint32_t value RELIQ_HTML_OTHERSIZE(8,8); // value+key+keyl
+  uint32_t valuel RELIQ_HTML_OTHERSIZE(24,16);
+  uint32_t keyl RELIQ_HTML_OTHERSIZE(8,8);
 } reliq_cattrib; //compressed reliq_attrib
 #pragma pack(pop)
 
@@ -79,15 +87,6 @@ typedef struct {
   char msg[RELIQ_ERROR_MESSAGE_LENGTH];
   int code;
 } reliq_error;
-
-/*typedef struct {
-  reliq_cstr all;
-  reliq_cstr tag;
-  reliq_cstr insides;
-  uint32_t attribs;
-  uint32_t desc_count; //count of descendants
-  uint16_t lvl;
-} reliq_chnode;*/
 
 typedef struct {
   reliq_cstr all;
@@ -102,13 +101,14 @@ typedef struct {
 #pragma pack(push,1)
 typedef struct {
   uint32_t all;
+  //if all text is part of a node all_len can be deleted as it is the same as next_hnode.all-hnode.all or rq->datal-hnode.all
   uint32_t all_len; //length of all
   uint32_t insides; //insides+tag+tagl+all
   uint32_t insidesl;
   uint32_t attribs;
   uint32_t desc_count; //count of descendants
-  uint32_t tag; //tag+all
-  uint32_t tagl;
+  uint32_t tag RELIQ_HTML_OTHERSIZE(8,8); //tag+all
+  uint32_t tagl RELIQ_HTML_OTHERSIZE(16,8);
   uint16_t lvl;
 } reliq_chnode; //compressed reliq_hnode
 #pragma pack(pop)
