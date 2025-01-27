@@ -25,7 +25,7 @@ STRIP_ARGS =
 LDFLAGS_R = ${LDFLAGS}
 CFLAGS_D = -DRELIQ_VERSION=\"${VERSION}\"
 
-LIB_SRC = src/flexarr.c src/sink.c src/html.c src/reliq.c src/hnode_print.c src/ctype.c src/utils.c src/output.c src/htmlescapecodes.c src/pattern.c src/range.c src/npattern.c src/exprs_comp.c src/exprs_exec.c src/format.c
+LIB_SRC = src/flexarr.c src/sink.c src/html.c src/hnode.c src/reliq.c src/hnode_print.c src/ctype.c src/utils.c src/output.c src/htmlescapecodes.c src/pattern.c src/range.c src/npattern.c src/exprs_comp.c src/exprs_exec.c src/format.c
 
 ifeq ("$(shell uname -s)","Darwin")
 	STRIP_ARGS += -x
@@ -67,7 +67,7 @@ CFLAGS_ALL = ${CFLAGS} ${CFLAGS_D}
 
 OBJ = ${SRC:.c=.o}
 
-.PHONY: all options reliq lib lib-install install linked test test-advanced test-errors test-all test-update dist uninstall
+.PHONY: all options lib lib-install install linked test test-advanced test-errors test-all test-update test-speed install-pc dist uninstall clean reliq-h
 
 all: options reliq
 
@@ -138,5 +138,7 @@ install: all
 	chmod 644 ${MANDIR}/${TARGET}.1.bz2
 
 uninstall:
-	rm -f ${BINDIR}/${TARGET}\
-		${MANDIR}/${TARGET}.1.bz2
+	rm -f ${BINDIR}/${TARGET} \
+		${MANDIR}/${TARGET}.1.bz2 \
+		${LD_LIBRARY_PATH}/lib${TARGET}.so \
+		${INCLUDE_PATH}/${TARGET}.h
