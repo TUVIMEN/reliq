@@ -287,7 +287,7 @@ match_hook(const nmatch_state *st, const reliq_hook *hook)
       srcl = chnode->lvl;
       break;
     case H_CHILD_COUNT:
-      srcl = hnode->desc_count;
+      srcl = hnode->tag_count;
       break;
     case H_MATCH_INSIDES:
       src = hnode->insides.b;
@@ -333,14 +333,15 @@ match_hook(const nmatch_state *st, const reliq_hook *hook)
     if ((!reliq_regexec(&hook->match.pattern,src,srcl))^invert)
       return 0;
   } else if ((flags&H_KINDS) == H_CHILD_MATCH && flags&H_EXPRS) {
+    const size_t desccount = chnode->tag_count+chnode->text_count+chnode->comment_count;
     reliq r = {
       .data = rq->data,
       .datal = rq->datal,
       .nodes = (reliq_chnode*)chnode,
-      .nodesl = chnode->desc_count+1,
+      .nodesl = desccount+1,
       .attribs = rq->attribs
     };
-    const reliq_chnode *last = chnode+chnode->desc_count;
+    const reliq_chnode *last = chnode+desccount;
     r.attribsl = last->attribs+chnode_attribsl(rq,last);
 
     size_t compressedl = 0;
@@ -402,6 +403,8 @@ reliq_nexec(const reliq *rq, const reliq_chnode *chnode, const reliq_chnode *par
 
   reliq_hnode hnode;
   chnode_conv(rq,chnode,&hnode);
+  if (hnode.type != RELIQ_HNODE_TYPE_TAG)
+    return 0;
   nmatch_state st = {
     .hnode = &hnode,
     .chnode = chnode,
@@ -870,24 +873,24 @@ dest_match_position(const reliq_range *range, flexarr *dest, size_t start, size_
 static void
 match_full(const reliq *rq, reliq_npattern *nodep, const reliq_chnode *current, flexarr *dest, uint32_t *found, const uint32_t lasttofind) //dest: reliq_compressed
 {
-  const uint32_t childcount = current->desc_count;
-  for (size_t i = 0; i <= childcount && *found < lasttofind; i++)
+  const uint32_t desccount = current->tag_count+current->text_count+current->comment_count;
+  for (size_t i = 0; i <= desccount && *found < lasttofind; i++)
     match_add(rq,current+i,current,nodep,dest,found);
 }
 
 static void
 match_child(const reliq *rq, reliq_npattern *nodep, const reliq_chnode *current, flexarr *dest, uint32_t *found, const uint32_t lasttofind) //dest: reliq_compressed
 {
-  const uint32_t childcount = current->desc_count;
-  for (size_t i = 1; i <= childcount && *found < lasttofind; i += current[i].desc_count+1)
+  const uint32_t desccount = current->tag_count+current->text_count+current->comment_count;
+  for (size_t i = 1; i <= desccount && *found < lasttofind; i += current[i].tag_count+current[i].text_count+current[i].comment_count+1)
     match_add(rq,current+i,current,nodep,dest,found);
 }
 
 static void
 match_descendant(const reliq *rq, reliq_npattern *nodep, const reliq_chnode *current, flexarr *dest, uint32_t *found, const uint32_t lasttofind) //dest: reliq_compressed
 {
-  const uint32_t childcount = current->desc_count;
-  for (size_t i = 1; i <= childcount && *found < lasttofind; i++)
+  const uint32_t desccount = current->tag_count+current->text_count+current->comment_count;
+  for (size_t i = 1; i <= desccount && *found < lasttofind; i++)
     match_add(rq,current+i,current,nodep,dest,found);
 }
 
@@ -927,7 +930,7 @@ match_sibling_subsequent(const reliq *rq, reliq_npattern *nodep, const reliq_chn
       match_add(rq,nodes+i,current,nodep,dest,found);
 
     if (nodes[i].lvl == lvldiff)
-      i += nodes[i].desc_count;
+      i += nodes[i].tag_count+nodes[i].text_count+nodes[i].comment_count;
   }
 }
 

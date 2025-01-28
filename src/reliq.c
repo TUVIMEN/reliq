@@ -149,7 +149,7 @@ reliq_hnode_shift_finalize(reliq_cattrib *attribs, reliq_chnode *node, char *ref
       previous = current;
       continue;
     } else if (current <= previous) {
-      if (previous <= current+current->desc_count) {
+      if (previous <= current+current->tag_count) {
         previous = current;
         continue;
       }
@@ -157,7 +157,7 @@ reliq_hnode_shift_finalize(reliq_cattrib *attribs, reliq_chnode *node, char *ref
 
     ...
 
-    if (current > previous+previous->desc_count)
+    if (current > previous+previous->tag_count)
       previous = current;
   }
   if (previous)
@@ -169,10 +169,10 @@ reliq_hnode_shift_finalize(reliq_cattrib *attribs, reliq_chnode *node, char *ref
 void
 convert_from_compressed_add_descendants(const reliq *rq, const reliq_chnode *root, flexarr *nodes, flexarr *attribs, const size_t pos, const uchar independent)
 {
-  const size_t desc_count = root->desc_count;
+  const size_t desccount = root->tag_count+root->text_count+root->comment_count;
   const uint16_t lvl = root->lvl;
   reliq_chnode *new;
-  for (size_t j = 0; j <= desc_count; j++) {
+  for (size_t j = 0; j <= desccount; j++) {
     new = (reliq_chnode*)flexarr_inc(nodes);
     const reliq_chnode *hnode = root+j;
     memcpy(new,hnode,sizeof(reliq_chnode));

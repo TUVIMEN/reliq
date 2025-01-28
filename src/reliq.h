@@ -88,14 +88,20 @@ typedef struct {
   int code;
 } reliq_error;
 
+#define RELIQ_HNODE_TYPE_TAG 0
+#define RELIQ_HNODE_TYPE_COMMENT 1
+#define RELIQ_HNODE_TYPE_TEXT 2
 typedef struct {
   reliq_cstr all;
   reliq_cstr tag;
   reliq_cstr insides;
   reliq_cattrib const *attribs;
   uint32_t attribsl;
-  uint32_t desc_count; //count of descendants
+  uint32_t tag_count;
+  uint32_t text_count;
+  uint32_t comment_count;
   uint16_t lvl;
+  uint8_t type : 2;
 } reliq_hnode; //html node
 
 #pragma pack(push,1)
@@ -106,7 +112,9 @@ typedef struct {
   uint32_t insides; //insides+tag+tagl+all
   uint32_t insidesl;
   uint32_t attribs;
-  uint32_t desc_count; //count of descendants
+  uint32_t tag_count : 30;
+  uint32_t text_count : 30;
+  uint32_t comment_count : 28;
   uint32_t tag RELIQ_HTML_OTHERSIZE(8,8); //tag+all
   uint32_t tagl RELIQ_HTML_OTHERSIZE(16,8);
   uint16_t lvl;

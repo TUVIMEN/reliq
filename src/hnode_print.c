@@ -88,29 +88,20 @@ print_text(const reliq *rq, const reliq_chnode *hnode, uint8_t flags, SINK *outf
     return;
 
   const char *data = rq->data;
-  const size_t start = hnode->all+hnode->tag+hnode->tagl+hnode->insides;
-  size_t last = start;
-  size_t end;
   flags |= PC_UNTRIM;
 
-  const size_t size = hnode->desc_count;
+  const size_t size = hnode->tag_count+hnode->text_count+hnode->comment_count;
   for (size_t i = 1; i <= size; i++) {
     const reliq_chnode *n = hnode+i;
 
-    end = n->all-last;
-    if (end)
-      print_chars(data+last,end,flags,outfile);
-
-    if (recursive)
+    uint8_t type = chnode_type(n);
+    if (type == RELIQ_HNODE_TYPE_TEXT) {
+        print_chars(data+n->all,n->all_len,flags,outfile);
+    } else if (recursive && type == RELIQ_HNODE_TYPE_TAG)
       print_text(rq,n,flags,outfile,recursive);
 
-    i += n->desc_count;
-    last = n->all+n->all_len;
+    i += n->tag_count+n->text_count+n->comment_count;
   }
-
-  end = hnode->insidesl-(last-start);
-  if (end)
-    print_chars(data+last,end,flags,outfile);
 }
 
 void
@@ -183,7 +174,7 @@ chnode_printf(SINK *outfile, const char *format, const size_t formatl, const rel
           print_attrib_value(rq,hnode.attribs,hnode.attribsl,text,textl,num,printflags,outfile);
           break;
         case 's': print_uint(hnode.all.s,outfile); break;
-        case 'c': print_uint(hnode.desc_count,outfile); break;
+        case 'c': print_uint(hnode.tag_count,outfile); break;
         case 'C': print_chars(hnode.all.b,hnode.all.s,printflags|PC_UNTRIM,outfile); break;
         case 'S':
           src = hnode.all.b;
