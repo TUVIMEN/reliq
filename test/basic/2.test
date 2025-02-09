@@ -9,10 +9,9 @@ fda0be185d1aaf9de418d44c2fd92aee,'li; [0] img; * ancestor@; [1] * self@; * fssub
 ed8eb0e77512de535ad2565267cb2dbe,'li; [0] img; * ancestor@; [1] * self@; * fsibl@'
 2f572e59f5478af6c4a427dcb0bb0aae,'li; [0] img; * ancestor@; [1] * self@; * fsibl@ | "%l\n"'
 3772eed96bb94448eb9775ff189a2e05,'li; [0] img; * parent@'
-
 < 2.html
 b2d1440b8bb1749fe92ed310fc3de87a,'encoding | "%Di\n"'
-9e1a6378c8f5ec705955b13bf54ff186,-l
+57891b0cdd7687877b9fc491dbd601a5,-l
 315fb372f9bc1fd000203399967dfee0,'inescapable; { table, td, div, section, tr }'
 b6e5e53260a6571eba5fc38010f225f4,'escaping; { div | "%C -- \"%E\" -- \"%e\"\n" , section}'
 4f415a5faceb3e17f357a3e9aec892a7,'weird-conditionals; { { * .i2 } || * #i1 }'

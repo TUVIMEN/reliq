@@ -199,7 +199,6 @@ phptag_handle(const char *f, size_t *pos, const size_t s, reliq_chnode *hnode, f
   size_t base = hnode->tag = tagname.b-f-hnode->all;
   base += hnode->all;
   base += hnode->tagl = tagname.s;
-  hnode->insides = i-base;
 
   char *ending;
   for (; i < s; i++) {
@@ -606,7 +605,6 @@ html_struct_handle(size_t *pos, const uint16_t lvl, html_state *st)
 
   FOUND_AND_SKIP_OTHERS: ;
   i++;
-  hnode->insides = i-start;
 
   if (tag_insides_handle(&i,hnindex,&fallback,&taginfo,st)) {
     flexarr_dec(nodes);

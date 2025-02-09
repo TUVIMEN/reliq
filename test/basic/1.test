@@ -83,22 +83,19 @@ eda6e68de1ab8a712c52a4000ffbfda8,'div -.extra -l@[2] id'
 f17e288090dff529bdc0dcf62d71e5f3,'(ul l@[3:] c@[:50] )((img src -alt )(p ) c@[0]  ) m@v>"2"'
 70e2a9089b4a9a6285ae226f9d57ae14,'img; p sibling_subsequent@'
 ae90273077454a8d04787d0d76eaaf3b,'* | "NN %n - %S - %e - %E\n"'
-67acdb05614e6897b748fc6d11fac64f,'ul; li [0]; ul ancestor@ l@[1] | "%n - %p - %P - %I - %l - %L\n", br | "%n - %p - %P - %I\n", div; img | "%n - %p - %P - %I\n"'
-092276fa12d1f33ec657416cc2d9bef7,'ul; li [0]; ul ancestor@ p@[6] P@[50] I@[798] | "%n - %p - %P - %I\n"'
+56b2df26ae7a78b5fdd0af43676fd3c0,'ul; li [0]; ul ancestor@ l@[1] | "%n - %p - %P - %I - %l - %L\n", br | "%n - %p - %P - %I\n", div; img | "%n - %p - %P - %I\n"'
+d41d8cd98f00b204e9800998ecf8427e,'ul; li [0]; ul ancestor@ p@[6] P@[50] I@[798] | "%n - %p - %P - %I\n"'
 8b1431981d981e10344492019cdcc434,'li /* src */ | /*"lk"*/ "kas %a\n" /*"%(src)Dv\n"*/ // , li'
 abf03b57d4cf180519283d5198c1e736,'div m@i>"COMME"'
 7001f6d7a9d63328f9c159db3bcd7c17,'div class=bW>annointed\ extra'
-
 < unclosed-tag.html
 18c53a8a802f5c7ca3f883a2ed89f8ce,'td .tablerow | "%i"'
-
 < editing.html
 e47d4d3285c95618f1efb1bc71132fb8,'{ li m@\, }'
-
 < 1.html
 % RELIQ_AUTOCLOSING
 # example file was build to test tag ommission, the following tests fail only because of that
-8e1770cd4ff69ec3e6913783679e2bc7,-l
+76b1b36813ea5b37bf628d43a56e24ed,-l
 352f185cda7ac6d63ac8f173d58cd8cf,'div;li;a'
 0f278918c0ad665cb78b28b995cad495,'* m@v>"<" m@>[1:]'
 45570f89bc1aa25501382114c37a8893,'li'

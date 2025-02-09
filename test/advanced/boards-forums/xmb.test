@@ -1,5 +1,4 @@
 ^ -f xmb-forums.reliq
-
 < xmb/f01
 752d6cfba960ea657b638306ca8e2f4e,
 < xmb/f02
@@ -24,9 +23,7 @@ c5762be4bc09f03478a5e195c3e8ea2c,
 54b2c231b3c6b0a6b7fa5e531e195d22,
 < xmb/f12
 071ec4b1dc36e4213acf9b9fc3354080,
-
 ^ -f xmb-boards.reliq
-
 < xmb/b01
 64ce319ebded3ee1ae3f9c820d9d2b11,
 < xmb/b02

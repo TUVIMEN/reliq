@@ -77,8 +77,8 @@ typedef struct {
 #pragma pack(push,1)
 typedef struct {
   uint32_t key; //key+hnode.all.b
-  uint32_t value RELIQ_HTML_OTHERSIZE(8,8); // value+key+keyl
   uint32_t valuel RELIQ_HTML_OTHERSIZE(24,16);
+  uint32_t value RELIQ_HTML_OTHERSIZE(8,8); // value+key+keyl
   uint32_t keyl RELIQ_HTML_OTHERSIZE(8,8);
 } reliq_cattrib; //compressed reliq_attrib
 #pragma pack(pop)
@@ -107,17 +107,15 @@ typedef struct {
 #pragma pack(push,1)
 typedef struct {
   uint32_t all;
-  //if all text is part of a node all_len can be deleted as it is the same as next_hnode.all-hnode.all or rq->datal-hnode.all
   uint32_t all_len; //length of all
-  uint32_t insides; //insides+tag+tagl+all
   uint32_t endtag; //endtag+tag+tagl+all
   uint32_t attribs;
+  uint16_t lvl;
+  uint32_t tagl RELIQ_HTML_OTHERSIZE(16,8);
+  uint32_t tag RELIQ_HTML_OTHERSIZE(8,8); //tag+all
   uint32_t tag_count : 30;
   uint32_t text_count : 30;
   uint32_t comment_count : 28;
-  uint32_t tag RELIQ_HTML_OTHERSIZE(8,8); //tag+all
-  uint32_t tagl RELIQ_HTML_OTHERSIZE(16,8);
-  uint16_t lvl;
 } reliq_chnode; //compressed reliq_hnode
 #pragma pack(pop)
 

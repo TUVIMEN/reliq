@@ -19,23 +19,19 @@
 #include "ext.h"
 
 #include "hnode.h"
-#include <assert.h>
 
-inline uint32_t
+uint32_t
 chnode_attribsl(const reliq *rq, const reliq_chnode *hnode)
 {
   size_t nextindex = hnode-rq->nodes+1;
-  if (nextindex >= rq->nodesl) {
-    assert(rq->attribsl-hnode->attribs <= rq->attribsl);
+  if (nextindex >= rq->nodesl)
     return rq->attribsl-hnode->attribs;
-  }
   const reliq_chnode *next = rq->nodes+nextindex;
 
-  assert(next->attribs-hnode->attribs <= rq->attribsl);
   return next->attribs-hnode->attribs;
 }
 
-inline uint8_t
+uint8_t
 chnode_type(const reliq_chnode *c)
 {
   if (c->tag == 0) {
@@ -47,32 +43,23 @@ chnode_type(const reliq_chnode *c)
   return RELIQ_HNODE_TYPE_TAG;
 }
 
-static inline uint32_t
-chnode_insides_try(const reliq *rq, const reliq_chnode *hnode, const uint8_t type)
+uint32_t
+chnode_insides(const reliq *rq, const reliq_chnode *hnode, const uint8_t type)
 {
   if (type == RELIQ_HNODE_TYPE_TEXT)
     return 0;
   if (type == RELIQ_HNODE_TYPE_COMMENT)
     return hnode->tagl;
 
+  const uint32_t base = hnode->all+hnode->tag+hnode->tagl;
   if (hnode->tag_count+hnode->text_count+hnode->comment_count == 0) {
-    if (rq->data[hnode->all+hnode->tag+hnode->tagl+hnode->endtag] == '<')
+    if (rq->data[base+hnode->endtag] == '<')
       return hnode->endtag;
     return 0;
   }
   const reliq_chnode *next = hnode+1;
 
-  assert(next->all-hnode->all-hnode->tag-hnode->tagl <= rq->datal);
-  return next->all-hnode->all-hnode->tag-hnode->tagl;
-}
-
-inline uint32_t
-chnode_insides(const reliq *rq, const reliq_chnode *hnode, const uint8_t type)
-{
-  if (type == RELIQ_HNODE_TYPE_COMMENT)
-    return hnode->tagl;
-  assert(chnode_insides_try(rq,hnode,type) == hnode->insides);
-  return hnode->insides;
+  return next->all-base;
 }
 
 void
@@ -90,7 +77,7 @@ chnode_conv(const reliq *rq, const reliq_chnode *c, reliq_hnode *d)
   } else
     d->tag = (reliq_cstr){ .b = NULL, .s = 0 };
 
-  uint32_t insides = chnode_insides(rq,c,type);
+  const uint32_t insides = chnode_insides(rq,c,type);
   if (insides == 0 && c->endtag == 0) {
     d->insides = (reliq_cstr){NULL,0};
   } else {

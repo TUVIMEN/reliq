@@ -64,9 +64,8 @@ f6c806c69cfb037b5cda67dc536ebac9,'.u ; li, ; li, , li, .c , li, { li, .a }, .g '
 ef205e5be117e2c8ced03552b8d8b2ca,' && '
 4316de795f42cf9a5b78bb331fe1fe68,'li  || '
 ac5077d4c68e47dadddefc7d0b0ab32e,'li, .a li & .c k, .i li && li && .u li'
-ac5077d4c68e47dadddefc7d0b0ab32e.'.c li && { .a li , .b ul} && { .d a, .e img }'
+ac5077d4c68e47dadddefc7d0b0ab32e,'.c li && { .a li , .b ul} && { .d a, .e img }'
 ac5077d4c68e47dadddefc7d0b0ab32e,'.a { .n li } | || img'
 8184fae45e36daa7b37093d892c072ed,'.g { .a la || li | "" }; a '
-
 % RELIQ_EDITING
 974bc394e3fce450eaed24b13d0e1d46,'li ||||||||||/////// '
