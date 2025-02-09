@@ -527,7 +527,7 @@ match_hook_handle(const char *src, size_t *pos, const size_t size, reliq_hook *o
      free(str);
      if (err)
        goto ERR;
-     if ((err = expr_check_chain(&hook.match.expr,0))) {
+     if ((err = expr_check_chain(&hook.match.expr))) {
        reliq_efree(&hook.match.expr);
        goto ERR;
      }

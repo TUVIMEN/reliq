@@ -1,7 +1,6 @@
 < 1.html
 ^ -e /dev/stdout
 1ec7ebc35165e0d58c597e771aa8877c,'E>(las'
-85fb8ac9432dc0110d814139b12e78e2,-F 'li,p'
 85fb8ac9432dc0110d814139b12e78e2,'li C@"i,a"'
 4b059b78182aba9f57ae746d2a6b569b,'a l@'
 3d96b04d8f5303732261d3fb763a53ba,'a lk@""'
@@ -56,7 +55,6 @@ f656013590da070e709db1c4137f3fc1,'.u k; { y1 }; { li } {2} {9}'
 2685209ffa23bb565893f2f60e4cdc7f,'u, j; { y1 } jj; k'
 e3ea52d8674fa09fabd6254d810a2380, '.a j; { k; { as, saf, uni; k } jj; k }'
 eb8733dfaeef0327b5be751b5d33ab2e,'k; l | "%i" { li }'
-686fe07ff47a8bcf16fac332ac753c12,-F "div +'class'; li child@"
 b41f2be119c9152ea6963b25927c2d5a,'.links.a("\P") a | "%(href)v \\ \U0e0a"'
 76ea6c5ba9ae9e895ca143222e078160,'p k// fsaf'
 8184fae45e36daa7b37093d892c072ed,'{ .u li }; a, li; {li; {li , .a li }}; li'

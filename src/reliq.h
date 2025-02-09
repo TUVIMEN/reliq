@@ -110,7 +110,7 @@ typedef struct {
   //if all text is part of a node all_len can be deleted as it is the same as next_hnode.all-hnode.all or rq->datal-hnode.all
   uint32_t all_len; //length of all
   uint32_t insides; //insides+tag+tagl+all
-  uint32_t endtag;
+  uint32_t endtag; //endtag+tag+tagl+all
   uint32_t attribs;
   uint32_t tag_count : 30;
   uint32_t text_count : 30;
@@ -172,7 +172,7 @@ typedef struct {
 
 int reliq_std_free(void *addr, size_t len); //mapping to free(3) that can be used for freedata
 
-reliq_error *reliq_init(const char *data, const size_t size, int (*freedata)(void *addr, size_t len), reliq *rq);
+reliq_error *reliq_init(const char *data, const size_t size, reliq *rq);
 int reliq_free(reliq *rq);
 
 reliq reliq_from_compressed(const reliq_compressed *compressed, const size_t compressedl, const reliq *rq);
@@ -185,9 +185,6 @@ void reliq_nfree(reliq_npattern *nodep);
 
 //expression
 reliq_error *reliq_ecomp(const char *script, const size_t size, reliq_expr *expr);
-
-reliq_error *reliq_fexec_file(char *data, const size_t size, FILE *output, const reliq_expr *expr, int (*freedata)(void *addr, size_t len));
-reliq_error *reliq_fexec_str(char *data, const size_t size, char **str, size_t *strl, const reliq_expr *expr, int (*freedata)(void *addr, size_t len));
 
 reliq_error *reliq_exec_file(reliq *rq, FILE *output, const reliq_expr *expr);
 reliq_error *reliq_exec_str(reliq *rq, char **str, size_t *strl, const reliq_expr *expr);

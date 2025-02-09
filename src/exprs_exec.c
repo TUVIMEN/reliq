@@ -50,14 +50,6 @@ typedef struct {
   uchar something_failed : 1;
 } exec_state;
 
-reliq_error *reliq_fmatch(const char *data, const size_t size, SINK *output, const reliq_npattern *nodep,
-#ifdef RELIQ_EDITING
-  reliq_format_func *nodef,
-#else
-  char *nodef,
-#endif
-  size_t nodefl);
-
 static reliq_error *exec_chain(const reliq_expr *expr, const flexarr *source, flexarr *dest, exec_state *st); //source: reliq_compressed, dest: reliq_compressed
 reliq_error *reliq_exec_r(reliq *rq, const reliq_chnode *parent, SINK *output, reliq_compressed **outnodes, size_t *outnodesl, const reliq_expr *expr);
 
@@ -70,7 +62,7 @@ add_compressed_blank(flexarr *dest, const enum outfieldCode val1, const void *va
 }
 
 reliq_error *
-expr_check_chain(const reliq_expr *expr, const uchar noaccesshooks)
+expr_check_chain(const reliq_expr *expr)
 {
   if (!EXPR_TYPE_IS(expr->flags,EXPR_BLOCK))
     return NULL;
@@ -91,8 +83,6 @@ expr_check_chain(const reliq_expr *expr, const uchar noaccesshooks)
   for (size_t i = 0; i < size; i++) {
     if (EXPR_IS_TABLE(chainv[i].flags))
       goto ERR;
-    if (noaccesshooks && (((reliq_npattern*)chainv[i].e)->flags&N_MATCHED_TYPE) > 1)
-      return script_err("illegal use of access hooks in fast mode",((reliq_npattern*)chainv[i].e)->flags&N_MATCHED_TYPE);
   }
 
   return NULL;
@@ -536,69 +526,4 @@ reliq_exec_str(reliq *rq, char **str, size_t *strl, const reliq_expr *expr)
   reliq_error *err = reliq_exec_r(rq,NULL,output,NULL,NULL,expr);
   sink_close(output);
   return err;
-}
-
-static reliq_error *
-reliq_fexec_sink(char *data, size_t size, SINK *output, const reliq_expr *expr, int (*freedata)(void *addr, size_t len))
-{
-  reliq_error *err = NULL;
-  uchar was_unallocated = 0;
-  SINK *destination = output;
-  if (!expr || !EXPR_TYPE_IS(expr->flags,EXPR_BLOCK))
-    goto END;
-  if ((err = expr_check_chain(expr,1)))
-    goto END;
-
-  char *ptr=data,*nptr;
-  size_t fsize;
-
-  flexarr *chain = ((reliq_expr*)((flexarr*)expr->e)->v)[0].e;
-  reliq_expr *chainv = (reliq_expr*)chain->v;
-  SINK *out;
-
-  const size_t chainsize = chain->size;
-  for (size_t i = 0; i < chainsize; i++) {
-    out = (i == chain->size-1) ? destination : sink_open(&nptr,&fsize);
-
-    err = reliq_fmatch(ptr,size,out,(reliq_npattern*)chainv[i].e,
-      chainv[i].nodef,chainv[i].nodefl);
-
-    sink_close(out);
-
-    if (i == 0) {
-      if (freedata)
-        (*freedata)(data,size);
-      was_unallocated = 1;
-    } else
-      free(ptr);
-
-    if (err)
-      return err;
-
-    ptr = nptr;
-    size = fsize;
-  }
-
-  END: ;
-  if (!was_unallocated) {
-    sink_close(destination);
-    if (freedata)
-      (*freedata)(data,size);
-  }
-  return err;
-}
-
-reliq_error *
-reliq_fexec_file(char *data, size_t size, FILE *output, const reliq_expr *expr, int (*freedata)(void *addr, size_t len))
-{
-  return reliq_fexec_sink(data,size,sink_from_file(output),expr,freedata);
-}
-
-reliq_error *
-reliq_fexec_str(char *data, const size_t size, char **str, size_t *strl, const reliq_expr *expr, int (*freedata)(void *data, size_t len))
-{
-  if (!expr)
-    return NULL;
-  SINK *output = sink_open(str,strl);
-  return reliq_fexec_sink(data,size,output,expr,freedata);
 }

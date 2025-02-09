@@ -35,7 +35,6 @@
 #include "reliq.h"
 
 #define F_RECURSIVE 0x1
-#define F_FAST 0x2
 
 #define BUFF_INC_VALUE (1<<23)
 
@@ -118,10 +117,8 @@ usage()
       "  -o FILE\t\tchange output to a FILE instead of stdout\n"\
       "  -e FILE\t\tchange output of errors to a FILE instead of stderr\n"\
       "  -f FILE\t\tobtain PATTERNS from FILE\n"\
-      "  -H\t\t\tfollow symlinks\n"\
       "  -r\t\t\tread all files under each directory, recursively\n"\
       "  -R\t\t\tlikewise but follow all symlinks\n"\
-      "  -F\t\t\tenter fast and low memory consumption mode\n"\
       "  -h\t\t\tshow help\n"\
       "  -v\t\t\tshow version\n\n"\
       "When FILE isn't specified, FILE will become standard input.",argv0,argv0,argv0);
@@ -155,16 +152,10 @@ expr_exec(char *f, size_t s, const uchar inpipe)
     munmap;
   #endif
 
-  if (settings&F_FAST) {
-    err = reliq_fexec_file(f,s,outfile,&expr,freedata);
-    if (err)
-      goto ERR;
-    return;
-  }
-
   reliq rq;
-  if ((err = reliq_init(f,s,freedata,&rq)))
+  if ((err = reliq_init(f,s,&rq)))
     goto ERR;
+  rq.freedata = freedata;
   //print_reliq_size(&rq);
   err = reliq_exec_file(&rq,outfile,&expr);
 
@@ -192,7 +183,7 @@ pipe_to_str(int fd, char **file, size_t *size)
   *file = realloc(*file,*size);
 }
 
-void
+static void
 file_handle(const char *f)
 {
   int fd;
@@ -251,7 +242,7 @@ file_handle(const char *f)
   }
 }
 
-void
+static void
 load_expr_from_file(char *filename)
 {
   if (!filename)
@@ -268,13 +259,22 @@ load_expr_from_file(char *filename)
   handle_reliq_error(err);
 }
 
-int
+static int
 nftw_func(const char *fpath, const struct stat UNUSED *sb, int typeflag, struct FTW UNUSED *ftwbuf)
 {
   if (typeflag == FTW_F || typeflag == FTW_SL)
     file_handle(fpath);
 
   return 0;
+}
+
+static FILE *
+open_file(const char *path, const char *mode)
+{
+  FILE *f = fopen(optarg,mode);
+  if (f == NULL)
+    xerr(RELIQ_ERROR_SYS,"%s",path);
+  return f;
 }
 
 int
@@ -296,28 +296,20 @@ main(int argc, char **argv)
   if (argc < 2)
     usage();
 
-  while ((opt = getopt(argc,argv,"lo:e:f:HrRFvh")) != -1) {
+  while ((opt = getopt(argc,argv,"lo:e:f:HrRvh")) != -1) {
     switch (opt) {
       case 'l':
         handle_reliq_error(reliq_ecomp("| \"%n%Ua - desc(%c) lvl(%L) size(%s) pos(%I)\\n\"",47,&expr));
         break;
       case 'o':
-        outfile = fopen(optarg,"wb");
-        if (outfile == NULL)
-          xerr(RELIQ_ERROR_SYS,"%s",optarg);
+        outfile = open_file(optarg,"wb");
         break;
       case 'e':
-        errfile = fopen(optarg,"wb");
-        if (errfile == NULL) {
-          errfile = stderr;
-          xerr(RELIQ_ERROR_SYS,"%s",optarg);
-        }
+        errfile = open_file(optarg,"wb");
         break;
       case 'f': load_expr_from_file(optarg); break;
-      case 'H': nftwflags &= ~FTW_PHYS; break;
       case 'r': settings |= F_RECURSIVE; break;
       case 'R': settings |= F_RECURSIVE; nftwflags &= ~FTW_PHYS; break;
-      case 'F': settings |= F_FAST; break;
       case 'v': die(RELIQ_VERSION); break;
       case 'h': usage(); break;
       default: exit(1);

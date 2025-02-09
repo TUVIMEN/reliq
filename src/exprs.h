@@ -47,6 +47,6 @@
 
 #include "output.h"
 
-reliq_error *expr_check_chain(const reliq_expr *expr, const uchar noaccesshooks);
+reliq_error *expr_check_chain(const reliq_expr *expr);
 
 #endif

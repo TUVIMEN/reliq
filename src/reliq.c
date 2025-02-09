@@ -61,39 +61,6 @@ reliq_free(reliq *rq)
   return 0;
 }
 
-reliq_error *
-reliq_fmatch(const char *data, const size_t size, SINK *output, const reliq_npattern *nodep,
-#ifdef RELIQ_EDITING
-  reliq_format_func *nodef,
-#else
-  char *nodef,
-#endif
-  size_t nodefl)
-{
-  reliq t = {
-    .data = data,
-    .datal = size
-  };
-
-  SINK *out = output;
-  if (output == NULL)
-    out = sink_from_file(stdout);
-
-  struct html_process_expr expr = {
-    .rq = &t,
-    .output = out,
-    .expr = nodep,
-    .nodef = nodef,
-    .nodefl = nodefl
-  };
-  reliq_error *err = html_handle(data,size,NULL,NULL,NULL,NULL,&expr);
-
-  if (output == NULL)
-    sink_close(out);
-
-  return err;
-}
-
 static void
 reliq_hnode_shift(reliq_cattrib *attribs, reliq_chnode *node, const size_t pos, const uint32_t attribsl)
 {
@@ -254,18 +221,18 @@ reliq_from_compressed(const reliq_compressed *compressed, const size_t compresse
 int
 reliq_std_free(void *addr, size_t UNUSED len)
 {
-    free(addr);
-    return 0;
+  free(addr);
+  return 0;
 }
 
 reliq_error *
-reliq_init(const char *data, const size_t size, int (*freedata)(void *addr, size_t len), reliq *rq)
+reliq_init(const char *data, const size_t size, reliq *rq)
 {
   rq->data = data;
   rq->datal = size;
-  rq->freedata = freedata;
+  rq->freedata = NULL;
 
-  reliq_error *err = html_handle(data,size,&rq->nodes,&rq->nodesl,&rq->attribs,&rq->attribsl,NULL);
+  reliq_error *err = html_handle(data,size,&rq->nodes,&rq->nodesl,&rq->attribs,&rq->attribsl);
 
   if (err)
     reliq_free(rq);

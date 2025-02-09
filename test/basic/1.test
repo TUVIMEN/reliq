@@ -1,11 +1,11 @@
 < 1.html
 013b94a16eac94d2770a5623bc2b4848,"'div' a@[0]"
 05c9adc24385fe57fb9333d77c2cd533,'div +style=""'
-c65e1941db5dca85df8dd01ae48cd22b,-F "div +'class'"
+ab39f28ce41c57abe6f1d16d97f02ccb,"div +'class'"
 1cc1e191c88d9bccd099c2d743cc38dc,"'div' +'class' -id"
 8ab419f8d9d205c883e28044b7099716,'div l@[3]'
 d20aa0af2053a94a65140166a389fe50,'html; body; div +class="index"; ul'
-13eaf3b49b52784279cae12d1f2a3bb4,-F 'div +class | "%(class)Uv\n"'
+aee94cf23d767839c622246a843c0e5c,'div +class | "%(class)Uv\n"'
 e7200aafebd92b3b3c0a0aa390b323ae,'div l@[3]; p l@[1]'
 bed952454a307756a71601264ee2bcc4,'p, div; p, div'
 d41d8cd98f00b204e9800998ecf8427e,'nothing; p'
@@ -99,8 +99,7 @@ e47d4d3285c95618f1efb1bc71132fb8,'{ li m@\, }'
 % RELIQ_AUTOCLOSING
 # example file was build to test tag ommission, the following tests fail only because of that
 8e1770cd4ff69ec3e6913783679e2bc7,-l
-a148de2553f228ef3efa6842bdcbc9c3,-Fl
-4b598550215418bab967d2d9614cea93,-F 'div;li;a'
+352f185cda7ac6d63ac8f173d58cd8cf,'div;li;a'
 0f278918c0ad665cb78b28b995cad495,'* m@v>"<" m@>[1:]'
 45570f89bc1aa25501382114c37a8893,'li'
 6e5d79c1ef9af0a29f2064eb502efa21,'"li" | "%Ui\n"'

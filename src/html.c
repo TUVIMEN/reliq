@@ -70,7 +70,6 @@ const reliq_cstr8 inescapable_s[] = {
 #endif
 
 typedef struct {
-    struct html_process_expr *expr;
     flexarr *nodes; //reliq_chnode
     flexarr *attribs; //reliq_cattrib
     reliq_error *err;
@@ -288,7 +287,7 @@ last_attrib(const flexarr *attrib) //attrib: reliq_cattrib
 }
 
 static void
-tag_insides_text_finish(size_t *tnindex, flexarr *nodes, const size_t textstart, const size_t textend, const char *f, flexarr *attribs)
+tag_insides_text_finish(size_t *tnindex, flexarr *nodes, const size_t textstart, const size_t textend)
 {
   if (*tnindex == (size_t)-1)
     return;
@@ -462,11 +461,11 @@ tag_insides_handle(size_t *pos, const size_t hnindex, uint32_t *fallback, struct
       goto TEXT_REPEAT;
 
     CONTINUE: ;
-    tag_insides_text_finish(&tnindex,nodes,textstart,textend,st->f,st->attribs);
+    tag_insides_text_finish(&tnindex,nodes,textstart,textend);
   }
 
   END: ;
-  tag_insides_text_finish(&tnindex,nodes,textstart,textend,st->f,st->attribs);
+  tag_insides_text_finish(&tnindex,nodes,textstart,textend);
 
   if (err)
     *fallback = 0;
@@ -513,32 +512,6 @@ attribs_handle(const char *f, size_t *pos, const size_t s, reliq_chnode *hnode, 
 
   *pos = i;
   return ended;
-}
-
-static reliq_error *
-exec_hnode(const reliq_chnode *hn, struct html_process_expr *expr, flexarr *nodes, flexarr *attribs)
-{
-  if (!expr->expr)
-    return NULL;
-
-  reliq *rq = expr->rq;
-  rq->nodes = (reliq_chnode*)nodes->v;
-  rq->nodesl = nodes->size;
-  rq->attribs = (reliq_cattrib*)attribs->v;
-  rq->attribsl = attribs->size;
-
-  int r = reliq_nexec(expr->rq,hn,NULL,expr->expr);
-  if (!r)
-    return NULL;
-
-  reliq_error *err = node_output(hn,NULL,expr->nodef,expr->nodefl,expr->output,expr->rq);
-
-  rq->nodes = NULL;
-  rq->nodesl = 0;
-  rq->attribs = NULL;
-  rq->attribsl = 0;
-
-  return err;
 }
 
 static uint32_t
@@ -649,7 +622,7 @@ html_struct_handle(size_t *pos, const uint16_t lvl, html_state *st)
       hnode->endtag = s-start-1;
   } else if (!hnode->all_len) {
     hnode->all_len = i-hnode->all;
-    hnode->endtag = i-start; //!! does not change anything
+    hnode->endtag = i-start; //!! this doesn't change anything
   }
   if (!taginfo.foundend)
     hnode->endtag = hnode->all_len-hnode->tag-hnode->tagl;
@@ -658,12 +631,6 @@ html_struct_handle(size_t *pos, const uint16_t lvl, html_state *st)
   hnode->text_count = st->text_count-text_count;
   hnode->comment_count = st->comment_count-comment_count;
 
-  if (st->expr) {
-    st->err = exec_hnode(hnode,st->expr,nodes,attribs);
-
-    nodes->size = hnode-(reliq_chnode*)nodes->v;
-    attribs->size = attrib_start;
-  }
   st->tag_count++;
 
   ERR: ;
@@ -672,12 +639,11 @@ html_struct_handle(size_t *pos, const uint16_t lvl, html_state *st)
 }
 
 reliq_error *
-html_handle(const char *data, const size_t size, reliq_chnode **nodes, size_t *nodesl, reliq_cattrib **attribs, size_t *attribsl, struct html_process_expr *expr)
+html_handle(const char *data, const size_t size, reliq_chnode **nodes, size_t *nodesl, reliq_cattrib **attribs, size_t *attribsl)
 {
   flexarr *nodes_buffer = flexarr_init(sizeof(reliq_chnode),NODES_INC);
   flexarr *attribs_buffer = (void*)flexarr_init(sizeof(reliq_cattrib),ATTRIB_INC);
   html_state st = {
-    .expr = expr,
     .f = data,
     .s = size,
     .nodes = nodes_buffer,
@@ -719,16 +685,14 @@ html_handle(const char *data, const size_t size, reliq_chnode **nodes, size_t *n
     i++;
   }
 
-  if (st.err || expr) {
+  if (st.err) {
     flexarr_free(nodes_buffer);
     flexarr_free(attribs_buffer);
 
-    if (!expr) {
-      *nodes = NULL;
-      *nodesl = 0;
-      *attribs = NULL;
-      *attribsl = 0;
-    }
+    *nodes = NULL;
+    *nodesl = 0;
+    *attribs = NULL;
+    *attribsl = 0;
   } else {
     flexarr_conv(nodes_buffer,(void**)nodes,nodesl);
     flexarr_conv(attribs_buffer,(void**)attribs,attribsl);
