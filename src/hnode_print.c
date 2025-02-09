@@ -84,7 +84,7 @@ print_attrib_value(const reliq *rq, const reliq_cattrib *attribs, const size_t a
 static void
 print_text(const reliq *rq, const reliq_chnode *hnode, uint8_t flags, SINK *outfile, uchar recursive)
 {
-  if (hnode->insides == 0 && hnode->insidesl == 0)
+  if (hnode->text_count == 0)
     return;
 
   const char *data = rq->data;

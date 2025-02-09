@@ -1,10 +1,11 @@
 % RELIQ_PHPTAGS
 < php.php
-7ec9e9326adfa350ad111b609b8319cd,-Fl
-c151b5806db093dd3c2741f048f4cea9,'div a@[1]'
+653eea3f528bc6384e4bd7a53f906fdc,-l
+560a1b80a49d1f1677019686496f4afc,-Fl
+0057577cb5be698cc52b8e3e7d82ee4d,'div a@[1]'
 b351fe035a51e0719b9c3139bd511f63,'* m@>[1:] m@v>"<"'
-c151b5806db093dd3c2741f048f4cea9,'div +class'
-c151b5806db093dd3c2741f048f4cea9,'div +class -id'
-7f46b447ea5d264e9c43737dd0c305eb,-F 'html; body'
-bb9ccba96b59bb92811e12162110c08e,'v>php'
-dbd4964190d1df2aa4be3fc1314199e4,-F 'php'
+0057577cb5be698cc52b8e3e7d82ee4d,'div +class'
+0057577cb5be698cc52b8e3e7d82ee4d,'div +class -id'
+aa2eb772fdb061de15212b3426cf73b1,-F 'html; body'
+6163352f0405742b1631711493455cc8,'v>php'
+ffbec21fd320e99bb557493b3709b255,-F 'php'

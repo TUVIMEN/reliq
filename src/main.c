@@ -127,6 +127,20 @@ usage()
       "When FILE isn't specified, FILE will become standard input.",argv0,argv0,argv0);
 }
 
+/*void*/
+/*print_reliq_size(const reliq *rq)*/
+/*{*/
+    /*const size_t nodesl = rq->nodesl;*/
+    /*size_t size = nodesl*sizeof(reliq_chnode);*/
+    /*reliq_chnode *nodes = rq->nodes;*/
+    /*size_t attribs = 0;*/
+    /*for (size_t i = 0; i < nodesl; i++)*/
+        /*attribs += nodes[i].attribsl;*/
+    /*size += attribs*sizeof(reliq_cattrib);*/
+
+    /*fprintf(stderr,"size datal(%lu) nodesl(%lu) attribs(%lu) size(%lu) hnode(%lu) attrib(%lu)\n",rq->datal,nodesl,attribs,size,sizeof(reliq_chnode),sizeof(reliq_cattrib));*/
+/*}*/
+
 static void
 expr_exec(char *f, size_t s, const uchar inpipe)
 {
@@ -151,6 +165,7 @@ expr_exec(char *f, size_t s, const uchar inpipe)
   reliq rq;
   if ((err = reliq_init(f,s,freedata,&rq)))
     goto ERR;
+  //print_reliq_size(&rq);
   err = reliq_exec_file(&rq,outfile,&expr);
 
   reliq_free(&rq);
@@ -265,6 +280,8 @@ nftw_func(const char *fpath, const struct stat UNUSED *sb, int typeflag, struct 
 int
 main(int argc, char **argv)
 {
+  /*fprintf(stderr,"ss %u\n",sizeof(reliq_cattrib));
+  fprintf(stderr,"ss %u\n",sizeof(reliq_chnode));*/
   int opt;
 
   #if defined(__MINGW32__) || defined(__MINGW64__)

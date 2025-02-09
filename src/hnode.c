@@ -21,24 +21,25 @@
 #include "hnode.h"
 #include <assert.h>
 
-uint32_t
+inline uint32_t
 chnode_attribsl(const reliq *rq, const reliq_chnode *hnode)
 {
-  size_t index = hnode-rq->nodes;
-  if (index >= rq->nodesl-1) {
+  size_t nextindex = hnode-rq->nodes+1;
+  if (nextindex >= rq->nodesl) {
     assert(rq->attribsl-hnode->attribs <= rq->attribsl);
     return rq->attribsl-hnode->attribs;
   }
+  const reliq_chnode *next = rq->nodes+nextindex;
 
-  assert(rq->nodes[index+1].attribs-hnode->attribs <= rq->attribsl);
-  return rq->nodes[index+1].attribs-hnode->attribs;
+  assert(next->attribs-hnode->attribs <= rq->attribsl);
+  return next->attribs-hnode->attribs;
 }
 
 inline uint8_t
 chnode_type(const reliq_chnode *c)
 {
-  if (c->tag == 0 && c->tagl == 0) {
-    if (c->insides == 0 && c->insidesl == 0) {
+  if (c->tag == 0) {
+    if (c->endtag == 0) {
       return RELIQ_HNODE_TYPE_TEXT;
     } else
       return RELIQ_HNODE_TYPE_COMMENT;
@@ -46,18 +47,56 @@ chnode_type(const reliq_chnode *c)
   return RELIQ_HNODE_TYPE_TAG;
 }
 
+static inline uint32_t
+chnode_insides_try(const reliq *rq, const reliq_chnode *hnode, const uint8_t type)
+{
+  if (type == RELIQ_HNODE_TYPE_TEXT)
+    return 0;
+  if (type == RELIQ_HNODE_TYPE_COMMENT)
+    return hnode->tagl;
+
+  if (hnode->tag_count+hnode->text_count+hnode->comment_count == 0) {
+    if (rq->data[hnode->all+hnode->tag+hnode->tagl+hnode->endtag] == '<')
+      return hnode->endtag;
+    return 0;
+  }
+  const reliq_chnode *next = hnode+1;
+
+  assert(next->all-hnode->all-hnode->tag-hnode->tagl <= rq->datal);
+  return next->all-hnode->all-hnode->tag-hnode->tagl;
+}
+
+inline uint32_t
+chnode_insides(const reliq *rq, const reliq_chnode *hnode, const uint8_t type)
+{
+  if (type == RELIQ_HNODE_TYPE_COMMENT)
+    return hnode->tagl;
+  assert(chnode_insides_try(rq,hnode,type) == hnode->insides);
+  return hnode->insides;
+}
+
 void
 chnode_conv(const reliq *rq, const reliq_chnode *c, reliq_hnode *d)
 {
+  uint8_t type = chnode_type(c);
+  d->type = type;
+
   char const *base = rq->data+c->all;
   d->all = (reliq_cstr){ .b = base, .s = c->all_len };
-  base += c->tag;
-  d->tag = (reliq_cstr){ .b = base, .s = c->tagl };
-  base += c->tagl+c->insides;
-  if (c->insides == 0 && c->insidesl == 0) {
-    d->insides = (reliq_cstr){NULL,0};
+  if (c->tag) {
+    base += c->tag;
+    d->tag = (reliq_cstr){ .b = base, .s = c->tagl };
+    base += c->tagl;
   } else
-    d->insides = (reliq_cstr){ .b = base, .s = c->insidesl };
+    d->tag = (reliq_cstr){ .b = NULL, .s = 0 };
+
+  uint32_t insides = chnode_insides(rq,c,type);
+  if (insides == 0 && c->endtag == 0) {
+    d->insides = (reliq_cstr){NULL,0};
+  } else {
+    base += insides;
+    d->insides = (reliq_cstr){ .b = base, .s = c->endtag-insides };
+  }
 
   d->attribs = c->attribs+rq->attribs;
   d->attribsl = chnode_attribsl(rq,c);
@@ -65,8 +104,6 @@ chnode_conv(const reliq *rq, const reliq_chnode *c, reliq_hnode *d)
   d->tag_count = c->tag_count;
   d->text_count = c->text_count;
   d->comment_count = c->comment_count;
-
-  d->type = chnode_type(c);
 }
 
 void

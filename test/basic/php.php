@@ -108,7 +108,7 @@ if (isset($_GET['orderby'])) {
             if ($total_pages > 1)
                 print_pages($page,$total_pages,'all','?orderby=' . $_GET['orderby'] . "&r=$direction" . $headers);
 		?>
-        
+
         <div class="order-tiles">
             <?php
                 echo '<a href="?orderby=title&r=0' . $headers . '"><div class="order-tile">name</div></a>
@@ -131,7 +131,7 @@ if (isset($_GET['orderby'])) {
                     <div class="img-container">
                         <img class="mtile-img" src="' . $DOMAIN . '/thumbnails/' . $row['comics_thumbnail'] . '" />
                     </div>'
-                    . $row['comics_title'] . 
+                    . $row['comics_title'] .
                     "</div>
                     </a>\n";
             }
@@ -142,4 +142,5 @@ if (isset($_GET['orderby'])) {
                 print_pages($page,$total_pages,'all','?orderby=' . $_GET['orderby'] . "&r=$direction" . $headers);
 		?>
 	</body>
+    <? ?>
 </html>

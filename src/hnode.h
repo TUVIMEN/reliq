@@ -22,6 +22,7 @@
 #include "types.h"
 
 uint32_t chnode_attribsl(const reliq *rq, const reliq_chnode *hnode);
+uint32_t chnode_insides(const reliq *rq, const reliq_chnode *hnode, const uint8_t type);
 uint8_t chnode_type(const reliq_chnode *c);
 void chnode_conv(const reliq *rq, const reliq_chnode *c, reliq_hnode *d);
 void cattrib_conv(const reliq *rq, const reliq_cattrib *c, reliq_attrib *d);

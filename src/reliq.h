@@ -110,7 +110,7 @@ typedef struct {
   //if all text is part of a node all_len can be deleted as it is the same as next_hnode.all-hnode.all or rq->datal-hnode.all
   uint32_t all_len; //length of all
   uint32_t insides; //insides+tag+tagl+all
-  uint32_t insidesl;
+  uint32_t endtag;
   uint32_t attribs;
   uint32_t tag_count : 30;
   uint32_t text_count : 30;
