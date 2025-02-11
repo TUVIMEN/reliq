@@ -47,7 +47,6 @@
 
 //match_hook flags
 #define H_KINDS 0x1f
-
 #define H_ATTRIBUTES 1
 #define H_LEVEL 2
 #define H_LEVEL_RELATIVE 3
@@ -59,6 +58,8 @@
 #define H_INDEX 9
 #define H_POSITION 10
 #define H_POSITION_RELATIVE 11
+
+//access hooks
 #define H_FULL 12
 #define H_SELF 13
 #define H_CHILD 14
@@ -73,14 +74,23 @@
 #define H_FULL_SIBLING_PRECEDING 23
 #define H_FULL_SIBLING_SUBSEQUENT 24
 
+//type hooks
+#define H_NODE 25
+#define H_COMMENT 26
+#define H_TEXT 27
+#define H_TEXT_ERR 28
+#define H_TEXT_EMPTY 29
+#define H_TEXT_ALL 30
+
 #define H_RANGE 0x20
 #define H_PATTERN 0x40
 #define H_EXPRS 0x80
 #define H_NOARG 0x100
 
 #define H_INVERT 0x200
-#define H_FLAG 0x400
+#define H_ACCESS_HOOK 0x400
 #define H_EMPTY 0x800
+#define H_TYPE 0x1000
 
 reliq_error *reliq_exec_r(reliq *rq, const reliq_chnode *parent, SINK *output, reliq_compressed **outnodes, size_t *outnodesl, const reliq_expr *expr);
 
@@ -121,28 +131,35 @@ const struct match_hook match_hooks[] = {
     {{"endmatch",8},H_PATTERN|H_MATCH_END},
     {{"index",5},H_RANGE|H_INDEX},
 
-    {{"desc",4},H_DESCENDANT|H_NOARG|H_FLAG},
-    {{"rparent",7},H_RELATIVE_PARENT|H_NOARG|H_FLAG},
-    {{"sibl",4},H_SIBLING|H_NOARG|H_FLAG},
-    {{"spre",4},H_SIBLING_PRECEDING|H_NOARG|H_FLAG},
-    {{"ssub",4},H_SIBLING_SUBSEQUENT|H_NOARG|H_FLAG},
-    {{"fsibl",5},H_FULL_SIBLING|H_NOARG|H_FLAG},
-    {{"fspre",5},H_FULL_SIBLING_PRECEDING|H_NOARG|H_FLAG},
-    {{"fssub",5},H_FULL_SIBLING_SUBSEQUENT|H_NOARG|H_FLAG},
+    {{"desc",4},H_DESCENDANT|H_NOARG|H_ACCESS_HOOK},
+    {{"rparent",7},H_RELATIVE_PARENT|H_NOARG|H_ACCESS_HOOK},
+    {{"sibl",4},H_SIBLING|H_NOARG|H_ACCESS_HOOK},
+    {{"spre",4},H_SIBLING_PRECEDING|H_NOARG|H_ACCESS_HOOK},
+    {{"ssub",4},H_SIBLING_SUBSEQUENT|H_NOARG|H_ACCESS_HOOK},
+    {{"fsibl",5},H_FULL_SIBLING|H_NOARG|H_ACCESS_HOOK},
+    {{"fspre",5},H_FULL_SIBLING_PRECEDING|H_NOARG|H_ACCESS_HOOK},
+    {{"fssub",5},H_FULL_SIBLING_SUBSEQUENT|H_NOARG|H_ACCESS_HOOK},
 
-    {{"full",4},H_FULL|H_NOARG|H_FLAG},
-    {{"self",4},H_SELF|H_NOARG|H_FLAG},
-    {{"child",5},H_CHILD|H_NOARG|H_FLAG},
-    {{"descendant",10},H_DESCENDANT|H_NOARG|H_FLAG},
-    {{"ancestor",8},H_ANCESTOR|H_NOARG|H_FLAG},
-    {{"parent",6},H_PARENT|H_NOARG|H_FLAG},
-    {{"relative_parent",15},H_RELATIVE_PARENT|H_NOARG|H_FLAG},
-    {{"sibling",7},H_SIBLING|H_NOARG|H_FLAG},
-    {{"sibling_preceding",17},H_SIBLING_PRECEDING|H_NOARG|H_FLAG},
-    {{"sibling_subsequent",18},H_SIBLING_SUBSEQUENT|H_NOARG|H_FLAG},
-    {{"full_sibling",12},H_FULL_SIBLING|H_NOARG|H_FLAG},
-    {{"full_sibling_preceding",22},H_FULL_SIBLING_PRECEDING|H_NOARG|H_FLAG},
-    {{"full_sibling_subsequent",23},H_FULL_SIBLING_SUBSEQUENT|H_NOARG|H_FLAG},
+    {{"full",4},H_FULL|H_NOARG|H_ACCESS_HOOK},
+    {{"self",4},H_SELF|H_NOARG|H_ACCESS_HOOK},
+    {{"child",5},H_CHILD|H_NOARG|H_ACCESS_HOOK},
+    {{"descendant",10},H_DESCENDANT|H_NOARG|H_ACCESS_HOOK},
+    {{"ancestor",8},H_ANCESTOR|H_NOARG|H_ACCESS_HOOK},
+    {{"parent",6},H_PARENT|H_NOARG|H_ACCESS_HOOK},
+    {{"relative_parent",15},H_RELATIVE_PARENT|H_NOARG|H_ACCESS_HOOK},
+    {{"sibling",7},H_SIBLING|H_NOARG|H_ACCESS_HOOK},
+    {{"sibling_preceding",17},H_SIBLING_PRECEDING|H_NOARG|H_ACCESS_HOOK},
+    {{"sibling_subsequent",18},H_SIBLING_SUBSEQUENT|H_NOARG|H_ACCESS_HOOK},
+    {{"full_sibling",12},H_FULL_SIBLING|H_NOARG|H_ACCESS_HOOK},
+    {{"full_sibling_preceding",22},H_FULL_SIBLING_PRECEDING|H_NOARG|H_ACCESS_HOOK},
+    {{"full_sibling_subsequent",23},H_FULL_SIBLING_SUBSEQUENT|H_NOARG|H_ACCESS_HOOK},
+
+    {{"node",4},H_NODE|H_NOARG|H_TYPE},
+    {{"comment",7},H_COMMENT|H_NOARG|H_TYPE},
+    {{"text",4},H_TEXT|H_NOARG|H_TYPE},
+    {{"textempty",9},H_TEXT_EMPTY|H_NOARG|H_TYPE},
+    {{"texterr",7},H_TEXT_ERR|H_NOARG|H_TYPE},
+    {{"textall",7},H_TEXT_ALL|H_NOARG|H_TYPE},
 };
 
 static inline void
@@ -447,7 +464,7 @@ match_add(const reliq *rq, reliq_chnode const *hnode, reliq_chnode const *parent
 }
 
 static reliq_error *
-match_hook_handle(const char *src, size_t *pos, const size_t size, reliq_hook *out_hook, const uchar invert, uint8_t *nodeflags)
+match_hook_handle(const char *src, size_t *pos, const size_t size, reliq_hook *out_hook, const uchar invert, uint16_t *nodeflags)
 {
   reliq_error *err = NULL;
   size_t p=*pos;
@@ -596,7 +613,7 @@ strclass_attrib(const char *str, const size_t strl)
 }
 
 static reliq_error *
-get_node_matches(const char *src, size_t *pos, const size_t size, const uint16_t lvl, reliq_node_matches *matches, uchar *hastag, reliq_range *position, uint8_t *nodeflags)
+get_node_matches(const char *src, size_t *pos, const size_t size, const uint16_t lvl, reliq_node_matches *matches, uchar *hastag, reliq_range *position, uint16_t *nodeflags)
 {
   if (lvl >= RELIQ_MAX_GROUP_LEVEL)
     return script_err("node: %lu: reached %lu level of recursion",*pos,lvl);
@@ -708,7 +725,7 @@ get_node_matches(const char *src, size_t *pos, const size_t size, const uint16_t
       if ((err = match_hook_handle(src,&i,size,&hook,attrib.flags&A_INVERT,nodeflags)))
         break;
       if (i != prev) {
-        if (!fullmode && hook.flags&H_FLAG) {
+        if (!fullmode && hook.flags&H_ACCESS_HOOK) {
           err = script_err("node: %lu: groups cannot have access hooks",i);
           break;
         }

@@ -43,6 +43,13 @@
 #define N_EMPTY 0x10 //ignore matching
 #define N_POSITION_ABSOLUTE 0x20
 
+#define NM_NODE 0x40
+#define NM_COMMENT 0x80
+#define NM_TEXT 0x100
+#define NM_TEXT_ERR 0x200
+#define NM_TEXT_EMPTY 0x400
+#define NM_TEXT_ALL 0x800
+
 typedef struct {
   union {
     reliq_expr expr;
@@ -72,6 +79,7 @@ typedef struct {
 struct reliq_node_matches {
   reliq_node_matches_node *list;
   size_t size;
+  uint8_t type; //NM_
 };
 
 struct reliq_pattrib {
@@ -86,7 +94,7 @@ struct reliq_npattern {
   reliq_range position;
 
   uint32_t position_max;
-  uint8_t flags; //N_
+  uint16_t flags; //N_
 };
 
 reliq_error *reliq_ncomp(const char *script, const size_t size, reliq_npattern *nodep);

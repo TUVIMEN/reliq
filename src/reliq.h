@@ -91,6 +91,8 @@ typedef struct {
 #define RELIQ_HNODE_TYPE_TAG 0
 #define RELIQ_HNODE_TYPE_COMMENT 1
 #define RELIQ_HNODE_TYPE_TEXT 2
+#define RELIQ_HNODE_TYPE_TEXT_EMPTY 3
+#define RELIQ_HNODE_TYPE_TEXT_ERR 4
 typedef struct {
   reliq_cstr all;
   reliq_cstr tag;
@@ -101,7 +103,7 @@ typedef struct {
   uint32_t text_count;
   uint32_t comment_count;
   uint16_t lvl;
-  uint8_t type : 2;
+  uint8_t type : 3;
 } reliq_hnode; //html node
 
 #pragma pack(push,1)
@@ -111,7 +113,11 @@ typedef struct {
   uint32_t endtag; //endtag+tag+tagl+all
   uint32_t attribs;
   uint16_t lvl;
+
+  /*for comments it stores the beggining of the insides,
+  for text it stores type: 0 - normal text, 1 - empty text, 2 - erroneous text*/
   uint32_t tagl RELIQ_HTML_OTHERSIZE(16,8);
+
   uint32_t tag RELIQ_HTML_OTHERSIZE(8,8); //tag+all
   uint32_t tag_count : 30;
   uint32_t text_count : 30;
