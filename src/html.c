@@ -285,18 +285,33 @@ last_attrib(const flexarr *attrib) //attrib: reliq_cattrib
   return attrib->size;
 }
 
-static void
-tag_insides_text_finish(size_t *tnindex, flexarr *nodes, const size_t textstart, const size_t textend)
+static uchar
+text_is_empty(const char *text, const size_t textl)
 {
+  char *f = f;
+  for (size_t i = 0; i < textl; i++)
+    if (!isspace(text[i]))
+      return 0;
+  return 1;
+}
+
+static void
+text_finish(size_t *tnindex, flexarr *nodes, const size_t textstart, const size_t textend, uint32_t *htmlerr, const char *f)
+{
+  uint32_t err = *htmlerr;
+  *htmlerr = 0;
   if (*tnindex == (size_t)-1)
     return;
 
   reliq_chnode *tn = ((reliq_chnode*)nodes->v)+*tnindex;
   tn->all = textstart;
-  tn->all_len = textend-textstart;
+  const size_t len = tn->all_len = textend-textstart;
+  if (err > 1) {
+    tn->tagl = 2;
+  } else if (text_is_empty(f+textstart,len))
+    tn->tagl = 1;
   *tnindex = -1;
 }
-
 
 static uchar
 tag_insides_handle(size_t *pos, const size_t hnindex, uint32_t *fallback, struct tag_info *taginfo, html_state *st)
@@ -314,13 +329,14 @@ tag_insides_handle(size_t *pos, const size_t hnindex, uint32_t *fallback, struct
   reliq_cstr tagname = { .b = f+base, .s = hnode->tagl };
   base += hnode->tagl;
   size_t tnindex = -1; //textnode index
-  size_t textstart=0;
-  size_t textend = 0;
+  size_t textstart=0,textend = 0;
+  uint32_t htmlerr = 0;
 
   for (; i < s; i++) {
     textstart = i;
 
     TEXT_REPEAT: ;
+    htmlerr++;
     while (i < s && f[i] != '<')
       i++;
     textend = i;
@@ -354,12 +370,13 @@ tag_insides_handle(size_t *pos, const size_t hnindex, uint32_t *fallback, struct
 
       if (strcasecomp(tagname,endname)) {
         hnode->endtag = tagend-base;
-
         while (i < s && f[i] != '>')
-            i++;
+          i++;
+
         if (unlikely(i >= s)) {
           i = s;
           hnode->all_len = s-hnode->all;
+          htmlerr++;
           goto END;
         }
 
@@ -441,6 +458,7 @@ tag_insides_handle(size_t *pos, const size_t hnindex, uint32_t *fallback, struct
       uint32_t nfallback = html_struct_handle(&i,lvl+1,st);
       if (unlikely(st->err)) {
         err = 1;
+        htmlerr++;
         goto END;
       }
       hnode = ((reliq_chnode*)nodes->v)+hnindex;
@@ -460,11 +478,11 @@ tag_insides_handle(size_t *pos, const size_t hnindex, uint32_t *fallback, struct
       goto TEXT_REPEAT;
 
     CONTINUE: ;
-    tag_insides_text_finish(&tnindex,nodes,textstart,textend);
+    text_finish(&tnindex,nodes,textstart,textend,&htmlerr,st->f);
   }
 
   END: ;
-  tag_insides_text_finish(&tnindex,nodes,textstart,textend);
+  text_finish(&tnindex,nodes,textstart,textend,&htmlerr,st->f);
 
   if (err)
     *fallback = 0;
@@ -647,6 +665,7 @@ html_handle(const char *data, const size_t size, reliq_chnode **nodes, size_t *n
     .nodes = nodes_buffer,
     .attribs = attribs_buffer,
   };
+  uint32_t htmlerr = 0;
 
   for (size_t i = 0; i < size;) {
     size_t textstart=i;
@@ -654,6 +673,7 @@ html_handle(const char *data, const size_t size, reliq_chnode **nodes, size_t *n
     size_t textend;
 
     TEXT_REPEAT: ;
+    htmlerr++;
     while (i < size && data[i] != '<')
       i++;
     textend = i;
@@ -672,11 +692,8 @@ html_handle(const char *data, const size_t size, reliq_chnode **nodes, size_t *n
         goto TEXT_REPEAT;
     }
 
-    if (tnindex != (size_t)-1) {
-      reliq_chnode *tn = tnindex+((reliq_chnode*)nodes_buffer->v);
-      tn->all = textstart;
-      tn->all_len = textend-textstart;
-    }
+    if (tnindex != (size_t)-1)
+      text_finish(&tnindex,nodes_buffer,textstart,textend,&htmlerr,data);
     if (st.err)
       break;
 
