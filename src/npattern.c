@@ -131,8 +131,20 @@ X(global_level) {
   *srcl = chnode->lvl;
 }
 
-X(global_child_count) {
+X(global_desc_count) {
   *srcl = hnode->tag_count;
+}
+
+X(global_comments_count) {
+  *srcl = hnode->comment_count;
+}
+
+X(global_text_count) {
+  *srcl = hnode->text_count;
+}
+
+X(global_all_count) {
+  *srcl = hnode->tag_count+hnode->comment_count+hnode->text_count;
 }
 
 X(global_position_relative) {
@@ -170,14 +182,20 @@ const struct match_hook_t match_hooks[] = {
   //global matching
   {{"l",1},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_level_relative)},
   {{"L",1},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_level)},
-  {{"c",1},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_child_count)},
+  {{"c",1},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_desc_count)},
+  {{"cc",2},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_comments_count)},
+  {{"ct",2},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_text_count)},
+  {{"cC",2},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_all_count)},
   {{"p",1},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_position_relative)},
   {{"P",1},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_position)},
   {{"I",1},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_index)},
 
   {{"levelrelative",13},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_level_relative)},
   {{"level",5},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_level)},
-  {{"count",5},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_child_count)},
+  {{"count",5},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_desc_count)},
+  {{"countcomments",2},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_comments_count)},
+  {{"conttext",2},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_text_count)},
+  {{"countall",2},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_all_count)},
   {{"positionrelative",16},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_position_relative)},
   {{"position",8},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_position)},
   {{"index",5},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_index)},
