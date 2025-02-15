@@ -43,12 +43,16 @@
 #define N_EMPTY 0x10 //ignore matching
 #define N_POSITION_ABSOLUTE 0x20
 
-#define NM_NODE 0x40
-#define NM_COMMENT 0x80
-#define NM_TEXT 0x100
-#define NM_TEXT_ERR 0x200
-#define NM_TEXT_EMPTY 0x400
-#define NM_TEXT_ALL 0x800
+#define NM_DEFAULT 0
+#define NM_NODE 1
+#define NM_COMMENT 2
+#define NM_TEXT 3
+#define NM_TEXT_ERR 4
+#define NM_TEXT_EMPTY 5
+#define NM_TEXT_ALL 6
+#define NM_MULTIPLE 7
+
+typedef struct match_hook_t match_hook_t;
 
 typedef struct {
   union {
@@ -56,7 +60,8 @@ typedef struct {
     reliq_pattern pattern;
     reliq_range range;
   } match;
-  uint16_t flags; //H_
+  const match_hook_t *hook;
+  uint8_t invert : 1;
 } reliq_hook;
 
 typedef struct reliq_node_matches reliq_node_matches;

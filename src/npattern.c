@@ -46,57 +46,24 @@
 #define A_VAL_MATTERS 0x2
 
 //match_hook flags
-#define H_KINDS 0x1f
-#define H_ATTRIBUTES 1
-#define H_LEVEL 2
-#define H_LEVEL_RELATIVE 3
-#define H_CHILD_COUNT 4
-#define H_MATCH_INSIDES 5
-#define H_MATCH_TAG 6
-#define H_CHILD_MATCH 7
-#define H_MATCH_END 8
-#define H_INDEX 9
-#define H_POSITION 10
-#define H_POSITION_RELATIVE 11
+#define H_RANGE 0x1
+#define H_PATTERN 0x2
+#define H_EXPRS 0x4
+#define H_NOARG 0x8
 
-//access hooks
-#define H_FULL 12
-#define H_SELF 13
-#define H_CHILD 14
-#define H_DESCENDANT 15
-#define H_ANCESTOR 16
-#define H_PARENT 17
-#define H_RELATIVE_PARENT 18
-#define H_SIBLING 19
-#define H_SIBLING_PRECEDING 20
-#define H_SIBLING_SUBSEQUENT 21
-#define H_FULL_SIBLING 22
-#define H_FULL_SIBLING_PRECEDING 23
-#define H_FULL_SIBLING_SUBSEQUENT 24
-
-//type hooks
-#define H_NODE 25
-#define H_COMMENT 26
-#define H_TEXT 27
-#define H_TEXT_ERR 28
-#define H_TEXT_EMPTY 29
-#define H_TEXT_ALL 30
-
-#define H_RANGE 0x20
-#define H_PATTERN 0x40
-#define H_EXPRS 0x80
-#define H_NOARG 0x100
-
-#define H_INVERT 0x200
-#define H_ACCESS_HOOK 0x400
-#define H_EMPTY 0x800
-#define H_TYPE 0x1000
+#define H_ACCESS 0x10
+#define H_TYPE 0x20
+#define H_GLOBAL 0x40
+#define H_MATCH_NODE 0x80
+#define H_MATCH_COMMENT 0x100
+#define H_MATCH_TEXT 0x200
 
 reliq_error *reliq_exec_r(reliq *rq, const reliq_chnode *parent, SINK *output, reliq_compressed **outnodes, size_t *outnodesl, const reliq_expr *expr);
 
-struct match_hook {
+struct match_hook_t {
   reliq_cstr8 name;
   uint16_t flags; //H_
+  uintptr_t arg;
 };
 
 typedef struct  {
@@ -106,61 +73,139 @@ typedef struct  {
   const reliq_hnode *hnode;
 } nmatch_state;
 
-const struct match_hook match_hooks[] = {
-    {{"m",1},H_PATTERN|H_MATCH_INSIDES},
-    {{"M",1},H_PATTERN|H_MATCH_TAG},
-    {{"a",1},H_RANGE|H_ATTRIBUTES},
-    {{"l",1},H_RANGE|H_LEVEL_RELATIVE},
-    {{"L",1},H_RANGE|H_LEVEL},
-    {{"c",1},H_RANGE|H_CHILD_COUNT},
-    {{"C",1},H_EXPRS|H_CHILD_MATCH},
-    {{"p",1},H_RANGE|H_POSITION_RELATIVE},
-    {{"P",1},H_RANGE|H_POSITION},
-    {{"e",1},H_PATTERN|H_MATCH_END},
-    {{"I",1},H_RANGE|H_INDEX},
+typedef void (*hook_func_t)(const reliq *rq, const reliq_chnode *chnode, const reliq_hnode *hnode, const reliq_chnode *parent, char const **src, size_t *srcl);
 
-    {{"match",5},H_PATTERN|H_MATCH_INSIDES},
-    {{"tagmatch",8},H_PATTERN|H_MATCH_TAG},
-    {{"attributes",10},H_RANGE|H_ATTRIBUTES},
-    {{"levelrelative",13},H_RANGE|H_LEVEL_RELATIVE},
-    {{"level",5},H_RANGE|H_LEVEL},
-    {{"count",5},H_RANGE|H_CHILD_COUNT},
-    {{"childmatch",10},H_EXPRS|H_CHILD_MATCH},
-    {{"positionrelative",16},H_RANGE|H_POSITION_RELATIVE},
-    {{"position",8},H_RANGE|H_POSITION},
-    {{"endmatch",8},H_PATTERN|H_MATCH_END},
-    {{"index",5},H_RANGE|H_INDEX},
+#define XN(x) h_##x
+#define X(x) static void XN(x)(const UNUSED reliq *rq, const UNUSED reliq_chnode *chnode, const UNUSED reliq_hnode *hnode, const UNUSED reliq_chnode *parent, char UNUSED const **src, size_t UNUSED *srcl)
 
-    {{"desc",4},H_DESCENDANT|H_NOARG|H_ACCESS_HOOK},
-    {{"rparent",7},H_RELATIVE_PARENT|H_NOARG|H_ACCESS_HOOK},
-    {{"sibl",4},H_SIBLING|H_NOARG|H_ACCESS_HOOK},
-    {{"spre",4},H_SIBLING_PRECEDING|H_NOARG|H_ACCESS_HOOK},
-    {{"ssub",4},H_SIBLING_SUBSEQUENT|H_NOARG|H_ACCESS_HOOK},
-    {{"fsibl",5},H_FULL_SIBLING|H_NOARG|H_ACCESS_HOOK},
-    {{"fspre",5},H_FULL_SIBLING_PRECEDING|H_NOARG|H_ACCESS_HOOK},
-    {{"fssub",5},H_FULL_SIBLING_SUBSEQUENT|H_NOARG|H_ACCESS_HOOK},
+X(node_attributes) {
+  *srcl = hnode->attribsl;
+}
 
-    {{"full",4},H_FULL|H_NOARG|H_ACCESS_HOOK},
-    {{"self",4},H_SELF|H_NOARG|H_ACCESS_HOOK},
-    {{"child",5},H_CHILD|H_NOARG|H_ACCESS_HOOK},
-    {{"descendant",10},H_DESCENDANT|H_NOARG|H_ACCESS_HOOK},
-    {{"ancestor",8},H_ANCESTOR|H_NOARG|H_ACCESS_HOOK},
-    {{"parent",6},H_PARENT|H_NOARG|H_ACCESS_HOOK},
-    {{"relative_parent",15},H_RELATIVE_PARENT|H_NOARG|H_ACCESS_HOOK},
-    {{"sibling",7},H_SIBLING|H_NOARG|H_ACCESS_HOOK},
-    {{"sibling_preceding",17},H_SIBLING_PRECEDING|H_NOARG|H_ACCESS_HOOK},
-    {{"sibling_subsequent",18},H_SIBLING_SUBSEQUENT|H_NOARG|H_ACCESS_HOOK},
-    {{"full_sibling",12},H_FULL_SIBLING|H_NOARG|H_ACCESS_HOOK},
-    {{"full_sibling_preceding",22},H_FULL_SIBLING_PRECEDING|H_NOARG|H_ACCESS_HOOK},
-    {{"full_sibling_subsequent",23},H_FULL_SIBLING_SUBSEQUENT|H_NOARG|H_ACCESS_HOOK},
+X(node_match_insides) {
+  *src = hnode->insides.b;
+  *srcl = hnode->insides.s;
+}
 
-    {{"node",4},H_NODE|H_NOARG|H_TYPE},
-    {{"comment",7},H_COMMENT|H_NOARG|H_TYPE},
-    {{"text",4},H_TEXT|H_NOARG|H_TYPE},
-    {{"textempty",9},H_TEXT_EMPTY|H_NOARG|H_TYPE},
-    {{"texterr",7},H_TEXT_ERR|H_NOARG|H_TYPE},
-    {{"textall",7},H_TEXT_ALL|H_NOARG|H_TYPE},
+X(node_match_tag) {
+  *src = hnode->all.b;
+  *srcl = hnode->all.s;
+}
+
+X(node_match_end) {
+  *src = hnode->insides.b+hnode->insides.s;
+  *srcl = hnode->all.s-(hnode->insides.b-hnode->all.b)-hnode->insides.s;
+  if (*srcl >= 2) {
+    (*src)++;
+    *srcl -= 2;
+  }
+  if (!hnode->insides.b) {
+    *src = NULL;
+    *srcl = 0;
+  }
+}
+
+X(global_index) {
+  *srcl = chnode->all;
+}
+
+X(global_level_relative) {
+  if (parent) {
+    if (hnode->lvl < parent->lvl) {
+      *srcl = parent->lvl-chnode->lvl;
+    } else
+      *srcl = chnode->lvl-parent->lvl;
+  } else
+    *srcl = chnode->lvl;
+}
+
+X(global_level) {
+  *srcl = chnode->lvl;
+}
+
+X(global_child_count) {
+  *srcl = hnode->tag_count;
+}
+
+X(global_position_relative) {
+  if (parent) {
+    if (chnode < parent) {
+      *srcl = parent-chnode;
+    } else
+      *srcl = chnode-parent;
+  } else
+    *srcl = chnode-rq->nodes;
+}
+
+X(global_position) {
+  *srcl = chnode-rq->nodes;
+}
+
+#undef X
+
+const struct match_hook_t match_hooks[] = {
+  //node matching
+  {{"m",1},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_match_insides)},
+  {{"M",1},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_match_tag)},
+  {{"a",1},H_MATCH_NODE|H_RANGE,(uintptr_t)XN(node_attributes)},
+  {{"C",1},H_MATCH_NODE|H_EXPRS,(uintptr_t)NULL},
+  {{"e",1},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_match_end)},
+
+  {{"match",5},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_match_insides)},
+  {{"tagmatch",8},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_match_tag)},
+  {{"attributes",10},H_MATCH_NODE|H_RANGE,(uintptr_t)XN(node_attributes)},
+  {{"childmatch",10},H_MATCH_NODE|H_EXPRS,(uintptr_t)NULL},
+  {{"endmatch",8},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_match_end)},
+
+  //global matching
+  {{"l",1},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_level_relative)},
+  {{"L",1},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_level)},
+  {{"c",1},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_child_count)},
+  {{"p",1},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_position_relative)},
+  {{"P",1},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_position)},
+  {{"I",1},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_index)},
+
+  {{"levelrelative",13},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_level_relative)},
+  {{"level",5},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_level)},
+  {{"count",5},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_child_count)},
+  {{"positionrelative",16},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_position_relative)},
+  {{"position",8},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_position)},
+  {{"index",5},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_index)},
+
+  //access
+  {{"desc",4},H_ACCESS|H_NOARG,N_DESCENDANT},
+  {{"rparent",7},H_ACCESS|H_NOARG,N_RELATIVE_PARENT},
+  {{"sibl",4},H_ACCESS|H_NOARG,N_SIBLING},
+  {{"spre",4},H_ACCESS|H_NOARG,N_SIBLING_PRECEDING},
+  {{"ssub",4},H_ACCESS|H_NOARG,N_SIBLING_SUBSEQUENT},
+  {{"fsibl",5},H_ACCESS|H_NOARG,N_FULL_SIBLING},
+  {{"fspre",5},H_ACCESS|H_NOARG,N_FULL_SIBLING_PRECEDING},
+  {{"fssub",5},H_ACCESS|H_NOARG,N_FULL_SIBLING_SUBSEQUENT},
+
+  {{"full",4},H_ACCESS|H_NOARG,N_FULL},
+  {{"self",4},H_ACCESS|H_NOARG,N_SELF},
+  {{"child",5},H_ACCESS|H_NOARG,N_CHILD},
+  {{"descendant",10},H_ACCESS|H_NOARG,N_DESCENDANT},
+  {{"ancestor",8},H_ACCESS|H_NOARG,N_ANCESTOR},
+  {{"parent",6},H_ACCESS|H_NOARG,N_PARENT},
+  {{"relative_parent",15},H_ACCESS|H_NOARG,N_RELATIVE_PARENT},
+  {{"sibling",7},H_ACCESS|H_NOARG,N_SIBLING},
+  {{"sibling_preceding",17},H_ACCESS|H_NOARG,N_SIBLING_PRECEDING},
+  {{"sibling_subsequent",18},H_ACCESS|H_NOARG,N_SIBLING_SUBSEQUENT},
+  {{"full_sibling",12},H_ACCESS|H_NOARG,N_FULL_SIBLING},
+  {{"full_sibling_preceding",22},H_ACCESS|H_NOARG,N_FULL_SIBLING_PRECEDING},
+  {{"full_sibling_subsequent",23},H_ACCESS|H_NOARG,N_FULL_SIBLING_SUBSEQUENT},
+
+  //type
+  {{"node",4},H_TYPE|H_NOARG,NM_NODE},
+  {{"comment",7},H_TYPE|H_NOARG,NM_COMMENT},
+  {{"text",4},H_TYPE|H_NOARG,NM_TEXT},
+  {{"textempty",9},H_TYPE|H_NOARG,NM_TEXT_EMPTY},
+  {{"texterr",7},H_TYPE|H_NOARG,NM_TEXT_ERR},
+  {{"textall",7},H_TYPE|H_NOARG,NM_TEXT_ALL},
 };
+
+#undef XN
 
 static inline void
 add_compressed(flexarr *dest, const uint32_t hnode, const uint32_t parent) //dest: reliq_compressed
@@ -183,11 +228,12 @@ pattrib_free(struct reliq_pattrib *attrib) {
 static void
 reliq_free_hook(reliq_hook *hook)
 {
-  if (hook->flags&H_RANGE) {
+  const uint16_t flags = hook->hook->flags;
+  if (flags&H_RANGE) {
     range_free(&hook->match.range);
-  } if (hook->flags&H_EXPRS) {
+  } if (flags&H_EXPRS) {
     reliq_efree(&hook->match.expr);
-  } else if (hook->flags&H_PATTERN)
+  } else if (flags&H_PATTERN)
     reliq_regfree(&hook->match.pattern);
 }
 
@@ -276,72 +322,43 @@ pattrib_match(const reliq *rq, const reliq_hnode *hnode, const struct reliq_patt
 }
 
 static int
+exprs_match(const reliq *rq, const reliq_chnode *chnode, const reliq_hook *hook)
+{
+  const size_t desccount = chnode->tag_count+chnode->text_count+chnode->comment_count;
+  reliq r = {
+    .data = rq->data,
+    .datal = rq->datal,
+    .nodes = (reliq_chnode*)chnode,
+    .nodesl = desccount+1,
+    .attribs = rq->attribs
+  };
+  const reliq_chnode *last = chnode+desccount;
+  r.attribsl = last->attribs+chnode_attribsl(rq,last);
+
+  size_t compressedl = 0;
+  reliq_error *err = reliq_exec_r(&r,chnode,NULL,NULL,&compressedl,&hook->match.expr);
+  if (err)
+    free(err);
+  if (err || !compressedl)
+    return 0;
+  return 1;
+}
+
+static int
 match_hook(const nmatch_state *st, const reliq_hook *hook)
 {
   char const *src = NULL;
   size_t srcl = 0;
-  uint16_t flags = hook->flags;
-  const uchar invert = (flags&H_INVERT) ? 1 : 0;
+  uint16_t flags = hook->hook->flags;
+  const uchar invert = hook->invert;
   const reliq *rq = st->rq;
   const reliq_chnode *chnode = st->chnode;
   const reliq_chnode *parent = st->parent;
   const reliq_hnode *hnode = st->hnode;
 
-  switch (flags&H_KINDS) {
-    case H_ATTRIBUTES:
-      srcl = hnode->attribsl;
-      break;
-    case H_LEVEL_RELATIVE:
-      if (parent) {
-        if (hnode->lvl < parent->lvl) {
-          srcl = parent->lvl-chnode->lvl;
-        } else
-          srcl = chnode->lvl-parent->lvl;
-      } else
-        srcl = chnode->lvl;
-      break;
-    case H_LEVEL:
-      srcl = chnode->lvl;
-      break;
-    case H_CHILD_COUNT:
-      srcl = hnode->tag_count;
-      break;
-    case H_MATCH_INSIDES:
-      src = hnode->insides.b;
-      srcl = hnode->insides.s;
-      break;
-    case H_MATCH_TAG:
-      src = hnode->all.b;
-      srcl = hnode->all.s;
-      break;
-    case H_POSITION_RELATIVE:
-      if (parent) {
-        if (chnode < parent) {
-          srcl = parent-chnode;
-        } else
-          srcl = chnode-parent;
-      } else
-        srcl = chnode-rq->nodes;
-      break;
-    case H_POSITION:
-      srcl = chnode-rq->nodes;
-      break;
-    case H_MATCH_END:
-      src = hnode->insides.b+hnode->insides.s;
-      srcl = hnode->all.s-(hnode->insides.b-hnode->all.b)-hnode->insides.s;
-      if (srcl >= 2) {
-        src++;
-        srcl -= 2;
-      }
-      if (!hnode->insides.b) {
-        src = NULL;
-        srcl = 0;
-      }
-      break;
-    case H_INDEX:
-      srcl = chnode->all;
-      break;
-  }
+  const uintptr_t arg = hook->hook->arg;
+  if (arg)
+    ((hook_func_t)arg)(rq,chnode,hnode,parent,&src,&srcl);
 
   if (flags&H_RANGE) {
     if ((!range_match(srcl,&hook->match.range,-1))^invert)
@@ -349,23 +366,8 @@ match_hook(const nmatch_state *st, const reliq_hook *hook)
   } else if (flags&H_PATTERN) {
     if ((!reliq_regexec(&hook->match.pattern,src,srcl))^invert)
       return 0;
-  } else if ((flags&H_KINDS) == H_CHILD_MATCH && flags&H_EXPRS) {
-    const size_t desccount = chnode->tag_count+chnode->text_count+chnode->comment_count;
-    reliq r = {
-      .data = rq->data,
-      .datal = rq->datal,
-      .nodes = (reliq_chnode*)chnode,
-      .nodesl = desccount+1,
-      .attribs = rq->attribs
-    };
-    const reliq_chnode *last = chnode+desccount;
-    r.attribsl = last->attribs+chnode_attribsl(rq,last);
-
-    size_t compressedl = 0;
-    reliq_error *err = reliq_exec_r(&r,chnode,NULL,NULL,&compressedl,&hook->match.expr);
-    if (err)
-      free(err);
-    if ((err || !compressedl)^invert)
+  } else if (flags&H_EXPRS) {
+    if (!exprs_match(rq,chnode,hook)^invert)
       return 0;
   }
   return 1;
@@ -384,11 +386,38 @@ reliq_node_matched_groups_match(const nmatch_state *st, const reliq_node_matches
   return 0;
 }
 
+static inline int
+reliq_node_matched_match_type(const uint8_t hnode_type, const uint8_t type)
+{
+  if (type == NM_DEFAULT)
+    return 1;
+
+  if (hnode_type == RELIQ_HNODE_TYPE_TAG && type != NM_NODE)
+    return 0;
+  if (hnode_type == RELIQ_HNODE_TYPE_COMMENT && type != NM_COMMENT)
+    return 0;
+  if (type == NM_TEXT_ALL)
+    return 1;
+
+  if (hnode_type == RELIQ_HNODE_TYPE_TEXT && type != NM_TEXT)
+    return 0;
+  if (hnode_type == RELIQ_HNODE_TYPE_TEXT_ERR && type != NM_TEXT_ERR)
+    return 0;
+  if (hnode_type == RELIQ_HNODE_TYPE_TEXT_EMPTY && type != NM_TEXT_EMPTY)
+    return 0;
+
+  return 1;
+}
+
 static int
 reliq_node_matched_match(const nmatch_state *st, const reliq_node_matches *matches)
 {
   const size_t size = matches->size;
   reliq_node_matches_node *list = matches->list;
+
+  if (!reliq_node_matched_match_type(st->hnode->type,matches->type))
+    return 0;
+
   for (size_t i = 0; i < size; i++) {
     switch (list[i].type) {
       case MATCHES_TYPE_TAG:
@@ -420,8 +449,9 @@ reliq_nexec(const reliq *rq, const reliq_chnode *chnode, const reliq_chnode *par
 
   reliq_hnode hnode;
   chnode_conv(rq,chnode,&hnode);
-  if (hnode.type != RELIQ_HNODE_TYPE_TAG)
+  /*if (hnode.type != RELIQ_HNODE_TYPE_TAG) {
     return 0;
+  }*/
   nmatch_state st = {
     .hnode = &hnode,
     .chnode = chnode,
@@ -463,114 +493,168 @@ match_add(const reliq *rq, reliq_chnode const *hnode, reliq_chnode const *parent
   (*found)++;
 }
 
+static inline uint16_t
+node_matches_type_hmask(const uint8_t type)
+{
+  switch (type) {
+    case NM_DEFAULT:
+    case NM_NODE:
+      return H_MATCH_NODE;
+    case NM_COMMENT:
+      return H_MATCH_COMMENT;
+    case NM_MULTIPLE:
+      return 0;
+    default:
+      return H_MATCH_TEXT;
+  }
+}
+
+static uchar
+find_hook(const char *name, const size_t namel, const uint8_t type, size_t *pos)
+{
+  const uint16_t hmask = (H_ACCESS|H_TYPE|H_GLOBAL|node_matches_type_hmask(type));
+  size_t i = 0;
+  for (; i < LENGTH(match_hooks); i++) {
+    uint16_t flags = match_hooks[i].flags;
+    if (!(flags&hmask))
+      continue;
+    if (memcomp(match_hooks[i].name.b,name,match_hooks[i].name.s,namel)) {
+      *pos = i;
+      return 1;
+    }
+  }
+
+  return 0;
+}
+
 static reliq_error *
-match_hook_handle(const char *src, size_t *pos, const size_t size, reliq_hook *out_hook, const uchar invert, uint16_t *nodeflags)
+match_hook_handle_expr(const char *src, const size_t size, size_t *pos, reliq_hook *hook)
 {
   reliq_error *err = NULL;
-  size_t p=*pos;
-  const size_t prevpos = p;
-  const char *func_name = src+p;
-  out_hook->flags = 0;
+  size_t i = *pos;
+  if (src[i] != '"' && src[i] != '\'')
+    goto_script_seterr(ERR,match_hook_unexpected_argument(hook->hook->flags),hook->hook->name.b);
+  char *str;
+  size_t strl;
+  if ((err = get_quoted(src,&i,size,' ',&str,&strl)) || !strl)
+    goto ERR;
+  err = reliq_ecomp(str,strl,&hook->match.expr);
+  free(str);
+  if (err)
+    goto ERR;
+  if ((err = expr_check_chain(&hook->match.expr))) {
+    reliq_efree(&hook->match.expr);
+    goto ERR;
+  }
+
+  ERR: ;
+  *pos = i;
+  return err;
+}
+
+static reliq_error *
+match_hook_handle_pattern(const char *src, const size_t size, size_t *pos, reliq_hook *hook)
+{
+  reliq_error *err = NULL;
+  size_t i = *pos;
+  char *rflags = "uWcas";
+  if (hook->hook->arg == (uintptr_t)h_node_match_end)
+    rflags = "tWcnfs";
+  if ((err = reliq_regcomp(&hook->match.pattern,src,&i,size,' ',rflags,NULL)))
+    goto ERR;
+  if (!hook->match.pattern.range.s && hook->match.pattern.flags&RELIQ_PATTERN_ALL) { //ignore if it matches everything
+    reliq_regfree(&hook->match.pattern);
+    goto ERR;
+  }
+
+  ERR: ;
+  *pos = i;
+  return err;
+}
+
+static inline const char *
+get_hook_name(const char *src, size_t *pos, const size_t size, size_t *namel)
+{
+  size_t p = *pos;
+  const char *name = src+p;
 
   while_is(hook_handle_isname,src,p,size);
 
-  size_t func_len = p-prevpos;
+  if (p >= size || !namel || src[p] != '@')
+    return NULL;
 
-  if (p >= size || !func_len || src[p] != '@') {
-    p = prevpos;
-    goto ERR;
-  }
+  *namel = p-(name-src);
   p++;
+  *pos = p;
+  return name;
+}
 
-  char found = 0;
+static const char *
+matched_type_str(const uint8_t type)
+{
+  if (type == NM_NODE || type == NM_DEFAULT)
+    return "nodes";
+  if (type == NM_COMMENT)
+    return "comments";
+
+  if (type == NM_MULTIPLE)
+    return "global";
+  return "text";
+}
+
+static reliq_error *
+match_hook_handle(const char *src, size_t *pos, const size_t size, reliq_hook *out_hook, const uint8_t type)
+{
+  reliq_error *err = NULL;
+  size_t p=*pos;
+  size_t namel;
+  const char *name = get_hook_name(src,&p,size,&namel);
+  if (!name)
+    goto ERR;
+
   size_t i = 0;
-  for (; i < LENGTH(match_hooks); i++) {
-    if (memcomp(match_hooks[i].name.b,func_name,match_hooks[i].name.s,func_len)) {
-      found = 1;
-      break;
-    }
-  }
-  if (!found)
-    goto_script_seterr(ERR,"hook \"%.*s\" does not exists",(int)func_len,func_name);
+  if (!find_hook(name,namel,type,&i))
+    goto_script_seterr(ERR,"hook \"%.*s\" does not exists for %s",(int)namel,name,matched_type_str(type));
 
-  reliq_hook hook = (reliq_hook){0};
-  hook.flags = match_hooks[i].flags;
+  const struct match_hook_t *mhook = match_hooks+i;
+  reliq_hook hook = { .hook = mhook };
+  const uint16_t hflags = mhook->flags;
 
-  #define HOOK_EXPECT(x) if (!(hook.flags&(x))) \
-      goto_script_seterr(ERR,match_hook_unexpected_argument(hook.flags),(int)func_len,func_name)
+  #define HOOK_EXPECT(x) if (!(hflags&(x))) \
+      goto_script_seterr(ERR,match_hook_unexpected_argument(hflags),(int)namel,name)
 
   char firstchar = 0;
   if (p >= size) {
-    if (!(hook.flags&H_NOARG))
-      goto_script_seterr(ERR,"hook \"%.*s\" expected argument",func_len,func_name);
+    if (!(hflags&H_NOARG))
+      goto_script_seterr(ERR,"hook \"%.*s\" expected argument",namel,name);
   } else
     firstchar = src[p];
 
   if (!firstchar || isspace(firstchar)) {
     HOOK_EXPECT(H_NOARG);
-
-    hook.flags |= H_EMPTY;
-    if (!nodeflags)
-      goto END;
-
-    *nodeflags = *nodeflags&(~N_MATCHED_TYPE);
-    switch (hook.flags&H_KINDS) {
-      case H_FULL: *nodeflags |= N_FULL; break;
-      case H_SELF: *nodeflags |= N_SELF; break;
-      case H_CHILD: *nodeflags |= N_CHILD; break;
-      case H_DESCENDANT: *nodeflags |= N_DESCENDANT; break;
-      case H_ANCESTOR: *nodeflags |= N_ANCESTOR; break;
-      case H_PARENT: *nodeflags |= N_PARENT; break;
-      case H_RELATIVE_PARENT: *nodeflags |= N_RELATIVE_PARENT; break;
-      case H_SIBLING: *nodeflags |= N_SIBLING; break;
-      case H_SIBLING_PRECEDING: *nodeflags |= N_SIBLING_PRECEDING; break;
-      case H_SIBLING_SUBSEQUENT: *nodeflags |= N_SIBLING_SUBSEQUENT; break;
-      case H_FULL_SIBLING: *nodeflags |= N_FULL_SIBLING; break;
-      case H_FULL_SIBLING_PRECEDING: *nodeflags |= N_FULL_SIBLING_PRECEDING; break;
-      case H_FULL_SIBLING_SUBSEQUENT: *nodeflags |= N_FULL_SIBLING_SUBSEQUENT; break;
-    }
   } else if (src[p] == '[') {
     HOOK_EXPECT(H_RANGE);
     if ((err = range_comp(src,&p,size,&hook.match.range)))
       goto ERR;
-  } else if (hook.flags&H_EXPRS) {
-     if (src[p] != '"' && src[p] != '\'')
-       goto_script_seterr(ERR,match_hook_unexpected_argument(hook.flags),(int)func_len,func_name);
-     char *str;
-     size_t strl;
-     if ((err = get_quoted(src,&p,size,' ',&str,&strl)) || !strl)
-       goto ERR;
-     err = reliq_ecomp(str,strl,&hook.match.expr);
-     free(str);
-     if (err)
-       goto ERR;
-     if ((err = expr_check_chain(&hook.match.expr))) {
-       reliq_efree(&hook.match.expr);
-       goto ERR;
-     }
+  } else if (hflags&H_EXPRS) {
+    HOOK_EXPECT(H_EXPRS); //not sure if it works
+    if ((err = match_hook_handle_expr(src,size,&p,&hook)))
+      goto ERR;
   } else {
     HOOK_EXPECT(H_PATTERN);
-    char *rflags = "uWcas";
-    if ((hook.flags&H_KINDS) == H_MATCH_END)
-      rflags = "tWcnfs";
-    if ((err = reliq_regcomp(&hook.match.pattern,src,&p,size,' ',rflags,NULL)))
+    if ((err = match_hook_handle_pattern(src,size,&p,&hook)))
       goto ERR;
-    if (!hook.match.pattern.range.s && hook.match.pattern.flags&RELIQ_PATTERN_ALL) { //ignore if it matches everything
-      reliq_regfree(&hook.match.pattern);
-      goto ERR;
-    }
   }
 
-  END:
-  if (invert)
-    hook.flags |= H_INVERT;
+  #undef HOOK_EXPECT
+
   memcpy(out_hook,&hook,sizeof(hook));
   ERR:
   *pos = p;
   return err;
 }
 
-static void
+static inline void
 reliq_node_matches_node_add(flexarr *arr, uchar type, void *data, const size_t size) //arr: reliq_node_matches
 {
   reliq_node_matches_node *new = flexarr_inc(arr);
@@ -589,7 +673,7 @@ free_node_matches_flexarr(flexarr *groups_matches) //group_matches: reliq_node_m
 }
 
 static size_t
-strclass_tag(const char *str, const size_t strl)
+strclass_tagname(const char *str, const size_t strl)
 {
   if (strl < 1)
     return -1;
@@ -612,30 +696,359 @@ strclass_attrib(const char *str, const size_t strl)
   return -1;
 }
 
+static inline uchar
+node_matches_type_text(const uint8_t type)
+{
+  return (type >= NM_TEXT && type <= NM_TEXT_ALL);
+}
+
+static inline uchar
+node_matches_type_conflict(const uint8_t type1, const uint8_t type2)
+{
+  if (type1 == type2)
+    return 0;
+  if (type1 == NM_DEFAULT || type2 == NM_DEFAULT)
+    return 0;
+  if (type1 == NM_TEXT_ALL &&
+    node_matches_type_text(type2))
+    return 0;
+  return 1;
+}
+
+static reliq_error * get_node_matches(const char *src, size_t *pos, const size_t size, const uint16_t lvl, reliq_node_matches *matches, uchar *hastag, reliq_range *position, uint16_t *nodeflags, const uint8_t prevtype);
+
+static void
+node_matches_type_merge(const uint8_t type, uint8_t *dest)
+{
+  const uint8_t t = *dest;
+  if (t == NM_DEFAULT) {
+    *dest = type;
+    return;
+  }
+  if (type == t)
+    return;
+
+  if (node_matches_type_text(type) && node_matches_type_text(t)) {
+    *dest = NM_TEXT_ALL;
+    return;
+  }
+
+  *dest = NM_MULTIPLE;
+}
+
+static uchar
+get_group_matches(const char *src, size_t *pos, const size_t size, const uint16_t lvl, uchar *hastag, reliq_node_matches *matches, flexarr *result, reliq_error **err) //result: reliq_node_matches_node
+{
+  size_t i = *pos;
+  if (++i >= size) {
+    END_OF_RANGE: ;
+    *err = script_err("node: %lu: unprecedented end of group",i-1);
+    goto ERR;
+  }
+
+  flexarr *groups_matches = flexarr_init(sizeof(reliq_node_matches),NODE_MATCHES_INC);
+  uchar wastag = 0;
+
+  uint8_t type_acc = NM_DEFAULT;
+
+  while (1) {
+    uchar tag = *hastag;
+    reliq_node_matches *match = flexarr_inc(groups_matches);
+
+    if ((*err = get_node_matches(src,&i,size,lvl+1,match,&tag,NULL,NULL,matches->type))) {
+      flexarr_dec(groups_matches);
+      goto ERR;
+    }
+    if (!*hastag && wastag && !tag) {
+      *err = script_err("node: %lu: if one group specifies tag then the rest has too",i);
+      goto ERR;
+    }
+    wastag = tag;
+
+    //if (match->type >= NM_TEXT && match->type <= NM_TEXT_ALL && matches->type
+    node_matches_type_merge(match->type,&type_acc);
+
+    if (i >= size || src[i] != '(') {
+      size_t lastindex = i-1;
+      if (i >= size)
+        lastindex = size-1;
+      if (i >= size+1 || src[lastindex] != ')') {
+        free_node_matches_flexarr(groups_matches);
+        goto END_OF_RANGE;
+      }
+      if (i >= size)
+        i++;
+      break;
+    }
+
+    /*if (match->size < 1) {
+      free_node_matches_flexarr(groups_matches);
+      *err = script_err("node: empty group will always pass");
+      goto ERR;
+    }*/ //future warning
+
+    i++;
+  }
+
+  if (!*hastag)
+    *hastag = wastag;
+
+  /*if (groups_matches->size < 2) {
+    free_node_matches_flexarr(groups_matches);
+    *err = script_err("node: groups must have at least 2 groups to affect anything");
+    goto ERR;
+  }*/ //future warning
+
+  uint8_t prevtype = matches->type;
+  node_matches_type_merge(type_acc,&matches->type);
+  if (prevtype != NM_DEFAULT && matches->type == NM_MULTIPLE) {
+    *err = script_err("node: something bad");
+    goto ERR;
+  }
+
+  reliq_node_matches_groups groups;
+  flexarr_conv(groups_matches,(void**)&groups.list,&groups.size);
+  reliq_node_matches_node_add(result,MATCHES_TYPE_GROUPS,&groups,sizeof(reliq_node_matches_groups));
+
+  *pos = i;
+  return 0;
+
+  ERR: ;
+  *pos = i;
+  return 1;
+}
+
 static reliq_error *
-get_node_matches(const char *src, size_t *pos, const size_t size, const uint16_t lvl, reliq_node_matches *matches, uchar *hastag, reliq_range *position, uint16_t *nodeflags)
+match_hook_add_access_type(const size_t pos, const reliq_hook *hook, const uchar invert, const uchar fullmode, uint16_t *nodeflags, uchar *typehooks_count, uint8_t *type, flexarr *result) //result: reliq_node_matches_node
+{
+  const uchar isaccess = ((hook->hook->flags&H_ACCESS) > 0);
+  if (invert)
+    return script_err("%s hook \"%s\" cannot be inverted",
+      isaccess ? "access" : "type",hook->hook->name.b);
+
+  if (isaccess) {
+    if (!fullmode)
+      return script_err("node: %lu: groups cannot have access hooks",pos);
+    *nodeflags = (*nodeflags&(~N_MATCHED_TYPE)) | hook->hook->arg;
+  } else {
+    if (*typehooks_count)
+      return script_err("hook \"%s\": type hooks can be specified only once",hook->hook->name.b);
+    if (result->size != 0)
+      return script_err("hook \"%s\": type hooks have to be specified before everything else",hook->hook->name.b);
+    if (node_matches_type_conflict(*type,hook->hook->arg))
+      return script_err("hook \"%s\" is in conflict with higher type hook",hook->hook->name.b);
+
+    *type = hook->hook->arg;
+    (*typehooks_count)++;
+  }
+
+  return NULL;
+}
+
+static uchar
+match_hook_add(const char *src, size_t *pos, const size_t size, const uchar invert, uint8_t *type, uchar fullmode, uint16_t *nodeflags, uchar *typehooks_count, flexarr *result, reliq_error **err) //result: reliq_node_matches_node
+{
+  reliq_hook hook;
+  size_t prev = *pos;
+  if ((*err = match_hook_handle(src,pos,size,&hook,*type)))
+    goto ERR;
+
+  if (*pos == prev)
+    goto ERR;
+
+  const uint16_t hflags = hook.hook->flags;
+
+  if (hflags&H_TYPE || hflags&H_ACCESS) { //function()
+    if ((*err = match_hook_add_access_type(*pos,&hook,invert,fullmode,nodeflags,typehooks_count,type,result)))
+      goto ERR;
+    goto END;
+  }
+
+  hook.invert = invert;
+
+  reliq_node_matches_node_add(result,MATCHES_TYPE_HOOK,&hook,sizeof(reliq_hook));
+
+  if (hflags&(H_MATCH_NODE|H_MATCH_COMMENT|H_MATCH_TEXT))
+    return 2;
+
+  END: ;
+  return 1;
+
+  ERR: ;
+  return 0;
+}
+
+static reliq_error *
+comp_node(const char *src, size_t *pos, const size_t size, uchar invert, uchar *hastag, flexarr *result) //result: reliq_node_matches_node
+{
+  reliq_error *err = NULL;
+  size_t i = *pos;
+  char shortcut = 0;
+  struct reliq_pattrib attrib = {0};
+  uchar tofree = 1;
+
+  if (invert)
+    attrib.flags |= A_INVERT;
+
+  if (!*hastag)
+    goto GET_TAG_NAME;
+
+  if (src[i] == '.' || src[i] == '#') {
+    shortcut = src[i++];
+  } else if (i+1 < size && src[i] == '\\' && (src[i+1] == '.' || src[i+1] == '#'))
+    i++;
+
+  while_is(isspace,src,i,size);
+  if (i >= size)
+    goto END;
+
+  if (src[i] == '[') {
+    if ((err = range_comp(src,&i,size,&attrib.position)))
+      goto END;
+  } else if (*hastag && i+1 < size && src[i] == '\\' && src[i+1] == '[')
+    i++;
+
+  if (!*hastag) {
+    GET_TAG_NAME: ;
+    reliq_pattern tag;
+    if ((err = reliq_regcomp(&tag,src,&i,size,' ',NULL,strclass_tagname)))
+      goto END;
+    *hastag = 1;
+    reliq_node_matches_node_add(result,MATCHES_TYPE_TAG,&tag,sizeof(reliq_pattern));
+    goto END;
+  }
+
+  if (i >= size)
+    goto END;
+
+  if (shortcut == '.' || shortcut == '#') {
+    char *t_name = (shortcut == '.') ? "class" : "id";
+    size_t t_pos=0,t_size=(shortcut == '.' ? 5 : 2);
+    if ((err = reliq_regcomp(&attrib.r[0],t_name,&t_pos,t_size,' ',"uWsfi",strclass_attrib)))
+      goto END;
+
+    if ((err = reliq_regcomp(&attrib.r[1],src,&i,size,' ',"uwsf",NULL)))
+      goto END;
+    attrib.flags |= A_VAL_MATTERS;
+  } else {
+    if ((err = reliq_regcomp(&attrib.r[0],src,&i,size,'=',NULL,strclass_attrib)))
+      goto END;
+
+    while_is(isspace,src,i,size);
+    if (i >= size)
+      goto ADD_ATTRIB;
+    if (src[i] == '=') {
+      i++;
+      while_is(isspace,src,i,size);
+      if (i >= size)
+        goto END;
+
+      if ((err = reliq_regcomp(&attrib.r[1],src,&i,size,' ',NULL,NULL)))
+        goto END;
+      attrib.flags |= A_VAL_MATTERS;
+    } else {
+      attrib.flags &= ~A_VAL_MATTERS;
+      goto ADD_ATTRIB;
+    }
+  }
+
+  if (i < size && src[i] != '+' && src[i] != '-')
+    i++;
+
+  ADD_ATTRIB: ;
+  tofree = 0;
+  reliq_node_matches_node_add(result,MATCHES_TYPE_ATTRIB,&attrib,sizeof(struct reliq_pattrib));
+
+  END: ;
+  if (tofree)
+    pattrib_free(&attrib);
+  *pos = i;
+  return err;
+}
+
+static reliq_error *
+comp_single_text(const char *src, size_t *pos, const size_t size, uchar invert, uchar *hastag, flexarr *result) //result: reliq_node_matches_node
+{
+  reliq_error *err = NULL;
+
+  reliq_pattern tag;
+  if (!(err = reliq_regcomp(&tag,src,pos,size,' ',NULL,NULL))) {
+    *hastag = 1;
+    reliq_node_matches_node_add(result,MATCHES_TYPE_TAG,&tag,sizeof(reliq_pattern));
+  }
+
+  return err;
+}
+
+
+static reliq_error *
+comp_comment(const char *src, size_t *pos, const size_t size, uchar invert, uchar *hastag, flexarr *result) //result: reliq_node_matches_node
+{
+  return comp_single_text(src,pos,size,invert,hastag,result);
+}
+
+static reliq_error *
+comp_text(const char *src, size_t *pos, const size_t size, uchar invert, uchar *hastag, flexarr *result) //result: reliq_node_matches_node
+{
+  return comp_single_text(src,pos,size,invert,hastag,result);
+}
+
+static uchar
+get_node_matches_position(const char *src, size_t *pos, const size_t size, reliq_range *position, uchar *fullmode, uchar *hastag, uint16_t *nodeflags, reliq_error **err)
+{
+  size_t i = *pos;
+  const char *r = memchr(src+i,']',size-i);
+  if (r == NULL)
+    goto ERR;
+
+  r++;
+  if ((size_t)(r-src) < size && !isspace(*r))
+    goto ERR;
+
+  if (*fullmode) {
+    if (position->s) {
+      *err = script_err("node: %lu: position already declared",r-src);
+      goto ERR;
+    }
+  } else {
+    *err = script_err("node: %lu: groups cannot have position",r-src);
+    goto ERR;
+  }
+
+  if ((*err = range_comp(src,&i,size,position)))
+    goto ERR;
+
+  if (!*hastag)
+    *nodeflags |= N_POSITION_ABSOLUTE;
+
+  *pos = r-src;
+  return 1;
+
+  ERR: ;
+  *pos = i;
+  return 0;
+}
+
+static reliq_error *
+get_node_matches(const char *src, size_t *pos, const size_t size, const uint16_t lvl, reliq_node_matches *matches, uchar *hastag, reliq_range *position, uint16_t *nodeflags, const uint8_t prevtype)
 {
   if (lvl >= RELIQ_MAX_GROUP_LEVEL)
     return script_err("node: %lu: reached %lu level of recursion",*pos,lvl);
   reliq_error *err = NULL;
-  struct reliq_pattrib attrib;
-  reliq_hook hook;
-  flexarr *result = flexarr_init(sizeof(reliq_node_matches),NODE_MATCHES_INC);
+  flexarr *result = flexarr_init(sizeof(reliq_node_matches_node),NODE_MATCHES_INC);
   matches->size = 0;
   matches->list = NULL;
+  matches->type = prevtype;
 
-  uchar tofree=0,fullmode=0;
+  uchar fullmode=0,typehooks_count=0;
   if (position)
     fullmode = 1;
 
   size_t i = *pos;
-  char shortcut;
   while (i < size) {
     while_is(isspace,src,i,size);
     if (i >= size)
       break;
-
-    shortcut = 0;
 
     if (src[i] == ')') {
       if (fullmode)
@@ -645,190 +1058,67 @@ get_node_matches(const char *src, size_t *pos, const size_t size, const uint16_t
     }
 
     if (src[i] == '(') {
-      if (++i >= size) {
-        END_OF_RANGE: ;
-        err = script_err("node: %lu: unprecedented end of group",i-1);
+      if (get_group_matches(src,&i,size,lvl,hastag,matches,result,&err))
         break;
-      }
-
-      flexarr *groups_matches = flexarr_init(sizeof(reliq_node_matches),NODE_MATCHES_INC);
-      uchar wastag = 0;
-
-      while (1) {
-        uchar tag = *hastag;
-        reliq_node_matches *match = flexarr_inc(groups_matches);
-
-        if ((err = get_node_matches(src,&i,size,lvl+1,match,&tag,NULL, NULL))) {
-          flexarr_dec(groups_matches);
-          goto END;
-        }
-        if (!*hastag && wastag && !tag) {
-          err = script_err("node: %lu: if one group specifies tag then the rest has too",i);
-          goto END;
-        }
-        wastag = tag;
-
-        if (i >= size || src[i] != '(') {
-          size_t lastindex = i-1;
-          if (i >= size)
-            lastindex = size-1;
-          if (i >= size+1 || src[lastindex] != ')') {
-            free_node_matches_flexarr(groups_matches);
-            goto END_OF_RANGE;
-          }
-          if (i >= size)
-            i++;
-          break;
-        }
-
-        /*if (match->size < 1) {
-          free_node_matches_flexarr(groups_matches);
-          err = script_err("node: empty group will always pass");
-          break;
-        }*/ //future warning
-
-        i++;
-      }
-
-      if (!*hastag)
-        *hastag = wastag;
-
-      /*if (groups_matches->size < 2) {
-        free_node_matches_flexarr(groups_matches);
-        err = script_err("node: groups must have at least 2 groups to affect anything");
-        break;
-      }*/ //future warning
-
-      reliq_node_matches_groups groups;
-      flexarr_conv(groups_matches,(void**)&groups.list,&groups.size);
-      reliq_node_matches_node_add(result,MATCHES_TYPE_GROUPS,&groups,sizeof(reliq_hook));
       continue;
     }
 
-    if (!*hastag)
-      goto GET_TAG;
+    if (src[i] == '[') {
+      if (get_node_matches_position(src,&i,size,position,&fullmode,hastag,nodeflags,&err))
+        continue;
+      if (err)
+        break;
+    }
 
-    memset(&attrib,0,sizeof(struct reliq_pattrib));
-    tofree = 1;
-
+    uchar invert = 0;
     if (src[i] == '+') {
-      attrib.flags &= ~A_INVERT;
       i++;
     } else if (src[i] == '-') {
-      attrib.flags |= A_INVERT;
+      invert = 1;
       i++;
     } else if (i+1 < size && src[i] == '\\' && (src[i+1] == '+' || src[i+1] == '-'))
       i++;
 
     if (isalpha(src[i])) {
-      size_t prev = i;
-      if ((err = match_hook_handle(src,&i,size,&hook,attrib.flags&A_INVERT,nodeflags)))
-        break;
-      if (i != prev) {
-        if (!fullmode && hook.flags&H_ACCESS_HOOK) {
-          err = script_err("node: %lu: groups cannot have access hooks",i);
-          break;
+      uchar r = match_hook_add(src,&i,size,invert,&matches->type,fullmode,nodeflags,&typehooks_count,result,&err);
+      if (r) {
+        if (r == 2) {
+          if (matches->type == NM_DEFAULT)
+            matches->type = NM_NODE;
+          if (matches->type == NM_MULTIPLE)
+            goto ERR_MULTIPLE;
         }
-
-        if (hook.flags&H_EMPTY) {
-          tofree = 0;
-          continue;
-        }
-        reliq_node_matches_node_add(result,MATCHES_TYPE_HOOK,&hook,sizeof(reliq_hook));
-        tofree = 0;
         continue;
       }
+      if (err)
+        break;
     }
 
     if (i >= size)
       break;
 
-    if (src[i] == '.' || src[i] == '#') {
-      shortcut = src[i++];
-    } else if (i+1 < size && src[i] == '\\' && (src[i+1] == '.' || src[i+1] == '#'))
-      i++;
-
-    while_is(isspace,src,i,size);
-    if (i >= size)
+    if (matches->type == NM_MULTIPLE) {
+      ERR_MULTIPLE: ;
+      err = script_err("node %lu: multiple types cannot be mixed",i);
       break;
-
-    GET_TAG: ;
-    if (src[i] == '[') {
-      if ((err = range_comp(src,&i,size,&attrib.position)))
-        break;
-      if (i >= size || isspace(src[i])) {
-        if (!fullmode) {
-          err = script_err("node: %lu: groups cannot have position",i);
-          break;
-        }
-        if (position->s) {
-          err = script_err("node: %lu: position already declared",i);
-          break;
-        }
-        memcpy(position,&attrib.position,sizeof(reliq_range));
-        tofree = 0;
-        if (!*hastag)
-          *nodeflags |= N_POSITION_ABSOLUTE;
-        continue;
-      } else if (!*hastag)
-          goto GET_TAG_NAME;
-    } else if (*hastag && i+1 < size && src[i] == '\\' && src[i+1] == '[')
-      i++;
-
-    if (!*hastag) {
-      GET_TAG_NAME: ;
-      reliq_pattern tag;
-      if ((err = reliq_regcomp(&tag,src,&i,size,' ',NULL,strclass_tag)))
-        break;
-      *hastag = 1;
-      reliq_node_matches_node_add(result,MATCHES_TYPE_TAG,&tag,sizeof(reliq_pattern));
-      continue;
     }
 
-    if (i >= size)
-      break;
-
-    if (shortcut == '.' || shortcut == '#') {
-      char *t_name = (shortcut == '.') ? "class" : "id";
-      size_t t_pos=0,t_size=(shortcut == '.' ? 5 : 2);
-      if ((err = reliq_regcomp(&attrib.r[0],t_name,&t_pos,t_size,' ',"uWsfi",strclass_attrib)))
+    switch(matches->type) {
+      case NM_DEFAULT:
+        matches->type = NM_NODE;
+      case NM_NODE:
+        err = comp_node(src,&i,size,invert,hastag,result);
         break;
-
-      if ((err = reliq_regcomp(&attrib.r[1],src,&i,size,' ',"uwsf",NULL)))
+      case NM_COMMENT:
+        err = comp_comment(src,&i,size,invert,hastag,result);
         break;
-      attrib.flags |= A_VAL_MATTERS;
-    } else {
-      if ((err = reliq_regcomp(&attrib.r[0],src,&i,size,'=',NULL,strclass_attrib)))
+      default:
+        err = comp_text(src,&i,size,invert,hastag,result);
         break;
-
-      while_is(isspace,src,i,size);
-      if (i >= size)
-        goto ADD_SKIP;
-      if (src[i] == '=') {
-        i++;
-        while_is(isspace,src,i,size);
-        if (i >= size)
-          break;
-
-        if ((err = reliq_regcomp(&attrib.r[1],src,&i,size,' ',NULL,NULL)))
-          break;
-        attrib.flags |= A_VAL_MATTERS;
-      } else {
-        attrib.flags &= ~A_VAL_MATTERS;
-        goto ADD_SKIP;
-      }
     }
-
-    if (i < size && src[i] != '+' && src[i] != '-')
-      i++;
-    ADD_SKIP: ;
-
-    reliq_node_matches_node_add(result,MATCHES_TYPE_ATTRIB,&attrib,sizeof(struct reliq_pattrib));
-    tofree = 0;
+    if (err)
+      break;
   }
-  END: ;
-  if (tofree)
-    pattrib_free(&attrib);
 
   flexarr_conv(result,(void**)&matches->list,&matches->size);
   *pos = i;
@@ -845,6 +1135,7 @@ reliq_ncomp(const char *script, const size_t size, reliq_npattern *nodep)
 
   memset(nodep,0,sizeof(reliq_npattern));
   nodep->flags |= N_FULL;
+  nodep->matches.type = NM_DEFAULT;
   if (pos >= size) {
     nodep->flags |= N_EMPTY;
     if (pos)
@@ -854,7 +1145,7 @@ reliq_ncomp(const char *script, const size_t size, reliq_npattern *nodep)
 
   uchar hastag=0;
 
-  err = get_node_matches(script,&pos,size,0,&nodep->matches,&hastag,&nodep->position,&nodep->flags);
+  err = get_node_matches(script,&pos,size,0,&nodep->matches,&hastag,&nodep->position,&nodep->flags,NM_DEFAULT);
   if (!err && nodep->matches.size == 0)
     nodep->flags |= N_EMPTY;
 
@@ -1059,9 +1350,6 @@ node_exec(const reliq *rq, const reliq_chnode *parent, reliq_npattern *nodep, co
       case N_FULL_SIBLING_SUBSEQUENT:
         match_sibling_subsequent(rq,nodep,hn,dest,&found,lasttofind,-1);
         break;
-      /*case N_TEXT: break;*/
-      /*case N_NODE: break;*/
-      /*case N_ELEMENT: break;*/
     }
 
     if (nodep->position.s) {
