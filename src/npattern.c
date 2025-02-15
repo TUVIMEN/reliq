@@ -36,10 +36,9 @@
 #define NODE_MATCHES_GROUPS_INC 4
 #define HOOK_INC 8
 
-#define MATCHES_TYPE_TAG 1
-#define MATCHES_TYPE_HOOK 2
-#define MATCHES_TYPE_ATTRIB 3
-#define MATCHES_TYPE_GROUPS 4
+#define MATCHES_TYPE_HOOK 1
+#define MATCHES_TYPE_ATTRIB 2
+#define MATCHES_TYPE_GROUPS 3
 
 //reliq_pattrib flags
 #define A_INVERT 0x1
@@ -57,6 +56,10 @@
 #define H_MATCH_NODE 0x80
 #define H_MATCH_COMMENT 0x100
 #define H_MATCH_TEXT 0x200
+
+#define H_MATCH_NODE_MAIN 0x400
+#define H_MATCH_COMMENT_MAIN 0x800
+#define H_MATCH_TEXT_MAIN 0x1000
 
 reliq_error *reliq_exec_r(reliq *rq, const reliq_chnode *parent, SINK *output, reliq_compressed **outnodes, size_t *outnodesl, const reliq_expr *expr);
 
@@ -90,6 +93,11 @@ X(node_match_insides) {
 X(node_match_tag) {
   *src = hnode->all.b;
   *srcl = hnode->all.s;
+}
+
+X(node_match_name) {
+  *src = hnode->tag.b;
+  *srcl = hnode->tag.s;
 }
 
 X(node_match_end) {
@@ -141,22 +149,24 @@ X(global_position) {
   *srcl = chnode-rq->nodes;
 }
 
+X(comment_all) {
+  *src = hnode->all.b;
+  *srcl = hnode->all.s;
+}
+
+X(comment_insides) {
+  *src = hnode->insides.b;
+  *srcl = hnode->insides.s;
+}
+
+X(text_all) {
+  *src = hnode->all.b;
+  *srcl = hnode->all.s;
+}
+
 #undef X
 
 const struct match_hook_t match_hooks[] = {
-  //node matching
-  {{"m",1},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_match_insides)},
-  {{"M",1},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_match_tag)},
-  {{"a",1},H_MATCH_NODE|H_RANGE,(uintptr_t)XN(node_attributes)},
-  {{"C",1},H_MATCH_NODE|H_EXPRS,(uintptr_t)NULL},
-  {{"e",1},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_match_end)},
-
-  {{"match",5},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_match_insides)},
-  {{"tagmatch",8},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_match_tag)},
-  {{"attributes",10},H_MATCH_NODE|H_RANGE,(uintptr_t)XN(node_attributes)},
-  {{"childmatch",10},H_MATCH_NODE|H_EXPRS,(uintptr_t)NULL},
-  {{"endmatch",8},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_match_end)},
-
   //global matching
   {{"l",1},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_level_relative)},
   {{"L",1},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_level)},
@@ -171,6 +181,34 @@ const struct match_hook_t match_hooks[] = {
   {{"positionrelative",16},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_position_relative)},
   {{"position",8},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_position)},
   {{"index",5},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_index)},
+
+  //node matching
+  {{"m",1},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_match_insides)},
+  {{"M",1},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_match_tag)},
+  {{"n",1},H_MATCH_NODE|H_PATTERN|H_MATCH_NODE_MAIN,(uintptr_t)XN(node_match_name)},
+  {{"a",1},H_MATCH_NODE|H_RANGE,(uintptr_t)XN(node_attributes)},
+  {{"C",1},H_MATCH_NODE|H_EXPRS,(uintptr_t)NULL},
+  {{"e",1},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_match_end)},
+
+  {{"match",5},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_match_insides)},
+  {{"tagmatch",8},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_match_tag)},
+  {{"namematch",8},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_match_name)},
+  {{"attributes",10},H_MATCH_NODE|H_RANGE,(uintptr_t)XN(node_attributes)},
+  {{"childmatch",10},H_MATCH_NODE|H_EXPRS,(uintptr_t)NULL},
+  {{"endmatch",8},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_match_end)},
+
+  //comment matching
+  {{"a",1},H_MATCH_COMMENT|H_PATTERN|H_MATCH_COMMENT_MAIN,(uintptr_t)XN(comment_all)},
+  {{"i",1},H_MATCH_COMMENT|H_PATTERN,(uintptr_t)XN(comment_insides)},
+
+  {{"all",3},H_MATCH_COMMENT|H_PATTERN,(uintptr_t)XN(comment_all)},
+  {{"insides",7},H_MATCH_COMMENT|H_PATTERN,(uintptr_t)XN(comment_insides)},
+
+  //text matching
+  {{"a",1},H_MATCH_TEXT|H_PATTERN|H_MATCH_TEXT_MAIN,(uintptr_t)XN(text_all)},
+
+  {{"all",3},H_MATCH_TEXT|H_PATTERN,(uintptr_t)XN(text_all)},
+
 
   //access
   {{"desc",4},H_ACCESS|H_NOARG,N_DESCENDANT},
@@ -201,6 +239,7 @@ const struct match_hook_t match_hooks[] = {
   {{"comment",7},H_TYPE|H_NOARG,NM_COMMENT},
   {{"text",4},H_TYPE|H_NOARG,NM_TEXT},
   {{"textempty",9},H_TYPE|H_NOARG,NM_TEXT_EMPTY},
+  {{"textnoerr",9},H_TYPE|H_NOARG,NM_TEXT_NOERR},
   {{"texterr",7},H_TYPE|H_NOARG,NM_TEXT_ERR},
   {{"textall",7},H_TYPE|H_NOARG,NM_TEXT_ALL},
 };
@@ -257,10 +296,6 @@ free_matches(reliq_node_matches *matches)
   for (size_t i = 0; i < size; i++) {
     reliq_node_matches_node *node = &list[i];
     switch (node->type) {
-      case MATCHES_TYPE_TAG:
-        reliq_regfree(node->data.tag);
-        free(node->data.tag);
-        break;
       case MATCHES_TYPE_HOOK:
         reliq_free_hook(node->data.hook);
         free(node->data.hook);
@@ -389,24 +424,35 @@ reliq_node_matched_groups_match(const nmatch_state *st, const reliq_node_matches
 static inline int
 reliq_node_matched_match_type(const uint8_t hnode_type, const uint8_t type)
 {
-  if (type == NM_DEFAULT)
+  if (type == NM_MULTIPLE)
     return 1;
 
-  if (hnode_type == RELIQ_HNODE_TYPE_TAG && type != NM_NODE)
-    return 0;
-  if (hnode_type == RELIQ_HNODE_TYPE_COMMENT && type != NM_COMMENT)
-    return 0;
+  if (type == NM_NODE || type == NM_DEFAULT)
+    return (hnode_type == RELIQ_HNODE_TYPE_TAG);
+
+  if (type == NM_COMMENT)
+    return (hnode_type == RELIQ_HNODE_TYPE_COMMENT);
+
   if (type == NM_TEXT_ALL)
-    return 1;
+    return (hnode_type == RELIQ_HNODE_TYPE_TEXT);
 
-  if (hnode_type == RELIQ_HNODE_TYPE_TEXT && type != NM_TEXT)
-    return 0;
-  if (hnode_type == RELIQ_HNODE_TYPE_TEXT_ERR && type != NM_TEXT_ERR)
-    return 0;
-  if (hnode_type == RELIQ_HNODE_TYPE_TEXT_EMPTY && type != NM_TEXT_EMPTY)
-    return 0;
+  uchar istextempty = (hnode_type == RELIQ_HNODE_TYPE_TEXT_EMPTY);
+  if (type == NM_TEXT_EMPTY)
+    return istextempty;
 
-  return 1;
+  uchar istexterr = (hnode_type == RELIQ_HNODE_TYPE_TEXT_ERR);
+  if (type == NM_TEXT_ERR)
+    return istexterr;
+
+  uchar istextnoerr = (hnode_type == RELIQ_HNODE_TYPE_TEXT);
+  if (type == NM_TEXT_NOERR)
+    return istextnoerr;
+
+  if (type == NM_TEXT)
+    return (istexterr|istextnoerr);
+
+  //if (type == NM_TEXT_ALL)
+  return (istextempty|istexterr|istextnoerr);
 }
 
 static int
@@ -420,10 +466,6 @@ reliq_node_matched_match(const nmatch_state *st, const reliq_node_matches *match
 
   for (size_t i = 0; i < size; i++) {
     switch (list[i].type) {
-      case MATCHES_TYPE_TAG:
-        if (!reliq_regexec(list[i].data.tag,st->hnode->tag.b,st->hnode->tag.s))
-          return 0;
-        break;
       case MATCHES_TYPE_HOOK:
         if (!match_hook(st,list[i].data.hook))
           return 0;
@@ -709,6 +751,8 @@ node_matches_type_conflict(const uint8_t type1, const uint8_t type2)
     return 0;
   if (type1 == NM_DEFAULT || type2 == NM_DEFAULT)
     return 0;
+  if (type1 == NM_TEXT && (type2 == NM_TEXT_NOERR || type2 == NM_TEXT_ERR))
+    return 0;
   if (type1 == NM_TEXT_ALL &&
     node_matches_type_text(type2))
     return 0;
@@ -716,6 +760,12 @@ node_matches_type_conflict(const uint8_t type1, const uint8_t type2)
 }
 
 static reliq_error * get_node_matches(const char *src, size_t *pos, const size_t size, const uint16_t lvl, reliq_node_matches *matches, uchar *hastag, reliq_range *position, uint16_t *nodeflags, const uint8_t prevtype);
+
+static inline uchar //i run out of names
+node_matches_type_text_pure(const uint8_t type)
+{
+    return (type == NM_TEXT || type == NM_TEXT_NOERR || type == NM_TEXT_ERR);
+}
 
 static void
 node_matches_type_merge(const uint8_t type, uint8_t *dest)
@@ -725,11 +775,11 @@ node_matches_type_merge(const uint8_t type, uint8_t *dest)
     *dest = type;
     return;
   }
-  if (type == t)
-    return;
-
   if (node_matches_type_text(type) && node_matches_type_text(t)) {
-    *dest = NM_TEXT_ALL;
+    if (node_matches_type_text_pure(type) && node_matches_type_text_pure(t)) {
+      *dest = NM_TEXT;
+    } else
+      *dest = NM_TEXT_ALL;
     return;
   }
 
@@ -878,6 +928,33 @@ match_hook_add(const char *src, size_t *pos, const size_t size, const uchar inve
   return 0;
 }
 
+static const match_hook_t *
+find_main_hook(const uint16_t main_hook_mask)
+{
+  size_t i = 0;
+  for (; i < LENGTH(match_hooks); i++)
+    if (match_hooks[i].flags&main_hook_mask)
+      return match_hooks+i;
+
+  return NULL; //should never happen
+}
+
+static reliq_error *
+comp_node_add_tag(const char *src, size_t *pos, const size_t size, const uchar invert, flexarr *result) //result: reliq_node_matches_node
+{
+  reliq_pattern tag;
+  reliq_error *err;
+  if ((err = reliq_regcomp(&tag,src,pos,size,' ',NULL,strclass_tagname)))
+    return err;
+  reliq_hook h = {
+      .match.pattern = tag,
+      .invert = invert,
+      .hook = find_main_hook(H_MATCH_NODE_MAIN)
+  };
+  reliq_node_matches_node_add(result,MATCHES_TYPE_HOOK,&h,sizeof(reliq_hook));
+  return NULL;
+}
+
 static reliq_error *
 comp_node(const char *src, size_t *pos, const size_t size, uchar invert, uchar *hastag, flexarr *result) //result: reliq_node_matches_node
 {
@@ -910,11 +987,8 @@ comp_node(const char *src, size_t *pos, const size_t size, uchar invert, uchar *
 
   if (!*hastag) {
     GET_TAG_NAME: ;
-    reliq_pattern tag;
-    if ((err = reliq_regcomp(&tag,src,&i,size,' ',NULL,strclass_tagname)))
-      goto END;
     *hastag = 1;
-    reliq_node_matches_node_add(result,MATCHES_TYPE_TAG,&tag,sizeof(reliq_pattern));
+    err = comp_node_add_tag(src,&i,size,invert,result);
     goto END;
   }
 
@@ -967,16 +1041,25 @@ comp_node(const char *src, size_t *pos, const size_t size, uchar invert, uchar *
 }
 
 static reliq_error *
-comp_single_text(const char *src, size_t *pos, const size_t size, uchar invert, uchar *hastag, flexarr *result) //result: reliq_node_matches_node
+comp_single_text(const char *src, size_t *pos, const size_t size, uchar invert, uchar *hastag, const uint16_t main_hook_mask, flexarr *result) //result: reliq_node_matches_node
 {
   reliq_error *err = NULL;
 
   reliq_pattern tag;
-  if (!(err = reliq_regcomp(&tag,src,pos,size,' ',NULL,NULL))) {
-    *hastag = 1;
-    reliq_node_matches_node_add(result,MATCHES_TYPE_TAG,&tag,sizeof(reliq_pattern));
-  }
+  if ((err = reliq_regcomp(&tag,src,pos,size,' ',"at",NULL)))
+    goto END;
 
+  *hastag = 1;
+
+  reliq_hook h = {
+    .match.pattern = tag,
+    .hook = find_main_hook(main_hook_mask),
+    .invert = invert
+  };
+
+  reliq_node_matches_node_add(result,MATCHES_TYPE_HOOK,&h,sizeof(reliq_hook));
+
+  END: ;
   return err;
 }
 
@@ -984,13 +1067,13 @@ comp_single_text(const char *src, size_t *pos, const size_t size, uchar invert, 
 static reliq_error *
 comp_comment(const char *src, size_t *pos, const size_t size, uchar invert, uchar *hastag, flexarr *result) //result: reliq_node_matches_node
 {
-  return comp_single_text(src,pos,size,invert,hastag,result);
+  return comp_single_text(src,pos,size,invert,hastag,H_MATCH_COMMENT_MAIN,result);
 }
 
 static reliq_error *
 comp_text(const char *src, size_t *pos, const size_t size, uchar invert, uchar *hastag, flexarr *result) //result: reliq_node_matches_node
 {
-  return comp_single_text(src,pos,size,invert,hastag,result);
+  return comp_single_text(src,pos,size,invert,hastag,H_MATCH_TEXT_MAIN,result);
 }
 
 static uchar

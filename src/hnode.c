@@ -36,6 +36,10 @@ chnode_type(const reliq_chnode *c)
 {
   if (c->tag == 0) {
     if (c->endtag == 0) {
+      if (c->tagl == 1)
+        return RELIQ_HNODE_TYPE_TEXT_EMPTY;
+      if (c->tagl == 2)
+        return RELIQ_HNODE_TYPE_TEXT_ERR;
       return RELIQ_HNODE_TYPE_TEXT;
     } else
       return RELIQ_HNODE_TYPE_COMMENT;

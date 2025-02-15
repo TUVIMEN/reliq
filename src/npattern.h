@@ -47,10 +47,11 @@
 #define NM_NODE 1
 #define NM_COMMENT 2
 #define NM_TEXT 3
-#define NM_TEXT_ERR 4
-#define NM_TEXT_EMPTY 5
-#define NM_TEXT_ALL 6
-#define NM_MULTIPLE 7
+#define NM_TEXT_NOERR 4
+#define NM_TEXT_ERR 5
+#define NM_TEXT_EMPTY 6
+#define NM_TEXT_ALL 7
+#define NM_MULTIPLE 8
 
 typedef struct match_hook_t match_hook_t;
 
@@ -73,7 +74,6 @@ typedef struct {
 
 typedef struct {
   union {
-    reliq_pattern *tag;
     reliq_hook *hook;
     struct reliq_pattrib *attrib;
     reliq_node_matches_groups *groups;
