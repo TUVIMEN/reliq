@@ -1247,7 +1247,7 @@ reliq_ncomp(const char *script, const size_t size, reliq_npattern *nodep)
   uchar hastag=0;
 
   err = get_node_matches(script,&pos,size,0,&nodep->matches,&hastag,&nodep->position,&nodep->flags,NM_DEFAULT);
-  if (!err && nodep->matches.size == 0)
+  if (!err && nodep->matches.size == 0 && nodep->matches.type == NM_DEFAULT)
     nodep->flags |= N_EMPTY;
 
   if (err) {
