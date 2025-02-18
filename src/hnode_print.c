@@ -95,7 +95,7 @@ print_text(const reliq *rq, const reliq_chnode *hnode, uint8_t flags, SINK *outf
     const reliq_chnode *n = hnode+i;
 
     uint8_t type = chnode_type(n);
-    if (type == RELIQ_HNODE_TYPE_TEXT) {
+    if (type == RELIQ_HNODE_TYPE_TEXT || type == RELIQ_HNODE_TYPE_TEXT_ERR || type == RELIQ_HNODE_TYPE_TEXT_EMPTY) {
         print_chars(data+n->all,n->all_len,flags,outfile);
     } else if (recursive && type == RELIQ_HNODE_TYPE_TAG)
       print_text(rq,n,flags,outfile,recursive);

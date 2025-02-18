@@ -788,6 +788,8 @@ static void
 node_matches_type_merge(const uint8_t type, uint8_t *dest)
 {
   const uint8_t t = *dest;
+  if (t == type)
+    return;
   if (t == NM_DEFAULT) {
     *dest = type;
     return;
@@ -866,12 +868,7 @@ get_group_matches(const char *src, size_t *pos, const size_t size, const uint16_
     goto ERR;
   }*/ //future warning
 
-  uint8_t prevtype = matches->type;
   node_matches_type_merge(type_acc,&matches->type);
-  if (prevtype != NM_DEFAULT && matches->type == NM_MULTIPLE) {
-    *err = script_err("node: something bad");
-    goto ERR;
-  }
 
   reliq_node_matches_groups groups;
   flexarr_conv(groups_matches,(void**)&groups.list,&groups.size);
