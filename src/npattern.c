@@ -193,9 +193,9 @@ const struct match_hook_t match_hooks[] = {
   {{"levelrelative",13},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_level_relative)},
   {{"level",5},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_level)},
   {{"count",5},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_desc_count)},
-  {{"countcomments",2},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_comments_count)},
-  {{"conttext",2},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_text_count)},
-  {{"countall",2},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_all_count)},
+  {{"countcomments",13},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_comments_count)},
+  {{"counttext",9},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_text_count)},
+  {{"countall",8},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_all_count)},
   {{"positionrelative",16},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_position_relative)},
   {{"position",8},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_position)},
   {{"index",5},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_index)},
@@ -226,7 +226,6 @@ const struct match_hook_t match_hooks[] = {
   {{"a",1},H_MATCH_TEXT|H_PATTERN|H_MATCH_TEXT_MAIN,(uintptr_t)XN(text_all)},
 
   {{"all",3},H_MATCH_TEXT|H_PATTERN,(uintptr_t)XN(text_all)},
-
 
   //access
   {{"desc",4},H_ACCESS|H_NOARG,N_DESCENDANT},
