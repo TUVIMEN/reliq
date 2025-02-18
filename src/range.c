@@ -33,30 +33,32 @@ range_match(const uint32_t matched, const reliq_range *range, const size_t last)
   if (!range || !range->s)
     return 1;
   struct reliq_range_node const *r;
-  uint32_t x,y;
   for (size_t i = 0; i < range->s; i++) {
     r = &range->b[i];
-    x = r->v[0];
-    y = r->v[1];
+    uint32_t x = r->v[0], y = r->v[1];
+    uchar invert = ((r->flags&R_INVERT) != 0);
     if (!(r->flags&R_RANGE)) {
       if (r->flags&R_RELATIVE(0))
         x = ((uint32_t)last < r->v[0]) ? 0 : last-r->v[0];
-      if (matched == x)
-        return r->flags&R_INVERT ? 0 : 1;
+      uchar c = (matched == x);
+      if (c^invert)
+        return 1;
     } else {
       if (r->flags&R_RELATIVE(0))
         x = ((uint32_t)last < r->v[0]) ? 0 : last-r->v[0];
+      uchar c;
       if (r->flags&R_RELATIVE(1)) {
-        if ((uint32_t)last < r->v[1])
+        c = ((uint32_t)last < r->v[1]);
+        if (c && !invert)
           continue;
         y = last-r->v[1];
       }
-      if (matched >= x && matched <= y)
-        if (r->v[2] < 2 || (matched+r->v[3])%r->v[2] == 0)
-          return r->flags&R_INVERT ? 0 : 1;
+      c = (matched >= x && matched <= y && (r->v[2] < 2 || (matched+r->v[3])%r->v[2] == 0));
+      if (c^invert)
+        return 1;
     }
   }
-  return r->flags&R_INVERT ? 1 : 0;
+  return 0;
 }
 
 static reliq_error *
