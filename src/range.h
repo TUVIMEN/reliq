@@ -25,9 +25,13 @@
 
 //reliq_range flags
 #define R_RELATIVE(x) (1<<(x))
-#define R_RANGE 0x8
-#define R_NOTEMPTY 0x10
-#define R_INVERT 0x20
+#define R_NOTSPECIFIED(x) (4<<(x))
+#define R_RANGE 0x10
+#define R_NOTEMPTY 0x20
+#define R_INVERT 0x40
+
+#define RANGE_SIGNED ((size_t)-1)
+#define RANGE_UNSIGNED ((size_t)-2)
 
 struct reliq_range_node {
   uint32_t v[4];

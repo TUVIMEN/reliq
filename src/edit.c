@@ -379,7 +379,7 @@ cut_edit(const char *src, const size_t size, SINK *output, const void *arg[4], c
         }
 
         start = dend;
-        if (range_match(dcount,range,-1)^complement) {
+        if (range_match(dcount,range,RANGE_UNSIGNED)^complement) {
           if (dprevendlength)
             sink_write(output,src+dprevend,1);
           if (dlength)

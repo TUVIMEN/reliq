@@ -96,7 +96,7 @@ print_text(const reliq *rq, const reliq_chnode *hnode, uint8_t flags, SINK *outf
 
     uint8_t type = chnode_type(n);
     if (type == RELIQ_HNODE_TYPE_TEXT || type == RELIQ_HNODE_TYPE_TEXT_ERR || type == RELIQ_HNODE_TYPE_TEXT_EMPTY) {
-        print_chars(data+n->all,n->all_len,flags,outfile);
+      print_chars(data+n->all,n->all_len,flags,outfile);
     } else if (recursive && type == RELIQ_HNODE_TYPE_TAG)
       print_text(rq,n,flags,outfile,recursive);
 
@@ -156,16 +156,8 @@ chnode_printf(SINK *outfile, const char *format, const size_t formatl, const rel
         case 'i': print_chars(hnode.insides.b,hnode.insides.s,printflags,outfile); break;
         case 't': print_text(rq,chnode,printflags,outfile,0); break;
         case 'T': print_text(rq,chnode,printflags,outfile,1); break;
-        case 'l': {
-          uint16_t lvl = hnode.lvl;
-          if (parent) {
-            if (lvl < parent->lvl) {
-              lvl = parent->lvl-lvl; //happens when passed from ancestor
-            } else
-              lvl -= parent->lvl;
-          }
-          print_uint(lvl,outfile);
-          }
+        case 'l':
+          print_int((parent) ? hnode.lvl-parent->lvl : hnode.lvl,outfile);
           break;
         case 'L': print_uint(hnode.lvl,outfile); break;
         case 'a':
@@ -205,16 +197,8 @@ chnode_printf(SINK *outfile, const char *format, const size_t formatl, const rel
           print_chars(src,srcl,printflags|(endinsides ? 0 : PC_UNTRIM),outfile);
           break;
         case 'I': print_uint(hnode.all.b-rq->data,outfile); break;
-        case 'p': {
-          uint32_t pos = chnode-rq->nodes;
-          if (parent) {
-            if (chnode < parent) {
-              pos = parent-chnode;
-            } else
-              pos = chnode-parent;
-          }
-          print_uint(pos,outfile);
-          }
+        case 'p':
+          print_int(parent ? chnode-parent : chnode-rq->nodes,outfile);
           break;
         case 'P': print_uint(chnode-rq->nodes,outfile); break;
         case 'n': sink_write(outfile,hnode.tag.b,hnode.tag.s); break;

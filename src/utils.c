@@ -152,6 +152,16 @@ print_uint(unsigned long num, SINK *outfile)
     sink_write(outfile,str,len);
 }
 
+void
+print_int(long num, SINK *outfile)
+{
+  if (num < 0) {
+    sink_put(outfile,'-');
+    num *= -1;
+  }
+  print_uint(num,outfile);
+}
+
 #if defined(__MINGW32__) || defined(__MINGW64__)
 char const *
 memmem(char const *haystack, size_t haystackl, const char *needle, const size_t needlel)

@@ -45,21 +45,22 @@
 #define A_VAL_MATTERS 0x2
 
 //match_hook flags
-#define H_RANGE 0x1
-#define H_PATTERN 0x2
-#define H_EXPRS 0x4
-#define H_NOARG 0x8
+#define H_RANGE_SIGNED 0x1
+#define H_RANGE_UNSIGNED 0x2
+#define H_PATTERN 0x4
+#define H_EXPRS 0x8
+#define H_NOARG 0x10
 
-#define H_ACCESS 0x10
-#define H_TYPE 0x20
-#define H_GLOBAL 0x40
-#define H_MATCH_NODE 0x80
-#define H_MATCH_COMMENT 0x100
-#define H_MATCH_TEXT 0x200
+#define H_ACCESS 0x20
+#define H_TYPE 0x40
+#define H_GLOBAL 0x80
+#define H_MATCH_NODE 0x100
+#define H_MATCH_COMMENT 0x200
+#define H_MATCH_TEXT 0x400
 
-#define H_MATCH_NODE_MAIN 0x400
-#define H_MATCH_COMMENT_MAIN 0x800
-#define H_MATCH_TEXT_MAIN 0x1000
+#define H_MATCH_NODE_MAIN 0x800
+#define H_MATCH_COMMENT_MAIN 0x1000
+#define H_MATCH_TEXT_MAIN 0x2000
 
 reliq_error *reliq_exec_r(reliq *rq, const reliq_chnode *parent, SINK *output, reliq_compressed **outnodes, size_t *outnodesl, const reliq_expr *expr);
 
@@ -119,10 +120,7 @@ X(global_index) {
 
 X(global_level_relative) {
   if (parent) {
-    if (hnode->lvl < parent->lvl) {
-      *srcl = parent->lvl-chnode->lvl;
-    } else
-      *srcl = chnode->lvl-parent->lvl;
+    *srcl = chnode->lvl-parent->lvl;
   } else
     *srcl = chnode->lvl;
 }
@@ -149,10 +147,7 @@ X(global_all_count) {
 
 X(global_position_relative) {
   if (parent) {
-    if (chnode < parent) {
-      *srcl = parent-chnode;
-    } else
-      *srcl = chnode-parent;
+    *srcl = chnode-parent;
   } else
     *srcl = chnode-rq->nodes;
 }
@@ -180,38 +175,38 @@ X(text_all) {
 
 const struct match_hook_t match_hooks[] = {
   //global matching
-  {{"l",1},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_level_relative)},
-  {{"L",1},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_level)},
-  {{"c",1},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_desc_count)},
-  {{"cc",2},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_comments_count)},
-  {{"ct",2},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_text_count)},
-  {{"cC",2},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_all_count)},
-  {{"p",1},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_position_relative)},
-  {{"P",1},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_position)},
-  {{"I",1},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_index)},
+  {{"l",1},H_GLOBAL|H_RANGE_SIGNED,(uintptr_t)XN(global_level_relative)},
+  {{"L",1},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_level)},
+  {{"c",1},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_desc_count)},
+  {{"cc",2},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_comments_count)},
+  {{"ct",2},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_text_count)},
+  {{"cC",2},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_all_count)},
+  {{"p",1},H_GLOBAL|H_RANGE_SIGNED,(uintptr_t)XN(global_position_relative)},
+  {{"P",1},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_position)},
+  {{"I",1},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_index)},
 
-  {{"levelrelative",13},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_level_relative)},
-  {{"level",5},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_level)},
-  {{"count",5},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_desc_count)},
-  {{"countcomments",13},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_comments_count)},
-  {{"counttext",9},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_text_count)},
-  {{"countall",8},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_all_count)},
-  {{"positionrelative",16},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_position_relative)},
-  {{"position",8},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_position)},
-  {{"index",5},H_GLOBAL|H_RANGE,(uintptr_t)XN(global_index)},
+  {{"levelrelative",13},H_GLOBAL|H_RANGE_SIGNED,(uintptr_t)XN(global_level_relative)},
+  {{"level",5},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_level)},
+  {{"count",5},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_desc_count)},
+  {{"countcomments",13},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_comments_count)},
+  {{"counttext",9},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_text_count)},
+  {{"countall",8},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_all_count)},
+  {{"positionrelative",16},H_GLOBAL|H_RANGE_SIGNED,(uintptr_t)XN(global_position_relative)},
+  {{"position",8},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_position)},
+  {{"index",5},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_index)},
 
   //node matching
   {{"m",1},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_match_insides)},
   {{"M",1},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_match_tag)},
   {{"n",1},H_MATCH_NODE|H_PATTERN|H_MATCH_NODE_MAIN,(uintptr_t)XN(node_match_name)},
-  {{"a",1},H_MATCH_NODE|H_RANGE,(uintptr_t)XN(node_attributes)},
+  {{"a",1},H_MATCH_NODE|H_RANGE_UNSIGNED,(uintptr_t)XN(node_attributes)},
   {{"C",1},H_MATCH_NODE|H_EXPRS,(uintptr_t)NULL},
   {{"e",1},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_match_end)},
 
   {{"match",5},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_match_insides)},
   {{"tagmatch",8},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_match_tag)},
   {{"namematch",8},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_match_name)},
-  {{"attributes",10},H_MATCH_NODE|H_RANGE,(uintptr_t)XN(node_attributes)},
+  {{"attributes",10},H_MATCH_NODE|H_RANGE_UNSIGNED,(uintptr_t)XN(node_attributes)},
   {{"childmatch",10},H_MATCH_NODE|H_EXPRS,(uintptr_t)NULL},
   {{"endmatch",8},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_match_end)},
 
@@ -285,7 +280,7 @@ static void
 reliq_free_hook(reliq_hook *hook)
 {
   const uint16_t flags = hook->hook->flags;
-  if (flags&H_RANGE) {
+  if (flags&(H_RANGE_SIGNED|H_RANGE_UNSIGNED)) {
     range_free(&hook->match.range);
   } if (flags&H_EXPRS) {
     reliq_efree(&hook->match.expr);
@@ -412,8 +407,11 @@ match_hook(const nmatch_state *st, const reliq_hook *hook)
   if (arg)
     ((hook_func_t)arg)(rq,chnode,hnode,parent,&src,&srcl);
 
-  if (flags&H_RANGE) {
-    if ((!range_match(srcl,&hook->match.range,-1))^invert)
+  if (flags&H_RANGE_UNSIGNED) {
+    if ((!range_match(srcl,&hook->match.range,RANGE_UNSIGNED))^invert)
+      return 0;
+  } else if (flags&H_RANGE_SIGNED) {
+    if ((!range_match(srcl,&hook->match.range,RANGE_SIGNED))^invert)
       return 0;
   } else if (flags&H_PATTERN) {
     if ((!reliq_regexec(&hook->match.pattern,src,srcl))^invert)
@@ -527,7 +525,7 @@ match_hook_unexpected_argument(const uint16_t flags)
     return "hook \"%.*s\" expected pattern argument";
   if (flags&H_EXPRS)
     return "hook \"%.*s\" expected node argument";
-  if (flags&H_RANGE)
+  if (flags&(H_RANGE_SIGNED|H_RANGE_UNSIGNED))
     return "hook \"%.*s\" expected list argument";
   if (flags&H_NOARG)
     return "hook \"%.*s\" unexpected argument";
@@ -692,7 +690,7 @@ match_hook_handle(const char *src, size_t *pos, const size_t size, reliq_hook *o
   if (!firstchar || isspace(firstchar)) {
     HOOK_EXPECT(H_NOARG);
   } else if (src[p] == '[') {
-    HOOK_EXPECT(H_RANGE);
+    HOOK_EXPECT(H_RANGE_UNSIGNED|H_RANGE_SIGNED);
     if ((err = range_comp(src,&p,size,&hook.match.range)))
       goto ERR;
   } else if (hflags&H_EXPRS) {

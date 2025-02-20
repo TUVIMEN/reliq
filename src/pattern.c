@@ -385,7 +385,7 @@ reliq_regexec(const reliq_pattern *pattern, const char *src, const size_t size)
 {
   uint16_t pass = pattern->flags&RELIQ_PATTERN_PASS;
   uchar invert = (pattern->flags&RELIQ_PATTERN_INVERT) ? 1 : 0;
-  if ((!range_match(size,&pattern->range,-1)))
+  if ((!range_match(size,&pattern->range,RANGE_UNSIGNED)))
     return invert;
 
   if (pattern->flags&RELIQ_PATTERN_ALL)

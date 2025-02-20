@@ -92,12 +92,12 @@ If unquoted text is set to a single '*' character matching of text will be ommit
 \fB>'TEXT'\fR
 \fB>TEXT\fR             - match TEXT, same as above
 \fB[a-z]>TEXT\fR        - match TEXT depending on options
-\fB[a-z]>[RANGE]TEXT\fR
+\fB[a-z]>[URANGE]TEXT\fR
 \fB*\fR                 - match to everything
 \fB>*\fR                - same as above
-\fB>[RANGE]"TEXT"\fR
-\fB>[RANGE]\fR          - match length of pattern
-\fB>[RANGE]*\fR         - same as above
+\fB>[URANGE]"TEXT"\fR
+\fB>[URANGE]\fR          - match length of pattern
+\fB>[URANGE]*\fR         - same as above
 .in
 \&
 
@@ -158,23 +158,32 @@ Consists of \fBATTRIBUTE_NAME\fR followed by '=' and \fBPATTERN\fR of attribute'
 .in
 \&
 .SS RANGE
-Is always embedded in square brackets. Consists of groups of four numbers separated by ':', that can be practically endlessly separated by ','. Empty values will be complemented. Putting '-' before two first values (even if they are not specified) makes them subtracted from the maximal value. If '!' is found before the first value the matching will be inversed.
-
-By default the minimal matching value is 0.
+Is always embedded in square brackets. Consists of groups of four numbers separated by ':', that can be practically endlessly separated by ',' if any of the matching succeedes the matching will stop.
 
 Specifying only one value equals to matching only to that value.
 
-Specifying two values equals to matching range between and of them.
+Specifying two values equals to matching range between, and of them.
+
+If '!' is found before the first value the matching will be inversed.
+
+Empty values will be treated as infinity.
 
 Specifying three values additionally matches only values of which modulo of third value is equal to 0. Forth value is an offset to value from which modulo is calculated from.
+
+.SS RRANGE
+
+Relative range matches arrays. Putting '-' before two first values (even if they are not specified) makes them subtracted from the maximal value.
 
 .nf
 \&
 .in +4m
-\fB[x1,!x2,x3,x4]\fR        - match to one of the values that is not x2
-\fB[x1:y1,x2:y2,!x3:y4]\fR  - match to one of the ranges that is not in x3:y4
-\fB[-]\fR                   - match to last value subtracted by 0
-\fB[-x]\fR                  - match to last value subtracted by x
+\fB[x1,!x2,x3,x4]\fR        - match to x1 or anything that isn't x2 or x3 or x4.
+\fB[x1:y1,x2:y2,!x3:y4]\fR  - match to values between, and x1 and y1 or ...
+\fB[x:]\fR                  - match values that are x or higher
+\fB[:y]\fR                  - match values that are y or lower
+\fB[:]\fR                   - match everything
+\fB[-]\fR                   - match to last index of the array
+\fB[-x]\fR                  - match to last index of the array subtracted by x
 \fB[:-y]\fR                 - match to range from 0 to y'th value from end
 \fB[::w]\fR                 - match to values from which modulo of w is equal to 0
 \fB[x:y:w]\fR               - match to range from x to y from which modulo of w is equal to 0
@@ -182,6 +191,41 @@ Specifying three values additionally matches only values of which modulo of thir
 \fB[::2:1]\fR               - match to uneven values
 .in
 \&
+
+.SS URANGE
+
+Unsigned range matches unsigned integers. Putting '-' before first value is the same as '0', before the second value is the same as matching to infinity.
+
+.nf
+\&
+.in +4m
+
+\fB[x1,x1:y]\fR             - match to x1 or between, and x1 and y
+\fB[-x]\fR                  - match to nothing
+\fB[-x:-y]\fR               - match to everything
+\fB[-x:y]\fR                - match from 0 to y
+\fB[:y]\fR                  - match from 0 to y
+\fB[x:-y]\fR                - match from x to infinity
+\fB[x:]\fR                  - match from x to infinity
+\fB[x::2]\fR                - match to even values starting from x
+.in
+\&
+
+.SS SRANGE
+
+Signed range matches signed integers.
+
+.nf
+\&
+.in +4m
+\fB[-x,-y]\fR               - match from -x to -y
+\fB[:-y]\fR                 - match from negative infinity to -y
+\fB[:y]\fR                  - match from negative infinity to y
+\fB[x:]\fR                  - match from x to infinity
+\fB[:-1:2:1]\fR             - match to uneven values until -1
+.in
+\&
+
 .SS HOOK
 Begins with a name of function followed by '@' and ended with argument which can be a \fBRANGE\fR, \fBEXPRESSION\fR, \fBPATTERN\fR or nothing.
 
@@ -208,17 +252,17 @@ Get tags with insides that match \fIPATTERN\fR, by default pattern flags set to 
 .BR M ",  " tagmatch " " \fI"PATTERN"\fR
 Get tags that match \fIPATTERN\fR, by default pattern flags set to "uWcas".
 .TP
-.BR a ",  " attributes " " \fI[RANGE]\fR
-Get tags with attributes that are within the \fIRANGE\fR.
+.BR a ",  " attributes " " \fI[URANGE]\fR
+Get tags with attributes that are within the \fIURANGE\fR.
 .TP
-.BR L ",  " level " " \fI[RANGE]\fR
-Get tags that are on level within \fIRANGE\fR.
+.BR L ",  " level " " \fI[URANGE]\fR
+Get tags that are on level within \fIURANGE\fR.
 .TP
-.BR l ",  " levelrelative " " \fI[RANGE]\fR
-Get tags that are on level relative to parent within the \fIRANGE\fR.
+.BR l ",  " levelrelative " " \fI[SRANGE]\fR
+Get tags that are on level relative to parent within the \fISRANGE\fR.
 .TP
-.BR c ",  " count " " \fI[RANGE]\fR
-Get tags with descendant count that is within the \fIRANGE\fR.
+.BR c ",  " count " " \fI[URANGE]\fR
+Get tags with descendant count that is within the \fIURANGE\fR.
 .TP
 .BR C ",  " childmatch " " \fI"EXPRESSION"\fR
 Get tags in which chained \fIEXPRESSION\fR (see \fB-F\fR option) matches at least one of its children.
@@ -226,14 +270,14 @@ Get tags in which chained \fIEXPRESSION\fR (see \fB-F\fR option) matches at leas
 .BR e ",  " endmatch " " \fI"PATTERN"\fR
 Get tags with insides of ending tag that match \fIPATTERN\fR, by default pattern flags set to 'tWcnfs'.
 .TP
-.BR P ",  " position " " \fI[RANGE]\fR
-Get tags with position within \fIRANGE\fR.
+.BR P ",  " position " " \fI[URANGE]\fR
+Get tags with position within \fIURANGE\fR.
 .TP
-.BR p ",  " positionrelative " " \fI[RANGE]\fR
-Get tags with position relative to parent within \fIRANGE\fR.
+.BR p ",  " positionrelative " " \fI[SRANGE]\fR
+Get tags with position relative to parent within \fISRANGE\fR.
 .TP
-.BR I ",  " index " " \fI[RANGE]\fR
-Get tags with starting index of tag in file that is within \fIRANGE\fR.
+.BR I ",  " index " " \fI[URANGE]\fR
+Get tags with starting index of tag in file that is within \fIURANGE\fR.
 .TP
 
 Access hooks specify what nodes will be matched:
