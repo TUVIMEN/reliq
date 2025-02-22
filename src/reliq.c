@@ -62,76 +62,15 @@ reliq_free(reliq *rq)
 }
 
 static void
-reliq_hnode_shift(reliq_cattrib *attribs, reliq_chnode *node, const size_t pos, const uint32_t attribsl)
+reliq_hnode_shift(reliq_cattrib *attribs, reliq_chnode *node, const size_t pos, const uint32_t attribsstart, const uint32_t attribsl)
 {
-  /*char const *ref = node->all.b;
-  #define shift_cstr(x) (x).b = (char const*)((x).b-ref)+pos
+  uint32_t diff = node->all-pos;
+  node->all = pos;
+  node->attribs = attribsstart;
 
-  shift_cstr(node->all);
-  shift_cstr(node->tag);
-  shift_cstr(node->insides);*/
-  /*reliq_cattrib *a = attribs+node->attribs;
-  for (size_t i = 0; i < attribsl; i++) {
-    shift_cstr(a[i].key);
-    shift_cstr(a[i].value);
-  }*/
+  for (size_t i = 0; i < attribsl; i++)
+    attribs[i].key -= diff;
 }
-
-static void
-reliq_hnode_shift_finalize(reliq_cattrib *attribs, reliq_chnode *node, char *ref, const uint32_t attribsl)
-{
-  /*#define shift_cstr_p(x) (x).b = ref+(size_t)(x).b
-
-  shift_cstr_p(node->all);
-  shift_cstr_p(node->tag);
-  shift_cstr_p(node->insides);*/
-  /*reliq_cattrib *a = attribs+node->attribs;
-  for (size_t i = 0; i < attribsl; i++) {
-    shift_cstr_p(a[i].key);
-    shift_cstr_p(a[i].value);
-  }*/
-}
-
-/*
-  reliq_from_compressed functions can be optimized by eliminating repeating or descendant tags.
-
-  static int
-  compressed_cmp(const reliq_compressed *c1, const reliq_compressed *c2)
-  {
-    return c1->hnode < c2->hnode;
-  }
-
-  reliq_compressed *ncomp = memdup(compressed,compressedl*sizeof(reliq_compressed));
-  qsort(ncomp,compressedl,sizeof(reliq_compressed),(int(*)(const void*,const void*)compressed_cmp));
-
-  reliq_chnode *current,*previous=NULL;
-  for (size_t i = 0; i < compressedl; i++) {
-    current = ncomp[i].hnode;
-    if ((void)current < (void*)10)
-      continue;
-
-    uchar passed = 0;
-
-    if (!previous) {
-      previous = current;
-      continue;
-    } else if (current <= previous) {
-      if (previous <= current+current->tag_count) {
-        previous = current;
-        continue;
-      }
-    }
-
-    ...
-
-    if (current > previous+previous->tag_count)
-      previous = current;
-  }
-  if (previous)
-    ...
-
-  This however will not allow for changing levels to be relative to parent.
-*/
 
 void
 convert_from_compressed_add_descendants(const reliq *rq, const reliq_chnode *root, flexarr *nodes, flexarr *attribs, const size_t pos, const uchar independent)
@@ -144,13 +83,14 @@ convert_from_compressed_add_descendants(const reliq *rq, const reliq_chnode *roo
     const reliq_chnode *hnode = root+j;
     memcpy(new,hnode,sizeof(reliq_chnode));
 
+    size_t prevattribsl = attribs->size;
     uint32_t attribsl = reliq_chnode_attribsl(rq,hnode);
     if (attribsl)
       flexarr_append(attribs,rq->attribs+hnode->attribs,attribsl);
 
     if (independent) {
       size_t tpos = pos+(hnode->all-root->all);
-      reliq_hnode_shift(attribs->v,new,tpos,attribsl);
+      reliq_hnode_shift(((reliq_cattrib*)attribs->v)+prevattribsl,new,tpos,prevattribsl,attribsl);
     }
     new->lvl -= lvl;
   }
@@ -192,12 +132,6 @@ convert_from_compressed(const reliq_compressed *compressed, const size_t compres
     sink_close(out);
     ret.data = ptr;
     ret.datal = size;
-
-    const size_t nodessize = ret.nodesl;
-    for (size_t i = 0; i < nodessize; i++) {
-      reliq_chnode *hn = ret.nodes+i;
-      reliq_hnode_shift_finalize(ret.attribs,hn,ptr,reliq_chnode_attribsl(&ret,hn));
-    }
   } else {
     ret.freedata = NULL;
     ret.data = rq->data;
