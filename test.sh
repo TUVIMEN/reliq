@@ -49,7 +49,10 @@ trim_g() {
 
 sed 's/\\/\\\\/g' "$file" | while read i
 do
-    [ -z "$i" ] && continue
+    [ -z "$i" ] && {
+        [ -n "$output" ] && echo "$i" >> "$output"
+        continue
+    }
     first="$(echo "$i" | cut -b 1)"
 
     if echo "$first" | grep -q '^[#@$!%<^]$'
