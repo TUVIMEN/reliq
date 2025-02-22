@@ -40,18 +40,18 @@ struct reliq_format_function {
 };
 
 const struct reliq_format_function format_functions[] = {
-    {{"sed",3},(reliq_format_function_t)sed_edit},
-    {{"trim",4},(reliq_format_function_t)trim_edit},
-    {{"tr",2},(reliq_format_function_t)tr_edit},
-    {{"line",4},(reliq_format_function_t)line_edit},
-    {{"cut",3},(reliq_format_function_t)cut_edit},
-    {{"decode",6},(reliq_format_function_t)decode_edit},
-    {{"sort",4},(reliq_format_function_t)sort_edit},
-    {{"uniq",4},(reliq_format_function_t)uniq_edit},
-    {{"echo",4},(reliq_format_function_t)echo_edit},
-    {{"wc",2},(reliq_format_function_t)wc_edit},
-    {{"rev",3},(reliq_format_function_t)rev_edit},
-    {{"tac",3},(reliq_format_function_t)tac_edit},
+  {{"sed",3},(reliq_format_function_t)sed_edit},
+  {{"trim",4},(reliq_format_function_t)trim_edit},
+  {{"tr",2},(reliq_format_function_t)tr_edit},
+  {{"line",4},(reliq_format_function_t)line_edit},
+  {{"cut",3},(reliq_format_function_t)cut_edit},
+  {{"decode",6},(reliq_format_function_t)decode_edit},
+  {{"sort",4},(reliq_format_function_t)sort_edit},
+  {{"uniq",4},(reliq_format_function_t)uniq_edit},
+  {{"echo",4},(reliq_format_function_t)echo_edit},
+  {{"wc",2},(reliq_format_function_t)wc_edit},
+  {{"rev",3},(reliq_format_function_t)rev_edit},
+  {{"tac",3},(reliq_format_function_t)tac_edit},
 };
 
 reliq_error *

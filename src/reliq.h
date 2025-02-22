@@ -141,27 +141,7 @@ typedef struct {
 } reliq_output_field;
 
 typedef struct reliq_npattern reliq_npattern;
-#ifdef RELIQ_EDITING
-typedef struct reliq_format_func reliq_format_func;
-#endif
-
-typedef struct {
-  reliq_output_field outfield;
-  void *e; //either points to flexarr*(reliq_expr) or reliq_npattern
-  #ifdef RELIQ_EDITING
-  reliq_format_func *nodef; //node format
-  reliq_format_func *exprf; //expression format
-  #else
-  char *nodef;
-  #endif
-  size_t nodefl;
-  #ifdef RELIQ_EDITING
-  size_t exprfl;
-  #endif
-  uint16_t childfields;
-  uint16_t childformats;
-  uint8_t flags; //EXPR_
-} reliq_expr;
+typedef struct reliq_expr reliq_expr;
 
 typedef struct {
   int (*freedata)(void *addr, size_t len);
@@ -182,13 +162,8 @@ int reliq_free(reliq *rq);
 reliq reliq_from_compressed(const reliq_compressed *compressed, const size_t compressedl, const reliq *rq);
 reliq reliq_from_compressed_independent(const reliq_compressed *compressed, const size_t compressedl, const reliq *rq);
 
-//node pattern
-reliq_error *reliq_ncomp(const char *script, const size_t size, reliq_npattern *nodep);
-int reliq_nexec(const reliq *rq, const reliq_chnode *hnode, const reliq_chnode *parent, const reliq_npattern *nodep);
-void reliq_nfree(reliq_npattern *nodep);
-
 //expression
-reliq_error *reliq_ecomp(const char *script, const size_t size, reliq_expr *expr);
+reliq_error *reliq_ecomp(const char *script, const size_t size, reliq_expr **expr);
 
 reliq_error *reliq_exec_file(reliq *rq, FILE *output, const reliq_expr *expr);
 reliq_error *reliq_exec_str(reliq *rq, char **str, size_t *strl, const reliq_expr *expr);

@@ -41,7 +41,7 @@
 typedef unsigned char uchar;
 
 char *argv0;
-reliq_expr expr = {0};
+reliq_expr *expr = NULL;
 
 unsigned int settings = 0; //F_
 int nftwflags = FTW_PHYS;
@@ -142,13 +142,13 @@ expr_exec(char *f, size_t s, const uchar inpipe)
   if ((err = reliq_init(f,s,&rq)))
     goto ERR;
   rq.freedata = freedata;
-  err = reliq_exec_file(&rq,outfile,&expr);
+  err = reliq_exec_file(&rq,outfile,expr);
 
   reliq_free(&rq);
   ERR: ;
 
   if (err) {
-    reliq_efree(&expr);
+    reliq_efree(expr);
     handle_reliq_error(err);
   }
 }
@@ -299,11 +299,11 @@ main(int argc, char **argv)
     }
   }
 
-  if (!expr.e && optind < argc) {
+  if (!expr && optind < argc) {
     handle_reliq_error(reliq_ecomp(argv[optind],strlen(argv[optind]),&expr));
     optind++;
   }
-  if (!expr.e)
+  if (!expr)
     return -1;
   int g = optind;
   for (; g < argc; g++)
@@ -313,7 +313,7 @@ main(int argc, char **argv)
 
   if (outfile != stdout)
     fclose(outfile);
-  reliq_efree(&expr);
+  reliq_efree(expr);
 
   return 0;
 }

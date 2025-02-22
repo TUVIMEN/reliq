@@ -32,6 +32,8 @@
 
 #define PATTERN_SIZE_INC (1<<5)
 
+void reliq_efree_intr(reliq_expr *expr);
+
 static void
 reliq_expr_free_pre(flexarr *exprs) //exprs: reliq_expr
 {
@@ -40,12 +42,12 @@ reliq_expr_free_pre(flexarr *exprs) //exprs: reliq_expr
   reliq_expr *e = (reliq_expr*)exprs->v;
   const size_t size = exprs->size;
   for (size_t i = 0; i < size; i++)
-    reliq_efree(&e[i]);
+    reliq_efree_intr(&e[i]);
   flexarr_free(exprs);
 }
 
 void
-reliq_efree(reliq_expr *expr)
+reliq_efree_intr(reliq_expr *expr)
 {
   #ifdef RELIQ_EDITING
   format_free(expr->nodef,expr->nodefl);
@@ -63,6 +65,13 @@ reliq_efree(reliq_expr *expr)
     reliq_nfree((reliq_npattern*)expr->e);
     free(expr->e);
   }
+}
+
+void
+reliq_efree(reliq_expr *expr)
+{
+  reliq_efree_intr(expr);
+  free(expr);
 }
 
 /*static void //just for debugging
@@ -732,7 +741,7 @@ tokens_free(token *tokens, const size_t tokensl)
 }
 
 reliq_error *
-reliq_ecomp(const char *src, const size_t size, reliq_expr *expr)
+reliq_ecomp_intr(const char *src, const size_t size, reliq_expr *expr)
 {
   reliq_error *err = NULL;
 
@@ -761,4 +770,15 @@ reliq_ecomp(const char *src, const size_t size, reliq_expr *expr)
     }
   }
   return err;
+}
+
+reliq_error *
+reliq_ecomp(const char *src, const size_t size, reliq_expr **expr)
+{
+  reliq_expr e;
+  reliq_error *err = reliq_ecomp_intr(src,size,&e);
+  if (err)
+    return err;
+  *expr = memcpy(malloc(sizeof(reliq_expr)),&e,sizeof(reliq_expr));
+  return NULL;
 }

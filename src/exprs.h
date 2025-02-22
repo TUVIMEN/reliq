@@ -47,6 +47,27 @@
 
 #include "output.h"
 
+struct reliq_expr {
+  reliq_output_field outfield;
+  void *e; //either points to flexarr*(reliq_expr) or reliq_npattern
+  #ifdef RELIQ_EDITING
+  reliq_format_func *nodef; //node format
+  reliq_format_func *exprf; //expression format
+  #else
+  char *nodef;
+  #endif
+  size_t nodefl;
+  #ifdef RELIQ_EDITING
+  size_t exprfl;
+  #endif
+  uint16_t childfields;
+  uint16_t childformats;
+  uint8_t flags; //EXPR_
+};
+
 reliq_error *expr_check_chain(const reliq_expr *expr);
+
+void reliq_efree_intr(reliq_expr *expr);
+reliq_error *reliq_ecomp_intr(const char *src, const size_t size, reliq_expr *expr);
 
 #endif

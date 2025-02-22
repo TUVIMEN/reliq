@@ -35,6 +35,7 @@ struct reliq_format_func {
   void *arg[4];
   uint8_t flags; //FORMAT_
 };
+typedef struct reliq_format_func reliq_format_func;
 
 reliq_error *format_exec(char *input, size_t inputl, SINK *output, const reliq_chnode *hnode, const reliq_chnode *parent, const reliq_format_func *format, const size_t formatl, const reliq *rq);
 void format_free(reliq_format_func *format, const size_t formatl);

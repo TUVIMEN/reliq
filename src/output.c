@@ -30,6 +30,7 @@
 #else
 #include "hnode_print.h"
 #endif
+#include "exprs.h"
 
 #define FCOLLECTOR_OUT_INC (1<<4)
 #define OUTFIELDS_INC (1<<4)

@@ -283,7 +283,7 @@ reliq_free_hook(reliq_hook *hook)
   if (flags&(H_RANGE_SIGNED|H_RANGE_UNSIGNED)) {
     range_free(&hook->match.range);
   } if (flags&H_EXPRS) {
-    reliq_efree(&hook->match.expr);
+    reliq_efree_intr(&hook->match.expr);
   } else if (flags&H_PATTERN)
     reliq_regfree(&hook->match.pattern);
 }
@@ -595,12 +595,12 @@ match_hook_handle_expr(const char *src, const size_t size, size_t *pos, reliq_ho
   size_t strl;
   if ((err = get_quoted(src,&i,size,' ',&str,&strl)) || !strl)
     goto ERR;
-  err = reliq_ecomp(str,strl,&hook->match.expr);
+  err = reliq_ecomp_intr(str,strl,&hook->match.expr);
   free(str);
   if (err)
     goto ERR;
   if ((err = expr_check_chain(&hook->match.expr))) {
-    reliq_efree(&hook->match.expr);
+    reliq_efree_intr(&hook->match.expr);
     goto ERR;
   }
 
@@ -694,7 +694,7 @@ match_hook_handle(const char *src, size_t *pos, const size_t size, reliq_hook *o
     if ((err = range_comp(src,&p,size,&hook.match.range)))
       goto ERR;
   } else if (hflags&H_EXPRS) {
-    HOOK_EXPECT(H_EXPRS); //not sure if it works
+    HOOK_EXPECT(H_EXPRS);
     if ((err = match_hook_handle_expr(src,size,&p,&hook)))
       goto ERR;
   } else {
@@ -776,7 +776,7 @@ node_matches_type_conflict(const uint8_t type1, const uint8_t type2)
 
 static reliq_error * get_node_matches(const char *src, size_t *pos, const size_t size, const uint16_t lvl, reliq_node_matches *matches, uchar *hastag, reliq_range *position, uint16_t *nodeflags, const uint8_t prevtype);
 
-static inline uchar //i run out of names
+static inline uchar //i've run out of names
 node_matches_type_text_pure(const uint8_t type)
 {
     return (type == NM_TEXT || type == NM_TEXT_NOERR || type == NM_TEXT_ERR);
@@ -832,7 +832,6 @@ get_group_matches(const char *src, size_t *pos, const size_t size, const uint16_
     }
     wastag = tag;
 
-    //if (match->type >= NM_TEXT && match->type <= NM_TEXT_ALL && matches->type
     node_matches_type_merge(match->type,&type_acc);
 
     if (i >= size || src[i] != '(') {

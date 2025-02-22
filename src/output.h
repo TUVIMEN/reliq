@@ -31,6 +31,10 @@ struct fcollector_expr {
   unsigned char isnodef;
 };
 
+#ifdef RELIQ_EDITING
+typedef struct reliq_format_func reliq_format_func;
+#endif
+
 #define OUTFIELDCODE_OFFSET (UINT32_MAX-6)
 #define OUTFIELDCODE(z) (((z) <= OUTFIELDCODE_OFFSET) ? 0 : (z)-OUTFIELDCODE_OFFSET)
 
