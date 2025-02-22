@@ -30,7 +30,7 @@
 #define BUF_SIZE (1<<12)
 
 struct htmlcode {
-  reliq_cstr8 name;
+  cstr8 name;
   char *val;
 };
 

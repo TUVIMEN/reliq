@@ -35,7 +35,7 @@
 typedef reliq_error *(*reliq_format_function_t)(char*,size_t,SINK*,const void*[4],const uint8_t);
 
 struct reliq_format_function {
-  reliq_cstr8 name;
+  cstr8 name;
   reliq_format_function_t func;
 };
 

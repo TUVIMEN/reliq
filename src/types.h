@@ -27,6 +27,11 @@
 
 typedef unsigned char uchar;
 
+typedef struct {
+  char *const b;
+  uint8_t s;
+} cstr8;
+
 #include "reliq.h"
 
 #endif

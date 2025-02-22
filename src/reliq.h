@@ -55,11 +55,6 @@ extern "C" {
 #define RELIQ_ERROR_SCRIPT 15
 
 typedef struct {
-  char *const b;
-  uint8_t s;
-} reliq_cstr8;
-
-typedef struct {
   char *b;
   size_t s;
 } reliq_str;
@@ -82,6 +77,7 @@ typedef struct {
   uint32_t keyl RELIQ_HTML_OTHERSIZE(8,8);
 } reliq_cattrib; //compressed reliq_attrib, can be converted to reliq_attrib with reliq_cattrib_conv()
 #pragma pack(pop)
+extern const uint8_t reliq_cattrib_sz;
 
 typedef struct {
   char msg[RELIQ_ERROR_MESSAGE_LENGTH];
@@ -133,6 +129,7 @@ typedef struct {
   uint32_t comment_count : 28;
 } reliq_chnode;
 #pragma pack(pop)
+extern const uint8_t reliq_chnode_sz;
 
 #pragma pack(push,1)
 /*Is used when passing around by reliq_exec functions, it holds parent

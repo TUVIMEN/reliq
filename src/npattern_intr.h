@@ -82,7 +82,7 @@
 #include "npattern.h"
 
 struct hook_t {
-  reliq_cstr8 name;
+  cstr8 name;
   uint16_t flags; //H_
   uintptr_t arg;
 };

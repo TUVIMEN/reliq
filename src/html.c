@@ -31,40 +31,40 @@
 #define ATTRIB_INC (1<<13)
 #define NODES_INC (1<<13)
 
-const reliq_cstr8 selfclosing_s[] = { //tags that don't end with </tag>
+const cstr8 selfclosing_s[] = { //tags that don't end with </tag>
   {"br",2},{"img",3},{"input",5},{"link",4},{"meta",4},{"hr",2},{"col",3},{"embed",5},
   {"area",4},{"base",4},{"param",5},
   {"source",6},{"track",5},{"wbr",3},{"command",7},
   {"keygen",6},{"menuitem",8}
 };
 
-const reliq_cstr8 script_s[] = { //tags which insides should be ommited
+const cstr8 script_s[] = { //tags which insides should be ommited
   {"script",6},{"style",5}
 };
 
 #ifdef RELIQ_AUTOCLOSING
-const reliq_cstr8 *autoclosing_s[] = { //tags that don't need to be closed
-  (const reliq_cstr8[]){{"p",1},{"p",1},{"div",3},{"ul",2},{"h1",2},{"h2",2},{"h3",2},{"h4",2},{"h5",2},{"h6",2},{"dl",2},{"dd",2},{"dt",2},{"header",6},{"article",7},{"aside",5},{"footer",6},{"hr",2},{"main",4},{"menu",4},{"nav",3},{"ol",2},{"pre",3},{"section",7},{"table",5},{"form",4},{"blockquote",10},{"details",7},{"address",7},{"fieldset",8},{"figcaption",10},{"caption",7},{"figure",6},{"hgroup",6},{"search",6},{NULL,0}},
-  (const reliq_cstr8[]){{"li",2},{"li",2},{NULL,0}},
-  (const reliq_cstr8[]){{"tr",2},{"tr",2},{NULL,0}},
-  (const reliq_cstr8[]){{"td",2},{"td",2},{"th",2},{NULL,0}},
-  (const reliq_cstr8[]){{"th",2},{"th",2},{"td",2},{NULL,0}},
-  (const reliq_cstr8[]){{"dt",2},{"dt",2},{"dd",2},{NULL,0}},
-  (const reliq_cstr8[]){{"dd",2},{"dd",2},{"dt",2},{NULL,0}},
-  (const reliq_cstr8[]){{"table",5},{"table",5},{NULL,0}},
-  (const reliq_cstr8[]){{"thead",5},{"tbody",5},{"tfoot",5},{NULL,0}},
-  (const reliq_cstr8[]){{"tbody",5},{"tbody",5},{"tfoot",5},{NULL,0}},
-  (const reliq_cstr8[]){{"tfoot",5},{"thead",5},{"tbody",5},{NULL,0}},
-  (const reliq_cstr8[]){{"rt",2},{"rt",2},{"rp",2},{NULL,0}},
-  (const reliq_cstr8[]){{"rp",2},{"rp",2},{"rt",2},{NULL,0}},
-  (const reliq_cstr8[]){{"optgroup",8},{"optgroup",8},{"hr",2},{NULL,0}},
-  (const reliq_cstr8[]){{"option",6},{"option",6},{"optgroup",8},{"tr",2},{NULL,0}},
-  (const reliq_cstr8[]){{"colgroup",8},{"colgroup",8},{NULL,0}},
+const cstr8 *autoclosing_s[] = { //tags that don't need to be closed
+  (const cstr8[]){{"p",1},{"p",1},{"div",3},{"ul",2},{"h1",2},{"h2",2},{"h3",2},{"h4",2},{"h5",2},{"h6",2},{"dl",2},{"dd",2},{"dt",2},{"header",6},{"article",7},{"aside",5},{"footer",6},{"hr",2},{"main",4},{"menu",4},{"nav",3},{"ol",2},{"pre",3},{"section",7},{"table",5},{"form",4},{"blockquote",10},{"details",7},{"address",7},{"fieldset",8},{"figcaption",10},{"caption",7},{"figure",6},{"hgroup",6},{"search",6},{NULL,0}},
+  (const cstr8[]){{"li",2},{"li",2},{NULL,0}},
+  (const cstr8[]){{"tr",2},{"tr",2},{NULL,0}},
+  (const cstr8[]){{"td",2},{"td",2},{"th",2},{NULL,0}},
+  (const cstr8[]){{"th",2},{"th",2},{"td",2},{NULL,0}},
+  (const cstr8[]){{"dt",2},{"dt",2},{"dd",2},{NULL,0}},
+  (const cstr8[]){{"dd",2},{"dd",2},{"dt",2},{NULL,0}},
+  (const cstr8[]){{"table",5},{"table",5},{NULL,0}},
+  (const cstr8[]){{"thead",5},{"tbody",5},{"tfoot",5},{NULL,0}},
+  (const cstr8[]){{"tbody",5},{"tbody",5},{"tfoot",5},{NULL,0}},
+  (const cstr8[]){{"tfoot",5},{"thead",5},{"tbody",5},{NULL,0}},
+  (const cstr8[]){{"rt",2},{"rt",2},{"rp",2},{NULL,0}},
+  (const cstr8[]){{"rp",2},{"rp",2},{"rt",2},{NULL,0}},
+  (const cstr8[]){{"optgroup",8},{"optgroup",8},{"hr",2},{NULL,0}},
+  (const cstr8[]){{"option",6},{"option",6},{"optgroup",8},{"tr",2},{NULL,0}},
+  (const cstr8[]){{"colgroup",8},{"colgroup",8},{NULL,0}},
 };
 
 /* tags from which no closing tag can escape
    e.g. <div><table></div></table></div> is valid because of it. */
-const reliq_cstr8 inescapable_s[] = {
+const cstr8 inescapable_s[] = {
     {"table",5}
 };
 #endif
@@ -102,11 +102,11 @@ comment_handle(const char *f, size_t *pos, const size_t s, reliq_chnode *hn)
   }
 
   if (s-i > diff) {
-      hn->endtag = i-base;
-      i += diff+1;
+    hn->endtag = i-base;
+    i += diff+1;
   } else {
-      i = s-1;
-      hn->endtag = i-base;
+    i = s-1;
+    hn->endtag = i-base;
   }
   hn->all_len = i-hn->all;
   *pos = i;
@@ -184,6 +184,39 @@ attrib_handle(const char *f, size_t *pos, const size_t s, flexarr *attribs) //at
 }
 
 #ifdef RELIQ_PHPTAGS
+static uchar
+phptag_skip_dquote(const char *f, size_t *pos, const size_t s)
+{
+  size_t n,jumpv;
+  size_t i = *pos;
+  uchar err = 0;
+
+  while (1) {
+    char *ending = memchr(f+i,'"',s-i);
+    if (!ending) {
+      i = s;
+      err = 1;
+      goto END;
+    }
+    jumpv = ending-f-i;
+    if (!jumpv) {
+      i++;
+      break;
+    }
+    i = ending-f;
+    n = 1;
+    while (jumpv && f[i-n] == '\\')
+      n++;
+    if ((n-1)&1)
+      continue;
+    break;
+  }
+
+  END: ;
+  *pos = i;
+  return err;
+}
+
 static uint32_t
 phptag_handle(const char *f, size_t *pos, const size_t s, reliq_chnode *hnode, flexarr *nodes) //nodes: reliq_chnode
 {
@@ -213,26 +246,8 @@ phptag_handle(const char *f, size_t *pos, const size_t s, reliq_chnode *hnode, f
     }
     if (unlikely(f[i] == '"')) {
       i++;
-      size_t n,jumpv;
-      while (1) {
-        ending = memchr(f+i,'"',s-i);
-        if (!ending) {
-          i = s;
-          goto END;
-        }
-        jumpv = ending-f-i;
-        if (!jumpv) {
-          i++;
-          break;
-        }
-        i = ending-f;
-        n = 1;
-        while (jumpv && f[i-n] == '\\')
-          n++;
-        if ((n-1)&1)
-          continue;
-        break;
-      }
+      if (phptag_skip_dquote(f,&i,s))
+        goto END;
     } else if (unlikely(f[i] == '\'')) {
       i++;
       ending = memchr(f+i,'\'',s-i);
@@ -313,6 +328,120 @@ text_finish(size_t *tnindex, flexarr *nodes, const size_t textstart, const size_
   *tnindex = -1;
 }
 
+static void
+text_add(html_state *st, const uint16_t lvl, size_t *tnindex)
+{
+  st->text_count++;
+  reliq_chnode *tn = flexarr_incz(st->nodes);
+  tn->attribs = last_attrib(st->attribs);
+  tn->lvl = lvl;
+  *tnindex = tn-((reliq_chnode*)st->nodes->v);
+}
+
+#ifdef RELIQ_AUTOCLOSING
+static uchar
+autocloses(const char *f, size_t pos, const size_t s, const uchar autoclosing)
+{
+  if (autoclosing == (uchar)-1)
+    return 0;
+
+  const cstr8 *arr = autoclosing_s[autoclosing];
+  reliq_cstr name;
+
+  while_is(isspace,f,pos,s);
+  tagname_handle(f,&pos,s,&name);
+  if (!name.s)
+    return 0;
+
+  for (uchar j = 1; arr[j].b; j++)
+    if (strcasecomp(arr[j],name))
+      return 1;
+
+  return 0;
+}
+#endif
+
+static uchar
+ancestor_ending(const char *f, size_t *pos, reliq_cstr endname, const reliq_chnode *nodesv, const size_t hnindex, reliq_chnode *hnode, const uint16_t lvl, const size_t tagend, const size_t base, uint32_t *fallback)
+{
+  for (size_t j = hnindex-1;; j--) {
+    if (nodesv[j].tagl == 0 || nodesv[j].all_len || nodesv[j].lvl >= lvl) {
+      if (!j)
+        break;
+
+      continue;
+    }
+    reliq_cstr tag = { .b = f+nodesv[j].all+nodesv[j].tag, .s = nodesv[j].tagl };
+    if (strcasecomp(tag,endname)) {
+      *pos = tagend;
+      hnode->endtag = *pos-base;
+      *fallback = lvl-nodesv[j].lvl;
+      return 1;
+    }
+
+    #ifdef RELIQ_AUTOCLOSING
+    if (isinescapable(tag))
+      return 0;
+    #endif
+
+    if (!j || !nodesv[j].lvl)
+      break;
+  }
+  return 0;
+}
+
+static uchar
+handle_ending(html_state *st, size_t *pos, reliq_cstr tagname, const size_t hnindex, uint32_t *htmlerr, struct tag_info *info, const uint16_t lvl, const size_t tagend, const size_t base, uint32_t *fallback)
+{
+  uchar end = 0;
+  size_t i = *pos;
+  reliq_cstr endname;
+  const char *f = st->f;
+  const size_t s = st->s;
+  reliq_chnode *nodesv = (reliq_chnode*)st->nodes->v;
+  reliq_chnode *hnode = nodesv+hnindex;
+  tagname_handle(f,&i,s,&endname);
+
+  if (unlikely(!endname.s)) {
+    i++;
+    goto END;
+  }
+
+  if (strcasecomp(tagname,endname)) {
+    hnode->endtag = tagend-base;
+    while (i < s && f[i] != '>')
+      i++;
+
+    if (unlikely(i >= s)) {
+      i = s;
+      hnode->all_len = s-hnode->all;
+      htmlerr++;
+      end = 1;
+      goto END;
+    }
+
+    hnode->all_len = i+1-hnode->all;
+    end = 1;
+    goto END;
+  }
+
+  if (unlikely(hnode->lvl == 0 || !hnindex)) {
+    info->foundend = 0;
+    goto END;
+  }
+
+  #ifdef RELIQ_AUTOCLOSING
+  if (isinescapable(tagname))
+    goto END;
+  #endif
+
+  end = ancestor_ending(f,&i,endname,nodesv,hnindex,hnode,lvl,tagend,base,fallback);
+
+  END: ;
+  *pos = i;
+  return end;
+}
+
 static uchar
 tag_insides_handle(size_t *pos, const size_t hnindex, uint32_t *fallback, struct tag_info *taginfo, html_state *st)
 {
@@ -341,18 +470,12 @@ tag_insides_handle(size_t *pos, const size_t hnindex, uint32_t *fallback, struct
       i++;
     textend = i;
 
-    if (textstart != i && tnindex == (size_t)-1) {
-      st->text_count++;
-      reliq_chnode *tn = flexarr_incz(nodes);
-      tn->attribs = last_attrib(st->attribs);
-      tn->lvl = lvl+1;
-      tnindex = tn-((reliq_chnode*)nodes->v);
-    }
+    if (textstart != i && tnindex == (size_t)-1)
+      text_add(st,lvl+1,&tnindex);
 
     if (i >= s)
       break;
 
-    hnode = ((reliq_chnode*)nodes->v)+hnindex;
     FINAL_TAG_END: ;
     tagend=i;
     i++;
@@ -361,65 +484,8 @@ tag_insides_handle(size_t *pos, const size_t hnindex, uint32_t *fallback, struct
       i++;
       while_is(isspace,f,i,s);
 
-      reliq_cstr endname;
-      tagname_handle(f,&i,s,&endname);
-      if (unlikely(!endname.s)) {
-        i++;
-        goto TEXT_REPEAT;
-      }
-
-      if (strcasecomp(tagname,endname)) {
-        hnode->endtag = tagend-base;
-        while (i < s && f[i] != '>')
-          i++;
-
-        if (unlikely(i >= s)) {
-          i = s;
-          hnode->all_len = s-hnode->all;
-          htmlerr++;
-          goto END;
-        }
-
-        hnode->all_len = i+1-hnode->all;
+      if (handle_ending(st,&i,tagname,hnindex,&htmlerr,taginfo,lvl,tagend,base,fallback))
         goto END;
-      }
-
-      reliq_chnode *nodesv = (reliq_chnode*)nodes->v;
-
-      if (unlikely(hnode->lvl == 0 || !hnindex)) {
-        taginfo->foundend = 0;
-        goto TEXT_REPEAT;
-      }
-
-      #ifdef RELIQ_AUTOCLOSING
-      if (isinescapable(tagname))
-        goto TEXT_REPEAT;
-      #endif
-
-      for (size_t j = hnindex-1;; j--) {
-        if (nodesv[j].tagl == 0 || nodesv[j].all_len || nodesv[j].lvl >= lvl) {
-          if (!j)
-            break;
-
-          continue;
-        }
-        reliq_cstr tag = { .b = f+nodesv[j].all+nodesv[j].tag, .s = nodesv[j].tagl };
-        if (strcasecomp(tag,endname)) {
-          i = tagend;
-          hnode->endtag = i-base;
-          *fallback = lvl-nodesv[j].lvl;
-          goto END;
-        }
-
-        #ifdef RELIQ_AUTOCLOSING
-        if (isinescapable(tag))
-          goto TEXT_REPEAT;
-        #endif
-
-        if (!j || !nodesv[j].lvl)
-          break;
-      }
-
       goto TEXT_REPEAT;
     }
 
@@ -437,21 +503,12 @@ tag_insides_handle(size_t *pos, const size_t hnindex, uint32_t *fallback, struct
       }
 
       #ifdef RELIQ_AUTOCLOSING
-      if (taginfo->autoclosing != (uchar)-1) {
-        const reliq_cstr8 *arr = autoclosing_s[taginfo->autoclosing];
-        reliq_cstr name;
-
-        while_is(isspace,f,i,s);
-        tagname_handle(f,&i,s,&name);
-
-        for (uchar j = 1; arr[j].b; j++) {
-          if (strcasecomp(arr[j],name)) {
-            hnode->endtag = tagend-base;
-            hnode->all_len = tagend-hnode->all;
-            i = tagend-1;
-            goto END;
-          }
-        }
+      if (autocloses(f,i,s,taginfo->autoclosing)) {
+        hnode = ((reliq_chnode*)nodes->v)+hnindex;
+        hnode->endtag = tagend-base;
+        hnode->all_len = tagend-hnode->all;
+        i = tagend-1;
+        goto END;
       }
       #endif
       i = tagend;
@@ -531,6 +588,35 @@ attribs_handle(const char *f, size_t *pos, const size_t s, reliq_chnode *hnode, 
   return ended;
 }
 
+static uchar
+find_tag_info(reliq_cstr tagname, struct tag_info *info)
+{
+  #define search_array(x,y) for (uchar _j = 0; _j < (uchar)LENGTH(x); _j++) \
+    if (strcasecomp(x[_j],y))
+
+  search_array(selfclosing_s,tagname)
+    return 1;
+
+  search_array(script_s,tagname) {
+    info->script = 1;
+    return 0;
+  }
+
+  #undef search_array
+
+  #ifdef RELIQ_AUTOCLOSING
+  info->autoclosing = -1;
+  for (uchar j = 0; j < (uchar)LENGTH(autoclosing_s); j++) {
+    if (strcasecomp(autoclosing_s[j][0],tagname)) {
+      info->autoclosing = j;
+      return 0;
+    }
+  }
+  #endif
+
+  return 0;
+}
+
 static uint32_t
 html_struct_handle(size_t *pos, const uint16_t lvl, html_state *st)
 {
@@ -598,30 +684,11 @@ html_struct_handle(size_t *pos, const uint16_t lvl, html_state *st)
   if (attribs_handle(f,&i,s,hnode,attribs) || i >= s)
     goto END;
 
-  #define search_array(x,y) for (uchar _j = 0; _j < (uchar)LENGTH(x); _j++) \
-    if (strcasecomp(x[_j],y))
-
-  search_array(selfclosing_s,tagname) {
+  if (find_tag_info(tagname,&taginfo)) {
     hnode->all_len = i-hnode->all+1;
     goto END;
   }
 
-  search_array(script_s,tagname) {
-    taginfo.script = 1;
-    goto FOUND_AND_SKIP_OTHERS;
-  }
-
-  #ifdef RELIQ_AUTOCLOSING
-  taginfo.autoclosing = -1;
-  for (uchar j = 0; j < (uchar)LENGTH(autoclosing_s); j++) {
-    if (strcasecomp(autoclosing_s[j][0],tagname)) {
-      taginfo.autoclosing = j;
-      goto FOUND_AND_SKIP_OTHERS;
-    }
-  }
-  #endif
-
-  FOUND_AND_SKIP_OTHERS: ;
   i++;
 
   if (tag_insides_handle(&i,hnindex,&fallback,&taginfo,st)) {
@@ -678,12 +745,8 @@ html_handle(const char *data, const size_t size, reliq_chnode **nodes, size_t *n
     textend = i;
     if (textstart != textend) {
       htmlerr++;
-      if (tnindex == (size_t)-1) {
-        reliq_chnode *tn = flexarr_incz(nodes_buffer);
-        tn->attribs = last_attrib(attribs_buffer);
-        st.text_count++;
-        tnindex = tn-((reliq_chnode*)nodes_buffer->v);
-      }
+      if (tnindex == (size_t)-1)
+        text_add(&st,0,&tnindex);
     }
 
     while (i < size && data[i] == '<') {
