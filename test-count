@@ -1,0 +1,3 @@
+#!/bin/bash
+
+grep -h -E '^[0-9a-f]{32},' $(find test -type f -name '*.test') | wc -l
