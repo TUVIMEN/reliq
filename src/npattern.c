@@ -448,26 +448,26 @@ reliq_node_matched_match_type(const uint8_t hnode_type, const uint8_t type)
   if (type == NM_COMMENT)
     return (hnode_type == RELIQ_HNODE_TYPE_COMMENT);
 
-  if (type == NM_TEXT_ALL)
-    return (hnode_type == RELIQ_HNODE_TYPE_TEXT);
-
+  uchar istext = (hnode_type == RELIQ_HNODE_TYPE_TEXT);
+  uchar istexterr = (hnode_type == RELIQ_HNODE_TYPE_TEXT_ERR);
   uchar istextempty = (hnode_type == RELIQ_HNODE_TYPE_TEXT_EMPTY);
+  if (type == NM_TEXT_ALL)
+    return (istext || istexterr || istextempty);
+
   if (type == NM_TEXT_EMPTY)
     return istextempty;
 
-  uchar istexterr = (hnode_type == RELIQ_HNODE_TYPE_TEXT_ERR);
   if (type == NM_TEXT_ERR)
     return istexterr;
 
-  uchar istextnoerr = (hnode_type == RELIQ_HNODE_TYPE_TEXT);
   if (type == NM_TEXT_NOERR)
-    return istextnoerr;
+    return istext;
 
   if (type == NM_TEXT)
-    return (istexterr|istextnoerr);
+    return (istexterr|istext);
 
   //if (type == NM_TEXT_ALL)
-  return (istextempty|istexterr|istextnoerr);
+  return (istextempty|istexterr|istext);
 }
 
 static int
@@ -920,7 +920,7 @@ match_hook_add(const char *src, size_t *pos, const size_t size, const uchar inve
 
   const uint16_t hflags = hook.hook->flags;
 
-  if (hflags&H_TYPE || hflags&H_ACCESS) { //function()
+  if (hflags&(H_TYPE|H_ACCESS)) {
     if ((*err = match_hook_add_access_type(*pos,&hook,invert,fullmode,nodeflags,typehooks_count,type,result)))
       goto ERR;
     goto END;

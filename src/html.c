@@ -684,7 +684,7 @@ html_handle(const char *data, const size_t size, reliq_chnode **nodes, size_t *n
         st.text_count++;
         tnindex = tn-((reliq_chnode*)nodes_buffer->v);
       }
-  }
+    }
 
     while (i < size && data[i] == '<') {
       uint32_t r = html_struct_handle(&i,0,&st);
