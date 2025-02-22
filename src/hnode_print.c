@@ -21,7 +21,6 @@
 #include "ctype.h"
 #include "htmlescapecodes.h"
 #include "utils.h"
-#include "hnode.h"
 #include "hnode_print.h"
 
 #define PC_UNTRIM 0x1
@@ -58,6 +57,19 @@ print_attribs(const reliq *rq, const reliq_cattrib *attribs, const uint32_t attr
 }
 
 static void
+print_attrib_value_text(const reliq *rq, const reliq_cattrib *attribs, const size_t attribsl, const char *text, const size_t textl, const uint8_t flags, SINK *outfile)
+{
+  const reliq_cattrib *a = attribs;
+  for (size_t i = 0; i < attribsl; i++) {
+    char const *base = rq->data+a[i].key;
+    if (memcomp(base,text,textl,a[i].keyl)) {
+      base += a[i].keyl+a[i].value;
+      print_chars(base,a[i].valuel,flags,outfile);
+    }
+  }
+}
+
+static void
 print_attrib_value(const reliq *rq, const reliq_cattrib *attribs, const size_t attribsl, const char *text, const size_t textl, const int num, const uint8_t flags, SINK *outfile)
 {
   const reliq_cattrib *a = attribs;
@@ -67,13 +79,7 @@ print_attrib_value(const reliq *rq, const reliq_cattrib *attribs, const size_t a
       print_chars(base,a[num].valuel,flags,outfile);
     }
   } else if (textl != 0) {
-    for (size_t i = 0; i < attribsl; i++) {
-      char const *base = rq->data+a[i].key;
-      if (memcomp(base,text,textl,a[i].keyl)) {
-        base += a[i].keyl+a[i].value;
-        print_chars(base,a[i].valuel,flags,outfile);
-      }
-    }
+    print_attrib_value_text(rq,a,attribsl,text,textl,flags,outfile);
   } else for (size_t i = 0; i < attribsl; i++) {
     char const *base = rq->data+a[i].key+a[i].keyl+a[i].value;
     print_chars(base,a[i].valuel,flags,outfile);
@@ -94,7 +100,7 @@ print_text(const reliq *rq, const reliq_chnode *hnode, uint8_t flags, SINK *outf
   for (size_t i = 1; i <= size; i++) {
     const reliq_chnode *n = hnode+i;
 
-    uint8_t type = chnode_type(n);
+    uint8_t type = reliq_chnode_type(n);
     if (type == RELIQ_HNODE_TYPE_TEXT || type == RELIQ_HNODE_TYPE_TEXT_ERR || type == RELIQ_HNODE_TYPE_TEXT_EMPTY) {
       print_chars(data+n->all,n->all_len,flags,outfile);
     } else if (recursive && type == RELIQ_HNODE_TYPE_TAG)
@@ -112,7 +118,7 @@ chnode_printf(SINK *outfile, const char *format, const size_t formatl, const rel
   size_t textl=0;
   int num = -1;
   reliq_hnode hnode;
-  chnode_conv(rq,chnode,&hnode);
+  reliq_chnode_conv(rq,chnode,&hnode);
 
   while (i < formatl) {
     if (format[i] == '\\') {

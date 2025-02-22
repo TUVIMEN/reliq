@@ -80,7 +80,7 @@ typedef struct {
   uint32_t valuel RELIQ_HTML_OTHERSIZE(24,16);
   uint32_t value RELIQ_HTML_OTHERSIZE(8,8); // value+key+keyl
   uint32_t keyl RELIQ_HTML_OTHERSIZE(8,8);
-} reliq_cattrib; //compressed reliq_attrib
+} reliq_cattrib; //compressed reliq_attrib, can be converted to reliq_attrib with reliq_cattrib_conv()
 #pragma pack(pop)
 
 typedef struct {
@@ -107,6 +107,15 @@ typedef struct {
 } reliq_hnode; //html node
 
 #pragma pack(push,1)
+/*
+    compressed reliq_hnode, can be converted to reliq_hnode with reliq_chnode_conv()
+
+    Most fields are indexes of rq->data starting from .all codependent on each other
+    This means that to get the start of the tag you should use rq->data+chnode->all
+    To get tag you should use rq->data+chnode->all+chnode->tag
+    To get the start of the ending tag you should use rq->data+rq->all+rq->tag+rq->tagl
+    +rq->endtag
+*/
 typedef struct {
   uint32_t all;
   uint32_t all_len; //length of all
@@ -122,10 +131,17 @@ typedef struct {
   uint32_t tag_count : 30;
   uint32_t text_count : 30;
   uint32_t comment_count : 28;
-} reliq_chnode; //compressed reliq_hnode
+} reliq_chnode;
 #pragma pack(pop)
 
 #pragma pack(push,1)
+/*Is used when passing around by reliq_exec functions, it holds parent
+  inherited from previous expression.
+
+  It's also used to define structure for nodes_output, then .hnode
+  stores small integers subtracted from UINT32_MAX, and .parent stores
+  pointer to reliq_output_field
+*/
 typedef struct {
   uint32_t hnode;
   uintptr_t parent; //uint32_t
@@ -140,7 +156,6 @@ typedef struct {
   unsigned char isset;
 } reliq_output_field;
 
-typedef struct reliq_npattern reliq_npattern;
 typedef struct reliq_expr reliq_expr;
 
 typedef struct {
@@ -154,15 +169,20 @@ typedef struct {
   size_t attribsl;
 } reliq;
 
-int reliq_std_free(void *addr, size_t len); //mapping to free(3) that can be used for freedata
+int reliq_std_free(void *addr, size_t len); //mapping to free(3) that can be used for reliq.freedata
 
 reliq_error *reliq_init(const char *data, const size_t size, reliq *rq);
 int reliq_free(reliq *rq);
 
+uint32_t reliq_chnode_attribsl(const reliq *rq, const reliq_chnode *hnode);
+uint32_t reliq_chnode_insides(const reliq *rq, const reliq_chnode *hnode, const uint8_t type);
+uint8_t reliq_chnode_type(const reliq_chnode *c);
+void reliq_chnode_conv(const reliq *rq, const reliq_chnode *c, reliq_hnode *d);
+void reliq_cattrib_conv(const reliq *rq, const reliq_cattrib *c, reliq_attrib *d);
+
 reliq reliq_from_compressed(const reliq_compressed *compressed, const size_t compressedl, const reliq *rq);
 reliq reliq_from_compressed_independent(const reliq_compressed *compressed, const size_t compressedl, const reliq *rq);
 
-//expression
 reliq_error *reliq_ecomp(const char *script, const size_t size, reliq_expr **expr);
 
 reliq_error *reliq_exec_file(reliq *rq, FILE *output, const reliq_expr *expr);

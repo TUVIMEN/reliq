@@ -29,6 +29,8 @@
 #include "utils.h"
 #include "npattern.h"
 #include "format.h"
+#include "exprs.h"
+#include "reliq.h"
 
 #define PATTERN_SIZE_INC (1<<5)
 

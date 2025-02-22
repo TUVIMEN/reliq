@@ -16,16 +16,13 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef RELIQ_HNODE_H
-#define RELIQ_HNODE_H
+#ifndef RELIQ_NODE_EXEC_H
+#define RELIQ_NODE_EXEC_H
 
-#include "types.h"
+#include "reliq.h"
+#include "flexarr.h"
+#include "npattern.h"
 
-uint32_t chnode_attribsl(const reliq *rq, const reliq_chnode *hnode);
-uint32_t chnode_insides(const reliq *rq, const reliq_chnode *hnode, const uint8_t type);
-uint8_t chnode_type(const reliq_chnode *c);
-void chnode_conv(const reliq *rq, const reliq_chnode *c, reliq_hnode *d);
-void cattrib_conv(const reliq *rq, const reliq_cattrib *c, reliq_attrib *d);
+void node_exec(const reliq *rq, const reliq_chnode *parent, reliq_npattern *nodep, const flexarr *source, flexarr *dest); //source: reliq_compressed, dest: reliq_compressed
 
 #endif
-

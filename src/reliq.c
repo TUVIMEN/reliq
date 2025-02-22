@@ -26,8 +26,8 @@
 #include "sink.h"
 #include "utils.h"
 #include "html.h"
-#include "hnode.h"
 #include "npattern.h"
+#include "output.h"
 
 #define FROM_COMPRESSED_NODES_INC (1<<10)
 #define FROM_COMPRESSED_ATTRIBS_INC (1<<10)
@@ -144,7 +144,7 @@ convert_from_compressed_add_descendants(const reliq *rq, const reliq_chnode *roo
     const reliq_chnode *hnode = root+j;
     memcpy(new,hnode,sizeof(reliq_chnode));
 
-    uint32_t attribsl = chnode_attribsl(rq,hnode);
+    uint32_t attribsl = reliq_chnode_attribsl(rq,hnode);
     if (attribsl)
       flexarr_append(attribs,rq->attribs+hnode->attribs,attribsl);
 
@@ -196,7 +196,7 @@ convert_from_compressed(const reliq_compressed *compressed, const size_t compres
     const size_t nodessize = ret.nodesl;
     for (size_t i = 0; i < nodessize; i++) {
       reliq_chnode *hn = ret.nodes+i;
-      reliq_hnode_shift_finalize(ret.attribs,hn,ptr,chnode_attribsl(&ret,hn));
+      reliq_hnode_shift_finalize(ret.attribs,hn,ptr,reliq_chnode_attribsl(&ret,hn));
     }
   } else {
     ret.freedata = NULL;

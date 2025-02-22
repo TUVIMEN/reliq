@@ -21,89 +21,24 @@
 
 #include "pattern.h"
 #include "range.h"
-#include "types.h"
-#include "exprs.h"
 
-//reliq_npattern flags
-#define N_MATCHED_TYPE 0xf
-#define N_FULL 1
-#define N_SELF 2
-#define N_CHILD 3
-#define N_DESCENDANT 4
-#define N_ANCESTOR 5
-#define N_PARENT 6
-#define N_RELATIVE_PARENT 7
-#define N_SIBLING 8
-#define N_SIBLING_PRECEDING 9
-#define N_SIBLING_SUBSEQUENT 10
-#define N_FULL_SIBLING 11
-#define N_FULL_SIBLING_PRECEDING 12
-#define N_FULL_SIBLING_SUBSEQUENT 13
-
-#define N_EMPTY 0x10 //ignore matching
-#define N_POSITION_ABSOLUTE 0x20
-
-#define NM_DEFAULT 0
-#define NM_NODE 1
-#define NM_COMMENT 2
-#define NM_TEXT 3
-#define NM_TEXT_NOERR 4
-#define NM_TEXT_ERR 5
-#define NM_TEXT_EMPTY 6
-#define NM_TEXT_ALL 7
-#define NM_MULTIPLE 8
-
-typedef struct match_hook_t match_hook_t;
+typedef struct nmatchers_node nmatchers_node;
 
 typedef struct {
-  union {
-    reliq_expr expr;
-    reliq_pattern pattern;
-    reliq_range range;
-  } match;
-  const match_hook_t *hook;
-  uint8_t invert : 1;
-} reliq_hook;
-
-typedef struct reliq_node_matches reliq_node_matches;
-
-typedef struct {
-  reliq_node_matches *list;
-  size_t size;
-} reliq_node_matches_groups;
-
-typedef struct {
-  union {
-    reliq_hook *hook;
-    struct reliq_pattrib *attrib;
-    reliq_node_matches_groups *groups;
-  } data;
-  uint8_t type; //MATCHES_TYPE_
-} reliq_node_matches_node;
-
-struct reliq_node_matches {
-  reliq_node_matches_node *list;
+  nmatchers_node *list;
   size_t size;
   uint8_t type; //NM_
-};
+} nmatchers;
 
-struct reliq_pattrib {
-  reliq_pattern r[2];
-  reliq_range position;
-  uint8_t flags; //A_
-};
-
-typedef struct reliq_npattern reliq_npattern;
-struct reliq_npattern {
-  reliq_node_matches matches;
+typedef struct {
+  nmatchers matches;
   reliq_range position;
 
   uint32_t position_max;
   uint16_t flags; //N_
-};
+} reliq_npattern;
 
 reliq_error *reliq_ncomp(const char *script, const size_t size, reliq_npattern *nodep);
-void node_exec(const reliq *rq, const reliq_chnode *parent, reliq_npattern *nodep, const flexarr *source, flexarr *dest); //source: reliq_compressed, dest: reliq_compressed
 int reliq_nexec(const reliq *rq, const reliq_chnode *chnode, const reliq_chnode *parent, const reliq_npattern *nodep);
 void reliq_nfree(reliq_npattern *nodep);
 

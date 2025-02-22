@@ -30,6 +30,8 @@
 #include "npattern.h"
 #include "output.h"
 #include "format.h"
+#include "exprs.h"
+#include "node_exec.h"
 
 #define PASSED_INC (1<<8) //!! if increased causes huge allocation see val_mem1 file
 #define NCOLLECTOR_INC (1<<8)

@@ -17,11 +17,10 @@
 */
 
 #include "ext.h"
-
-#include "hnode.h"
+#include "reliq.h"
 
 uint32_t
-chnode_attribsl(const reliq *rq, const reliq_chnode *hnode)
+reliq_chnode_attribsl(const reliq *rq, const reliq_chnode *hnode)
 {
   size_t nextindex = hnode-rq->nodes+1;
   if (nextindex >= rq->nodesl)
@@ -32,7 +31,7 @@ chnode_attribsl(const reliq *rq, const reliq_chnode *hnode)
 }
 
 uint8_t
-chnode_type(const reliq_chnode *c)
+reliq_chnode_type(const reliq_chnode *c)
 {
   if (c->tag == 0) {
     if (c->endtag == 0) {
@@ -48,7 +47,7 @@ chnode_type(const reliq_chnode *c)
 }
 
 uint32_t
-chnode_insides(const reliq *rq, const reliq_chnode *hnode, const uint8_t type)
+reliq_chnode_insides(const reliq *rq, const reliq_chnode *hnode, const uint8_t type)
 {
   if (type == RELIQ_HNODE_TYPE_TEXT)
     return 0;
@@ -67,9 +66,9 @@ chnode_insides(const reliq *rq, const reliq_chnode *hnode, const uint8_t type)
 }
 
 void
-chnode_conv(const reliq *rq, const reliq_chnode *c, reliq_hnode *d)
+reliq_chnode_conv(const reliq *rq, const reliq_chnode *c, reliq_hnode *d)
 {
-  uint8_t type = chnode_type(c);
+  uint8_t type = reliq_chnode_type(c);
   d->type = type;
 
   char const *base = rq->data+c->all;
@@ -81,7 +80,7 @@ chnode_conv(const reliq *rq, const reliq_chnode *c, reliq_hnode *d)
   } else
     d->tag = (reliq_cstr){ .b = NULL, .s = 0 };
 
-  const uint32_t insides = chnode_insides(rq,c,type);
+  const uint32_t insides = reliq_chnode_insides(rq,c,type);
   if (insides == 0 && c->endtag == 0) {
     d->insides = (reliq_cstr){NULL,0};
   } else {
@@ -90,7 +89,7 @@ chnode_conv(const reliq *rq, const reliq_chnode *c, reliq_hnode *d)
   }
 
   d->attribs = c->attribs+rq->attribs;
-  d->attribsl = chnode_attribsl(rq,c);
+  d->attribsl = reliq_chnode_attribsl(rq,c);
   d->lvl = c->lvl;
   d->tag_count = c->tag_count;
   d->text_count = c->text_count;
@@ -98,7 +97,7 @@ chnode_conv(const reliq *rq, const reliq_chnode *c, reliq_hnode *d)
 }
 
 void
-cattrib_conv(const reliq *rq, const reliq_cattrib *c, reliq_attrib *d)
+reliq_cattrib_conv(const reliq *rq, const reliq_cattrib *c, reliq_attrib *d)
 {
   char const *base = rq->data+c->key;
   d->key = (reliq_cstr){ .b = base, .s = c->keyl };
