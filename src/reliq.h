@@ -145,14 +145,6 @@ typedef struct {
 } reliq_compressed;
 #pragma pack(pop)
 
-typedef struct {
-  reliq_str name;
-  char type;
-  char arr_delim;
-  char arr_type;
-  unsigned char isset;
-} reliq_output_field;
-
 typedef struct reliq_expr reliq_expr;
 
 typedef struct {

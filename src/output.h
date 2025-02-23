@@ -48,6 +48,14 @@ enum outfieldCode {
   ofBlockEnd //end of all the above
 };
 
+typedef struct {
+  reliq_str name;
+  char type;
+  char arr_delim;
+  char arr_type;
+  unsigned char isset;
+} reliq_output_field;
+
 reliq_error *reliq_output_field_comp(const char *src, size_t *pos, const size_t s, reliq_output_field *outfield);
 
 reliq_error *node_output(const reliq_chnode *hnode, const reliq_chnode *parent,
