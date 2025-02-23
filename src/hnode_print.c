@@ -147,8 +147,7 @@ chnode_printf(SINK *outfile, const char *format, const size_t formatl, const rel
         i = t-format+1;
       }
 
-      uint8_t printflags=0, //PC_
-        endinsides=0;
+      uint8_t printflags=0; //PC_
       char const *src;
       size_t srcl;
 
@@ -175,32 +174,20 @@ chnode_printf(SINK *outfile, const char *format, const size_t formatl, const rel
         case 'c': print_uint(hnode.tag_count,outfile); break;
         case 'C': print_chars(hnode.all.b,hnode.all.s,printflags|PC_UNTRIM,outfile); break;
         case 'S':
-          src = hnode.all.b;
-          if (hnode.insides.b) {
-            srcl = hnode.insides.b-hnode.all.b;
-          } else
-            srcl = hnode.all.s;
+          src = reliq_hnode_starttag(&hnode,&srcl);
           print_chars(src,srcl,printflags|PC_UNTRIM,outfile);
           break;
         case 'e':
-          endinsides = 1;
+          src = reliq_hnode_endtag_strip(&hnode,&srcl);
+          if (!src)
+            break;
+          print_chars(src,srcl,printflags,outfile);
+          break;
         case 'E':
-          if (!hnode.insides.b)
+          src = reliq_hnode_endtag(&hnode,&srcl);
+          if (!src)
             break;
-          srcl = hnode.all.s-(hnode.insides.b-hnode.all.b)-hnode.insides.s;
-          src = hnode.insides.b+hnode.insides.s;
-          if (!srcl)
-            break;
-          if (endinsides) {
-            if (srcl < 1)
-              break;
-            src++;
-            srcl--;
-            if (srcl > 0 && src[srcl-1] == '>')
-              srcl--;
-          }
-
-          print_chars(src,srcl,printflags|(endinsides ? 0 : PC_UNTRIM),outfile);
+          print_chars(src,srcl,printflags|PC_UNTRIM,outfile);
           break;
         case 'I': print_uint(hnode.all.b-rq->data,outfile); break;
         case 'p':

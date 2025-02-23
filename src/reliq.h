@@ -99,7 +99,7 @@ typedef struct {
   uint32_t text_count;
   uint32_t comment_count;
   uint16_t lvl;
-  uint8_t type : 3;
+  uint8_t type;
 } reliq_hnode; //html node
 
 #pragma pack(push,1)
@@ -176,6 +176,9 @@ uint32_t reliq_chnode_insides(const reliq *rq, const reliq_chnode *hnode, const 
 uint8_t reliq_chnode_type(const reliq_chnode *c);
 void reliq_chnode_conv(const reliq *rq, const reliq_chnode *c, reliq_hnode *d);
 void reliq_cattrib_conv(const reliq *rq, const reliq_cattrib *c, reliq_attrib *d);
+const char *reliq_hnode_starttag(const reliq_hnode *hn, size_t *len);
+const char *reliq_hnode_endtag(const reliq_hnode *hn, size_t *len);
+const char *reliq_hnode_endtag_strip(const reliq_hnode *hn, size_t *len);
 
 reliq reliq_from_compressed(const reliq_compressed *compressed, const size_t compressedl, const reliq *rq);
 reliq reliq_from_compressed_independent(const reliq_compressed *compressed, const size_t compressedl, const reliq *rq);

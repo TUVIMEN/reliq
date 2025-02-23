@@ -104,3 +104,36 @@ reliq_cattrib_conv(const reliq *rq, const reliq_cattrib *c, reliq_attrib *d)
   base += c->keyl+c->value;
   d->key = (reliq_cstr){ .b = base, .s = c->valuel };
 }
+
+const char *
+reliq_hnode_endtag(const reliq_hnode *hn, size_t *len)
+{
+  if (!hn->insides.b)
+    return NULL;
+  *len = hn->all.s-(hn->insides.b-hn->all.b)-hn->insides.s;
+  if (!*len)
+    return NULL;
+  return hn->insides.b+hn->insides.s;
+}
+
+const char *
+reliq_hnode_endtag_strip(const reliq_hnode *hn, size_t *len)
+{
+  char const *ret = reliq_hnode_endtag(hn,len);
+  if (!ret)
+    return ret;
+  ret++;
+  (*len)--;
+  if (*len > 0 && ret[*len-1] == '>')
+    (*len)--;
+  return ret;
+}
+
+const char *
+reliq_hnode_starttag(const reliq_hnode *hn, size_t *len)
+{
+  *len = (hn->insides.b)
+      ? (size_t)(hn->insides.b-hn->all.b)
+      : hn->all.s;
+  return hn->all.b;
+}
