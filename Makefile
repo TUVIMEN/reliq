@@ -94,7 +94,7 @@ options:
 	@echo "CC       = ${CC}"
 
 reliq-h:
-	@echo ${CFLAGS_D} | cat - src/reliq.h | sed '1{ s/ /\n/g; s/-D/#define /g; s/=/ /; h; d; }; /^\/\/#RELIQ_COMPILE_FLAGS/{ s/.*//;G;D; }' > reliq.h
+	@echo ${CFLAGS_D} | cat - src/reliq.h | sed '1{ s/ /\n/g; s/-D/#define /g; s/=/ /g; h; d; }; /^\/\/#RELIQ_COMPILE_FLAGS/{ s/.*//;G;D; }' > reliq.h
 
 
 lib: clean reliq-h
