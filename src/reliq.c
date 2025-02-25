@@ -65,14 +65,13 @@ reliq_free(reliq *rq)
 }
 
 static void
-reliq_hnode_shift(reliq_cattrib *attribs, reliq_chnode *node, const size_t pos, const uint32_t attribsstart, const uint32_t attribsl)
+reliq_chnode_shift(reliq_cattrib *attribs, reliq_chnode *node, const size_t pos, const uint32_t attribsl)
 {
-  uint32_t diff = node->all-pos;
+  uint32_t prev = node->all;
   node->all = pos;
-  node->attribs = attribsstart;
 
   for (size_t i = 0; i < attribsl; i++)
-    attribs[i].key -= diff;
+    attribs[i].key = (attribs[i].key-prev)+pos;
 }
 
 void
@@ -87,13 +86,14 @@ convert_from_compressed_add_descendants(const reliq *rq, const reliq_chnode *roo
     memcpy(new,hnode,sizeof(reliq_chnode));
 
     size_t prevattribsl = attribs->size;
+    new->attribs = prevattribsl;
     uint32_t attribsl = reliq_chnode_attribsl(rq,hnode);
     if (attribsl)
       flexarr_append(attribs,rq->attribs+hnode->attribs,attribsl);
 
     if (independent) {
       size_t tpos = pos+(hnode->all-root->all);
-      reliq_hnode_shift(((reliq_cattrib*)attribs->v)+prevattribsl,new,tpos,prevattribsl,attribsl);
+      reliq_chnode_shift(((reliq_cattrib*)attribs->v)+prevattribsl,new,tpos,attribsl);
     }
     new->lvl -= lvl;
   }

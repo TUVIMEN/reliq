@@ -102,7 +102,7 @@ reliq_cattrib_conv(const reliq *rq, const reliq_cattrib *c, reliq_attrib *d)
   char const *base = rq->data+c->key;
   d->key = (reliq_cstr){ .b = base, .s = c->keyl };
   base += c->keyl+c->value;
-  d->key = (reliq_cstr){ .b = base, .s = c->valuel };
+  d->value = (reliq_cstr){ .b = base, .s = c->valuel };
 }
 
 const char *
