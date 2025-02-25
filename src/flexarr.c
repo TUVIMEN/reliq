@@ -56,10 +56,10 @@ flexarr_inc(flexarr *f)
 void *
 flexarr_incz(flexarr *f)
 {
-    void *v = flexarr_inc(f);
-    if (unlikely(!v))
-        return v;
-    return memset(v,0,f->elsize);
+  void *v = flexarr_inc(f);
+  if (unlikely(!v))
+      return v;
+  return memset(v,0,f->elsize);
 }
 
 void *
@@ -70,15 +70,14 @@ flexarr_append(flexarr *f, const void *v, const size_t count)
 
   size_t free_space = f->asize-f->size;
   if (unlikely(free_space < count)) {
-    size_t needed=(count-free_space),n=needed/f->inc_r;
-    if (likely(needed%f->inc_r))
-      n++;
+    const size_t needed=(count-free_space);
+    const size_t n=(needed/f->inc_r) + (needed%f->inc_r != 0);
     f->asize += n*f->inc_r;
     f->v = flexarr_realloc(f->v,f->asize*f->elsize);
     if (unlikely(f->v == NULL))
       return NULL;
   }
-  void *ret = memcpy(((char*)f->v)+f->size,v,count);
+  void *ret = memcpy(((char*)f->v)+f->size*f->elsize,v,count*f->elsize);
   f->size += count;
   return ret;
 }
