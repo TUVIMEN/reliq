@@ -1,3 +1,5 @@
 #!/bin/bash
 
+# counts the amount of tests overall
+
 grep -h -E '^[0-9a-f]{32},' $(find test -type f -name '*.test') | wc -l
