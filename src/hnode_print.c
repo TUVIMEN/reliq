@@ -19,7 +19,7 @@
 #include "ext.h"
 
 #include "ctype.h"
-#include "htmlescapecodes.h"
+#include "decode_entities.h"
 #include "utils.h"
 #include "hnode_print.h"
 
@@ -34,7 +34,7 @@ print_chars(char const *src, size_t size, const uint8_t flags, SINK *outfile)
   if (!size)
     return;
   if (flags&PC_DECODE) {
-    htmlescapecodes_file(src,size,outfile);
+    reliq_decode_entities_sink(src,size,outfile);
   } else
     sink_write(outfile,src,size);
 }

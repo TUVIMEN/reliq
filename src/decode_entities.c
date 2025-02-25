@@ -23,7 +23,11 @@
 
 #include "ctype.h"
 #include "utils.h"
-#include "htmlescapecodes.h"
+#include "decode_entities.h"
+
+#define DECODE_ENTITIES_MAX_NAME 31
+#define DECODE_ENTITIES_MAX_DIGITS 10
+#define DECODE_ENTITIES_MAX_XDIGITS 8
 
 //!! This monstrosity takes 170KB of the binary ;)
 
@@ -74,7 +78,7 @@ struct htmlcode {
     '*/
 
 /*
-    &#[0-9]{1,10} &#[xX][0-9a-fA-F]{1,8} - numerical escapes don't have to end with ';', in theory they can be endless but limit is 10 digits for decimal and 8 for hexadecimal
+    &#[0-9]{1,10} &#[xX][0-9a-fA-F]{1,8} - numerical escapes don't have to end with ';', in theory they can be endless but i've set limit to 10 digits for decimal and 8 for hexadecimal
     &[a-zA-Z]{1,31} - names escapes are case sensitive and have to end with ';', exceptions to this are stored in html_special_codes
 */
 
@@ -2209,94 +2213,34 @@ const struct htmlcode html_codes[] = {
   {{"CounterClockwiseContourIntegral",31},"\u2233"}
 };
 
-int
-htmlescapecode(const char *src, const size_t srcl, size_t *traversed, char *result, const size_t resultl, size_t *written)
+static int
+handle_number(const char *src, const size_t srcl, size_t *traversed, char *result, const size_t resultl, size_t *written)
 {
+  size_t i = *traversed;
+  size_t j = *written;
   int ret = 0;
-  size_t i=0,j=0;
 
-  if (src[i] == '&' && i+2 < srcl) {
-    if (isalpha(src[i+1]) && isalpha(src[i+2])) {
-      i++;
-      uchar found=0,ended=0;
-      struct htmlcode const* first = html_special_codes;
-      size_t len = 1;
-
-      do {
-        len++;
-        if (len > 6)
-          continue;
-
-        //this handles special escapes that don't have to be closed with ';'
-        for (; first-html_special_codes != LENGTH(html_special_codes) && first->name.s == len; first++) {
-          if (memcmp(first->name.b,src+i,len) == 0) {
-            found = 2;
-            goto FOUND;
-          }
-        }
-
-      } while (i+len < srcl && isalpha(src[i+len]) && len <= HTMLESCAPECODES_MAXSIZE_NAME);
-
-      if (i+len >= srcl || src[i+len] != ';') {
-        i--;
-        goto IGNORE;
-      }
-      ended = 1;
-
-      first = html_codes;
-      for (; first-html_codes != LENGTH(html_codes); first++) {
-        if (first->name.s == len && memcmp(first->name.b,src+i,len) == 0) {
-          found = 1;
-          goto FOUND;
-        }
-      }
-
-      i--;
-      goto IGNORE;
-
-      FOUND: ;
-      if (found == 2 && i+len < srcl && src[i+len] == ';')
-        ended = 1;
-
-      size_t vall = strlen(first->val);
-      if (j+vall >= resultl) {
-        ret = -1;
-        goto END;
-      }
-
-      memcpy(result+j,first->val,vall);
-      j += vall;
-      i += first->name.s;
-      if (ended)
-        i++;
-    } else if (src[i+1] == '#' && (isdigit(src[i+2]) || ((src[i+2] == 'x' || src[i+2] == 'X') && i+3 < srcl && isxdigit(src[i+3])))) {
-      i += 2;
-      uint64_t data = 0;
-      size_t trav;
-      if (isdigit(src[i])) {
-        data = get_fromdec(src+i,srcl-i,&trav,HTMLESCAPECODES_MAXSIZE_DIGITS);
-      } else {
-        i++;
-        data = get_fromhex(src+i,srcl-i,&trav,HTMLESCAPECODES_MAXSIZE_XDIGITS);
-      }
-      i += trav;
-
-      data = enc32utf8(data);
-
-      if (write_utf8(data,result,&trav,resultl-j) == -1) {
-        ret = -1;
-        goto END;
-      }
-
-      j += trav;
-      if (i < srcl && src[i] == ';')
-        i++;
-    } else
-      goto IGNORE;
+  i += 2;
+  uint64_t data = 0;
+  size_t trav;
+  if (isdigit(src[i])) {
+    data = get_fromdec(src+i,srcl-i,&trav,DECODE_ENTITIES_MAX_DIGITS);
   } else {
-    IGNORE: ;
-    result[j++] = src[i++];
+    i++;
+    data = get_fromhex(src+i,srcl-i,&trav,DECODE_ENTITIES_MAX_XDIGITS);
   }
+  i += trav;
+
+  data = enc32utf8(data);
+
+  if (write_utf8(data,result,&trav,resultl-j) == -1) {
+    ret = -1;
+    goto END;
+  }
+
+  j += trav;
+  if (i < srcl && src[i] == ';')
+    i++;
 
   END: ;
   *traversed = i;
@@ -2304,23 +2248,171 @@ htmlescapecode(const char *src, const size_t srcl, size_t *traversed, char *resu
   return ret;
 }
 
+static inline uchar
+find_special_in(struct htmlcode const **first, const char *name, const size_t len)
+{
+  uchar found = 0;
+  struct htmlcode const *f = *first;
+  for (; f-html_special_codes != LENGTH(html_special_codes) && f->name.s == len; f++) {
+    if (memcmp(f->name.b,name,len) == 0) {
+      found = 1;
+      break;
+    }
+  }
+  *first = f;
+  return found;
+}
+
+static struct htmlcode const*
+find_special(const char *name, const size_t maxnamel, size_t *length)
+{
+  size_t len = 1;
+  struct htmlcode const* first = html_special_codes;
+  do {
+    len++;
+    if (len > 6)
+      continue;
+
+    //this handles special escapes that don't have to be closed with ';'
+    if (find_special_in(&first,name,len))
+      goto FOUND;
+
+  } while (len < maxnamel && isalpha(name[len]) && len <= DECODE_ENTITIES_MAX_NAME);
+
+  *length = len;
+  return NULL;
+
+  FOUND: ;
+  *length = len;
+  return first;
+}
+
+static struct htmlcode const*
+find_normal(const char *name, const size_t namel)
+{
+  struct htmlcode const *first = html_codes;
+  for (; first-html_codes != LENGTH(html_codes); first++)
+    if (first->name.s == namel && memcmp(first->name.b,name,namel) == 0)
+      return first;
+
+  return NULL;
+}
+
+static struct htmlcode const*
+find_name(const char *name, const size_t maxnamel, size_t *len)
+{
+  *len = 1;
+  struct htmlcode const *first = find_special(name,maxnamel,len);
+  if (first)
+    goto END;
+
+  if (*len >= maxnamel || name[*len] != ';')
+    goto END;
+
+  first = find_normal(name,*len);
+  *len = 0;
+
+  END: ;
+  return first;
+}
+
+static int
+handle_name(const char *src, const size_t srcl, size_t *traversed, char *result, const size_t resultl, size_t *written, uchar *ignore)
+{
+  size_t i = *traversed;
+  size_t j = *written;
+  int ret = 0;
+
+  i++;
+  uchar ended=0;
+  size_t len;
+
+  struct htmlcode const *first = find_name(src+i,srcl-i,&len);
+  if (!first) {
+    *ignore = 1;
+    return 0;
+  }
+
+  if (len == 0 || (i+len < srcl && src[i+len] == ';'))
+    ended = 1;
+
+  size_t vall = strlen(first->val);
+  if (j+vall >= resultl) {
+    ret = -1;
+    goto END;
+  }
+
+  memcpy(result+j,first->val,vall);
+  j += vall;
+  i += first->name.s;
+  if (ended)
+    i++;
+
+  END: ;
+  *traversed = i;
+  *written = j;
+  return ret;
+}
+
+int
+reliq_decode_entities(const char *src, const size_t srcl, size_t *traversed, char *result, const size_t resultl, size_t *written)
+{
+  int ret = 0;
+  size_t i=0,j=0;
+
+  if (src[0] == '&' && 2 < srcl) {
+    if (isalpha(src[1]) && isalpha(src[2])) {
+      uchar ignore = 0;
+      ret = handle_name(src,srcl,&i,result,resultl,&j,&ignore);
+      if (ignore)
+        goto IGNORE;
+    } else if (src[1] == '#' && (isdigit(src[2]) || ((src[2] == 'x' || src[2] == 'X') && 3 < srcl && isxdigit(src[3])))) {
+      ret = handle_number(src,srcl,&i,result,resultl,&j);
+    } else
+      goto IGNORE;
+  } else {
+    IGNORE: ;
+    result[j++] = src[i++];
+  }
+
+  *traversed = i;
+  *written = j;
+  return ret;
+}
+
 void
-htmlescapecodes_file(const char *src, const size_t srcl, SINK *out)
+reliq_decode_entities_sink(const char *src, const size_t srcl, SINK *out)
 {
   char buf[BUF_SIZE];
   size_t buf_used = 0;
 
   for (size_t i = 0; i < srcl;) {
-    if (unlikely(BUF_SIZE-buf_used < HTMLESCAPECODES_MAXSIZE_VAL)) {
+    if (unlikely(BUF_SIZE-buf_used < RELIQ_DECODE_ENTITIES_MAXSIZE)) {
       sink_write(out,buf,buf_used);
       buf_used = 0;
     }
 
     size_t traversed,written;
-    htmlescapecode(src+i,srcl-i,&traversed,buf+buf_used,BUF_SIZE-buf_used,&written);
+    reliq_decode_entities(src+i,srcl-i,&traversed,buf+buf_used,BUF_SIZE-buf_used,&written);
     i += traversed;
     buf_used += written;
   }
   if (buf_used)
     sink_write(out,buf,buf_used);
+}
+
+void
+reliq_decode_entities_file(const char *src, const size_t srcl, FILE *out)
+{
+  SINK *o = sink_from_file(out);
+  reliq_decode_entities_sink(src,srcl,o);
+  sink_close(o);
+}
+
+void
+reliq_decode_entities_str(const char *src, const size_t srcl, char **str, size_t *strl)
+{
+  SINK *o = sink_open(str,strl);
+  reliq_decode_entities_sink(src,srcl,o);
+  sink_close(o);
 }

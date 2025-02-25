@@ -185,6 +185,12 @@ void reliq_efree(reliq_expr *expr);
 
 reliq_error *reliq_set_error(const int code, const char *fmt, ...);
 
+#define RELIQ_DECODE_ENTITIES_MAXSIZE 16
+int reliq_decode_entities(const char *src, const size_t srcl, size_t *traversed, char *result, const size_t resultl, size_t *written);
+void reliq_decode_entities_file(const char *src, const size_t srcl, FILE *out);
+void reliq_decode_entities_str(const char *src, const size_t srcl, char **str, size_t *strl);
+
+
 #ifdef __cplusplus
 }
 #endif

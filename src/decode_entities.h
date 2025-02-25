@@ -16,18 +16,13 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef RELIQ_HTMLESCAPECODES_H
-#define RELIQ_HTMLESCAPECODES_H
+#ifndef RELIQ_DECODE_ENTITIES_H
+#define RELIQ_DECODE_ENTITIES_H
 
 #include "sink.h"
 #include "types.h"
+#include "reliq.h"
 
-#define HTMLESCAPECODES_MAXSIZE_VAL 16
-#define HTMLESCAPECODES_MAXSIZE_NAME 31
-#define HTMLESCAPECODES_MAXSIZE_DIGITS 10
-#define HTMLESCAPECODES_MAXSIZE_XDIGITS 8
-
-int htmlescapecode(const char *src, const size_t srcl, size_t *traversed, char *result, const size_t resultl, size_t *written);
-void htmlescapecodes_file(const char *src, const size_t srcl, SINK *out);
+void reliq_decode_entities_sink(const char *src, const size_t srcl, SINK *out);
 
 #endif

@@ -467,7 +467,7 @@ get_dec(const char *src, const size_t size, size_t *traversed)
     size_t pos=0;
     unsigned int r = 0;
     while (pos < size && isdigit(src[pos]))
-        r = (r*10)+(src[pos++]-48);
+      r = (r*10)+(src[pos++]-48);
     *traversed = pos;
     return r;
 }
@@ -483,6 +483,27 @@ number_handle(const char *src, size_t *pos, const size_t size)
   return ret;
 }
 
+static char
+get_quoted_skip(const char *src, size_t *pos, const size_t size, flexarr *res) //res: char
+{
+  size_t i = *pos;
+  const char quote = src[i++];
+
+  for (; i < size && src[i] != quote; i++) {
+    if (i+1 < size && src[i] == '\\') {
+      if (src[i+1] == '\\') {
+        *(char*)flexarr_inc(res) = src[i++];
+      } if (src[i+1] == quote)
+        i++;
+    }
+    *(char*)flexarr_inc(res) = src[i];
+  }
+  *pos = i;
+  if (src[i] != quote)
+    return quote;
+  return 0;
+}
+
 reliq_error *
 get_quoted(const char *src, size_t *pos, const size_t size, const char delim, char **result, size_t *resultl)
 {
@@ -492,24 +513,12 @@ get_quoted(const char *src, size_t *pos, const size_t size, const char delim, ch
 
   for (; i < size && !isspace(src[i]) && src[i] != delim; i++) {
     if (i+1 < size && src[i] == '\\') {
-      if (src[i+1] == '\\') {
-        *(char*)flexarr_inc(res) = src[++i];
-        continue;
-      } else if (isspace(src[i+1]) || src[i+1] == delim)
+      if (src[i+1] == '\\' || isspace(src[i+1]) || src[i+1] == delim)
         i++;
     } else if (src[i] == '"' || src[i] == '\'') {
-      char tf = src[i++];
-      for (; i < size && src[i] != tf; i++) {
-        if (i+1 < size && src[i] == '\\') {
-          if (src[i+1] == '\\') {
-            *(char*)flexarr_inc(res) = src[i++];
-          } if (src[i+1] == tf)
-            i++;
-        }
-        *(char*)flexarr_inc(res) = src[i];
-      }
-      if (src[i] != tf)
-        goto_script_seterr(END,"string: could not find the end of %c quote",tf);
+      char quote = get_quoted_skip(src,&i,size,res);
+      if (quote)
+        goto_script_seterr(END,"string: could not find the end of %c quote",quote);
       continue;
     }
     *(char*)flexarr_inc(res) = src[i];

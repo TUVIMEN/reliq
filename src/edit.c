@@ -24,7 +24,7 @@
 #include "flexarr.h"
 #include "ctype.h"
 #include "utils.h"
-#include "htmlescapecodes.h"
+#include "decode_entities.h"
 #include "range.h"
 #include "hnode_print.h"
 #include "format.h"
@@ -532,6 +532,6 @@ tac_edit(const char *src, const size_t size, SINK *output, const void *arg[4], c
 reliq_error *
 decode_edit(const char *src, const size_t size, SINK *output, const void UNUSED *arg[4], const uint8_t UNUSED flag)
 {
-  htmlescapecodes_file(src,size,output);
+  reliq_decode_entities_sink(src,size,output);
   return NULL;
 }
