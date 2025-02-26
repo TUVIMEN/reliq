@@ -10,8 +10,8 @@
     },
     div .s-post-summary--content; {
         * .s-post-summary--content-title; [0] a; {
-            .title * self@ | "%i",
-            .link * self@ | "%(href)v"
+            .title @ | "%i",
+            .link @ | "%(href)v"
         },
         .excerp * .s-post-summary--content-excerpt | "%i",
         [0] * .s-post-summary--meta; {

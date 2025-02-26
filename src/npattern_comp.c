@@ -173,6 +173,7 @@ const struct hook_t hooks_list[] = {
   {{"all",3},H_MATCH_TEXT|H_PATTERN,(uintptr_t)XN(text_all)},
 
   //access
+  {{"",0},H_ACCESS|H_NOARG,N_SELF},
   {{"desc",4},H_ACCESS|H_NOARG,N_DESCENDANT},
   {{"rparent",7},H_ACCESS|H_NOARG,N_RELATIVE_PARENT},
   {{"sibl",4},H_ACCESS|H_NOARG,N_SIBLING},
@@ -667,6 +668,9 @@ hook_add(const char *src, size_t *pos, const size_t size, const uchar invert, ui
   if ((*err = hook_handle(src,pos,size,&hook,*type)))
     goto ERR;
 
+  if (!hook.hook)
+    goto ERR;
+
   if (*pos == prev)
     goto ERR;
 
@@ -926,7 +930,7 @@ handle_nmatchers(const char *src, size_t *pos, const size_t size, const uint16_t
     } else if (i+1 < size && src[i] == '\\' && (src[i+1] == '+' || src[i+1] == '-'))
       i++;
 
-    if (isalpha(src[i])) {
+    if (isalpha(src[i]) || src[i] == '@') {
       uchar r = hook_add(src,&i,size,invert,&matches->type,fullmode,nodeflags,&typehooks_count,result,&err);
       if (r) {
         if (r == 2) {
