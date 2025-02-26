@@ -14,11 +14,13 @@ syn match rqOneLineComment '\(\s\|^\)\/\/.*'
 syn region rqMultilineComment start=+\(\s\|^\)/\*+ end=+\*/+
 
 " shortened matching hooks
-syn match rqHooks "\s[+-]\?[mMaLlcCpPeI]@"
+syn match rqHooks "\s[+-]\?[AiSnaeE]@"
+" shortened global matching hooks
+syn match rqHooks "\s[+-]\?\([lLpPIc]\|C[cta]\)@"
 " global matching hooks
-syn match rqHooks "\s[+-]\?\(level\|levelrelative\|positionrelative\|position\|index\)@"
+syn match rqHooks "\s[+-]\?\(level\|levelrelative\|positionrelative\|position\|index\|count\|countcomments\|counttext\|countall\)@"
 " matching hooks
-syn match rqHooks "\s[+-]\?\(match\|tagmatch\|attributes\|childmatch\|endmatch\)@"
+syn match rqHooks "\s[+-]\?\(all\|insides\|start\|name\|attributes\|has\|end\|endstrip\)@"
 " shortened access hooks
 syn match rqHooks "\s\(desc\|sibl\|spre\|ssub\|fsibl\|fspre\|fssub\|rparent\)@"
 " access hooks
