@@ -229,7 +229,7 @@ Signed range matches signed integers.
 .SS HOOK
 Begins with a name of function followed by '@' and ended with argument which can be a \fBRANGE\fR, \fBEXPRESSION\fR, \fBPATTERN\fR or nothing.
 
-Hook name can be preceded with '+' or '-' character. If it's '-' matching of hook will be inverted.
+Name of matching hook can be preceded with '+' or '-' character. If it's '-' matching of hook will be inverted.
 
 .nf
 \&
@@ -245,43 +245,87 @@ Hook name can be preceded with '+' or '-' character. If it's '-' matching of hoo
 
 List of implemented hooks:
 
+Global hooks, which can be used for any type:
+
 .TP
-.BR m ",  " match " " \fI"PATTERN"\fR
+.BR L ",  " level " " \fI[URANGE]\fR
+Get nodes that are on level within \fIURANGE\fR.
+.TP
+.BR l ",  " levelrelative " " \fI[SRANGE]\fR
+Get nodes that are on level relative to parent within the \fISRANGE\fR.
+.TP
+.BR c ",  " count " " \fI[URANGE]\fR
+Get nodes with count of descending tag nodes that is within the \fIURANGE\fR.
+.TP
+.BR Ct ",  " counttext " " \fI[URANGE]\fR
+Get nodes with count of descending text nodes that is within the \fIURANGE\fR.
+.TP
+.BR Cc ",  " countcomments " " \fI[URANGE]\fR
+Get nodes with count of descending comment nodes that is within the \fIURANGE\fR.
+.TP
+.BR Ca ",  " countall " " \fI[URANGE]\fR
+Get nodes with count of descending nodes that is within the \fIURANGE\fR.
+.TP
+.BR P ",  " position " " \fI[URANGE]\fR
+Get nodes with position within \fIURANGE\fR.
+.TP
+.BR p ",  " positionrelative " " \fI[SRANGE]\fR
+Get nodes with position relative to parent within \fISRANGE\fR.
+.TP
+.BR I ",  " index " " \fI[URANGE]\fR
+Get nodes with starting index of tag in file that is within \fIURANGE\fR.
+.TP
+
+Hooks for tag type:
+
+.TP
+.BR A ",  " all " " \fI"PATTERN"\fR
+Get tags with text creating them matching to \fIPATTERN\fR.
+.TP
+.BR i ",  " insides " " \fI"PATTERN"\fR
 Get tags with insides that match \fIPATTERN\fR, by default pattern flags set to "uWcas".
 .TP
-.BR M ",  " tagmatch " " \fI"PATTERN"\fR
-Get tags that match \fIPATTERN\fR, by default pattern flags set to "uWcas".
+.BR S ",  " start " " \fI"PATTERN"\fR
+Get tags which head tag matches to \fIPATTERN\fR.
+.TP
+.BR e ",  " endstrip " " \fI"PATTERN"\fR
+Get tags which tail tag stripped from <> matches to \fIPATTERN\fR, by default pattern flags set to "tWcnfs".
+.TP
+.BR E ",  " end " " \fI"PATTERN"\fR
+Get tags which tail tag matches to \fIPATTERN\fR, by default pattern flags set to "uWcas".
+.TP
+.BR n ",  " name " " \fI"PATTERN"\fR
+Get tags which name matches \fIPATTERN\fR, by default pattern flags set to "uWcfs".
 .TP
 .BR a ",  " attributes " " \fI[URANGE]\fR
 Get tags with attributes that are within the \fIURANGE\fR.
 .TP
-.BR L ",  " level " " \fI[URANGE]\fR
-Get tags that are on level within \fIURANGE\fR.
+.BR has " " \fI"EXPRESSION"\fR
+Get tags in which chained \fIEXPRESSION\fR matches at least one of its children.
 .TP
-.BR l ",  " levelrelative " " \fI[SRANGE]\fR
-Get tags that are on level relative to parent within the \fISRANGE\fR.
+
+Hooks for comment type:
+
 .TP
-.BR c ",  " count " " \fI[URANGE]\fR
-Get tags with descendant count that is within the \fIURANGE\fR.
+.BR A ",  " all " " \fI"PATTERN"\fR
+Get comments with text creating them matching to \fIPATTERN\fR.
 .TP
-.BR C ",  " childmatch " " \fI"EXPRESSION"\fR
-Get tags in which chained \fIEXPRESSION\fR (see \fB-F\fR option) matches at least one of its children.
+.BR i ",  " insides " " \fI"PATTERN"\fR
+Get comments with insides that match \fIPATTERN\fR.
 .TP
-.BR e ",  " endmatch " " \fI"PATTERN"\fR
-Get tags with insides of ending tag that match \fIPATTERN\fR, by default pattern flags set to 'tWcnfs'.
+
+Hooks for text types:
+
 .TP
-.BR P ",  " position " " \fI[URANGE]\fR
-Get tags with position within \fIURANGE\fR.
-.TP
-.BR p ",  " positionrelative " " \fI[SRANGE]\fR
-Get tags with position relative to parent within \fISRANGE\fR.
-.TP
-.BR I ",  " index " " \fI[URANGE]\fR
-Get tags with starting index of tag in file that is within \fIURANGE\fR.
+.BR A ",  " all " " \fI"PATTERN"\fR
+Get text matching to \fIPATTERN\fR.
 .TP
 
 Access hooks specify what nodes will be matched:
 
+.TP
+.BR @
+Specifying hook with no name is the same as \fBself@\fR
 .TP
 .BR full
 Matches node itself and everything below it (set by default).
@@ -321,6 +365,31 @@ Matches preceding siblings of self and nodes below them.
 .TP
 .BR fssub ",   " full_sibling_subsequent
 Matches subsequent siblings of self and nodes below them.
+.TP
+
+Type hooks:
+
+.TP
+.BR tag
+Matches tag nodes.
+.TP
+.BR comment
+Matches comment nodes.
+.TP
+.BR text
+Matches text nodes that are not of textempty type.
+.TP
+.BR textempty
+Matches text nodes consisting of only whitespaces.
+.TP
+.BR texterr
+Matches text nodes in which error parsing html has occured
+.TP
+.BR textnoerr
+Matches text nodes that are not textempty or texterr
+.TP
+.BR textall
+Matches all text nodes
 
 .SS TAG
 At the begining each \fBTAG\fR must contain \fBPATTERN\fR of html tag and that can be followed by a number of \fBATTRIBUTE\fRs and \fBHOOK\fRs.
@@ -359,6 +428,16 @@ If brackets are 'touching' themselves they will match if at least one of them ma
 .in
 \&
 
+To match multiple types you have to specify type hooks as the first thing in the group. You can specify multiple types but only if they are in separate groups or can be inherited from each other.
+
+.nf
+\&
+.in +4m
+    \fB( div )( comment@ DOCTYPE )( text@ have ) l@[0]\fR - this matches to multiple types, since l@ is a global hook it can be specified outside the groups
+    \fBtextall@ have ( @text seen )( texterr@ you )\fR - text and texterr inherit from textall
+    \fB(( p )( tag@ li ))( textall@ li ( text@ look ( textnoerr@ list )( texterr@ raise ))( textempty@ "  " ))
+.in
+\&
 
 .SS TAG_FORMAT
 It has to be specified in '"' or '\\'' quotes.
@@ -397,24 +476,42 @@ UTF-8 character (uses hexadecimal digits).
 A literal backslash (`\e').
 .IP %%
 A literal percent sign.
+.IP %l
+Level in html structure relative to parent.
+.IP %L
+Level in html structure.
+.IP %P
+Position of node.
+.IP %p
+Position of node relative to parent.
+.IP %I
+Index of node's starting position in file.
+.IP %c
+Node's count of tags nodes descending.
+.IP %Ct
+Node's count of text nodes descending.
+.IP %Cc
+Node's count of comment nodes descending.
+.IP %Ca
+Node's count of descendants, basically sum of the previous ones.
+.IP %A
+Contents of node.
+.IP %i
+Node's insides.
 .IP %n
 Tag's name.
-.IP %i
-Tag's insides.
+.IP %S
+Starting tag.
+.IP %E
+Ending tag.
+.IP %e
+Stripped ending tag.
 .IP %t
 Tag's text.
 .IP %T
 Tag's text, recursive.
-.IP %l
-Tag's level relative to parent.
-.IP %L
-Tag's level.
 .IP %s
-Tag's size.
-.IP %c
-Tag's count of descendants.
-.IP %C
-Contents of tag.
+Node's size.
 .IP %a
 All of the tag's attributes.
 .IP %v
@@ -423,18 +520,6 @@ Values of tag's attributes separated with '"'.
 Value of tag's attribute, where \fIk\fP is its position counted from zero.
 .IP %(\fIk\fP)v
 Value of tag's attribute, where \fIk\fP is its name.
-.IP %S
-Starting tag.
-.IP %E
-Ending tag.
-.IP %e
-Contents of ending tag.
-.IP %P
-Position of tag.
-.IP %p
-Position of tag relative to parent.
-.IP %I
-Index of tag's starting position in file.
 
 .SS FUNCTION
 Begins with name followed by arguments separated by whitespaces.
