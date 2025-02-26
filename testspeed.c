@@ -26,7 +26,7 @@ struct test {
     size_t contentsl[64];
 
     reliq rqs[64];
-    reliq_expr rexprs;
+    reliq_expr *rexprs;
 };
 
 struct test tests[] = {
@@ -495,12 +495,15 @@ loadfile(const char *path, char **data, size_t *datal)
     *datal = st.st_size;
 }
 
-void
+size_t testcasesrun;
+
+size_t
 expr_comp_test()
 {
     const size_t testsl = LENGTH(tests);
     for (size_t i = 0; i < testsl; i++)
         assert(reliq_ecomp(tests[i].exprs,tests[i].exprsl,&tests[i].rexprs) == NULL);
+    return testsl;
 }
 
 void
@@ -508,7 +511,7 @@ free_exprs()
 {
     const size_t testsl = LENGTH(tests);
     for (size_t i = 0; i < testsl; i++)
-        reliq_efree(&tests[i].rexprs);
+        reliq_efree(tests[i].rexprs);
 }
 
 void
@@ -520,29 +523,37 @@ free_rqs()
             assert(reliq_free(&tests[i].rqs[j]) == 0);
 }
 
-void
+size_t
 html_parse_test()
 {
     const size_t testsl = LENGTH(tests);
-    for (size_t i = 0; i < testsl; i++)
-        for (size_t j = 0; tests[i].files[j]; j++)
-            assert(reliq_init(tests[i].contents[j],tests[i].contentsl[j],NULL,&tests[i].rqs[j]) == NULL);
+    size_t ret = 0;
+    for (size_t i = 0; i < testsl; i++) {
+        for (size_t j = 0; tests[i].files[j]; j++) {
+            assert(reliq_init(tests[i].contents[j],tests[i].contentsl[j],&tests[i].rqs[j]) == NULL);
+            ret++;
+        }
+    }
+    return ret;
 }
 
-void
+size_t
 exec_test()
 {
     const size_t testsl = LENGTH(tests);
+    size_t ret = 0;
     for (size_t i = 0; i < testsl; i++) {
         for (size_t j = 0; tests[i].files[j]; j++) {
             char *f;
             size_t fl = 0;
-            assert(reliq_exec_str(&tests[i].rqs[j],&f,&fl,&tests[i].rexprs) == NULL);
+            assert(reliq_exec_str(&tests[i].rqs[j],&f,&fl,tests[i].rexprs) == NULL);
             assert(f != NULL);
             assert(fl != 0);
             free(f);
+            ret++;
         }
     }
+    return ret;
 }
 
 double
@@ -561,18 +572,20 @@ timediff(struct timespec *t1, struct timespec *t2)
     return (double)sd+((double)nsd)/1000000000;
 }
 
-void
-repeat(const size_t num, void (*func)(void), void (*freefunc)(void))
+size_t
+repeat(const size_t num, size_t (*func)(void), void (*freefunc)(void))
 {
+    size_t ret = 0;
     for (size_t i = 0; i < num; i++) {
         if (i > 0 && freefunc)
             freefunc();
-        func();
+        testcasesrun = func();
     }
+    return ret;
 }
 
 double
-measuretime(const size_t repeats, void (*func)(void), void (*freefunc)(void))
+measuretime(const size_t repeats, size_t (*func)(void), void (*freefunc)(void))
 {
     struct timespec t1,t2;
     clock_gettime(CLOCK_REALTIME,&t1);
@@ -584,7 +597,7 @@ measuretime(const size_t repeats, void (*func)(void), void (*freefunc)(void))
 }
 
 void
-measuretest(const char *name, const size_t repeats, void (*func)(void), void (*freefunc)(void))
+measuretest(const char *name, const size_t repeats, size_t (*func)(void), void (*freefunc)(void))
 {
     const size_t laps = LAPS;
     double sum = 0;
@@ -592,7 +605,7 @@ measuretest(const char *name, const size_t repeats, void (*func)(void), void (*f
     for (size_t i = 0; i < laps; i++)
         sum += measuretime(repeats,func,freefunc);
 
-    fprintf(stderr,"%s %lu*%lu %f\n",name,repeats,laps,sum/laps);
+    fprintf(stderr,"%s amount(%lu*%lu) laps(%lu) %f\n",name,repeats,testcasesrun,laps,sum/laps);
 }
 
 int
