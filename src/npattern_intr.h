@@ -44,7 +44,7 @@
 
 //nmatchers type
 #define NM_DEFAULT 0
-#define NM_NODE 1
+#define NM_TAG 1
 #define NM_COMMENT 2
 #define NM_TEXT 3
 #define NM_TEXT_NOERR 4

@@ -25,7 +25,6 @@
 #include "reliq.h"
 #include "utils.h"
 #include "npattern_intr.h"
-#include "npattern_intr.h"
 
 #define NODE_MATCHES_INC 8
 
@@ -200,7 +199,7 @@ const struct hook_t hooks_list[] = {
   {{"full_sibling_subsequent",23},H_ACCESS|H_NOARG,N_FULL_SIBLING_SUBSEQUENT},
 
   //type
-  {{"node",4},H_TYPE|H_NOARG,NM_NODE},
+  {{"tag",3},H_TYPE|H_NOARG,NM_TAG},
   {{"comment",7},H_TYPE|H_NOARG,NM_COMMENT},
   {{"text",4},H_TYPE|H_NOARG,NM_TEXT},
   {{"textempty",9},H_TYPE|H_NOARG,NM_TEXT_EMPTY},
@@ -311,7 +310,7 @@ nmatchers_type_hmask(const uint8_t type)
 {
   switch (type) {
     case NM_DEFAULT:
-    case NM_NODE:
+    case NM_TAG:
       return H_MATCH_NODE;
     case NM_COMMENT:
       return H_MATCH_COMMENT;
@@ -371,9 +370,11 @@ match_hook_handle_pattern(const char *src, const size_t size, size_t *pos, reliq
   reliq_error *err = NULL;
   size_t i = *pos;
   char *rflags = "uWcas";
-  if (hook->hook->arg == (uintptr_t)h_node_end ||
-    hook->hook->arg == (uintptr_t)h_node_end_strip)
+  if (hook->hook->arg == (uintptr_t)h_node_end_strip)
     rflags = "tWcnfs";
+  else if (hook->hook->arg == (uintptr_t)h_node_name)
+    rflags = "uWcfs";
+
   if ((err = reliq_regcomp(&hook->match.pattern,src,&i,size,' ',rflags,NULL)))
     goto ERR;
   if (!hook->match.pattern.range.s && hook->match.pattern.flags&RELIQ_PATTERN_ALL) { //ignore if it matches everything
@@ -406,7 +407,7 @@ get_hook_name(const char *src, size_t *pos, const size_t size, size_t *namel)
 static const char *
 matched_type_str(const uint8_t type)
 {
-  if (type == NM_NODE || type == NM_DEFAULT)
+  if (type == NM_TAG || type == NM_DEFAULT)
     return "nodes";
   if (type == NM_COMMENT)
     return "comments";
@@ -938,7 +939,7 @@ handle_nmatchers(const char *src, size_t *pos, const size_t size, const uint16_t
       if (r) {
         if (r == 2) {
           if (matches->type == NM_DEFAULT)
-            matches->type = NM_NODE;
+            matches->type = NM_TAG;
           if (matches->type == NM_MULTIPLE)
             goto ERR_MULTIPLE;
         }
@@ -959,8 +960,8 @@ handle_nmatchers(const char *src, size_t *pos, const size_t size, const uint16_t
 
     switch(matches->type) {
       case NM_DEFAULT:
-        matches->type = NM_NODE;
-      case NM_NODE:
+        matches->type = NM_TAG;
+      case NM_TAG:
         err = comp_node(src,&i,size,invert,hastag,result);
         break;
       case NM_COMMENT:

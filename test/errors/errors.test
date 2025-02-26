@@ -69,9 +69,9 @@ ac5077d4c68e47dadddefc7d0b0ab32e,'.a { .n li } | || img'
 8184fae45e36daa7b37093d892c072ed,'.g { .a la || li | "" }; a '
 
 92b3fed03f5ffae98228c6f5baf66f71,'( textempty@ * ( texterr@ * ))( text@ * )'
-0f74da2a3612630629c0a2ffb027bdf9,'( textempty@ * )( text@ * )( node@ li ) i@[0]'
+0f74da2a3612630629c0a2ffb027bdf9,'( textempty@ * )( text@ * )( tag@ li ) i@[0]'
 f740451bbb3237233be930a93f182d2e,'text@ ( textempty@ * )( text@ * )( li ) li'
-afb6b01a0e378fa625b4f6e5c73f6b05,'( textempty@ * )( text@ * )( node@ li ) li'
+a3b4ed42a8db2705affb83d4eed80abe,'( textempty@ * )( text@ * )( tag@ li ) li'
 f740451bbb3237233be930a93f182d2e,'text@ * ( texterr@ * )( textnoerr@ * )( textempty@ * ) | "\"%C\"\n", text@ * ( textall@ * ) | "\"%C\"\n"'
 
 % RELIQ_EDITING

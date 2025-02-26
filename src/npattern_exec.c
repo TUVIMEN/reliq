@@ -138,7 +138,7 @@ nmatcher_match_type(const uint8_t hnode_type, const uint8_t type)
   if (type == NM_MULTIPLE)
     return 1;
 
-  if (type == NM_NODE || type == NM_DEFAULT)
+  if (type == NM_TAG || type == NM_DEFAULT)
     return (hnode_type == RELIQ_HNODE_TYPE_TAG);
 
   if (type == NM_COMMENT)
