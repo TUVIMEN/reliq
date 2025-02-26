@@ -38,9 +38,9 @@ Get tags which does not have any tags inside them from file `index.html`.
 
     reliq '* c@[0]' index.html
 
-Get empty tags from file 'index.html'.
+Get tags that have length of their insides equal to 0 from file 'index.html'.
 
-    reliq '* m@>[0]' index.html
+    reliq '* i@>[0]' index.html
 
 Get hyperlinks from level greater or equal to 6 from file `index.html`.
 
@@ -50,7 +50,7 @@ Get any tag with class `cont` and without id starting with `img-`.
 
     reliq '* .cont -#b>img-' index.html
 
-Get hyperlinks ending with `/[0-9]+.html`.
+Get hyperlinks ending with `/[0-9]+\.html`.
 
     reliq 'a href=Ee>/[0-9]+\.html | "%(href)a\n"' index.html
 
@@ -59,10 +59,10 @@ Get links that are not at 1 level, both are equivalent.
     reliq 'a href l@[!0] | "(href)v\n"' index.html
     reliq 'a href -l@[0] | "(href)v\n"' index.html
 
-Get `li` tag that does not start with `Views:`, both are equivalent.
+Get `li` tags of which insides don't start with `Views:`, both are equivalent.
 
-    reliq 'li m@bv>"Views:"' index.html
-    reliq 'li -m@b>"Views:"' index.html
+    reliq 'li i@bv>"Views:"' index.html
+    reliq 'li -i@b>"Views:"' index.html
 
 Get `ul` tags and html inside `i` tags that are inside `p` tags.
 
@@ -161,7 +161,7 @@ Fields take precedence before everything
     reliq '
         .field dd; {
             time datetime | "%(datetime)v\a",
-            a m@v>"<" | "%i\a",
+            a i@v>"<" | "%i\a",
             * l@[0] | "%i"
         } / tr '\n' sed "s/^\a*//;s/\a.*//"
     ' index.html
@@ -225,7 +225,7 @@ Unless fields are nested they will be on the same level no matter where they are
                 .user a c@[0] | "%i",
                 .userid.u a href c@[0] | "%(href)v" / sed "s/.*[&;]u=([0-9]+).*/\1/" "E",
             },
-            .userinfo.a("\a") dd l@[1] m@vf>"&nbsp;" | "%i\a" / tr '\n\t' sed "
+            .userinfo.a("\a") dd l@[1] i@vf>"&nbsp;" | "%i\a" / tr '\n\t' sed "
                 s/<strong>([^<]*)<\/strong>/\1/g
                 s/ +:/:/
                 /<ul [^>]*class=\"profile-icons\">/{
@@ -256,7 +256,7 @@ will return
 If field is presented with block with `|` with empty format that contains fields, field type will change to array and block will be executed for each tag
 
     reliq '
-        .posts form #quickModForm; table l@[1]; tr l@[1] m@B>"id=\"subject_[0-9]*\"" m@v>".googlesyndication.com/"; {
+        .posts form #quickModForm; table l@[1]; tr l@[1] i@B>"id=\"subject_[0-9]*\"" i@v>".googlesyndication.com/"; {
             .postid.u div #B>subject_[0-9]* | "%(id)v" / sed "s/.*_//",
             .date td valign=middle; div .smalltext | "%i" / sed "s/.* ://;s/^<\/b> //;s/ &#187;//g;s/<br *\/>.*//;s/<[^>]*>//g;s/ *$//",
             .avatar td valign=top rowspan=2; img .avatar src | "%(src)v",
@@ -309,17 +309,6 @@ will return
     ]
 }
 ```
-
-### Fast mode
-
-Is used when `-F` flag is specified. Causes input to be parsed and processed instantly, without storing it, making it more suitable to processing large files. Because of it any branching with `,` or blocks is not possible and patterns are limited to only being separated by `;` (i.e. chains).
-
-    reliq -F 'tr; a l@[3:]' index.html
-    reliq -F 'tr' index.html | reliq -F 'a l@[3:]'
-
-Both of these examples have similar performance.
-
-Because of parsing and processing on the go the order of output might look reversed, that is because the child tags are always processed before the parents, only after the end of tag is found that it may be processed.
 
 ## Python interface
 
