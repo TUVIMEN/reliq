@@ -79,7 +79,7 @@ X(global_level) {
   *srcl = chnode->lvl;
 }
 
-X(global_desc_count) {
+X(global_tag_count) {
   *srcl = hnode->tag_count;
 }
 
@@ -127,7 +127,7 @@ const struct hook_t hooks_list[] = {
   //global matching
   {{"l",1},H_GLOBAL|H_RANGE_SIGNED,(uintptr_t)XN(global_level_relative)},
   {{"L",1},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_level)},
-  {{"c",1},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_desc_count)},
+  {{"c",1},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_tag_count)},
   {{"cc",2},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_comments_count)},
   {{"ct",2},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_text_count)},
   {{"cC",2},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_all_count)},
@@ -137,7 +137,7 @@ const struct hook_t hooks_list[] = {
 
   {{"levelrelative",13},H_GLOBAL|H_RANGE_SIGNED,(uintptr_t)XN(global_level_relative)},
   {{"level",5},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_level)},
-  {{"count",5},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_desc_count)},
+  {{"count",5},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_tag_count)},
   {{"countcomments",13},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_comments_count)},
   {{"counttext",9},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_text_count)},
   {{"countall",8},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_all_count)},
@@ -161,14 +161,14 @@ const struct hook_t hooks_list[] = {
   {{"endmatch",8},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_match_end)},
 
   //comment matching
-  {{"a",1},H_MATCH_COMMENT|H_PATTERN|H_MATCH_COMMENT_MAIN,(uintptr_t)XN(comment_all)},
+  {{"A",1},H_MATCH_COMMENT|H_PATTERN|H_MATCH_COMMENT_MAIN,(uintptr_t)XN(comment_all)},
   {{"i",1},H_MATCH_COMMENT|H_PATTERN,(uintptr_t)XN(comment_insides)},
 
   {{"all",3},H_MATCH_COMMENT|H_PATTERN,(uintptr_t)XN(comment_all)},
   {{"insides",7},H_MATCH_COMMENT|H_PATTERN,(uintptr_t)XN(comment_insides)},
 
   //text matching
-  {{"a",1},H_MATCH_TEXT|H_PATTERN|H_MATCH_TEXT_MAIN,(uintptr_t)XN(text_all)},
+  {{"A",1},H_MATCH_TEXT|H_PATTERN|H_MATCH_TEXT_MAIN,(uintptr_t)XN(text_all)},
 
   {{"all",3},H_MATCH_TEXT|H_PATTERN,(uintptr_t)XN(text_all)},
 
