@@ -1,4 +1,4 @@
-.threads table C@"font .mediumtxt; a href=b>\"viewthread.php?\" l@[1]"; tr -class l@[1]; {
+.threads table has@"font .mediumtxt; a href=b>\"viewthread.php?\" l@[1]"; tr -class l@[1]; {
     .state [0] td l@[1]; img src | "%(src)v",
     .icon [1] td l@[1]; img src | "%(src)v",
     [2] td l@[1]; {
@@ -16,7 +16,7 @@
     .replies.u [4] td l@[1]; font | "%i",
     .views.u [5] td l@[1]; font | "%i",
     .lastpost [-] td l@[1]; [0] td l@[1:]; {
-        .date [0] * C@"a" | "%i" / sed "s#<br />.*##; s/.*>//",
+        .date [0] * has@"a" | "%i" / sed "s#<br />.*##; s/.*>//",
         a href; {
             .user_link * l@[0] | "%(href)v",
             .user * l@[0] | "%i" / sed "s/.*>//;s/^by //"

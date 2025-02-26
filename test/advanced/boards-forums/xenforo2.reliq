@@ -74,7 +74,7 @@
         .lastpage.u * .structItem-pageJump; [-] a | "%i"
     },
     div .structItem-cell--meta; {
-        dt m@B>"^[0-9]",
+        dt i@B>"^[0-9]",
         dd
     }; {
         .replies [0] * c@[0] | "%i",

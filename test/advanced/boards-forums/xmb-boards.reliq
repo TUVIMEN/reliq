@@ -1,4 +1,4 @@
-.categories table C@"td .tablerow l@[2]"; tr -.header l@[1]; {
+.categories table has@"td .tablerow l@[2]"; tr -.header l@[1]; {
     .category td .category; * c@[0] | "%i",
     .category_link [0] a href | "%(href)v",
 
@@ -14,7 +14,7 @@
     .posts.u [3] td l@[1]; font | "%i",
     .lastpost [4] td l@[1]; tr; {
         [0] td; {
-            .date [0] * C@"a" | "%i" / sed "s#<br />.*##; s/.*>//",
+            .date [0] * has@"a" | "%i" / sed "s#<br />.*##; s/.*>//",
             a href; {
                 .user * l@[0] | "%i" / sed "s/.*>//;s/^by //",
                 .user_link * l@[0] | "%(href)v"

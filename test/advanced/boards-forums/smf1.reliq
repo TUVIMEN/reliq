@@ -1,11 +1,11 @@
 .categories {
     div #bodyarea; div .tborder style l@[1],
     div #mainarea; div -class l@[1],
-    [0] table .bordercolor C@"tr .titlebg"
+    [0] table .bordercolor has@"tr .titlebg"
 }; {
     .name * .E>catbgf?; * c@[0] | "%i",
     .forums [0] table l@[:2]; tr l@[1]; {
-        .childboards [0] td l@[1]; * l@[0] -C@"img"; a href; {
+        .childboards [0] td l@[1]; * l@[0] -has@"img"; a href; {
             .link * l@[0] | "%(href)v",
             .name * l@[0] | "%i",
             .state * l@[0] | "%(title)v" sed "s/ (.*//",
@@ -94,7 +94,7 @@
         }
     } |
 } | ,
-.threads [0] table .bordercolor C@"tr l@[1]; td [2] l@[1]; a href=aE>([&?;]topic=|-t)[0-9]+\.0"; [1:] tr l@[1]; {
+.threads [0] table .bordercolor has@"tr l@[1]; td [2] l@[1]; a href=aE>([&?;]topic=|-t)[0-9]+\.0"; [1:] tr l@[1]; {
     .type1 [0] td l@[1]; img src | "%(src)v",
     .type2 [1] td l@[1]; img src | "%(src)v",
     [2] td l@[1]; {
@@ -106,7 +106,7 @@
         .lastpage.u {
             span l@[1],
             small l@[1]
-        }; [1:] a; [-] a -m@f>"All" | "%i"
+        }; [1:] a; [-] a -i@f>"All" | "%i"
     },
     [3] td l@[1]; a href; {
         .user_link * l@[0] | "%(href)v",

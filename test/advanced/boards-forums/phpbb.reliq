@@ -22,7 +22,7 @@
                     .name @ | "%t" trim,
                     .link @ | "%(href)v"
                 } | ,
-                .moderators strong c@[0] m@b>Mod m@e>: l@[1:2]; a -.subforum ssub@; {
+                .moderators strong c@[0] i@b>Mod i@e>: l@[1:2]; a -.subforum ssub@; {
                     .user @ | "%i",
                     .user_link @ | "%(href)v"
                 } | ,
@@ -63,7 +63,7 @@
                     .title @ | "%i",
                     .link @ | "%(href)v"
                 },
-                .lastpage.u * .pagination; [-] a c@[0] m@B>"[0-9]" | "%i",
+                .lastpage.u * .pagination; [-] a c@[0] i@B>"[0-9]" | "%i",
                 [-] a href c@[0]; {
                     .user @ | "%i",
                     .user_link @ | "%(href)v"

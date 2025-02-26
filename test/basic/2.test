@@ -13,5 +13,5 @@ ed8eb0e77512de535ad2565267cb2dbe,'li; [0] img; * ancestor@; [1] * self@; * fsibl
 b2d1440b8bb1749fe92ed310fc3de87a,'encoding | "%Di\n"'
 57891b0cdd7687877b9fc491dbd601a5,-l
 315fb372f9bc1fd000203399967dfee0,'inescapable; { table, td, div, section, tr }'
-b6e5e53260a6571eba5fc38010f225f4,'escaping; { div | "%C -- \"%E\" -- \"%e\"\n" , section}'
+b6e5e53260a6571eba5fc38010f225f4,'escaping; { div | "%A -- \"%E\" -- \"%e\"\n" , section}'
 4f415a5faceb3e17f357a3e9aec892a7,'weird-conditionals; { { * .i2 } || * #i1 }'

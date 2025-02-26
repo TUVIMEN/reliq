@@ -1,9 +1,9 @@
 .categories [0] * .cForumList; {
     li child@,
-    * -C@"[0] li l@[1]" self@
+    * -has@"[0] li l@[1]" self@
 }; {
     h2 child@; {
-        .name * -title c@[0] m@>[1:] | "%i",
+        .name * -title c@[0] i@>[1:] | "%i",
         .link [-] a | "%(href)v"
     },
     .forums {

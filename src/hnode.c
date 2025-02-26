@@ -108,6 +108,7 @@ reliq_cattrib_conv(const reliq *rq, const reliq_cattrib *c, reliq_attrib *d)
 const char *
 reliq_hnode_endtag(const reliq_hnode *hn, size_t *len)
 {
+  *len = 0;
   if (!hn->insides.b)
     return NULL;
   *len = hn->all.s-(hn->insides.b-hn->all.b)-hn->insides.s;
@@ -133,7 +134,7 @@ const char *
 reliq_hnode_starttag(const reliq_hnode *hn, size_t *len)
 {
   *len = (hn->insides.b)
-      ? (size_t)(hn->insides.b-hn->all.b)
-      : hn->all.s;
+    ? (size_t)(hn->insides.b-hn->all.b)
+    : hn->all.s;
   return hn->all.b;
 }

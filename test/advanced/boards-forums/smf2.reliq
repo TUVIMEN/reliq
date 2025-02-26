@@ -47,7 +47,7 @@
         .posts2.u [0] * .windowbg c@[0] child@ | "%i" sed 's/,//g',
         .topics2.u [1] * .windowbg c@[0] child@ | "%i" sed 's/,//g',
         * .lastpost child@; { p child@, * self@ }; [0] * self@; {
-            .lastpost * self@ -C@"[0] span .postby"; {
+            .lastpost * self@ -has@"[0] span .postby"; {
                 [0] a href; {
                     .user * self@ | "%i",
                     .user_link * self@ | "%(href)v"
@@ -58,7 +58,7 @@
                 },
                 .date * self@ | "%t" tr "\n\t\r" trim sed "s/.*>//; s/([^ ]* ){3}//; s/^ *at //" "E"
             },
-            .lastpost2 * self@ C@"[0] span .postby"; {
+            .lastpost2 * self@ has@"[0] span .postby"; {
                 [0] a href; {
                     .title * self@ | "%(title)v",
                     .link * self@ | "%(href)v"
@@ -87,7 +87,7 @@
             .user * self@ | "%t" trim,
             .user_link * self@ | "%(href)v"
         },
-        .lastpage.u [-] a ( .navPages )( .nav_page ) c@[0] m@v>"All" | "%i",
+        .lastpage.u [-] a ( .navPages )( .nav_page ) c@[0] i@v>"All" | "%i",
         .icons.a {
             * class self@,
             div .icons; span .main_icons

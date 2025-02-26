@@ -2,7 +2,7 @@
     div .s-post-summary--stats; div .s-post-summary--stats-item; {
         .score.u [0] * self@ title=b>"Score of ",
         .views.u [0] * self@ title=e>" views" | "%(title)v",
-        [0] span m@f>"answers"; {
+        [0] span i@f>"answers"; {
             .answers.u [0] span .e>-number spre@ | "%i",
             .solved.b * .has-accepted-answer parent@ | "t"
         },

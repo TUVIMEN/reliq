@@ -36,32 +36,31 @@ X(node_attributes) {
   *srcl = hnode->attribsl;
 }
 
-X(node_match_insides) {
+X(node_insides) {
   *src = hnode->insides.b;
   *srcl = hnode->insides.s;
 }
 
-X(node_match_tag) {
+X(node_all) {
   *src = hnode->all.b;
   *srcl = hnode->all.s;
 }
 
-X(node_match_name) {
+X(node_start) {
+  *src = reliq_hnode_starttag(hnode,srcl);
+}
+
+X(node_name) {
   *src = hnode->tag.b;
   *srcl = hnode->tag.s;
 }
 
-X(node_match_end) {
-  *src = hnode->insides.b+hnode->insides.s;
-  *srcl = hnode->all.s-(hnode->insides.b-hnode->all.b)-hnode->insides.s;
-  if (*srcl >= 2) {
-    (*src)++;
-    *srcl -= 2;
-  }
-  if (!hnode->insides.b) {
-    *src = NULL;
-    *srcl = 0;
-  }
+X(node_end_strip) {
+  *src = reliq_hnode_endtag_strip(hnode,srcl);
+}
+
+X(node_end) {
+  *src = reliq_hnode_endtag(hnode,srcl);
 }
 
 X(global_index) {
@@ -128,9 +127,9 @@ const struct hook_t hooks_list[] = {
   {{"l",1},H_GLOBAL|H_RANGE_SIGNED,(uintptr_t)XN(global_level_relative)},
   {{"L",1},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_level)},
   {{"c",1},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_tag_count)},
-  {{"cc",2},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_comments_count)},
-  {{"ct",2},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_text_count)},
-  {{"cC",2},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_all_count)},
+  {{"Cc",2},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_comments_count)},
+  {{"Ct",2},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_text_count)},
+  {{"Ca",2},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_all_count)},
   {{"p",1},H_GLOBAL|H_RANGE_SIGNED,(uintptr_t)XN(global_position_relative)},
   {{"P",1},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_position)},
   {{"I",1},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_index)},
@@ -146,19 +145,22 @@ const struct hook_t hooks_list[] = {
   {{"index",5},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_index)},
 
   //node matching
-  {{"m",1},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_match_insides)},
-  {{"M",1},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_match_tag)},
-  {{"n",1},H_MATCH_NODE|H_PATTERN|H_MATCH_NODE_MAIN,(uintptr_t)XN(node_match_name)},
+  {{"A",1},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_all)},
+  {{"i",1},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_insides)},
+  {{"S",1},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_start)},
+  {{"n",1},H_MATCH_NODE|H_PATTERN|H_MATCH_NODE_MAIN,(uintptr_t)XN(node_name)},
   {{"a",1},H_MATCH_NODE|H_RANGE_UNSIGNED,(uintptr_t)XN(node_attributes)},
-  {{"C",1},H_MATCH_NODE|H_EXPRS,(uintptr_t)NULL},
-  {{"e",1},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_match_end)},
+  {{"e",1},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_end_strip)},
+  {{"E",1},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_end)},
 
-  {{"match",5},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_match_insides)},
-  {{"tagmatch",8},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_match_tag)},
-  {{"namematch",8},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_match_name)},
+  {{"all",3},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_all)},
+  {{"insides",7},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_insides)},
+  {{"start",5},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_start)},
+  {{"name",4},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_name)},
   {{"attributes",10},H_MATCH_NODE|H_RANGE_UNSIGNED,(uintptr_t)XN(node_attributes)},
-  {{"childmatch",10},H_MATCH_NODE|H_EXPRS,(uintptr_t)NULL},
-  {{"endmatch",8},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_match_end)},
+  {{"has",3},H_MATCH_NODE|H_EXPRS,(uintptr_t)NULL},
+  {{"end",3},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_end)},
+  {{"endstrip",8},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_end_strip)},
 
   //comment matching
   {{"A",1},H_MATCH_COMMENT|H_PATTERN|H_MATCH_COMMENT_MAIN,(uintptr_t)XN(comment_all)},
@@ -369,7 +371,8 @@ match_hook_handle_pattern(const char *src, const size_t size, size_t *pos, reliq
   reliq_error *err = NULL;
   size_t i = *pos;
   char *rflags = "uWcas";
-  if (hook->hook->arg == (uintptr_t)h_node_match_end)
+  if (hook->hook->arg == (uintptr_t)h_node_end ||
+    hook->hook->arg == (uintptr_t)h_node_end_strip)
     rflags = "tWcnfs";
   if ((err = reliq_regcomp(&hook->match.pattern,src,&i,size,' ',rflags,NULL)))
     goto ERR;

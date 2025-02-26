@@ -8,7 +8,7 @@
     },
     .forums {
         ol .nodeList l@[1:2]; li child@,
-        * self@ -C@"[0] ol .nodeList l@[1:2]"
+        * self@ -has@"[0] ol .nodeList l@[1:2]"
     }; div .nodeInfo [0] child@; {
         .state span .nodeIcon title child@ | "%(title)v",
         .icon span .nodeIcons; [0] img | "%(src)v",

@@ -9,7 +9,7 @@
     .key dt | "%i",
     .value dd; {
         time datetime | "%(datetime)v\a",
-        a m@v>"<" | "%i\a",
+        a i@v>"<" | "%i\a",
         * l@[0] | "%i"
     } / tr '\n' sed "s/^\a*//;s/\a.*//"
 } |

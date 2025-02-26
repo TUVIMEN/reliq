@@ -110,6 +110,25 @@ print_text(const reliq *rq, const reliq_chnode *hnode, uint8_t flags, SINK *outf
   }
 }
 
+static uchar
+printf_C(const reliq_hnode *hn, char c, SINK *outfile)
+{
+  switch (c) {
+      case 'a':
+        print_uint(hn->tag_count+hn->text_count+hn->comment_count,outfile);
+        break;
+      case 't':
+        print_uint(hn->text_count,outfile);
+        break;
+      case 'c':
+        print_uint(hn->comment_count,outfile);
+        break;
+      default:
+        return 1;
+  }
+  return 0;
+}
+
 void
 chnode_printf(SINK *outfile, const char *format, const size_t formatl, const reliq_chnode *chnode, const reliq_chnode *parent, const reliq *rq)
 {
@@ -172,7 +191,13 @@ chnode_printf(SINK *outfile, const char *format, const size_t formatl, const rel
           break;
         case 's': print_uint(hnode.all.s,outfile); break;
         case 'c': print_uint(hnode.tag_count,outfile); break;
-        case 'C': print_chars(hnode.all.b,hnode.all.s,printflags|PC_UNTRIM,outfile); break;
+        case 'C':
+          if (i >= formatl)
+            break;
+          if (!printf_C(&hnode,format[i],outfile))
+            i++;
+          break;
+        case 'A': print_chars(hnode.all.b,hnode.all.s,printflags|PC_UNTRIM,outfile); break;
         case 'S':
           src = reliq_hnode_starttag(&hnode,&srcl);
           print_chars(src,srcl,printflags|PC_UNTRIM,outfile);
