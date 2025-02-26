@@ -1,7 +1,7 @@
 " Vim syntax file
 " Language: reliq
 " Maintainer: Dominik Stanisław Suchora <suchora.dominik7@gmail.com>
-" Last Change: 2024-09-23
+" Last Change: 2025-02-26
 
 if exists("b:current_syntax")
   finish
@@ -13,7 +13,21 @@ set cpo&vim
 syn match rqOneLineComment '\(\s\|^\)\/\/.*'
 syn region rqMultilineComment start=+\(\s\|^\)/\*+ end=+\*/+
 
-syn match rqHooks "\s[+-]\?\([maLlcCpPeI]\|match\|attributes\|level\|levelrelative\|children\|childmatch\|self\|child\|descendant\|desc\|ancestor\|parent\|rparent\|sibl\|spre\|ssub\|fsibl\|fspre\|fssub\|full\|relative_parent\|sibling\|sibling_preceding\|sibling_subsequent\|full_sibling\|full_sibling_preceding\|full_sibling_subsequent\|positionrelative\|position\|endmatch\|index\)@"
+" shortened matching hooks
+syn match rqHooks "\s[+-]\?[mMaLlcCpPeI]@"
+" global matching hooks
+syn match rqHooks "\s[+-]\?\(level\|levelrelative\|positionrelative\|position\|index\)@"
+" matching hooks
+syn match rqHooks "\s[+-]\?\(match\|tagmatch\|attributes\|childmatch\|endmatch\)@"
+" shortened access hooks
+syn match rqHooks "\s\(desc\|sibl\|spre\|ssub\|fsibl\|fspre\|fssub\|rparent\)@"
+" access hooks
+syn match rqHooks "\s\(self\|child\|descendant\|ancestor\|parent\|full\|relative_parent\|sibling\|sibling_preceding\|sibling_subsequent\|full_sibling\|full_sibling_preceding\|full_sibling_subsequent\)@"
+" type hooks
+syn match rqHooks "\s\(node\|comment\|text\|textempty\|textnoerr\|texterr\|textall\)@"
+" shortened self hook
+syn match rqHooks "\s@"
+
 syn match rqSpecialCharacter contained "\\."
 syn region rqString start=+"+ skip=+\\\\\|\\"+ end=+"+ contains=rqSpecialCharacter
 syn region rqString start=+'+ skip=+\\\\\|\\'+ end=+'+ contains=rqSpecialCharacter
@@ -29,11 +43,13 @@ syn match rqFieldArray ".a[a-zA-Z0-9]*(\"\(\\[0anrtbfv]\|.\)\")" nextgroup=rqFie
 
 syn match rqFieldType "\.[sbniu][a-zA-Z0-9]*" nextgroup=rqChain contained
 
+syn match rqConditionals "\(\s\|^\)\(&&\|&\|||\|\^&&\|\^&\|\^||\)\(\s\|$\)"
+
 syn region rqFormat start='\(\s\|^\)[|/]\(\s\|$\)' end=',\|$' contained contains=rqString,rqRange,rqComma,rqOneLineComment,rqMultilineComment
 
-syn region rqChain transparent start='\s' end=",\|$" contained contains=rqTag,rqHooks,rqString,rqRange,rqSemicolon,rqBlock,rqComma,rqFormat,rqField,rqOneLineComment,rqMultilineComment
+syn region rqChain transparent start='\s' end=",\|$" contained contains=rqTag,rqHooks,rqString,rqRange,rqSemicolon,rqBlock,rqComma,rqConditionals,rqFormat,rqField,rqOneLineComment,rqMultilineComment
 
-syn region rqBlock start="{" end="}" contains=rqHooks,rqString,rqRange,rqSemicolon,rqField,rqBlock,rqFormat,rqComma,rqOneLineComment,rqMultilineComment
+syn region rqBlock start="{" end="}" contains=rqHooks,rqString,rqRange,rqSemicolon,rqField,rqBlock,rqConditionals,rqFormat,rqComma,rqOneLineComment,rqMultilineComment
 "syn region rqBlock start="{" end=/}\(\_s\+\ze\("\|{\)\)\@!/ transparent fold contains=rqHooks,rqString,rqRange,rqSemicolon,rqComma,rqField
 
 hi def link rqField Function
@@ -49,6 +65,7 @@ hi def link rqRange Special
 hi def link rqSemicolon Comment
 hi def link rqComma Comment
 hi def link rqFormat Keyword
+hi def link rqConditionals Keyword
 "hi def link rqBlock Statement
 hi def link rqOneLineComment Comment
 hi def link rqMultilineComment Comment
