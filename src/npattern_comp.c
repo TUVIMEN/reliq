@@ -210,6 +210,19 @@ const struct hook_t hooks_list[] = {
 
 #undef XN
 
+struct nmatchers_state {
+  nmatchers *matches;
+  reliq_range *position;
+  reliq_error *err;
+  uint16_t *nodeflags;
+  const char *src;
+  size_t size;
+  uint16_t lvl;
+  uint8_t prevtype;
+  uchar hastag;
+  uchar typehooks_count : 1;
+};
+
 static void
 pattrib_free(struct pattrib *attrib) {
   if (!attrib)
@@ -532,7 +545,7 @@ nmatchers_type_conflict(const uint8_t type1, const uint8_t type2)
   return 1;
 }
 
-static reliq_error *handle_nmatchers(const char *src, size_t *pos, const size_t size, const uint16_t lvl, nmatchers *matches, uchar *hastag, reliq_range *position, uint16_t *nodeflags, const uint8_t prevtype);
+static void handle_nmatchers(size_t *pos, struct nmatchers_state *st);
 
 static inline uchar //i've run out of names
 nmatchers_type_text_pure(const uint8_t type)
@@ -561,13 +574,48 @@ nmatchers_type_merge(const uint8_t type, uint8_t *dest)
   *dest = NM_MULTIPLE;
 }
 
-static uchar
-handle_nmatchers_group(const char *src, size_t *pos, const size_t size, const uint16_t lvl, uchar *hastag, nmatchers *matches, flexarr *result, reliq_error **err) //result: nmatchers_node
+static nmatchers *
+handle_nmatchers_group_add(size_t *pos, struct nmatchers_state *st, flexarr *groups_matches, uchar *wastag)
 {
+  uchar prevhastag = st->hastag;
+  nmatchers *matches = st->matches;
+  nmatchers *ret = flexarr_inc(groups_matches);
+  uint8_t prevtype = st->prevtype;
+
+  st->lvl++;
+  st->prevtype = matches->type;
+  st->matches = ret;
+  handle_nmatchers(pos,st);
+  uchar sethastag = st->hastag;
+  st->hastag = prevhastag;
+  st->matches = matches;
+  st->prevtype = prevtype;
+  st->lvl--;
+  if (st->err) {
+    flexarr_dec(groups_matches);
+    goto ERR;
+  }
+  if (!prevhastag && wastag && !sethastag) {
+    st->err = script_err("node: %lu: if one group specifies tag then the rest has too",*pos);
+    goto ERR;
+  }
+  *wastag = sethastag;
+
+  return ret;
+
+  ERR: ;
+  return NULL;
+}
+
+static uchar
+handle_nmatchers_group(size_t *pos, flexarr *result, struct nmatchers_state *st) //result: nmatchers_node
+{
+  const char *src = st->src;
+  const size_t size = st->size;
   size_t i = *pos;
   if (++i >= size) {
     END_OF_RANGE: ;
-    *err = script_err("node: %lu: unprecedented end of group",i-1);
+    st->err = script_err("node: %lu: unprecedented end of group",i-1);
     goto ERR;
   }
 
@@ -577,20 +625,11 @@ handle_nmatchers_group(const char *src, size_t *pos, const size_t size, const ui
   uint8_t type_acc = NM_DEFAULT;
 
   while (1) {
-    uchar tag = *hastag;
-    nmatchers *match = flexarr_inc(groups_matches);
-
-    if ((*err = handle_nmatchers(src,&i,size,lvl+1,match,&tag,NULL,NULL,matches->type))) {
-      flexarr_dec(groups_matches);
+    nmatchers *nmatch = handle_nmatchers_group_add(&i,st,groups_matches,&wastag);
+    if (nmatch == NULL)
       goto ERR;
-    }
-    if (!*hastag && wastag && !tag) {
-      *err = script_err("node: %lu: if one group specifies tag then the rest has too",i);
-      goto ERR;
-    }
-    wastag = tag;
 
-    nmatchers_type_merge(match->type,&type_acc);
+    nmatchers_type_merge(nmatch->type,&type_acc);
 
     if (i >= size || src[i] != '(') {
       size_t lastindex = i-1;
@@ -600,30 +639,30 @@ handle_nmatchers_group(const char *src, size_t *pos, const size_t size, const ui
         free_node_matches_flexarr(groups_matches);
         goto END_OF_RANGE;
       }
-      if (i >= size)
+      if (i >= size) //this is a horrible hack which checks if all groups are closed
         i++;
       break;
     }
 
-    /*if (match->size < 1) {
+    /*if (nmatch->size < 1) {
       free_node_matches_flexarr(groups_matches);
-      *err = script_err("node: empty group will always pass");
+      st->err = script_err("node: empty group will always pass");
       goto ERR;
     }*/ //future warning
 
     i++;
   }
 
-  if (!*hastag)
-    *hastag = wastag;
+  if (!st->hastag)
+    st->hastag = wastag;
 
   /*if (groups_matches->size < 2) {
     free_node_matches_flexarr(groups_matches);
-    *err = script_err("node: groups must have at least 2 groups to affect anything");
+    st->err = script_err("node: groups must have at least 2 groups to affect anything");
     goto ERR;
   }*/ //future warning
 
-  nmatchers_type_merge(type_acc,&matches->type);
+  nmatchers_type_merge(type_acc,&st->matches->type);
 
   nmatchers_groups groups;
   flexarr_conv(groups_matches,(void**)&groups.list,&groups.size);
@@ -638,7 +677,7 @@ handle_nmatchers_group(const char *src, size_t *pos, const size_t size, const ui
 }
 
 static reliq_error *
-match_hook_add_access_type(const size_t pos, const reliq_hook *hook, const uchar invert, const uchar fullmode, uint16_t *nodeflags, uchar *typehooks_count, uint8_t *type, flexarr *result) //result: nmatchers_node
+match_hook_add_access_type(const size_t pos, const reliq_hook *hook, const uchar invert, flexarr *result, struct nmatchers_state *st) //result: nmatchers_node
 {
   const uchar isaccess = ((hook->hook->flags&H_ACCESS) > 0);
   if (invert)
@@ -646,30 +685,32 @@ match_hook_add_access_type(const size_t pos, const reliq_hook *hook, const uchar
       isaccess ? "access" : "type",hook->hook->name.b);
 
   if (isaccess) {
-    if (!fullmode)
+    if (st->lvl != 0)
       return script_err("node: %lu: groups cannot have access hooks",pos);
-    *nodeflags = (*nodeflags&(~N_MATCHED_TYPE)) | hook->hook->arg;
+    *st->nodeflags = (*st->nodeflags&(~N_MATCHED_TYPE)) | hook->hook->arg;
   } else {
-    if (*typehooks_count)
+    if (st->typehooks_count)
       return script_err("hook \"%s\": type hooks can be specified only once",hook->hook->name.b);
     if (result->size != 0)
       return script_err("hook \"%s\": type hooks have to be specified before everything else",hook->hook->name.b);
-    if (nmatchers_type_conflict(*type,hook->hook->arg))
+    if (nmatchers_type_conflict(st->matches->type,hook->hook->arg))
       return script_err("hook \"%s\" is in conflict with higher type hook",hook->hook->name.b);
 
-    *type = hook->hook->arg;
-    (*typehooks_count)++;
+    st->matches->type = hook->hook->arg;
+    st->typehooks_count = 1;
   }
 
   return NULL;
 }
 
 static uchar
-hook_add(const char *src, size_t *pos, const size_t size, const uchar invert, uint8_t *type, uchar fullmode, uint16_t *nodeflags, uchar *typehooks_count, flexarr *result, reliq_error **err) //result: nmatchers_node
+hook_add(size_t *pos, const uchar invert, flexarr *result, struct nmatchers_state *st) //result: nmatchers_node
 {
+  const char *src = st->src;
+  const size_t size = st->size;
   reliq_hook hook;
   size_t prev = *pos;
-  if ((*err = hook_handle(src,pos,size,&hook,*type)))
+  if ((st->err = hook_handle(src,pos,size,&hook,st->matches->type)))
     goto ERR;
 
   if (!hook.hook)
@@ -681,7 +722,7 @@ hook_add(const char *src, size_t *pos, const size_t size, const uchar invert, ui
   const uint16_t hflags = hook.hook->flags;
 
   if (hflags&(H_TYPE|H_ACCESS)) {
-    if ((*err = match_hook_add_access_type(*pos,&hook,invert,fullmode,nodeflags,typehooks_count,type,result)))
+    if ((st->err = match_hook_add_access_type(*pos,&hook,invert,result,st)))
       goto ERR;
     goto END;
   }
@@ -849,8 +890,10 @@ comp_text(const char *src, size_t *pos, const size_t size, uchar invert, uchar *
 }
 
 static uchar
-handle_nmatchers_position(const char *src, size_t *pos, const size_t size, reliq_range *position, uchar *fullmode, uchar *hastag, uint16_t *nodeflags, reliq_error **err)
+handle_nmatchers_position(size_t *pos, struct nmatchers_state *st)
 {
+  const char *src = st->src;
+  const size_t size = st->size;
   size_t i = *pos;
   const char *r = memchr(src+i,']',size-i);
   if (r == NULL)
@@ -860,21 +903,19 @@ handle_nmatchers_position(const char *src, size_t *pos, const size_t size, reliq
   if ((size_t)(r-src) < size && !isspace(*r))
     goto ERR;
 
-  if (*fullmode) {
-    if (position->s) {
-      *err = script_err("node: %lu: position already declared",r-src);
-      goto ERR;
-    }
-  } else {
-    *err = script_err("node: %lu: groups cannot have position",r-src);
+  if (st->lvl) {
+    st->err = script_err("node: %lu: groups cannot have position",r-src);
+    goto ERR;
+  } else if (st->position->s) {
+    st->err = script_err("node: %lu: position already declared",r-src);
     goto ERR;
   }
 
-  if ((*err = range_comp(src,&i,size,position)))
+  if ((st->err = range_comp(src,&i,size,st->position)))
     goto ERR;
 
-  if (!*hastag)
-    *nodeflags |= N_POSITION_ABSOLUTE;
+  if (!st->hastag)
+    *st->nodeflags |= N_POSITION_ABSOLUTE;
 
   *pos = r-src;
   return 1;
@@ -885,19 +926,62 @@ handle_nmatchers_position(const char *src, size_t *pos, const size_t size, reliq
 }
 
 static reliq_error *
-handle_nmatchers(const char *src, size_t *pos, const size_t size, const uint16_t lvl, nmatchers *matches, uchar *hastag, reliq_range *position, uint16_t *nodeflags, const uint8_t prevtype)
+err_multiple(const size_t pos)
 {
-  if (lvl >= RELIQ_MAX_GROUP_LEVEL)
-    return script_err("node: %lu: reached %lu level of recursion",*pos,lvl);
-  reliq_error *err = NULL;
-  flexarr *result = flexarr_init(sizeof(nmatchers_node),NODE_MATCHES_INC);
-  matches->size = 0;
-  matches->list = NULL;
-  matches->type = prevtype;
+  return script_err("node %lu: multiple types cannot be mixed",pos);
+}
 
-  uchar fullmode=0,typehooks_count=0;
-  if (position)
-    fullmode = 1;
+static uchar
+hook_check(size_t *pos, const uchar invert, flexarr *result, struct nmatchers_state *st) //result: nmatchers_node
+{
+  uchar r = hook_add(pos,invert,result,st);
+  if (!r)
+    return 0;
+
+  uint8_t *type = &st->matches->type;
+  if (r == 2) {
+    if (*type == NM_DEFAULT)
+      *type = NM_TAG;
+    if (*type == NM_MULTIPLE) {
+      st->err = err_multiple(*pos);
+      return 0;
+    }
+  }
+
+  return 1;
+}
+
+static reliq_error *
+type_comp(const char *src, size_t *pos, const size_t size, const uchar invert, uchar *hastag, flexarr *result, uint8_t *type) //result: nmatchers_node
+{
+  switch (*type) {
+    case NM_DEFAULT:
+      *type = NM_TAG;
+      return NULL;
+    case NM_TAG:
+      return comp_node(src,pos,size,invert,hastag,result);
+    case NM_COMMENT:
+      return comp_comment(src,pos,size,invert,hastag,result);
+    default:
+      return comp_text(src,pos,size,invert,hastag,result);
+  }
+}
+
+static void
+handle_nmatchers(size_t *pos, struct nmatchers_state *st)
+{
+  const char *src = st->src;
+  const size_t size = st->size;
+  if (st->lvl >= RELIQ_MAX_GROUP_LEVEL) {
+    st->err = script_err("node: %lu: reached %lu level of recursion",*pos,st->lvl);
+    return;
+  }
+  flexarr *result = flexarr_init(sizeof(nmatchers_node),NODE_MATCHES_INC);
+  nmatchers *matches = st->matches;
+  *matches = (nmatchers){ .type = st->prevtype };
+  uint8_t *type = &matches->type;
+  uchar *hastag = &st->hastag;
+  st->typehooks_count = 0;
 
   size_t i = *pos;
   while (i < size) {
@@ -906,22 +990,22 @@ handle_nmatchers(const char *src, size_t *pos, const size_t size, const uint16_t
       break;
 
     if (src[i] == ')') {
-      if (fullmode)
-        err = script_err("node: %lu: unexpected '%c'",i,src[i]);
+      if (st->lvl == 0)
+        st->err = script_err("node: %lu: unexpected '%c'",i,src[i]);
       i++;
       break;
     }
 
     if (src[i] == '(') {
-      if (handle_nmatchers_group(src,&i,size,lvl,hastag,matches,result,&err))
+      if (handle_nmatchers_group(&i,result,st))
         break;
       continue;
     }
 
     if (src[i] == '[') {
-      if (handle_nmatchers_position(src,&i,size,position,&fullmode,hastag,nodeflags,&err))
+      if (handle_nmatchers_position(&i,st))
         continue;
-      if (err)
+      if (st->err)
         break;
     }
 
@@ -934,50 +1018,24 @@ handle_nmatchers(const char *src, size_t *pos, const size_t size, const uint16_t
     } else if (i+1 < size && src[i] == '\\' && (src[i+1] == '+' || src[i+1] == '-'))
       i++;
 
-    if (isalpha(src[i]) || src[i] == '@') {
-      uchar r = hook_add(src,&i,size,invert,&matches->type,fullmode,nodeflags,&typehooks_count,result,&err);
-      if (r) {
-        if (r == 2) {
-          if (matches->type == NM_DEFAULT)
-            matches->type = NM_TAG;
-          if (matches->type == NM_MULTIPLE)
-            goto ERR_MULTIPLE;
-        }
-        continue;
-      }
-      if (err)
-        break;
-    }
+    if ((isalpha(src[i]) || src[i] == '@') &&
+      hook_check(&i,invert,result,st))
+      continue;
 
-    if (i >= size)
+    if (i >= size || st->err)
       break;
 
-    if (matches->type == NM_MULTIPLE) {
-      ERR_MULTIPLE: ;
-      err = script_err("node %lu: multiple types cannot be mixed",i);
+    if (*type == NM_MULTIPLE) {
+      st->err = err_multiple(i);
       break;
     }
 
-    switch(matches->type) {
-      case NM_DEFAULT:
-        matches->type = NM_TAG;
-      case NM_TAG:
-        err = comp_node(src,&i,size,invert,hastag,result);
-        break;
-      case NM_COMMENT:
-        err = comp_comment(src,&i,size,invert,hastag,result);
-        break;
-      default:
-        err = comp_text(src,&i,size,invert,hastag,result);
-        break;
-    }
-    if (err)
+    if ((st->err = type_comp(src,&i,size,invert,hastag,result,type)))
       break;
   }
 
   flexarr_conv(result,(void**)&matches->list,&matches->size);
   *pos = i;
-  return err;
 }
 
 reliq_error *
@@ -985,30 +1043,33 @@ reliq_ncomp(const char *script, const size_t size, reliq_npattern *nodep)
 {
   if (!nodep)
     return NULL;
-  reliq_error *err = NULL;
-  size_t pos=0;
 
-  memset(nodep,0,sizeof(reliq_npattern));
-  nodep->flags |= N_FULL;
-  nodep->matches.type = NM_DEFAULT;
-  if (pos >= size) {
+  *nodep = (reliq_npattern){
+    .flags = N_FULL
+  };
+  if (!size) {
     nodep->flags |= N_EMPTY;
-    if (pos)
-      goto END_FREE;
     return NULL;
   }
 
-  uchar hastag=0;
+  struct nmatchers_state st = {
+    .src = script,
+    .size = size,
+    .matches = &nodep->matches,
+    .position = &nodep->position,
+    .nodeflags = &nodep->flags,
+    .prevtype = NM_DEFAULT
+  };
 
-  err = handle_nmatchers(script,&pos,size,0,&nodep->matches,&hastag,&nodep->position,&nodep->flags,NM_DEFAULT);
-  if (!err && nodep->matches.size == 0 && nodep->matches.type == NM_DEFAULT)
+  size_t pos=0;
+  handle_nmatchers(&pos,&st);
+  if (!st.err && nodep->matches.size == 0 && nodep->matches.type == NM_DEFAULT)
     nodep->flags |= N_EMPTY;
 
-  if (err) {
-    END_FREE: ;
+  if (st.err) {
     reliq_nfree(nodep);
   } else
     nodep->position_max = predict_range_max(&nodep->position);
 
-  return err;
+  return st.err;
 }
