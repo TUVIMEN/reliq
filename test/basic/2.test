@@ -1,14 +1,58 @@
 < editing.html
 3772eed96bb94448eb9775ff189a2e05,'li; [0] img ; * rparent@'
 d41d8cd98f00b204e9800998ecf8427e,'li; [0] img nnn ; * rparent@'
-fdac6d4441868dc70bdc10394814b550,'li; [0] img; * ancestor@; [1] * self@; * fssub@; img self@'
+b20a73ef7de55052616d311c3d3e8201,'li; [0] img; * ancestor@; [1] * self@; * fssub@; img self@'
 8a03be4a7afa06f1b5979766a900a5e1,'li; [0] img; * ancestor@; [1] * self@; * sibling@'
 40c147c392bc8e890cceb1061b947de6,'li; [0] img; * ancestor@; [1] * self@; * spre@'
 77b3fab062bfd1fa0d3e25486a00447d,'li; [0] img; * ancestor@; [1] * self@; * fspre@'
-fda0be185d1aaf9de418d44c2fd92aee,'li; [0] img; * ancestor@; [1] * self@; * fssub@'
-ed8eb0e77512de535ad2565267cb2dbe,'li; [0] img; * ancestor@; [1] * self@; * fsibl@'
-2f572e59f5478af6c4a427dcb0bb0aae,'li; [0] img; * ancestor@; [1] * self@; * fsibl@ | "%l\n"'
+7051a37f03f84208388b8ff251023e43,'li; [0] img; * ancestor@; [1] * self@; * fssub@'
+86caa3b2168d3dd2d085530e441524e4,'li; [0] img; * ancestor@; [1] * self@; * fsibl@'
+606d51893ccdab477b63934b17728dfd,'li; [0] img; * ancestor@; [1] * self@; * fsibl@ | "%l\n"'
 3772eed96bb94448eb9775ff189a2e05,'li; [0] img; * parent@'
+
+a2c83c9caccb1ccf271c52720626b63f,'li; * self@ | "%l\n"'
+90c6eb8f3ee728e6a0ce5d1f00341732,'li; * self@ child@ | "%l\n"'
+
+7d96c8e2d211347de892ed754c81fc65,'[0] div; * preceding@'
+7d96c8e2d211347de892ed754c81fc65,'[0] div; * preceding@ spre@'
+7d96c8e2d211347de892ed754c81fc65,'[0] div; * preceding@ fspre@'
+7d96c8e2d211347de892ed754c81fc65,'[0] div; * preceding@ spre@ fspre@'
+
+a34fd36d048b7b52317f6677091cf78d,'[0] div; * desc@ child@'
+c2777b0e2749e36c3e0c77a0db74e6c4,'[0] div; * ancestor@ parent@'
+
+97d0535b6d01d475bbd0efb13d054556,'[0] div; * before@'
+97d0535b6d01d475bbd0efb13d054556,'[0] div; * before@ fspre@ spre@'
+97d0535b6d01d475bbd0efb13d054556,'[0] div; * before@ ancestor@ parent@'
+97d0535b6d01d475bbd0efb13d054556,'[0] div; * before@ fspre@ spre@ ancestor@ parent@'
+97d0535b6d01d475bbd0efb13d054556,'[0] div; * preceding@ ancestor@'
+
+218ac88ffaf782a7f8f592f3ba7ae9a3,'[0] div; * subsequent@'
+218ac88ffaf782a7f8f592f3ba7ae9a3,'[0] div; * subsequent@ ssub@'
+218ac88ffaf782a7f8f592f3ba7ae9a3,'[0] div; * subsequent@ fssub@'
+218ac88ffaf782a7f8f592f3ba7ae9a3,'[0] div; * subsequent@ ssub@ fssub@'
+
+a709e9206c49e5ae9e8087eb7be3c671,'[0] div; * after@'
+a709e9206c49e5ae9e8087eb7be3c671,'[0] div; * after@ ssub@ fssub@'
+a709e9206c49e5ae9e8087eb7be3c671,'[0] div; * after@ desc@ child@'
+a709e9206c49e5ae9e8087eb7be3c671,'[0] div; * after@ ssub@ fssub@ desc@ child@'
+a709e9206c49e5ae9e8087eb7be3c671,'[0] div; * subsequent@ desc@'
+
+a38004d136836fc6f096ffd487d82b4f,'[0] div; * everything@ child@ sibl@'
+a38004d136836fc6f096ffd487d82b4f,'[0] div; * everything@ ancestor@ subsequent@ parent@'
+a38004d136836fc6f096ffd487d82b4f,'[0] div; * self@ before@ after@'
+a38004d136836fc6f096ffd487d82b4f,'[0] div; * subsequent@ self@ preceding@ desc@ ancestor@'
+a38004d136836fc6f096ffd487d82b4f,'[0] div; * rparent@ everything@ desc@'
+a38004d136836fc6f096ffd487d82b4f,'[0] div; * rparent@ self@ before@ after@'
+
+c25b847f47322240ab7da68cfed649fe,'[0] div; * rparent@ self@'
+18fd829e75d7d0317782a0f1728cf914,'main; [0] div; * rparent@ self@'
+a867135dbb021148cd7a0a37c751d4d7,'main; [0] div; * rparent@ self@ parent@ child@'
+269707102e6f30225bb3d409e9ea146f,'main; [0] div; * ssub@ spre@ child@ parent@ rparent@ self@'
+deaf40879d1751559a47d00ac02969f9,'main; [0] div; * rparent@ preceding@ parent@ self@ desc@ after@'
+903ddbdd01f153d479fe788ade405256,'main; [0] div; * ancestor@ self@ spre@'
+43e857cde92e601e3e4d09843711c370,'main; [0] div; * fssub@ child@'
+
 < 2.html
 b2d1440b8bb1749fe92ed310fc3de87a,'encoding | "%Di\n"'
 57891b0cdd7687877b9fc491dbd601a5,-l

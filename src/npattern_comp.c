@@ -174,29 +174,34 @@ const struct hook_t hooks_list[] = {
   {{"all",3},H_MATCH_TEXT|H_PATTERN,(uintptr_t)XN(text_all)},
 
   //access
-  {{"",0},H_ACCESS|H_NOARG,N_SELF},
-  {{"desc",4},H_ACCESS|H_NOARG,N_DESCENDANT},
-  {{"rparent",7},H_ACCESS|H_NOARG,N_RELATIVE_PARENT},
-  {{"sibl",4},H_ACCESS|H_NOARG,N_SIBLING},
-  {{"spre",4},H_ACCESS|H_NOARG,N_SIBLING_PRECEDING},
-  {{"ssub",4},H_ACCESS|H_NOARG,N_SIBLING_SUBSEQUENT},
-  {{"fsibl",5},H_ACCESS|H_NOARG,N_FULL_SIBLING},
-  {{"fspre",5},H_ACCESS|H_NOARG,N_FULL_SIBLING_PRECEDING},
-  {{"fssub",5},H_ACCESS|H_NOARG,N_FULL_SIBLING_SUBSEQUENT},
+  {{"",0},H_ACCESS|H_NOARG,AXIS_SELF},
+  {{"desc",4},H_ACCESS|H_NOARG,AXIS_DESCENDANTS},
+  {{"rparent",7},H_ACCESS|H_NOARG,AXIS_RELATIVE_PARENT},
+  {{"sibl",4},H_ACCESS|H_NOARG,AXIS_SIBLINGS_PRECEDING|AXIS_SIBLINGS_SUBSEQUENT},
+  {{"spre",4},H_ACCESS|H_NOARG,AXIS_SIBLINGS_PRECEDING},
+  {{"ssub",4},H_ACCESS|H_NOARG,AXIS_SIBLINGS_SUBSEQUENT},
+  {{"fsibl",5},H_ACCESS|H_NOARG,AXIS_FULL_SIBLINGS_PRECEDING|AXIS_FULL_SIBLINGS_SUBSEQUENT},
+  {{"fspre",5},H_ACCESS|H_NOARG,AXIS_FULL_SIBLINGS_PRECEDING},
+  {{"fssub",5},H_ACCESS|H_NOARG,AXIS_FULL_SIBLINGS_SUBSEQUENT},
 
-  {{"full",4},H_ACCESS|H_NOARG,N_FULL},
-  {{"self",4},H_ACCESS|H_NOARG,N_SELF},
-  {{"child",5},H_ACCESS|H_NOARG,N_CHILD},
-  {{"descendant",10},H_ACCESS|H_NOARG,N_DESCENDANT},
-  {{"ancestor",8},H_ACCESS|H_NOARG,N_ANCESTOR},
-  {{"parent",6},H_ACCESS|H_NOARG,N_PARENT},
-  {{"relative_parent",15},H_ACCESS|H_NOARG,N_RELATIVE_PARENT},
-  {{"sibling",7},H_ACCESS|H_NOARG,N_SIBLING},
-  {{"sibling_preceding",17},H_ACCESS|H_NOARG,N_SIBLING_PRECEDING},
-  {{"sibling_subsequent",18},H_ACCESS|H_NOARG,N_SIBLING_SUBSEQUENT},
-  {{"full_sibling",12},H_ACCESS|H_NOARG,N_FULL_SIBLING},
-  {{"full_sibling_preceding",22},H_ACCESS|H_NOARG,N_FULL_SIBLING_PRECEDING},
-  {{"full_sibling_subsequent",23},H_ACCESS|H_NOARG,N_FULL_SIBLING_SUBSEQUENT},
+  {{"everything",10},H_ACCESS|H_NOARG,AXIS_EVERYTHING},
+  {{"full",4},H_ACCESS|H_NOARG,AXIS_SELF|AXIS_DESCENDANTS},
+  {{"self",4},H_ACCESS|H_NOARG,AXIS_SELF},
+  {{"child",5},H_ACCESS|H_NOARG,AXIS_CHILDREN},
+  {{"descendant",10},H_ACCESS|H_NOARG,AXIS_DESCENDANTS},
+  {{"ancestor",8},H_ACCESS|H_NOARG,AXIS_ANCESTORS},
+  {{"parent",6},H_ACCESS|H_NOARG,AXIS_PARENT},
+  {{"relative_parent",15},H_ACCESS|H_NOARG,AXIS_RELATIVE_PARENT},
+  {{"sibling",7},H_ACCESS|H_NOARG,AXIS_SIBLINGS_PRECEDING|AXIS_SIBLINGS_SUBSEQUENT},
+  {{"sibling_preceding",17},H_ACCESS|H_NOARG,AXIS_SIBLINGS_PRECEDING},
+  {{"sibling_subsequent",18},H_ACCESS|H_NOARG,AXIS_SIBLINGS_SUBSEQUENT},
+  {{"full_sibling",12},H_ACCESS|H_NOARG,AXIS_FULL_SIBLINGS_PRECEDING|AXIS_FULL_SIBLINGS_SUBSEQUENT},
+  {{"full_sibling_preceding",22},H_ACCESS|H_NOARG,AXIS_FULL_SIBLINGS_PRECEDING},
+  {{"full_sibling_subsequent",23},H_ACCESS|H_NOARG,AXIS_FULL_SIBLINGS_SUBSEQUENT},
+  {{"preceding",9},H_ACCESS|H_NOARG,AXIS_PRECEDING},
+  {{"before",6},H_ACCESS|H_NOARG,AXIS_BEFORE},
+  {{"after",5},H_ACCESS|H_NOARG,AXIS_AFTER},
+  {{"subsequent",10},H_ACCESS|H_NOARG,AXIS_SUBSEQUENT},
 
   //type
   {{"tag",3},H_TYPE|H_NOARG,NM_TAG},
@@ -214,9 +219,10 @@ struct nmatchers_state {
   nmatchers *matches;
   reliq_range *position;
   reliq_error *err;
-  uint16_t *nodeflags;
   const char *src;
   size_t size;
+  uint16_t nodeflags;
+  uint16_t axisflags;
   uint16_t lvl;
   uint8_t prevtype;
   uchar hastag;
@@ -687,7 +693,7 @@ match_hook_add_access_type(const size_t pos, const reliq_hook *hook, const uchar
   if (isaccess) {
     if (st->lvl != 0)
       return script_err("node: %lu: groups cannot have access hooks",pos);
-    *st->nodeflags = (*st->nodeflags&(~N_MATCHED_TYPE)) | hook->hook->arg;
+    st->axisflags |= hook->hook->arg;
   } else {
     if (st->typehooks_count)
       return script_err("hook \"%s\": type hooks can be specified only once",hook->hook->name.b);
@@ -915,7 +921,7 @@ handle_nmatchers_position(size_t *pos, struct nmatchers_state *st)
     goto ERR;
 
   if (!st->hastag)
-    *st->nodeflags |= N_POSITION_ABSOLUTE;
+    st->nodeflags |= N_POSITION_ABSOLUTE;
 
   *pos = r-src;
   return 1;
@@ -1057,19 +1063,23 @@ reliq_ncomp(const char *script, const size_t size, reliq_npattern *nodep)
     .size = size,
     .matches = &nodep->matches,
     .position = &nodep->position,
-    .nodeflags = &nodep->flags,
     .prevtype = NM_DEFAULT
   };
 
   size_t pos=0;
   handle_nmatchers(&pos,&st);
+  nodep->flags = st.nodeflags;
   if (!st.err && nodep->matches.size == 0 && nodep->matches.type == NM_DEFAULT)
     nodep->flags |= N_EMPTY;
 
   if (st.err) {
     reliq_nfree(nodep);
-  } else
+  } else {
     nodep->position_max = predict_range_max(&nodep->position);
+    if (st.axisflags == 0)
+      st.axisflags = AXIS_SELF|AXIS_DESCENDANTS;
+    axis_comp_functions(st.axisflags,(void*)&nodep->axis_funcs);
+  }
 
   return st.err;
 }

@@ -30,9 +30,12 @@ typedef struct {
   uint8_t type; //NM_
 } nmatchers;
 
+#define AXIS_FUNCS_MAX 6
+
 typedef struct {
   nmatchers matches;
   reliq_range position;
+  void (*axis_funcs[AXIS_FUNCS_MAX])(void); //gcc complains if its just a void*
 
   uint32_t position_max;
   uint16_t flags; //N_
