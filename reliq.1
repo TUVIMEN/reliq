@@ -321,7 +321,7 @@ Hooks for text types:
 Get text matching to \fIPATTERN\fR.
 .TP
 
-Access hooks specify what nodes will be matched:
+Access hooks specify what nodes will be matched, specifying multiple will not preserve order:
 
 .TP
 .BR @
@@ -365,6 +365,21 @@ Matches preceding siblings of self and nodes below them.
 .TP
 .BR fssub ",   " full_sibling_subsequent
 Matches subsequent siblings of self and nodes below them.
+.TP
+.BR everything
+Matches every node possible
+.TP
+.BR preceding
+Matches nodes before current that are not it's ancestors
+.TP
+.BR before
+Matches nodes before current
+.TP
+.BR subsequent
+Matches nodes after current that are not it's descendants
+.TP
+.BR after
+Matches nodes after current
 .TP
 
 Type hooks:
