@@ -101,7 +101,7 @@ Get `tr` in `table` with level relative to `table` equal `1`, and process it ind
         } | tr "\n" echo "" "\n"
     ' index.html
 
-Same but process all tags at once in block, then process final output of the block deleting all `\n` and appending `\n` at the end. The above creates tsv where each `tr` has its own line, but this example craetes only one line.
+Same but process all tags at once in block, then process final output of the block deleting all `\n` and appending `\n` at the end. The above creates tsv where each `tr` has its own line, but this example creates only one line.
 
     reliq '
         table border=1; tr; {
@@ -129,7 +129,7 @@ https//upload.wikimedia.org/wikipedia/commons/thumb/0/05/Sodium-3D.png/80px-Sodi
 
 Note that from now on any json structure in examples will be prettified for ease of reading, in reality reliq returns compressed json.
 
-It is a json like structure because reliq doesn't enforce json output as in above example, if output would be directly connected to json parser an error might accur when incorrect changes are made to reliq script.
+It is a json like structure because reliq doesn't enforce json output as in above example, if output would be directly connected to json parser an error might occur when incorrect changes are made to reliq script.
 
 It also does not check for repeating field names e.g.
 
