@@ -107,7 +107,7 @@ handle_reliq_error(reliq_error *err) {
 }
 
 static void
-usage()
+usage(void)
 {
   die("Usage: %s [OPTION]... PATTERNS [FILE]...\n"\
       "Search for PATTERNS in each html FILE.\n"\

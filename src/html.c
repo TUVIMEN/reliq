@@ -415,7 +415,7 @@ handle_ending(html_state *st, size_t *pos, reliq_cstr tagname, const size_t hnin
     if (unlikely(i >= s)) {
       i = s;
       hnode->all_len = s-hnode->all;
-      htmlerr++;
+      (*htmlerr)++;
       end = 1;
       goto END;
     }
