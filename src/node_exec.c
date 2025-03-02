@@ -194,10 +194,10 @@ X(full_siblings_subsequent) {
   }
 }
 
-X(all) {
+X(everything) {
   const size_t nodesl = rq->nodesl;
   const reliq_chnode *nodes = rq->nodes;
-  for (size_t i = 0; i <= nodesl && *found < lasttofind; i++)
+  for (size_t i = 0; i < nodesl && *found < lasttofind; i++)
     match_add(rq,nodes+i,current,nodep,dest,found);
 }
 
@@ -265,7 +265,7 @@ const struct axis_translation {
     axis_func_t func;
 } axis_translations_in_order[] = {
   {AXIS_RELATIVE_PARENT,XN(relative_parent)},
-  {AXIS_EVERYTHING,XN(all)},
+  {AXIS_EVERYTHING,XN(everything)},
 
   {AXIS_BEFORE,XN(before)},
   {AXIS_PRECEDING,XN(preceding)},

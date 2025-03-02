@@ -22,6 +22,7 @@
 
 #include "reliq.h"
 #include "range.h"
+#include "node_exec.h"
 #include "npattern_intr.h"
 
 typedef void (*hook_func_t)(const reliq *rq, const reliq_chnode *chnode, const reliq_hnode *hnode, const reliq_chnode *parent, char const **src, size_t *srcl);

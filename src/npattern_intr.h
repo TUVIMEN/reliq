@@ -24,23 +24,8 @@
 #include "exprs.h"
 
 //reliq_npattern flags
-#define N_MATCHED_TYPE 0xf
-#define N_FULL 1
-#define N_SELF 2
-#define N_CHILD 3
-#define N_DESCENDANT 4
-#define N_ANCESTOR 5
-#define N_PARENT 6
-#define N_RELATIVE_PARENT 7
-#define N_SIBLING 8
-#define N_SIBLING_PRECEDING 9
-#define N_SIBLING_SUBSEQUENT 10
-#define N_FULL_SIBLING 11
-#define N_FULL_SIBLING_PRECEDING 12
-#define N_FULL_SIBLING_SUBSEQUENT 13
-
-#define N_EMPTY 0x10 //ignore matching
-#define N_POSITION_ABSOLUTE 0x20
+#define N_EMPTY 0x1 //ignore matching
+#define N_POSITION_ABSOLUTE 0x2
 
 //nmatchers type
 #define NM_DEFAULT 0
@@ -78,22 +63,6 @@
 //pattrib flags
 #define A_INVERT 0x1
 #define A_VAL_MATTERS 0x2
-
-#define AXIS_SELF (1<<0)
-#define AXIS_CHILDREN (1<<1)
-#define AXIS_DESCENDANTS (1<<2)
-#define AXIS_ANCESTORS (1<<3)
-#define AXIS_PARENT (1<<4)
-#define AXIS_RELATIVE_PARENT (1<<5)
-#define AXIS_SIBLINGS_PRECEDING (1<<6)
-#define AXIS_SIBLINGS_SUBSEQUENT (1<<7)
-#define AXIS_FULL_SIBLINGS_PRECEDING (1<<8)
-#define AXIS_FULL_SIBLINGS_SUBSEQUENT (1<<9)
-#define AXIS_PRECEDING (1<<10)
-#define AXIS_BEFORE (1<<11)
-#define AXIS_AFTER (1<<12)
-#define AXIS_SUBSEQUENT (1<<13)
-#define AXIS_EVERYTHING (1<<14)
 
 #include "npattern.h"
 
@@ -133,9 +102,5 @@ struct pattrib {
   reliq_range position;
   uint8_t flags; //A_
 };
-
-typedef void (*axis_func_t)(const reliq*, const reliq_npattern*, const reliq_chnode*, const reliq_chnode*, flexarr*, uint32_t*, const uint32_t);
-
-void axis_comp_functions(uint16_t type, axis_func_t *out);
 
 #endif

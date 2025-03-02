@@ -24,6 +24,7 @@
 #include "ctype.h"
 #include "reliq.h"
 #include "utils.h"
+#include "node_exec.h"
 #include "npattern_intr.h"
 
 #define NODE_MATCHES_INC 8
@@ -1050,9 +1051,7 @@ reliq_ncomp(const char *script, const size_t size, reliq_npattern *nodep)
   if (!nodep)
     return NULL;
 
-  *nodep = (reliq_npattern){
-    .flags = N_FULL
-  };
+  *nodep = (reliq_npattern){0};
   if (!size) {
     nodep->flags |= N_EMPTY;
     return NULL;
