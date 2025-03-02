@@ -200,34 +200,81 @@ skip_sbrackets(const char *src, size_t *pos, const size_t s)
   return err;
 }
 
+static inline void
+skip_comment_c_oneline(const char *src, size_t *pos, const size_t s)
+{
+  size_t i = *pos+2;
+  for (; i < s; i++) {
+    if (src[i] == '\n') {
+      i++;
+      break;
+    }
+  }
+  *pos = i;
+}
+
+static inline void
+skip_comment_c_multiline(const char *src, size_t *pos, const size_t s)
+{
+  size_t i = *pos+2;
+  for (; i < s; i++) {
+    if (i+1 < s && src[i] == '*' && src[i+1] == '/') {
+      i += 2;
+      break;
+    }
+  }
+  *pos = i;
+}
+
+static inline void
+skip_comment_haskell_oneline(const char *src, size_t *pos, const size_t s)
+{
+  size_t i = *pos+2;
+  for (; i < s; i++) {
+    if (i+1 < s && src[i] == '-' && src[i+1] == '-') {
+      i += 2;
+      break;
+    }
+  }
+  *pos = i;
+}
+
+static inline void
+skip_comment_haskell_multiline(const char *src, size_t *pos, const size_t s)
+{
+  size_t i = *pos+2;
+  for (; i < s; i++) {
+    if (i+1 < s && src[i] == '-' && src[i+1] == '}') {
+      i += 2;
+      break;
+    }
+  }
+  *pos = i;
+}
+
 static uchar
 skip_comment(const char *src, size_t *pos, const size_t s)
 {
   size_t i = *pos;
-  if (i+1 >= s || src[i] != '/' || (src[i+1] != '/' && src[i+1] != '*'))
+  if (i+1 >= s)
     return 0;
-
-  char tf = src[i+1];
-  i += 2;
-
-  if (tf == '/') {
-    for (; i < s; i++) {
-      if (src[i] == '\n') {
-        i++;
-        break;
-      }
+  if (src[i] == '/') {
+    if (src[i+1] == '/') {
+      skip_comment_c_oneline(src,pos,s);
+      return 1;
+    } else if (src[i+1] == '*') {
+      skip_comment_c_multiline(src,pos,s);
+      return 1;
     }
-  } else {
-    for (; i < s; i++) {
-      if (i+1 < s && src[i] == '*' && src[i+1] == '/') {
-        i += 2;
-        break;
-      }
-    }
+  } else if (src[i] == '{' && src[i+1] == '-') {
+    skip_comment_haskell_multiline(src,pos,s);
+    return 1;
+  } else if (src[i] == '-' && src[i+1] == '-') {
+    skip_comment_haskell_oneline(src,pos,s);
+    return 1;
   }
 
-  *pos = i;
-  return 1;
+  return 0;
 }
 
 static void
@@ -365,7 +412,7 @@ tokenize(const char *src, const size_t size, token **tokens, size_t *tokensl) //
       i--;
       continue;
     }
-    if ((i == 0 || isspace(src[i-1])) && src[i] == '/' && skip_comment(src,&i,size)) {
+    if ((i == 0 || isspace(src[i-1])) && skip_comment(src,&i,size)) {
       i--;
       continue;
     }
@@ -433,6 +480,7 @@ tokenize(const char *src, const size_t size, token **tokens, size_t *tokensl) //
     flexarr_conv(ret,(void**)tokens,tokensl);
   }
   return err;
+  #undef token_found
 }
 
 static reliq_error *
