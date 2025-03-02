@@ -618,13 +618,14 @@ handle_nmatchers_group(size_t *pos, flexarr *result, struct nmatchers_state *st)
   const char *src = st->src;
   const size_t size = st->size;
   size_t i = *pos;
+  flexarr *groups_matches = NULL;
   if (++i >= size) {
     END_OF_RANGE: ;
     st->err = script_err("node: %lu: unprecedented end of group",i-1);
     goto ERR;
   }
 
-  flexarr *groups_matches = flexarr_init(sizeof(nmatchers),NODE_MATCHES_INC);
+  groups_matches = flexarr_init(sizeof(nmatchers),NODE_MATCHES_INC);
   uchar wastag = 0;
 
   uint8_t type_acc = NM_DEFAULT;
@@ -675,7 +676,8 @@ handle_nmatchers_group(size_t *pos, flexarr *result, struct nmatchers_state *st)
   return 0;
 
   ERR: ;
-  free_node_matches_flexarr(groups_matches);
+  if (groups_matches)
+    free_node_matches_flexarr(groups_matches);
   *pos = i;
   return 1;
 }
