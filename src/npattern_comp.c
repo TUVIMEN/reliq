@@ -252,20 +252,20 @@ reliq_free_hook(reliq_hook *hook)
     reliq_regfree(&hook->match.pattern);
 }
 
-static void free_matches(nmatchers *matches);
+static void free_nmatchers(nmatchers *matches);
 
 static void
-free_matches_group(nmatchers_groups *groups)
+free_nmatchers_group(nmatchers_groups *groups)
 {
   const size_t size = groups->size;
   nmatchers *list = groups->list;
   for (size_t i = 0; i < size; i++)
-    free_matches(&list[i]);
+    free_nmatchers(&list[i]);
   free(list);
 }
 
 static void
-free_matches(nmatchers *matches)
+free_nmatchers(nmatchers *matches)
 {
   const size_t size = matches->size;
   nmatchers_node *list = matches->list;
@@ -281,7 +281,7 @@ free_matches(nmatchers *matches)
         free(node->data.attrib);
         break;
       case MATCHES_TYPE_GROUPS:
-        free_matches_group(node->data.groups);
+        free_nmatchers_group(node->data.groups);
         free(node->data.groups);
         break;
     }
@@ -300,7 +300,7 @@ reliq_nfree(reliq_npattern *nodep)
   if (nodep->flags&N_EMPTY)
     return;
 
-  free_matches(&nodep->matches);
+  free_nmatchers(&nodep->matches);
 }
 
 static const char *
@@ -503,7 +503,7 @@ free_node_matches_flexarr(flexarr *groups_matches) //group_matches: nmatchers
   nmatchers *matchesv = (nmatchers*)groups_matches->v;
   const size_t size = groups_matches->size;
   for (size_t i = 0; i < size; i++)
-    free_matches(&matchesv[i]);
+    free_nmatchers(&matchesv[i]);
   flexarr_free(groups_matches);
 }
 
@@ -586,7 +586,7 @@ handle_nmatchers_group_add(size_t *pos, struct nmatchers_state *st, flexarr *gro
 {
   uchar prevhastag = st->hastag;
   nmatchers *matches = st->matches;
-  nmatchers *ret = flexarr_inc(groups_matches);
+  nmatchers *ret = flexarr_incz(groups_matches);
   uint8_t prevtype = st->prevtype;
 
   st->lvl++;
@@ -598,10 +598,8 @@ handle_nmatchers_group_add(size_t *pos, struct nmatchers_state *st, flexarr *gro
   st->matches = matches;
   st->prevtype = prevtype;
   st->lvl--;
-  if (st->err) {
-    flexarr_dec(groups_matches);
+  if (st->err)
     goto ERR;
-  }
   if (!prevhastag && wastag && !sethastag) {
     st->err = script_err("node: %lu: if one group specifies tag then the rest has too",*pos);
     goto ERR;
@@ -642,10 +640,8 @@ handle_nmatchers_group(size_t *pos, flexarr *result, struct nmatchers_state *st)
       size_t lastindex = i-1;
       if (i >= size)
         lastindex = size-1;
-      if (i >= size+1 || src[lastindex] != ')') {
-        free_node_matches_flexarr(groups_matches);
+      if (i >= size+1 || src[lastindex] != ')')
         goto END_OF_RANGE;
-      }
       if (i >= size) //this is a horrible hack which checks if all groups are closed
         i++;
       break;
@@ -679,6 +675,7 @@ handle_nmatchers_group(size_t *pos, flexarr *result, struct nmatchers_state *st)
   return 0;
 
   ERR: ;
+  free_node_matches_flexarr(groups_matches);
   *pos = i;
   return 1;
 }
@@ -718,7 +715,7 @@ hook_add(size_t *pos, const uchar invert, flexarr *result, struct nmatchers_stat
   reliq_hook hook;
   size_t prev = *pos;
   if ((st->err = hook_handle(src,pos,size,&hook,st->matches->type)))
-    goto ERR;
+    return 0;
 
   if (!hook.hook)
     goto ERR;

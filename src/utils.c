@@ -439,7 +439,7 @@ splchar3(const char *src, const size_t srcl, char *result, size_t *resultl, size
 char *
 delstr(char *src, const size_t pos, size_t *size, const size_t count)
 {
-  if (pos >= *size)
+  if (pos >= *size || !count)
     return src;
   if (*size-pos <= count) {
     src[pos] = 0;
@@ -447,11 +447,11 @@ delstr(char *src, const size_t pos, size_t *size, const size_t count)
     return src;
   }
 
-  const size_t s = *size-count;
+  const size_t s = *size-pos-count;
   memmove(src+pos,src+pos+count,s);
 
-  src[s] = 0;
-  *size = s;
+  *size -= count;
+  src[*size] = 0;
   return src;
 }
 

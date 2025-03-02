@@ -307,10 +307,8 @@ tr_edit(const char *src, const size_t size, SINK *output, const void *arg[4], co
         }
       }
     }
-    if (bufcurrent) {
+    if (bufcurrent)
       sink_write(output,buf,bufcurrent);
-      bufcurrent = 0;
-    }
     return NULL;
   }
 
@@ -330,10 +328,8 @@ tr_edit(const char *src, const size_t size, SINK *output, const void *arg[4], co
         i++;
     }
   }
-  if (bufcurrent) {
+  if (bufcurrent)
     sink_write(output,buf,bufcurrent);
-    bufcurrent = 0;
-  }
 
   return NULL;
 }

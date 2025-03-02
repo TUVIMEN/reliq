@@ -421,12 +421,9 @@ sed_comp_sy_arg(const char *src, size_t *pos, const size_t size, const char argd
     p++;
   }
   resl = p-(res-src);
-  if (p >= size || src[p] != argdelim) {
+  if (p >= size || src[p] != argdelim)
     err = sed_UNTERMINATED(p,name,foundchar);
-    goto END;
-  }
 
-  END: ;
   *pos = p;
   result->b = res;
   result->s = resl;
@@ -440,8 +437,8 @@ sed_comp_y(const size_t pos, const char name, struct sed_expression *sedexpr, re
   if (third->s)
     return sed_EXTRACHARS(pos);
 
-  sedexpr->arg1 = malloc(256*sizeof(char));
-  sedexpr->arg2 = malloc(256*sizeof(uchar));
+  sedexpr->arg1 = calloc(256,sizeof(char));
+  sedexpr->arg2 = calloc(256,sizeof(uchar));
   reliq_cstr first = sedexpr->arg;
   size_t i=0,j=0;
 
@@ -538,7 +535,7 @@ sed_comp_sy(const char *src, size_t *pos, const size_t size, const char name, in
 {
   reliq_error *err = NULL;
   size_t p = *pos;
-  char argdelim = src[p];
+  char argdelim = (p < size) ? src[p] : 0;
 
   if ((err = sed_comp_sy_arg(src,&p,size,argdelim,name,sedexpr->name,&sedexpr->arg)))
     goto END;
@@ -871,12 +868,10 @@ sed_pre_edit(const char *src, const size_t size, SINK *output, char *buffers[3],
             if (scriptv[i].name == ':' && strcomp(scriptv[cycle].arg,scriptv[i].arg))
               cycle = i;
           break;
-        case 'y': {
+        case 'y':
           for (size_t i = 0; i < patternspl; i++)
-            buffersp[i] = (((uchar*)scriptv[cycle].arg2)[(uchar)patternsp[i]]) ?
+            patternsp[i] = (((uchar*)scriptv[cycle].arg2)[(uchar)patternsp[i]]) ?
                 ((char*)scriptv[cycle].arg1)[(uchar)patternsp[i]] : patternsp[i];
-          memcpy(patternsp,buffersp,patternspl);
-          }
           break;
         case 's': {
           successfulsub = 0;

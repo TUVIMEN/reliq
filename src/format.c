@@ -88,8 +88,11 @@ format_exec(char *input, size_t inputl, SINK *output, const reliq_chnode *hnode,
       }
       if (format[i].flags&FORMAT_FUNC) {
         reliq_error *err = format_functions[(format[i].flags&FORMAT_FUNC)-1].func(ptr[0],fsize[0],out,(const void**)format[i].arg,format[i].flags);
-        if (err)
+        if (err) {
+          if (i == 0 && hnode)
+            free(ptr[0]);
           return err;
+        }
       }
     }
 

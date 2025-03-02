@@ -173,9 +173,11 @@ uniq_edit(const char *src, const size_t size, SINK *output, const void *arg[4], 
 static int
 sort_cmp(const reliq_cstr *s1, const reliq_cstr *s2)
 {
-  size_t s = s1->s;
-  if (s < s2->s)
-    s = s2->s;
+  if (!s1->s)
+    return -1;
+  if (!s2->s)
+    return 1;
+  const size_t s = (s1->s > s2->s) ? s2->s : s1->s;
   return memcmp(s1->b,s2->b,s);
 }
 
