@@ -1,7 +1,7 @@
 " Vim syntax file
 " Language: reliq
 " Maintainer: Dominik Stanisław Suchora <suchora.dominik7@gmail.com>
-" Last Change: 2025-02-26
+" Last Change: 2025-03-02
 
 if exists("b:current_syntax")
   finish
@@ -11,7 +11,9 @@ let s:cpo_save = &cpo
 set cpo&vim
 
 syn match rqOneLineComment '\(\s\|^\)\/\/.*'
+syn match rqOneLineComment '\(\s\|^\)--.*'
 syn region rqMultilineComment start=+\(\s\|^\)/\*+ end=+\*/+
+syn region rqMultilineComment start=+\(\s\|^\){-+ end=+-}+
 
 " shortened matching hooks
 syn match rqHooks "\s[+-]\?[AiSnaeE]@"
