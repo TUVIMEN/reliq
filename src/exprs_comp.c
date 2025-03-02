@@ -51,13 +51,8 @@ reliq_expr_free_pre(flexarr *exprs) //exprs: reliq_expr
 void
 reliq_efree_intr(reliq_expr *expr)
 {
-  #ifdef RELIQ_EDITING
   format_free(expr->nodef,expr->nodefl);
   format_free(expr->exprf,expr->exprfl);
-  #else
-  if (expr->nodef)
-    free(expr->nodef);
-  #endif
   if (expr->outfield.name.b)
     free(expr->outfield.name.b);
 
@@ -104,9 +99,7 @@ enum tokenName {
   tNextNode,
   tChainLink,
   tNodeFormat,
-  #ifdef RELIQ_EDITING
   tExprFormat,
-  #endif
   tText,
   tConditionOr,
   tConditionAnd,
@@ -132,9 +125,7 @@ token_name(enum tokenName name)
     case tNextNode: return "tNextNode";
     case tChainLink: return "tChainLink";
     case tNodeFormat: return "tNodeFormat";
-    #ifdef RELIQ_EDITING
     case tExprFormat: return "tExprFormat";
-    #endif
     case tConditionOr: return "tConditionOr";
     case tConditionAnd: return "tConditionAnd";
     case tConditionAndBlank: return "tConditionAndBlank";
@@ -436,16 +427,12 @@ tokenize(const char *src, const size_t size, token **tokens, size_t *tokensl) //
     }
 
     if ((i == 0 || isspace(src[i-1])) && (src[i] == '|'
-      #ifdef RELIQ_EDITING
       || src[i] == '/'
-      #endif
       )) {
       size_t s = 1;
       enum tokenName n = tNodeFormat;
-      #ifdef RELIQ_EDITING
       if (src[i] == '/')
         n = tExprFormat;
-      #endif
       if (i != 0) {
         s = 2;
         i--;
@@ -488,11 +475,7 @@ add_chainlink(flexarr *exprs, reliq_expr *cl, const uchar noerr) //exprs: reliq_
 {
   reliq_error *err = NULL;
 
-  if (!cl->e && !cl->outfield.name.b && !cl->nodefl
-    #ifdef RELIQ_EDITING
-    && !cl->exprfl
-    #endif
-    )
+  if (!cl->e && !cl->outfield.name.b && !cl->nodefl && !cl->exprfl)
     goto END;
 
   if (!noerr && exprs->size) {
@@ -599,11 +582,7 @@ from_token_comp(const token *tokens, size_t *pos, const size_t tokensl, const ui
         goto_script_seterr_p(END,"block: %lu: unprecedented end of block",i);
       }
       goto END;
-    } else if (name == tNodeFormat
-      #ifdef RELIQ_EDITING
-      || name == tExprFormat
-      #endif
-      ) {
+    } else if (name == tNodeFormat || name == tExprFormat) {
       if (name == tNodeFormat) {
         if (expr_has_nformat)
           goto CANNOT_TWICE;
@@ -625,12 +604,10 @@ from_token_comp(const token *tokens, size_t *pos, const size_t tokensl, const ui
           size_t g=0;
           void *format = &expr.nodef;
           size_t *formatl = &expr.nodefl;
-          #ifdef RELIQ_EDITING
           if (name == tExprFormat) {
             format = &expr.exprf;
             formatl = &expr.exprfl;
           }
-          #endif
           *err = format_comp(tokens[i+1].start,&g,tokens[i+1].size,format,formatl);
           if (*err)
             goto END;
@@ -640,10 +617,8 @@ from_token_comp(const token *tokens, size_t *pos, const size_t tokensl, const ui
         } else if (tokens[i+1].name == tChainLink) {
           FORMAT_IN_CHAIN: ;
           const char *ftype = "node";
-          #ifdef RELIQ_EDITING
           if (name == tExprFormat)
             ftype = "expression";
-          #endif
           goto_script_seterr_p(END,"%lu: illegal use of %s format inside chain",i,ftype);
         }
       }
@@ -652,16 +627,12 @@ from_token_comp(const token *tokens, size_t *pos, const size_t tokensl, const ui
         EXPR_TYPE_SET(expr.flags,EXPR_SINGULAR);
 
       if (expr.nodefl
-        #ifdef RELIQ_EDITING
         || name == tExprFormat
-        #endif
         ) {
         if (expr.childfields) {
           const char *ftype = "node";
-          #ifdef RELIQ_EDITING
           if (name == tExprFormat)
             ftype = "expression";
-          #endif
           goto_script_seterr_p(END,"illegal assignment of %s format to block with fields",ftype);
         }
 

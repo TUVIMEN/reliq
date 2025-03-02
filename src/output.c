@@ -25,11 +25,7 @@
 #include "ctype.h"
 #include "utils.h"
 #include "output.h"
-#ifdef RELIQ_EDITING
 #include "format.h"
-#else
-#include "hnode_print.h"
-#endif
 #include "exprs.h"
 
 #define FCOLLECTOR_OUT_INC (1<<4)
@@ -37,24 +33,10 @@
 
 static void outfields_value_print(SINK *out, const reliq_output_field *field, const char *value, const size_t valuel);
 
-reliq_error *
-node_output(const reliq_chnode *hnode, const reliq_chnode *parent,
-#ifdef RELIQ_EDITING
-  const reliq_format_func *format,
-#else
-  const char *format,
-#endif
-  const size_t formatl, SINK *output, const reliq *rq)
+static inline reliq_error *
+node_output(const reliq_chnode *hnode, const reliq_chnode *parent, const reliq_format_func *format, const size_t formatl, SINK *output, const reliq *rq)
 {
-  #ifdef RELIQ_EDITING
   return format_exec(NULL,0,output,hnode,parent,format,formatl,rq);
-  #else
-  if (format) {
-    chnode_printf(output,format,formatl,hnode,parent,rq);
-  } else
-    chnode_print(output,hnode,rq);
-  return NULL;
-  #endif
 }
 
 static reliq_error *
@@ -217,7 +199,6 @@ struct outfield {
   uchar code;
 };
 
-#ifdef RELIQ_EDITING
 static void
 fcollector_rearrange_pre(struct fcollector_expr *fcols, size_t start, size_t end, const uint16_t lvl)
 {
@@ -286,7 +267,6 @@ fcollector_out_end(flexarr *outs, const size_t ncurrent, struct fcollector_expr 
 
   goto START;
 }
-#endif
 
 #define OUTFIELDS_NUM_FLOAT 1
 #define OUTFIELDS_NUM_INT 2
@@ -581,17 +561,11 @@ print_code_debug(const size_t nodeindex, uint16_t fieldlvl, const enum outfieldC
 }*/
 
 reliq_error *
-nodes_output(const reliq *rq, SINK *output, flexarr *compressed_nodes, flexarr *ncollector
-  #ifdef RELIQ_EDITING
-  , flexarr *fcollector //struct fcollector_expr
-  #endif
-  ) //compressed_nodes: reliq_compressed, ncollector: reliq_cstr
+nodes_output(const reliq *rq, SINK *output, flexarr *compressed_nodes, flexarr *ncollector, flexarr *fcollector) //compressed_nodes: reliq_compressed, ncollector: reliq_cstr, fcollector: struct fcollector_expr
 {
-  #ifdef RELIQ_EDITING
   struct fcollector_expr *fcols = (struct fcollector_expr*)fcollector->v;
   if (fcollector->size)
       fcollector_rearrange(fcollector);
-  #endif
   if (!compressed_nodes->size || !ncollector->size)
     return NULL;
   reliq_error *err = NULL;
@@ -603,12 +577,10 @@ nodes_output(const reliq *rq, SINK *output, flexarr *compressed_nodes, flexarr *
   size_t j=0, //iterator of compressed_nodes
       ncurrent=0, //iterator of ncollector
       g=0; //iterator of u in ncollector
-  #ifdef RELIQ_EDITING
   flexarr *outs = flexarr_init(sizeof(struct fcollector_out*),FCOLLECTOR_OUT_INC);
   size_t fcurrent=0;
   size_t fsize;
   char *ptr;
-  #endif
 
   flexarr *outfields = flexarr_init(sizeof(struct outfield*),OUTFIELDS_INC);
   uint16_t fieldlvl = 0;
@@ -618,7 +590,6 @@ nodes_output(const reliq *rq, SINK *output, flexarr *compressed_nodes, flexarr *
   uchar field_ended = 0;
 
   for (;; j++) {
-    #ifdef RELIQ_EDITING
     if (compressed_nodes->size && g == 0) {
       while (fcurrent < fcollector->size && fcols[fcurrent].start == ncurrent) {
         struct fcollector_out *ff,**ff_pre;
@@ -641,7 +612,6 @@ nodes_output(const reliq *rq, SINK *output, flexarr *compressed_nodes, flexarr *
         out = sink_open(&ptr,&fsize);
       }
     }
-    #endif
     if (j >= compressed_nodes->size)
       break;
 
@@ -718,7 +688,6 @@ nodes_output(const reliq *rq, SINK *output, flexarr *compressed_nodes, flexarr *
     g++;
     if (ncurrent < ncollector->size && ncol[ncurrent].s == g) {
       NCOLLECTOR_END: ;
-      #ifdef RELIQ_EDITING
       if (ncol[ncurrent].b && out != output) {
         sink_close(out);
         out = NULL;
@@ -735,7 +704,6 @@ nodes_output(const reliq *rq, SINK *output, flexarr *compressed_nodes, flexarr *
         goto END;
       if (oout && fout == *oout)
         fout = output;
-      #endif
 
       g = 0;
       ncurrent++;
@@ -756,7 +724,6 @@ nodes_output(const reliq *rq, SINK *output, flexarr *compressed_nodes, flexarr *
 
   END: ;
 
-  #ifdef RELIQ_EDITING
   struct fcollector_out **outsv = (struct fcollector_out**)outs->v;
   size_t size = outs->size;
   for (size_t i = 0; i < size; i++) {
@@ -766,7 +733,6 @@ nodes_output(const reliq *rq, SINK *output, flexarr *compressed_nodes, flexarr *
     free(outsv[i]);
   }
   flexarr_free(outs);
-  #endif
 
   outfields_free(outfields);
 

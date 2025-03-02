@@ -1,4 +1,3 @@
-% RELIQ_EDITING
 ^ -e /dev/stdout
 < 1.html
 838acf6c5d60db08399703822c7cc16f,'.a {.a li, .c u} / "j"',a

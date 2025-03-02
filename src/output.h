@@ -31,9 +31,7 @@ struct fcollector_expr {
   unsigned char isnodef;
 };
 
-#ifdef RELIQ_EDITING
 typedef struct reliq_format_func reliq_format_func;
-#endif
 
 #define OUTFIELDCODE_OFFSET (UINT32_MAX-6)
 #define OUTFIELDCODE(z) (((z) <= OUTFIELDCODE_OFFSET) ? 0 : (z)-OUTFIELDCODE_OFFSET)
@@ -58,19 +56,6 @@ typedef struct {
 
 reliq_error *reliq_output_field_comp(const char *src, size_t *pos, const size_t s, reliq_output_field *outfield);
 
-reliq_error *node_output(const reliq_chnode *hnode, const reliq_chnode *parent,
-#ifdef RELIQ_EDITING
-  const reliq_format_func *format,
-#else
-  const char *format,
-#endif
-  const size_t formatl, SINK *output, const reliq *rq);
-
-reliq_error *nodes_output(const reliq *rq, SINK *output, flexarr *compressed_nodes, flexarr *ncollector
-  #ifdef RELIQ_EDITING
-  , flexarr *fcollector //struct fcollector_expr
-  #endif
-  ); //compressed_nodes: reliq_compressed, ncollector: reliq_cstr
+reliq_error *nodes_output(const reliq *rq, SINK *output, flexarr *compressed_nodes, flexarr *ncollector, flexarr *fcollector); //compressed_nodes: reliq_compressed, ncollector: reliq_cstr, fcollector: struct fcollector_expr
 
 #endif
-

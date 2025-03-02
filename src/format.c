@@ -19,16 +19,12 @@
 #include "ext.h"
 
 #include <stdlib.h>
-#ifdef RELIQ_EDITING
 #include "edit.h"
 #include "range.h"
 #include "hnode_print.h"
-#endif
 #include "ctype.h"
 #include "utils.h"
 #include "format.h"
-
-#ifdef RELIQ_EDITING
 
 #define FORMAT_INC 8
 
@@ -304,16 +300,9 @@ format_free(reliq_format_func *format, const size_t formatl)
   }
   free(format);
 }
-#endif
 
 reliq_error *
-format_comp(const char *src, size_t *pos, const size_t size,
-#ifdef RELIQ_EDITING
-  reliq_format_func **format,
-#else
-  char **format,
-#endif
-  size_t *formatl)
+format_comp(const char *src, size_t *pos, const size_t size, reliq_format_func **format, size_t *formatl)
 {
   reliq_error *err = NULL;
   *format = NULL;
@@ -321,19 +310,11 @@ format_comp(const char *src, size_t *pos, const size_t size,
   size_t i = *pos;
   if (i >= size || !src)
     goto END;
-  #ifndef RELIQ_EDITING
-  while_is(isspace,src,i,size);
 
-  if (src[i] != '"' && src[i] != '\'')
-    goto END;
-
-  if ((err = get_quoted(src,&i,size,' ',format,formatl)))
-    goto END;
-  #else
   flexarr *f = flexarr_init(sizeof(reliq_format_func),FORMAT_INC);
   err = format_get_funcs(f,src,&i,size);
   flexarr_conv(f,(void**)format,formatl);
-  #endif
+
   END: ;
   *pos = i;
   return err;

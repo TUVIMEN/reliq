@@ -1,4 +1,3 @@
-% RELIQ_EDITING
 < editing-output.html
 f7f9aceacd3eecf24ff6b94ce1ea9d55,'.l { { { img /sed "s/s/S/g", dt /sed "s/v/V/g", h3 /sed "s/i/I/g" } /sed "s/t/T/g", li / sed "s/a/A/g;s/e/E/g", } /sed "s/o/O/g" } / sed "s/l/L/g"'
 abcaf694f74658261d347b735245c23c,'.a li; { img | "%l\n", a | "%(href)v\n" / sed "s/b/B/g" }'

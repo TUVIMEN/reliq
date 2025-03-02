@@ -50,16 +50,10 @@
 struct reliq_expr {
   reliq_output_field outfield;
   void *e; //either points to flexarr*(reliq_expr) or reliq_npattern
-  #ifdef RELIQ_EDITING
   reliq_format_func *nodef; //node format
   reliq_format_func *exprf; //expression format
-  #else
-  char *nodef;
-  #endif
   size_t nodefl;
-  #ifdef RELIQ_EDITING
   size_t exprfl;
-  #endif
   uint16_t childfields;
   uint16_t childformats;
   uint8_t flags; //EXPR_

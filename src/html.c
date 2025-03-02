@@ -24,7 +24,6 @@
 #include "flexarr.h"
 #include "ctype.h"
 #include "utils.h"
-#include "output.h"
 #include "npattern.h"
 #include "html.h"
 

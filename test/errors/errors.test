@@ -74,5 +74,4 @@ f740451bbb3237233be930a93f182d2e,'text@ ( textempty@ * )( text@ * )( li ) li'
 a3b4ed42a8db2705affb83d4eed80abe,'( textempty@ * )( text@ * )( tag@ li ) li'
 f740451bbb3237233be930a93f182d2e,'text@ * ( texterr@ * )( textnoerr@ * )( textempty@ * ) | "\"%C\"\n", text@ * ( textall@ * ) | "\"%C\"\n"'
 
-% RELIQ_EDITING
 974bc394e3fce450eaed24b13d0e1d46,'li ||||||||||/////// '

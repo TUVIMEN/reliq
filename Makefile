@@ -12,7 +12,6 @@ O_HTML_VERY_SMALL := 0
 O_SMALL_STACK := 0 # limits for small stack
 O_PHPTAGS := 1 # support for <?php ?>
 O_AUTOCLOSING := 1 # support for autoclosing tags (tag ommission https://html.spec.whatwg.org/multipage/syntax.html#optional-tags)
-O_EDITING := 1 #support for editing
 
 D := 0 # debug mode
 
@@ -32,7 +31,7 @@ STRIP_ARGS =
 LDFLAGS_R = ${LDFLAGS}
 CFLAGS_D = -DRELIQ_VERSION=\"${VERSION}\"
 
-LIB_SRC = src/flexarr.c src/sink.c src/html.c src/hnode.c src/reliq.c src/hnode_print.c src/ctype.c src/utils.c src/output.c src/decode_entities.c src/pattern.c src/range.c src/exprs_comp.c src/exprs_exec.c src/format.c src/npattern_comp.c src/npattern_exec.c src/node_exec.c
+LIB_SRC = src/flexarr.c src/sink.c src/html.c src/hnode.c src/reliq.c src/hnode_print.c src/ctype.c src/utils.c src/output.c src/decode_entities.c src/pattern.c src/range.c src/exprs_comp.c src/exprs_exec.c src/format.c src/npattern_comp.c src/npattern_exec.c src/node_exec.c src/edit.c src/edit_sed.c src/edit_wc.c src/edit_tr.c
 
 ifeq ("$(shell uname -s)","Darwin")
 	STRIP_ARGS += -x
@@ -58,11 +57,6 @@ endif
 
 ifeq ($(strip ${O_AUTOCLOSING}),1)
 	CFLAGS_D += -DRELIQ_AUTOCLOSING
-endif
-
-ifeq ($(strip ${O_EDITING}),1)
-	LIB_SRC += src/edit.c src/edit_sed.c src/edit_wc.c src/edit_tr.c
-	CFLAGS_D += -DRELIQ_EDITING
 endif
 
 SRC = src/main.c ${LIB_SRC}
