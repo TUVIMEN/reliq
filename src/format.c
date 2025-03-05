@@ -252,8 +252,7 @@ format_get_funcs(flexarr *format, const char *src, size_t *pos, const size_t siz
     } else
       fname = NULL;
 
-    f = (reliq_format_func*)flexarr_inc(format);
-    memset(f,0,sizeof(reliq_format_func));
+    f = (reliq_format_func*)flexarr_incz(format);
 
     while_is(isspace,src,i,size);
     size_t argcount = 0;

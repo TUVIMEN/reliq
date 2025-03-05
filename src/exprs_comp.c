@@ -349,17 +349,17 @@ tokenize_conditionals(const char *src, size_t i, const size_t size, size_t *tk_s
 static uchar
 isconditional(const enum tokenName name)
 {
-    switch (name) {
-        case tConditionOr:
-        case tConditionOrAll:
-        case tConditionAnd:
-        case tConditionAndAll:
-        case tConditionAndBlank:
-        case tConditionAndBlankAll:
-            return 1;
-        default:
-            return 0;
-    }
+  switch (name) {
+    case tConditionOr:
+    case tConditionOrAll:
+    case tConditionAnd:
+    case tConditionAndAll:
+    case tConditionAndBlank:
+    case tConditionAndBlankAll:
+      return 1;
+    default:
+      return 0;
+  }
 }
 
 static reliq_error *
@@ -495,7 +495,7 @@ add_chainlink(flexarr *exprs, reliq_expr *cl, const uchar noerr) //exprs: reliq_
   *(reliq_expr*)flexarr_inc(exprs) = *cl;
 
   END: ;
-  memset(cl,0,sizeof(reliq_expr));
+  *cl = (reliq_expr){0};
   return err;
 }
 
@@ -525,231 +525,374 @@ from_tokenname_conditional(const enum tokenName name)
   return ret;
 }
 
-static flexarr *
-from_token_comp(const token *tokens, size_t *pos, const size_t tokensl, const uint16_t lvl, uint16_t *childfields, uint16_t *childformats, reliq_error **err) //reliq_expr, expr: reliq_expr
+static reliq_error *
+err_field_in_condition(void)
+{
+  return script_err("conditional: fields cannot be inside conditional expression");
+}
+
+static reliq_error *
+err_unprecedented_end(size_t pos)
+{
+  return script_err("block: %lu: unprecedented end of block",pos);
+}
+
+typedef struct {
+  flexarr *ret; //reliq_expr*
+  reliq_expr *current;
+  reliq_expr *expr;
+  const token *tokens;
+  const size_t size;
+
+  uint16_t lvl;
+  uint16_t childfields;
+  uint16_t childformats;
+  uchar foundend;
+  uchar first_in_node;
+  uchar expr_has_nformat;
+  uchar expr_has_eformat;
+  uchar lasttext_nonempty;
+} tcomp_state;
+
+static reliq_error *from_token_comp(size_t *pos, tcomp_state *st);
+
+static inline void
+tcomp_state_cleanvars(tcomp_state *st)
+{
+  st->first_in_node=1;
+  st->expr_has_nformat=0;
+  st->expr_has_eformat=0;
+  st->lasttext_nonempty=0;
+}
+
+static reliq_error *
+tcomp_blockstart(size_t *pos, tcomp_state *st)
 {
   size_t i = *pos;
-  if (lvl >= RELIQ_MAX_BLOCK_LEVEL) {
-    *err = script_err("block: %lu: reached %lu level of recursion",i,lvl);
-    return NULL;
+  reliq_error *err = NULL;
+  reliq_expr *current = st->current;
+  reliq_expr *expr = st->expr;
+  const token *tokens = st->tokens;
+  const size_t size = st->size;
+
+  if (i) {
+     if (tokens[i-1].name == tBlockEnd)
+      goto_script_seterr(END,"block: %lu: unterminated block before opening of the block",i);
+    if (tokens[i-1].name == tText && st->lasttext_nonempty)
+      goto_script_seterr(END,"block: %lu: unexpected text before opening of the block",i);
   }
-  if (i >= tokensl)
-    return NULL;
+  i++;
+  EXPR_TYPE_SET(expr->flags,EXPR_BLOCK);
 
-  flexarr *ret = flexarr_init(sizeof(reliq_expr),PATTERN_SIZE_INC);
-  reliq_expr *current = flexarr_inc(ret);
-  memset(current,0,sizeof(reliq_expr));
+  tcomp_state nst = *st;
+  nst.lvl++;
+  err = from_token_comp(&i,&nst);
+  expr->e = nst.ret;
+  expr->childfields = nst.childfields;
+  expr->childformats = nst.childformats;
+  if (err)
+    goto END;
+  if (i >= size || tokens[i].name != tBlockEnd) {
+    err = err_unprecedented_end(i);
+    goto END;
+  }
 
-  current->e = flexarr_init(sizeof(reliq_expr),PATTERN_SIZE_INC);
-  EXPR_TYPE_SET(current->flags,EXPR_CHAIN);
+  if (i+1 < size && tokens[i+1].name == tText)
+    goto_script_seterr(END,"block: %lu: unexpected text after ending of the block",i);
 
-  reliq_expr expr = (reliq_expr){0};
-  uchar first_in_node=1,expr_has_nformat=0,expr_has_eformat=0,lasttext_nonempty=0;
+  st->childfields += nst.childfields;
+  current->childfields += nst.childfields;
+  st->childformats += nst.childformats;
+  current->childformats += nst.childformats;
 
-  for (; i < tokensl; i++) {
-    const enum tokenName name = tokens[i].name;
-    if (name == tBlockStart) {
-      if (i) {
-         if (tokens[i-1].name == tBlockEnd)
-          goto_script_seterr_p(END,"block: %lu: unterminated block before opening of the block",i);
-        if (tokens[i-1].name == tText && lasttext_nonempty)
-          goto_script_seterr_p(END,"block: %lu: unexpected text before opening of the block",i);
+  if (current->childfields && current->flags&EXPR_CONDITION_EXPR)
+    err = err_field_in_condition();
+
+  END: ;
+  *pos = i;
+  return err;
+}
+
+static inline const char *
+tcomp_format_err_name(uchar isnode)
+{
+  return isnode ? "node" : "expression";
+}
+
+static inline reliq_error *
+tcomp_format(size_t *pos, const uchar isnode, tcomp_state *st)
+{
+  size_t i = *pos;
+  const size_t size = st->size;
+  const token *tokens = st->tokens;
+  reliq_error *err = NULL;
+  reliq_expr *expr = st->expr;
+  reliq_expr *current = st->current;
+
+  if (isnode) {
+    if (st->expr_has_nformat)
+      goto CANNOT_TWICE;
+    st->expr_has_nformat = 1;
+  } else {
+    if (st->expr_has_eformat) {
+      CANNOT_TWICE:
+      goto_script_seterr(END,"%lu: format '%c' cannot be specified twice",i,tokens[i].start[tokens[i].size-1]);
+    }
+    st->expr_has_eformat = 1;
+  }
+
+  if (i+1 < size) {
+    if (tokens[i+1].name == tText) {
+      if (i+2 < size && tokens[i+2].name == tChainLink)
+        goto FORMAT_IN_CHAIN;
+
+      st->lasttext_nonempty = 1;
+      size_t g=0;
+      void *format = &expr->nodef;
+      size_t *formatl = &expr->nodefl;
+      if (!isnode) {
+        format = &expr->exprf;
+        formatl = &expr->exprfl;
       }
+      err = format_comp(tokens[i+1].start,&g,tokens[i+1].size,format,formatl);
+      if (err)
+        goto END;
       i++;
-      EXPR_TYPE_SET(expr.flags,EXPR_BLOCK);
-      expr.e = from_token_comp(tokens,&i,tokensl,lvl+1,&expr.childfields,&expr.childformats,err);
-      if (*err)
-        goto END;
-      if (i >= tokensl || tokens[i].name != tBlockEnd)
-        goto UNPRECEDENTED_END;
-
-      if (i+1 < tokensl && tokens[i+1].name == tText)
-        goto_script_seterr_p(END,"block: %lu: unexpected text after ending of the block",i);
-
-      *childfields += expr.childfields;
-      current->childfields += expr.childfields;
-      *childformats += expr.childformats;
-      current->childformats += expr.childformats;
-
-      if (current->childfields && current->flags&EXPR_CONDITION_EXPR) {
-        FIELD_IN_CONDITION: ;
-        goto_script_seterr_p(END,"conditional: fields cannot be inside conditional expression");
-      }
-      continue;
-    } else if (name == tBlockEnd) {
-      if (!lvl) {
-        UNPRECEDENTED_END: ;
-        goto_script_seterr_p(END,"block: %lu: unprecedented end of block",i);
-      }
-      goto END;
-    } else if (name == tNodeFormat || name == tExprFormat) {
-      if (name == tNodeFormat) {
-        if (expr_has_nformat)
-          goto CANNOT_TWICE;
-        expr_has_nformat = 1;
-      } else {
-        if (expr_has_eformat) {
-          CANNOT_TWICE:
-          goto_script_seterr_p(END,"%lu: format '%c' cannot be specified twice",i,tokens[i].start[tokens[i].size-1]);
-        }
-        expr_has_eformat = 1;
-      }
-
-      if (i+1 < tokensl) {
-        if (tokens[i+1].name == tText) {
-          if (i+2 < tokensl && tokens[i+2].name == tChainLink)
-            goto FORMAT_IN_CHAIN;
-
-          lasttext_nonempty = 1;
-          size_t g=0;
-          void *format = &expr.nodef;
-          size_t *formatl = &expr.nodefl;
-          if (name == tExprFormat) {
-            format = &expr.exprf;
-            formatl = &expr.exprfl;
-          }
-          *err = format_comp(tokens[i+1].start,&g,tokens[i+1].size,format,formatl);
-          if (*err)
-            goto END;
-          i++;
-        } else if (tokens[i+1].name == tBlockStart) {
-          goto_script_seterr_p(END,"%lu: format '%c' isn't terminated before block",i,tokens[i].start[tokens[i].size-1]);
-        } else if (tokens[i+1].name == tChainLink) {
-          FORMAT_IN_CHAIN: ;
-          const char *ftype = "node";
-          if (name == tExprFormat)
-            ftype = "expression";
-          goto_script_seterr_p(END,"%lu: illegal use of %s format inside chain",i,ftype);
-        }
-      }
-
-      if (EXPR_TYPE_IS(expr.flags,EXPR_BLOCK) && name == tNodeFormat)
-        EXPR_TYPE_SET(expr.flags,EXPR_SINGULAR);
-
-      if (expr.nodefl
-        || name == tExprFormat
-        ) {
-        if (expr.childfields) {
-          const char *ftype = "node";
-          if (name == tExprFormat)
-            ftype = "expression";
-          goto_script_seterr_p(END,"illegal assignment of %s format to block with fields",ftype);
-        }
-
-        expr.childformats++;
-        current->childformats++;
-        (*childformats)++;
-      }
-    } else if (name == tText) {
-      char const *start = tokens[i].start;
-      size_t len = tokens[i].size;
-      if (first_in_node && tokens[i].start[0] == '.') {
-        size_t g=0;
-        if ((*err = reliq_output_field_comp(start,&g,len,&current->outfield))) //&current->outfield
-          goto END;
-        if (current->outfield.name.b) {
-          /*if the above condition is removed protected fields fill work as normal fields
-            i.e. '{ .li }; li' will be impossible but '{ . li } / line [1]' will also be,
-            and it will break it's functionality*/
-          (*childfields)++;
-          current->childfields++;
-        }
-
-        if (current->flags&EXPR_CONDITION_EXPR)
-          goto FIELD_IN_CONDITION;
-
-        while_is(isspace,start,g,len);
-        start += g;
-        len -= g;
-
-        if (!len) {
-          if (i+1 >= tokensl || tokens[i+1].name == tNextNode || tokens[i+1].name == tBlockEnd)
-            goto_script_seterr_p(END,"field: %lu: empty expression",i);
-          continue;
-        }
-      }
-
-      if (i+1 < tokensl && tokens[i+1].name == tBlockStart)
-        goto_script_seterr_p(END,"block: %lu: unexpected text before opening of the block",i);
-      lasttext_nonempty = 1;
-      EXPR_TYPE_SET(expr.flags,EXPR_NPATTERN);
-
-      expr.e = malloc(sizeof(reliq_npattern));
-      if ((*err = reliq_ncomp(start,len,(reliq_npattern*)expr.e))) {
-        free(expr.e);
-        expr.e = NULL;
-        goto END;
-      }
-    } else if (name == tChainLink) {
-      lasttext_nonempty = 0;
-      first_in_node = 0;
-      if ((*err = add_chainlink(current->e,&expr,0)))
-        goto END;
-    } else if (name == tNextNode) {
-      lasttext_nonempty = 0;
-      first_in_node = 1;
-      expr_has_nformat=0;
-      expr_has_eformat=0;
-      if ((*err = add_chainlink(current->e,&expr,0)))
-        goto END;
-
-      if (((flexarr*)current->e)->size) {
-        current = (reliq_expr*)flexarr_inc(ret);
-        memset(current,0,sizeof(reliq_expr));
-        current->e = flexarr_init(sizeof(reliq_expr),PATTERN_SIZE_INC);
-        EXPR_TYPE_SET(current->flags,EXPR_CHAIN);
-      }
-    } else if (isconditional(name)) {
-      lasttext_nonempty = 0;
-      first_in_node = 1;
-      expr_has_nformat=0;
-      expr_has_eformat=0;
-      if ((*err = add_chainlink(current->e,&expr,0)))
-        goto END;
-
-      if (((flexarr*)current->e)->size == 0)
-        goto_script_seterr_p(END,"conditional: expected expression before %.*s",(int)tokens[i].size-1,tokens[i].start+1);
-      if (i+1 >= tokensl || tokens[i+1].name == tNextNode
-        || isconditional(tokens[i+1].name) || tokens[i+1].name == tChainLink)
-        goto_script_seterr_p(END,"conditional: expected expression after %.*s",(int)tokens[i].size-1,tokens[i].start+1);
-
-      current->flags |= from_tokenname_conditional(name);
-
-      reliq_expr *lastret = &((reliq_expr*)ret->v)[ret->size-1];
-      if (!EXPR_TYPE_IS(lastret->flags,EXPR_BLOCK_CONDITION)) {
-        reliq_output_field field = current->outfield;
-        if (current->childfields-(field.name.b != NULL))
-          goto FIELD_IN_CONDITION;
-
-        reliq_expr t = *current;
-        memset(&t.outfield,0,sizeof(reliq_output_field));
-
-        memset(current,0,sizeof(reliq_expr));
-        current->e = flexarr_init(sizeof(reliq_expr),PATTERN_SIZE_INC);
-        *(reliq_expr*)flexarr_inc(current->e) = t;
-
-        EXPR_TYPE_SET(current->flags,EXPR_BLOCK_CONDITION);
-        current->outfield = field;
-      }
-
-      current = (reliq_expr*)flexarr_inc(lastret->e);
-      memset(current,0,sizeof(reliq_expr));
-      current->e = flexarr_init(sizeof(reliq_expr),PATTERN_SIZE_INC);
-      EXPR_TYPE_SET(current->flags,EXPR_CHAIN);
-      current->flags |= EXPR_CONDITION_EXPR;
+    } else if (tokens[i+1].name == tBlockStart) {
+      goto_script_seterr(END,"%lu: format '%c' isn't terminated before block",i,tokens[i].start[tokens[i].size-1]);
+    } else if (tokens[i+1].name == tChainLink) {
+      FORMAT_IN_CHAIN: ;
+      goto_script_seterr(END,"%lu: illegal use of %s format inside chain",i,tcomp_format_err_name(isnode));
     }
   }
 
-  END:
-  *pos = i;
-  if (*err) {
-    add_chainlink(current->e,&expr,1);
-  } else
-    *err = add_chainlink(current->e,&expr,0);
+  if (EXPR_TYPE_IS(expr->flags,EXPR_BLOCK) && isnode)
+    EXPR_TYPE_SET(expr->flags,EXPR_SINGULAR);
 
-  if (!*err)
-    flexarr_clearb(ret);
-  return ret;
+  if (expr->nodefl
+    || !isnode
+    ) {
+    if (expr->childfields)
+      goto_script_seterr(END,"illegal assignment of %s format to block with fields",tcomp_format_err_name(isnode));
+
+    expr->childformats++;
+    current->childformats++;
+    st->childformats++;
+  }
+
+  END: ;
+  *pos = i;
+  return err;
+}
+
+static reliq_error *
+tcomp_nodeformat(size_t *pos, tcomp_state *st)
+{
+  return tcomp_format(pos,1,st);
+}
+
+static reliq_error *
+tcomp_exprformat(size_t *pos, tcomp_state *st)
+{
+  return tcomp_format(pos,0,st);
+}
+
+static reliq_error *
+tcomp_text(size_t *pos, tcomp_state *st)
+{
+  size_t i = *pos;
+  const size_t size = st->size;
+  const token *tokens = st->tokens;
+  reliq_expr *current = st->current;
+  reliq_expr *expr = st->expr;
+  char const *start = tokens[i].start;
+  reliq_error *err = NULL;
+
+  size_t len = tokens[i].size;
+  if (st->first_in_node && tokens[i].start[0] == '.') {
+    size_t g=0;
+    if ((err = reliq_output_field_comp(start,&g,len,&current->outfield))) //&current->outfield
+      return err;
+    if (current->outfield.name.b) {
+      /*if the above condition is removed protected fields fill work as normal fields
+        i.e. '{ .li }; li' will be impossible but '{ . li } / line [1]' will also be,
+        and it will break it's functionality*/
+      st->childfields++;
+      current->childfields++;
+    }
+
+    if (current->flags&EXPR_CONDITION_EXPR)
+      return err_field_in_condition();
+
+    while_is(isspace,start,g,len);
+    start += g;
+    len -= g;
+
+    if (!len) {
+      if (i+1 >= size || tokens[i+1].name == tNextNode || tokens[i+1].name == tBlockEnd)
+        return script_err("field: %lu: empty expression",i);
+      return NULL;
+    }
+  }
+
+  if (i+1 < size && tokens[i+1].name == tBlockStart)
+    return script_err("block: %lu: unexpected text before opening of the block",i);
+  st->lasttext_nonempty = 1;
+  EXPR_TYPE_SET(expr->flags,EXPR_NPATTERN);
+
+  expr->e = malloc(sizeof(reliq_npattern));
+  if ((err = reliq_ncomp(start,len,(reliq_npattern*)expr->e))) {
+    free(expr->e);
+    expr->e = NULL;
+  }
+  return err;
+}
+
+static reliq_error *
+tcomp_blockend(size_t *pos, tcomp_state *st)
+{
+  if (!st->lvl)
+    return err_unprecedented_end(*pos);
+  st->foundend = 1;
+  return NULL;
+}
+
+static reliq_error *
+tcomp_chainlink(tcomp_state *st)
+{
+  st->lasttext_nonempty = 0;
+  st->first_in_node = 0;
+  return add_chainlink(st->current->e,st->expr,0);
+}
+
+static reliq_error *
+tcomp_nextnode(tcomp_state *st)
+{
+  reliq_error *err = NULL;
+  reliq_expr *current = st->current;
+
+  tcomp_state_cleanvars(st);
+  if ((err = add_chainlink(current->e,st->expr,0)))
+    return err;
+
+  if (((flexarr*)current->e)->size) {
+    current = st->current = (reliq_expr*)flexarr_incz(st->ret);
+    current->e = flexarr_init(sizeof(reliq_expr),PATTERN_SIZE_INC);
+    EXPR_TYPE_SET(st->current->flags,EXPR_CHAIN);
+  }
+  return NULL;
+}
+
+static reliq_error *
+tcomp_conditional(size_t *pos, const enum tokenName name, tcomp_state *st)
+{
+  size_t i = *pos;
+  reliq_error *err = NULL;
+  const token *tokens = st->tokens;
+  const size_t size = st->size;
+  reliq_expr *current = st->current;
+  reliq_expr *expr = st->expr;
+  flexarr *ret = st->ret;
+
+  tcomp_state_cleanvars(st);
+  if ((err = add_chainlink(current->e,expr,0)))
+    return err;
+
+  if (((flexarr*)current->e)->size == 0)
+    return script_err("conditional: expected expression before %.*s",(int)tokens[i].size-1,tokens[i].start+1);
+  if (i+1 >= size || tokens[i+1].name == tNextNode
+    || isconditional(tokens[i+1].name) || tokens[i+1].name == tChainLink)
+    return script_err ("conditional: expected expression after %.*s",(int)tokens[i].size-1,tokens[i].start+1);
+
+  current->flags |= from_tokenname_conditional(name);
+
+  reliq_expr *lastret = &((reliq_expr*)ret->v)[ret->size-1];
+  if (!EXPR_TYPE_IS(lastret->flags,EXPR_BLOCK_CONDITION)) {
+    reliq_output_field field = current->outfield;
+    if (current->childfields-(field.name.b != NULL))
+      return err_field_in_condition();
+
+    reliq_expr t = *current;
+    t.outfield = (reliq_output_field){0};
+
+    *current = (reliq_expr){0};
+    current->e = flexarr_init(sizeof(reliq_expr),PATTERN_SIZE_INC);
+    *(reliq_expr*)flexarr_inc(current->e) = t;
+
+    EXPR_TYPE_SET(current->flags,EXPR_BLOCK_CONDITION);
+    current->outfield = field;
+  }
+
+  current = st->current = (reliq_expr*)flexarr_incz(lastret->e);
+  current->e = flexarr_init(sizeof(reliq_expr),PATTERN_SIZE_INC);
+  EXPR_TYPE_SET(current->flags,EXPR_CHAIN);
+  current->flags |= EXPR_CONDITION_EXPR;
+  return NULL;
+}
+
+static reliq_error *
+tcomp_tokenName(size_t *pos, const enum tokenName name, tcomp_state *st)
+{
+  if (name == tBlockStart) {
+    return tcomp_blockstart(pos,st);
+  } else if (name == tBlockEnd) {
+    return tcomp_blockend(pos,st);
+  } else if (name == tNodeFormat) {
+    return tcomp_nodeformat(pos,st);
+  } else if (name == tExprFormat) {
+    return tcomp_exprformat(pos,st);
+  } else if (name == tText) {
+    return tcomp_text(pos,st);
+  } else if (name == tChainLink) {
+    return tcomp_chainlink(st);
+  } else if (name == tNextNode) {
+    return tcomp_nextnode(st);
+  } else if (isconditional(name)) {
+    return tcomp_conditional(pos,name,st);
+  }
+  return NULL;
+}
+
+static reliq_error *
+from_token_comp(size_t *pos, tcomp_state *st)
+{
+  size_t i = *pos;
+  size_t size = st->size;
+  const uint16_t lvl = st->lvl;
+  const token *tokens = st->tokens;
+  reliq_error *err = NULL;
+  st->ret = NULL;
+
+  if (lvl >= RELIQ_MAX_BLOCK_LEVEL)
+    return script_err("block: %lu: reached %lu level of recursion",i,lvl);
+  if (i >= size)
+    return NULL;
+
+  reliq_expr expr = (reliq_expr){0};
+  st->ret = flexarr_init(sizeof(reliq_expr),PATTERN_SIZE_INC);
+  st->current = flexarr_incz(st->ret);
+  st->current->e = flexarr_init(sizeof(reliq_expr),PATTERN_SIZE_INC);
+  EXPR_TYPE_SET(st->current->flags,EXPR_CHAIN);
+
+  st->expr = &expr;
+  st->childfields = 0;
+  st->childformats = 0;
+  tcomp_state_cleanvars(st);
+
+  for (; i < size; i++)
+    if ((err = tcomp_tokenName(&i,tokens[i].name,st)) || st->foundend)
+      break;
+
+  *pos = i;
+  if (err) {
+    add_chainlink(st->current->e,&expr,1);
+  } else
+    err = add_chainlink(st->current->e,&expr,0);
+
+  if (!err)
+    flexarr_clearb(st->ret);
+  st->expr = NULL;
+  return err;
 }
 
 static void
@@ -773,21 +916,24 @@ reliq_ecomp_intr(const char *src, const size_t size, reliq_expr *expr)
 
   //tokens_print(tokens,tokensl);
 
-  uint16_t childfields=0,childformats=0;
   size_t pos=0;
-  flexarr *res = from_token_comp(tokens,&pos,tokensl,0,&childfields,&childformats,&err);
+  tcomp_state st = {
+    .tokens = tokens,
+    .size = tokensl
+  };
+  err = from_token_comp(&pos,&st);
 
   tokens_free(tokens,tokensl);
 
-  if (res) {
-    //reliq_expr_print(res,0);
+  if (st.ret) {
+    //reliq_expr_print(st.ret,0);
 
     if (err) {
-      reliq_expr_free_pre(res);
+      reliq_expr_free_pre(st.ret);
     } else {
-      memset(expr,0,sizeof(reliq_expr));
+      *expr = (reliq_expr){0};
       EXPR_TYPE_SET(expr->flags,EXPR_BLOCK);
-      expr->e = res;
+      expr->e = st.ret;
     }
   }
   return err;
@@ -800,6 +946,6 @@ reliq_ecomp(const char *src, const size_t size, reliq_expr **expr)
   reliq_error *err = reliq_ecomp_intr(src,size,&e);
   if (err)
     return err;
-  *expr = memcpy(malloc(sizeof(reliq_expr)),&e,sizeof(reliq_expr));
+  *expr = memdup(&e,sizeof(reliq_expr));
   return NULL;
 }

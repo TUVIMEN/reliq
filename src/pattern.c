@@ -249,7 +249,7 @@ reliq_regcomp(reliq_pattern *pattern, const char *src, size_t *pos, const size_t
   reliq_error *err=NULL;
   size_t i = *pos;
 
-  memset(pattern,0,sizeof(reliq_pattern));
+  *pattern = (reliq_pattern){0};
   regcomp_get_flags(pattern,src,&i,size,flags);
 
   if (i && i < size && src[i-1] == '>' && src[i] == '[') {

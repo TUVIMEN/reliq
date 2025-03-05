@@ -163,7 +163,7 @@ range_match(const uint32_t matched, const reliq_range *range, const size_t last)
 static reliq_error *
 range_node_comp(const char *src, const size_t size, struct reliq_range_node *node)
 {
-  memset(node->v,0,sizeof(struct reliq_range_node));
+  *node = (struct reliq_range_node){0};
   size_t pos = 0;
 
   for (int i = 0; i < 4; i++) {
