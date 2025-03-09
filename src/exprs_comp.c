@@ -547,11 +547,11 @@ typedef struct {
   uint16_t lvl;
   uint16_t childfields;
   uint16_t childformats;
-  uchar foundend;
-  uchar first_in_node;
-  uchar expr_has_nformat;
-  uchar expr_has_eformat;
-  uchar lasttext_nonempty;
+  uchar foundend : 1;
+  uchar first_in_node : 1;
+  uchar expr_has_nformat : 1;
+  uchar expr_has_eformat : 1;
+  uchar lasttext_nonempty : 1;
 } tcomp_state;
 
 static reliq_error *from_token_comp(size_t *pos, tcomp_state *st);
