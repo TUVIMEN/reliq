@@ -87,7 +87,7 @@ flexarr_dec(flexarr *f)
 {
   if (unlikely(f->size == 0))
     return NULL;
-  return ((char*)f->v)+(f->size--*f->elsize);
+  return ((char*)f->v)+((f->size--)*f->elsize);
 }
 
 void *

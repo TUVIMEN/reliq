@@ -680,7 +680,7 @@ html_struct_handle(size_t *pos, const uint16_t lvl, html_state *st)
   start += hnode->tag = tagname.b-f-start;
   start += hnode->tagl = tagname.s;
 
-  if (attribs_handle(f,&i,s,hnode,attribs) || i >= s)
+  if (i >= s || attribs_handle(f,&i,s,hnode,attribs))
     goto END;
 
   if (find_tag_info(tagname,&taginfo)) {
@@ -699,9 +699,9 @@ html_struct_handle(size_t *pos, const uint16_t lvl, html_state *st)
 
   END: ;
   if (i >= s) {
-    hnode->all_len = s-hnode->all-1;
+    hnode->all_len = s-hnode->all;
     if (hnode->endtag == 0)
-      hnode->endtag = s-start-1;
+      hnode->endtag = s-start;
   } else if (!hnode->all_len) {
     hnode->all_len = i-hnode->all;
     hnode->endtag = i-start; //!! this doesn't change anything
