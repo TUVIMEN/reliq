@@ -1,3 +1,4 @@
 @basic.test
 @errors.test
 @advanced.test
+@afl.test

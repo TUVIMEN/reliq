@@ -668,6 +668,9 @@ html_struct_handle(size_t *pos, const uint16_t lvl, html_state *st)
     fallback = phptag_handle(f,&i,s,hnode,nodes);
     if (fallback == (uint32_t)-1)
         goto ERR;
+
+    start += hnode->tag;
+    start += hnode->tagl;
     goto END;
   }
   #endif

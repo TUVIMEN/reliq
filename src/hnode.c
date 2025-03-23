@@ -49,10 +49,10 @@ reliq_chnode_type(const reliq_chnode *c)
 uint32_t
 reliq_chnode_insides(const reliq *rq, const reliq_chnode *hnode, const uint8_t type)
 {
-  if (type == RELIQ_HNODE_TYPE_TEXT)
-    return 0;
   if (type == RELIQ_HNODE_TYPE_COMMENT)
     return hnode->tagl;
+  if (type != RELIQ_HNODE_TYPE_TAG)
+    return 0;
 
   const uint32_t base = hnode->all+hnode->tag+hnode->tagl;
   if (hnode->tag_count+hnode->text_count+hnode->comment_count == 0) {
