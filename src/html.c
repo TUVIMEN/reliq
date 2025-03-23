@@ -666,6 +666,8 @@ html_struct_handle(size_t *pos, const uint16_t lvl, html_state *st)
   #ifdef RELIQ_PHPTAGS
   if (unlikely(f[i] == '?')) {
     fallback = phptag_handle(f,&i,s,hnode,nodes);
+    if (fallback == (uint32_t)-1)
+        goto ERR;
     goto END;
   }
   #endif
