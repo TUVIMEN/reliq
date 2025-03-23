@@ -1,0 +1,6 @@
+.threads [0] div #b>question-summary-; {
+    .s-post-summary--content-title; [0] a; {
+        .title @ | "%i",
+        .link @ | "%(href)v"
+    }
+}

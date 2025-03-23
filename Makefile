@@ -126,6 +126,9 @@ test-advanced: all
 test-errors: all
 	@./test.sh test/errors.test . "${TEST_FLAGS}" || true
 
+test-afl: all
+	@./test.sh test/afl.test . "${TEST_FLAGS}" || true
+
 test-all: all
 	@./test.sh test/all.test . "${TEST_FLAGS}" || true
 
