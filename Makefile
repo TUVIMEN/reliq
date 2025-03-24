@@ -88,9 +88,12 @@ CFLAGS_ALL = ${CFLAGS} ${CFLAGS_D}
 
 OBJ = ${SRC:.c=.o}
 
-.PHONY: all options lib lib-install install linked test test-advanced test-errors test-all test-update test-speed install-pc dist uninstall clean reliq-h
+.PHONY: all options lib lib-install install linked test test-advanced test-errors test-all test-update test-speed install-pc dist uninstall clean reliq-h afl
 
 all: options reliq
+
+afl: clean
+	@make CC="afl-clang-fast -std=c18"
 
 options:
 	@echo ${SRC}
