@@ -14,6 +14,7 @@ O_PHPTAGS := 1 # support for <?php ?>
 O_AUTOCLOSING := 1 # support for autoclosing tags (tag ommission https://html.spec.whatwg.org/multipage/syntax.html#optional-tags)
 
 D := 0 # debug mode
+S := 0 # build with sanitizer
 
 PREFIX ?= /usr
 MANPREFIX ?= ${PREFIX}/share/man
@@ -73,8 +74,13 @@ ifeq ($(strip ${O_LINKED}),1)
 	LDFLAGS_R += -lreliq
 endif
 
+ifeq ($(strip ${S}),1)
+	CFLAGS_D += -fsanitize=address
+	D = 1
+endif
+
 ifeq ($(strip ${D}),1)
-	CFLAGS_D += -DDEBUG -O0 -ggdb -fsanitize=address
+	CFLAGS_D += -DDEBUG -O0 -ggdb
 endif
 
 TEST_FLAGS=$(shell echo "${CFLAGS_D}" | sed -E 's/(^| )-D/\1/g; s/(^| )[a-zA-Z0-9_]+=("[^"]*")?[^ ]*( |$$)//')
@@ -98,7 +104,7 @@ reliq-h:
 
 
 lib: clean reliq-h
-	@make D=${D} O_LIB=1 TARGET=lib${TARGET}.so
+	@make D=${D} S=${S} O_LIB=1 TARGET=lib${TARGET}.so
 
 install-pc:
 	sed "s/#VERSION#/${VERSION}/g;s|#PREFIX#|${PREFIX}|g;s/#CFLAGS_D#/${CFLAGS_D}/g" reliq.pc > $$(pkg-config --variable pc_path pkg-config | cut -d: -f1)/reliq.pc
@@ -108,7 +114,7 @@ lib-install: lib install-pc
 	install -m644 reliq.h ${INCLUDE_PATH}
 
 linked: lib lib-install
-	@make D=${D} O_LINKED=1
+	@make D=${D} S=${S} O_LINKED=1
 
 reliq: ${OBJ}
 	${CC} ${CFLAGS_ALL} $^ ${LDFLAGS_R} -o ${TARGET}
