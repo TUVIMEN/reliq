@@ -1,0 +1,2432 @@
+
+<!DOCTYPE html>
+
+
+    <html class="html__responsive " lang="en">
+
+    <head>
+
+        <title>Newest Questions - Skeptics Stack Exchange</title>
+        <link rel="shortcut icon" href="https://cdn.sstatic.net/Sites/skeptics/Img/favicon.ico?v=56b2e5109c57">
+        <link rel="apple-touch-icon" href="https://cdn.sstatic.net/Sites/skeptics/Img/apple-touch-icon.png?v=660117152995">
+        <link rel="image_src" href="https://cdn.sstatic.net/Sites/skeptics/Img/apple-touch-icon.png?v=660117152995"> 
+        <link rel="search" type="application/opensearchdescription+xml" title="Skeptics Stack Exchange" href="/opensearch.xml">
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, minimum-scale=1.0">
+        <meta name="bingbot" content="noarchive">         
+        <meta property="og:type" content= "website" />
+        <meta property="og:url" content="https://skeptics.stackexchange.com/questions"/>
+        <meta property="og:site_name" content="Skeptics Stack Exchange" />
+        <meta property="og:image" itemprop="image primaryImageOfPage" content="https://cdn.sstatic.net/Sites/skeptics/Img/apple-touch-icon@2.png?v=84eb07e70fd7" />
+        <meta name="twitter:card" content="summary"/>
+        <meta name="twitter:domain" content="skeptics.stackexchange.com"/>
+        <meta name="twitter:title" property="og:title" itemprop="name" content="Newest Questions" />
+        <meta name="twitter:description" property="og:description" itemprop="description" content="Q&amp;A for scientific skepticism" />
+    <script id="webpack-public-path" type="text/uri-list">https://cdn.sstatic.net/</script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script><script src="https://code.jquery.com/jquery-migrate-3.4.1.min.js"></script>
+    <script defer src="https://cdn.sstatic.net/Js/third-party/npm/@stackoverflow/stacks/dist/js/stacks.min.js?v=d5f780ae3281"></script>
+    <script src="https://cdn.sstatic.net/Js/stub.en.js?v=44cbb4d4d062"></script>
+
+    <link rel="stylesheet" type="text/css" href="https://cdn.sstatic.net/Shared/stacks.css?v=619122b796ae">
+    <link rel="stylesheet" type="text/css" href="https://cdn.sstatic.net/Sites/skeptics/primary.css?v=70039625e2ea">
+
+
+    
+    
+    <script defer src="https://cdn.sstatic.net/Js/webpack-chunks/1631.en.js?v=d13f2559f51c"></script><script defer src="https://cdn.sstatic.net/Js/questions/list.en.js?v=31cd9b069220"></script>
+    <script>StackExchange.ready(function () {StackExchange.realtime.subscribeToUQL('212', 'newest', [], {}, []);});</script>
+
+
+        
+        
+        
+        <link rel="stylesheet" type="text/css" href="https://cdn.sstatic.net/Shared/Channels/channels.css?v=5981bb1a5bd7">
+
+        
+        
+
+
+    
+
+
+    <script>
+        StackExchange.ready(function () {
+            StackExchange.realtime.init('wss://qa.sockets.stackexchange.com');
+                StackExchange.realtime.subscribeToReputationNotifications('212');
+        StackExchange.realtime.subscribeToTopBarNotifications('212');
+        });
+    </script>
+    <script type="application/json" data-role="module-args" data-module-name="Shared/options.mod">{"options":{"locale":"en","serverTime":1728321458,"routeName":"Questions/List","stackAuthUrl":"https://stackauth.com","networkMetaHostname":"meta.stackexchange.com","site":{"name":"Skeptics Stack Exchange","description":"Q\u0026A for scientific skepticism","isNoticesTabEnabled":true,"enableNewTagCreationWarning":false,"insertSpaceAfterNameTabCompletion":false,"id":212,"cookieDomain":".stackexchange.com","childUrl":"https://skeptics.meta.stackexchange.com","negativeVoteScoreFloor":null,"enableSocialMediaInSharePopup":true,"protocol":"https"},"user":{"fkey":"e47c90e4c56c6105c0f53ed5d2d7f43c1c932853be1c66a16c26e8d2bc446b3c","tid":"e0321dba-b3f3-4d0f-b74f-9fd851c60209","rep":0,"isAnonymous":true,"isAnonymousNetworkWide":true},"realtime":{"newest":true,"active":true,"tagged":true,"staleDisconnectIntervalInHours":0},"events":{"postType":{"question":1},"postEditionSection":{"title":1,"body":2,"tags":3}}}}</script>
+<script type="application/json" data-role="module-args" data-module-name="Shared/settings.mod">{"settings":{"mentions":{"maxNumUsersInDropdown":50},"auth":{"oauthInPopup":true},"legal":{"oneTrustTCFConfigId":"cb0f3c87-b769-4e66-bbaa-377f9194216d","useCustomConsent":false},"flags":{"allowRetractingCommentFlags":true,"allowRetractingFlags":true},"questions":{"enableQuestionTitleLengthLiveWarning":true,"enableSavesFeature":true,"maxTitleSize":150,"questionTitleLengthStartLiveWarningChars":50},"userMessaging":{},"paths":{"jQueryUIJSPath":"https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.0/jquery-ui.min.js","jQueryUICSSPath":"https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.0/themes/smoothness/jquery-ui.css"},"elections":{"opaVoteResultsBaseUrl":"https://www.opavote.com/results/"},"tags":{},"snippets":{"renderDomain":"stacksnippets.net"},"markdown":{"enableTables":true},"accounts":{"currentPasswordRequiredForChangingStackIdPassword":true},"subscriptions":{"defaultFreemiumMaxTrueUpSeats":50,"defaultBasicMaxTrueUpSeats":250,"defaultMaxTrueUpSeats":1000},"image":{"maxImageUploadSizeInBytesAnimatedGif":2097152,"maxImageUploadSizeInBytes":10485760},"search":{},"site":{"allowImageUploads":true,"stacksEditorPreviewEnabled":true,"enableImageHttps":true,"forceHttpsImages":true,"enableUserHovercards":true},"comments":{},"intercom":{"appId":"inf0secd"}}}</script>
+<script>StackExchange.init();</script>
+
+    <script>
+        StackExchange.using.setCacheBreakers({"Js/adops.en.js":"6da43f5e0a84","Js/ask.en.js":"","Js/begin-edit-event.en.js":"20edbaccceae","Js/copy-transpiled.en.js":"224f8d2cbb4e","Js/events.en.js":"","Js/explore-qlist.en.js":"ee2a4f8c3992","Js/full-anon.en.js":"5270bb52a736","Js/full.en.js":"342849f2c506","Js/highlightjs-loader.en.js":"dec53251ce5d","Js/inline-tag-editing.en.js":"8517756a2cb6","Js/keyboard-shortcuts.en.js":"c255a5a5979b","Js/markdown-it-loader.en.js":"5818ef89ff9d","Js/mentions-transpiled.en.js":"54b80f913964","Js/moderator.en.js":"98ff61d628ec","Js/postCollections-transpiled.en.js":"fd1c4a681d04","Js/post-validation.en.js":"b8c35578315c","Js/question-editor.en.js":"","Js/review-v2-transpiled.en.js":"b80294337dec","Js/revisions.en.js":"9dd135bb585f","Js/stacks-editor.en.js":"bf9472004917","Js/tageditor.en.js":"4d22c6090e5a","Js/tageditornew.en.js":"4554c63a5fa6","Js/tagsuggestions.en.js":"d9e40cbceb75","Js/unlimited-transpiled.en.js":"8713a979101d","Js/wmd.en.js":"e7247d416617"});
+        StackExchange.using("gps", function() {
+             StackExchange.gps.init(false);
+        });
+    </script>
+    <noscript id="noscript-css"><style>body,.s-topbar{margin-top:1.9em}</style></noscript>
+    </head>
+    <body class="questions-page unified-theme">
+
+        
+<div id="signup-modal-container"></div>
+<script type="application/json" data-role="module-args" data-module-name="islands/signup-modal/index.mod">{"ContainerElementId":"signup-modal-container","FKey":"e47c90e4c56c6105c0f53ed5d2d7f43c1c932853be1c66a16c26e8d2bc446b3c","TriggerEvent":"signupModalShow","OauthInPopup":true,"ReturnUrl":"https://skeptics.stackexchange.com/questions","ReturnUrlForPopup":"https://skeptics.stackexchange.com/users/after-signup/oauth-only","SiteName":"Skeptics","SiteLogoPath":"https://cdn.sstatic.net/Sites/skeptics/Img/icon-48.png?v=f20f9f3f92ad","AuthProviders":["Google"],"ParentSiteUrl":"","IsInitiallyVisible":false}</script>
+<script defer src="https://cdn.sstatic.net/Js/webpack-chunks/svelte.en.js?v=4ece71194540"></script><script defer src="https://cdn.sstatic.net/Js/webpack-chunks/stacks-svelte.en.js?v=6c9d2aa6e4c7"></script><script defer src="https://cdn.sstatic.net/Js/webpack-chunks/1315.en.js?v=d971ebf7a8e2"></script><script defer src="https://cdn.sstatic.net/Js/webpack-chunks/5906.en.js?v=2f743119b3b6"></script><script defer src="https://cdn.sstatic.net/Js/islands/signup-modal.en.js?v=83630fec4fc9"></script>
+
+<script defer>
+    dispatchEvent(new CustomEvent("openSignupModal"));
+</script>
+    
+        <div id="one-tap-container"></div>
+<script type="application/json" data-role="module-args" data-module-name="islands/one-tap/index.mod">{"ContainerElementId":"one-tap-container","FKey":"e47c90e4c56c6105c0f53ed5d2d7f43c1c932853be1c66a16c26e8d2bc446b3c","GoogleClientId":"717762328687-iludtf96g1hinl76e4lc1b9a82g457nn.apps.googleusercontent.com","Autoselect":false,"ReturnUrl":"https%3a%2f%2fskeptics.stackexchange.com%2fquestions"}</script><script defer src="https://cdn.sstatic.net/Js/webpack-chunks/svelte.en.js?v=4ece71194540"></script><script defer src="https://cdn.sstatic.net/Js/islands/one-tap.en.js?v=23f8c3257ece"></script>    <div id="notify-container"></div>
+    <div id="custom-header"></div>
+        
+
+<header class="s-topbar ps-fixed t0 l0 js-top-bar">
+    <a href="#content" class="s-topbar--skip-link">Skip to main content</a>
+	<div class="s-topbar--container">
+			<a href="#" class="s-topbar--menu-btn js-left-sidebar-toggle" role="menuitem" aria-haspopup="true" aria-controls="left-sidebar" aria-expanded="false"><span></span></a>
+			<div class="topbar-dialog leftnav-dialog js-leftnav-dialog dno">
+				<div class="left-sidebar js-unpinned-left-sidebar" data-can-be="left-sidebar" data-is-here-when="sm"></div>
+			</div>
+			<a href="#" class="s-topbar--logo network-logo js-gps-track js-network-logo"
+		   data-gps-track="stack_exchange_popup.show" role="menuitem" aria-haspopup="true" aria-controls="topbar-network-logo-dialog" aria-expanded="false">
+                <svg aria-hidden="true" class="native mtn1 svg-icon iconSEAlternativeSm" width="107" height="15"  viewBox="0 0 107 15"><path fill="#FEFEFE" d="m48.41 11.93-1.96-3.2-1.04 1.16v2.04h-1.42V2.18h1.42v6.01L48.14 5h1.72l-2.44 2.7 2.74 4.22zm-7.06.08c-1.59 0-3.14-.96-3.14-3.56s1.55-3.54 3.14-3.54c.97 0 1.65.27 2.31.97l-.97.93c-.44-.48-.79-.66-1.34-.66q-.84.01-1.3.62c-.31.38-.42.87-.42 1.68s.1 1.32.41 1.7c.3.4.76.62 1.3.62.56 0 .9-.18 1.35-.66l.97.92c-.66.7-1.34.98-2.31.98m-5.66-3.15h-1.65c-.83 0-1.26.37-1.26 1s.4.99 1.3.99c.53 0 .93-.04 1.3-.4q.32-.29.31-1.03zm.03 3.07v-.63c-.51.5-1 .71-1.87.71s-1.46-.2-1.89-.63a2 2 0 0 1-.55-1.49c0-1.16.82-2 2.42-2h1.86v-.5c0-.87-.44-1.3-1.54-1.3-.77 0-1.15.18-1.54.68l-.92-.86c.66-.77 1.35-1 2.52-1q2.9 0 2.9 2.38v4.64zm-5.9 0c-1.32 0-1.93-.93-1.93-1.93V6.18h-.8V5.1h.8V3h1.41v2.1h1.36v1.07H29.3v3.75c0 .5.25.81.78.81h.58v1.2zm-6.33.08c-1.48 0-2.55-.34-3.49-1.28l1-.98c.72.72 1.51.94 2.52.94 1.3 0 2.04-.55 2.04-1.5q0-.65-.39-1.01c-.25-.23-.5-.33-1.08-.41l-1.16-.17a3.4 3.4 0 0 1-1.88-.78 2.4 2.4 0 0 1-.72-1.86c0-1.7 1.25-2.86 3.3-2.86 1.3 0 2.22.33 3.07 1.1l-.96.94a3 3 0 0 0-2.15-.75c-1.16 0-1.8.65-1.8 1.52q-.02.54.37.9c.25.22.65.38 1.11.45l1.13.17c.91.13 1.42.35 1.84.72.54.47.8 1.17.8 2 0 1.8-1.48 2.86-3.55 2.86"/><path fill="#2F96E8" d="M104.16 7.09c-.2-.42-.6-.74-1.2-.74s-.99.32-1.18.74c-.1.25-.15.44-.16.75h2.7a2 2 0 0 0-.16-.75m-2.54 1.96c0 .9.56 1.57 1.55 1.57.78 0 1.16-.21 1.61-.66l1.08 1.04a3.4 3.4 0 0 1-2.7 1.11c-1.68 0-3.29-.76-3.29-3.62 0-2.3 1.26-3.6 3.1-3.6 1.97 0 3.1 1.44 3.1 3.37v.79zm-5.48-2.57C95.1 6.48 95 7.37 95 8.3s.1 1.85 1.15 1.85 1.18-.91 1.18-1.85c0-.93-.13-1.82-1.18-1.82m-.17 8.22c-1.1 0-1.84-.21-2.58-.92l1.1-1.11c.4.38.8.54 1.4.54 1.06 0 1.43-.74 1.43-1.46v-.72c-.47.51-1 .7-1.7.7-.69 0-1.29-.23-1.68-.62-.67-.66-.73-1.57-.73-2.8 0-1.24.06-2.13.73-2.8.4-.39 1-.62 1.7-.62.75 0 1.24.2 1.73.75v-.67h1.72v6.8c0 1.7-1.21 2.93-3.12 2.93m-5.76-2.67V7.76c0-.96-.61-1.28-1.17-1.28s-1.18.32-1.18 1.28v4.27h-1.78V4.97h1.73v.65a2.4 2.4 0 0 1 1.78-.73q1.07.02 1.67.62c.58.57.73 1.24.73 2v4.52zm-7.1-2.98h-1.4c-.64 0-1 .3-1 .8 0 .49.33.81 1.02.81.5 0 .8-.04 1.12-.34q.28-.25.26-.89zm.04 2.98v-.6c-.48.47-.93.67-1.74.67q-1.2 0-1.82-.62c-.38-.4-.58-.97-.58-1.59 0-1.12.77-2.05 2.42-2.05h1.68V7.5c0-.77-.38-1.11-1.32-1.11-.68 0-1 .16-1.37.58l-1.13-1.1c.7-.75 1.38-.97 2.57-.97q3 0 3.02 2.5v4.64zm-6.93 0v-4.3c0-.94-.6-1.25-1.15-1.25-.56 0-1.15.32-1.15 1.24v4.31h-1.77V2.38h1.77v3.24a2.4 2.4 0 0 1 1.7-.73c1.56 0 2.38 1.08 2.38 2.57v4.57zm-6.96.08c-1.42 0-3.18-.76-3.18-3.62 0-2.85 1.76-3.6 3.18-3.6.98 0 1.72.3 2.34.95l-1.2 1.2c-.36-.4-.68-.56-1.14-.56q-.62-.01-1.01.46c-.27.33-.4.8-.4 1.55s.13 1.24.4 1.58q.39.46 1 .46c.47 0 .79-.16 1.15-.56l1.2 1.18c-.62.65-1.36.96-2.34.96m-5.53-.08-1.3-2.11-1.3 2.11H59l2.45-3.6-2.35-3.46h2.12L62.42 7l1.21-2.02h2.13L63.4 8.43l2.46 3.6zm-11.75 0V2.06h6.6V3.8h-4.65v2.33h3.96v1.74h-3.96v2.42h4.65v1.74z"/><path fill="#8FD8F7" d="M0 3c0-1.1.9-2 2-2h8a2 2 0 0 1 2 2z"/><path fill="#155397" d="M12 10H0c0 1.1.9 2 2 2h5v3l3-3a2 2 0 0 0 2-2"/><path fill="#46A2D9" d="M0 4h12v2H0z"/><path fill="#2D6DB5" d="M0 7h12v2H0z"/></svg>
+			</a>
+			<div class="topbar-dialog network-logo-dialog js-network-logo-dialog dno" id="topbar-network-logo-dialog" role="dialog" aria-labelledby="topbar-network-logo-dialog-title" aria-describedby="topbar-network-logo-dialog-body">
+				<div class="dialog-content">
+					<h4 class="bold" id="topbar-network-logo-dialog-title">Stack Exchange Network</h4>
+					<p id="topbar-network-logo-dialog-body">
+						Stack Exchange network consists of 183 Q&amp;A communities including <a href="https://stackoverflow.com">Stack Overflow</a>, the largest, most trusted online community for developers to learn, share their knowledge, and build their careers.
+					</p>
+					<a class="s-btn s-btn__filled" href="https://stackexchange.com"
+				   data-gps-track="stack_exchange_popup.click">Visit Stack Exchange</a>
+					<button class="s-btn s-btn__muted p0 ps-absolute t16 r16 js-close-button" aria-label="Close"><svg aria-hidden="true" class="svg-icon iconClear" width="18" height="18"  viewBox="0 0 18 18"><path  d="M15 4.41 13.59 3 9 7.59 4.41 3 3 4.41 7.59 9 3 13.59 4.41 15 9 10.41 13.59 15 15 13.59 10.41 9z"/></svg></button>
+				</div>
+			</div>
+
+
+
+
+
+		        <form id="search" role="search" action=/search class="s-topbar--searchbar js-searchbar " autocomplete="off">
+                        <div class="s-topbar--searchbar--input-group">
+                            <input name="q"
+                                   type="text"
+                                   role="combobox"
+                                   placeholder="Search on Skeptics&#x2026;"
+                                   value=""
+                                   autocomplete="off"
+                                   maxlength="240"
+                                   class="s-input s-input__search js-search-field wmn1 "
+                                   aria-label="Search"
+                                   aria-controls="top-search" 
+                                   data-controller="s-popover"
+                                   data-action="focus->s-popover#show"
+                                   data-s-popover-placement="bottom-start" />
+                            <svg aria-hidden="true" class="s-input-icon s-input-icon__search svg-icon iconSearch" width="18" height="18"  viewBox="0 0 18 18"><path  d="m18 16.5-5.14-5.18h-.35a7 7 0 1 0-1.19 1.19v.35L16.5 18zM12 7A5 5 0 1 1 2 7a5 5 0 0 1 10 0"/></svg>
+                            <div class="s-popover p0 wmx100 wmn4 sm:wmn-initial js-top-search-popover" id="top-search" role="menu">
+    <div class="s-popover--arrow"></div>
+    <div class="s-popover--content">
+        <div class="js-spinner p24 d-flex ai-center jc-center d-none">
+            <div class="s-spinner s-spinner__sm fc-orange-400">
+                <div class="v-visible-sr">Loading&#x2026;</div>
+            </div>
+        </div>
+
+        <span class="v-visible-sr js-screen-reader-info"></span>
+        <div class="js-ac-results overflow-y-auto hmx3 d-none"></div>
+
+        <div class="js-search-hints" aria-describedby="Tips for searching"></div>
+    </div>
+</div>
+                        </div>
+                </form>
+		
+
+<nav class="h100 ml-auto overflow-x-auto pr12" aria-label="Topbar">
+    <ol class="s-topbar--content" role="menubar">
+    
+        <li role="none">
+            <a href="/help" class="s-topbar--item js-help-button" role="menuitem" title="Help Center and other resources" aria-haspopup="true" aria-controls="topbar-help-dialog"
+           data-ga="[&quot;top navigation&quot;,&quot;help menu click&quot;,null,null,null]"><svg aria-hidden="true" class="svg-icon iconHelp" width="18" height="18"  viewBox="0 0 18 18"><path  d="M9 1C4.64 1 1 4.64 1 9s3.64 8 8 8 8-3.64 8-8-3.64-8-8-8m.81 12.13c-.02.71-.55 1.15-1.24 1.13-.66-.02-1.17-.49-1.15-1.2.02-.72.56-1.18 1.22-1.16.7.03 1.2.51 1.17 1.23M11.77 8c-.59.66-1.78 1.09-2.05 1.97a4 4 0 0 0-.09.75c0 .05-.03.16-.18.16H7.88c-.16 0-.18-.1-.18-.15.06-1.35.66-2.2 1.83-2.88.39-.29.7-.75.7-1.24.01-1.24-1.64-1.82-2.35-.72-.21.33-.18.73-.18 1.1H5.75c0-1.97 1.03-3.26 3.03-3.26 1.75 0 3.47.87 3.47 2.83 0 .57-.2 1.05-.48 1.44"/></svg></a>
+        </li>
+        <div class="topbar-dialog help-dialog js-help-dialog dno" id="topbar-help-dialog" role="menu">
+            <div class="modal-content">
+                <ul>
+                        <li>
+                            <a href="/tour" class="js-gps-track s-block-link" data-gps-track="help_popup.click({ item_type:1 })"
+                       data-ga="[&quot;top navigation&quot;,&quot;tour submenu click&quot;,null,null,null]">
+                                Tour
+                                <span class="item-summary">
+                                    Start here for a quick overview of the site
+                                </span>
+                            </a>
+                        </li>
+                    <li>
+                        <a href="/help" class="js-gps-track s-block-link"
+                       data-gps-track="help_popup.click({ item_type:4 })"
+                       data-ga="[&quot;top navigation&quot;,&quot;help center&quot;,null,null,null]">
+                            Help Center
+                            <span class="item-summary">
+                                Detailed answers to any questions you might have
+                            </span>
+                        </a>
+                    </li>
+                                <li>
+                                    <a href="https://skeptics.meta.stackexchange.com" class="js-gps-track s-block-link" data-gps-track="help_popup.click({ item_type:2 })"
+                       data-ga="[&quot;top navigation&quot;,&quot;meta submenu click&quot;,null,null,null]">
+                                        Meta
+                                        <span class="item-summary">
+                                            Discuss the workings and policies of this site
+                                        </span>
+                                    </a>
+                                </li>
+                            <li>
+                                <a href="https://stackoverflow.co/" class="js-gps-track s-block-link" data-gps-track="help_popup.click({ item_type:6 })"
+                       data-ga="[&quot;top navigation&quot;,&quot;about us submenu click&quot;,null,null,null]">
+                                    About Us
+                                    <span class="item-summary">
+                                        Learn more about Stack Overflow the company, and our products
+                                    </span>
+                                </a>
+                            </li>
+                </ul>
+            </div>
+        </div>
+        <li role="none">
+            <a href="https://stackexchange.com" class="s-topbar--item js-site-switcher-button js-gps-track" data-gps-track="site_switcher.show"
+           aria-label="Site switcher"
+           role="menuitem"
+           title="A list of all 183 Stack Exchange sites"
+           aria-haspopup="true" aria-expanded="false"
+           data-ga="[&quot;top navigation&quot;,&quot;stack exchange click&quot;,null,null,null]">
+                <svg aria-hidden="true" class="svg-icon iconStackExchange" width="18" height="18"  viewBox="0 0 18 18"><path  d="M15 1H3a2 2 0 0 0-2 2v2h16V3a2 2 0 0 0-2-2M1 13c0 1.1.9 2 2 2h8v3l3-3h1a2 2 0 0 0 2-2v-2H1zm16-7H1v4h16z"/></svg>
+            </a>
+        </li>
+    
+    
+        <li class="js-topbar-dialog-corral" role="presentation">
+                
+
+    <div class="topbar-dialog siteSwitcher-dialog dno" role="menu">
+        <div class="header fw-wrap">
+            <h3 class="flex--item">
+                <a href="https://skeptics.stackexchange.com">current community</a>
+            </h3>
+            <div class="flex--item fl1">
+                <div class="ai-center d-flex jc-end">
+                    <button
+                        class="js-close-button s-btn s-btn__muted p0 ml8 d-none sm:d-block"
+                        type="button"
+                        aria-label="Close"
+                    >
+                        <svg aria-hidden="true" class="svg-icon iconClear" width="18" height="18"  viewBox="0 0 18 18"><path  d="M15 4.41 13.59 3 9 7.59 4.41 3 3 4.41 7.59 9 3 13.59 4.41 15 9 10.41 13.59 15 15 13.59 10.41 9z"/></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="modal-content bg-blue-200 current-site-container">
+            <ul class="current-site">
+                    <li class="d-flex">
+                            <div class="fl1">
+                <a href="https://skeptics.stackexchange.com"  
+       class="current-site-link d-flex gx8 site-link js-gps-track"
+       data-id="212"
+       data-gps-track="site_switcher.click({ item_type:3 })">
+        <div class="favicon favicon-skeptics site-icon flex--item" title="Skeptics"></div>
+        <span class="flex--item fl1">
+            Skeptics
+        </span>
+    </a>
+
+    </div>
+    <div class="related-links">
+            <a href="https://skeptics.stackexchange.com/help" class="js-gps-track" data-gps-track="site_switcher.click({ item_type:14 })">help</a>
+            <a href="https://chat.stackexchange.com?tab=site&amp;host=skeptics.stackexchange.com" class="js-gps-track" data-gps-track="site_switcher.click({ item_type:6 })">chat</a>
+    </div>
+
+                    </li>
+                    <li class="related-site d-flex">
+                            <div class="L-shaped-icon-container">
+        <span class="L-shaped-icon"></span>
+    </div>
+
+                            <a href="https://skeptics.meta.stackexchange.com"  
+       class="s-block-link px16 d-flex gx8 site-link js-gps-track"
+       data-id="214"
+       data-gps-track="site.switch({ target_site:214, item_type:3 }),site_switcher.click({ item_type:4 })">
+        <div class="favicon favicon-skepticsmeta site-icon flex--item" title="Skeptics Meta"></div>
+        <span class="flex--item fl1">
+            Skeptics Meta
+        </span>
+    </a>
+
+                    </li>
+            </ul>
+        </div>
+
+        <div class="header" id="your-communities-header">
+            <h3>
+your communities            </h3>
+
+        </div>
+        <div class="modal-content" id="your-communities-section">
+
+                <div class="call-to-login">
+<a href="https://skeptics.stackexchange.com/users/signup?ssrc=site_switcher&amp;returnurl=https%3a%2f%2fskeptics.stackexchange.com%2fquestions" class="login-link js-gps-track" data-gps-track="site_switcher.click({ item_type:10 })">Sign up</a> or <a href="https://skeptics.stackexchange.com/users/login?ssrc=site_switcher&amp;returnurl=https%3a%2f%2fskeptics.stackexchange.com%2fquestions" class="login-link js-gps-track" data-gps-track="site_switcher.click({ item_type:11 })">log in</a> to customize your list.                </div>
+        </div>
+
+        <div class="header">
+            <h3><a href="https://stackexchange.com/sites">more stack exchange communities</a>
+            </h3>
+            <a href="https://stackoverflow.blog" class="float-right">company blog</a>
+        </div>
+        <div class="modal-content">
+                <div class="child-content"></div>
+        </div>        
+    </div>
+
+        </li>
+    
+            <li role="none"><button class="s-topbar--item s-btn s-btn__icon s-btn__muted d-none sm:d-inline-flex js-searchbar-trigger" role="menuitem" aria-label="Search" aria-haspopup="true" aria-controls="search" title="Click to show search"><svg aria-hidden="true" class="svg-icon iconSearch" width="18" height="18"  viewBox="0 0 18 18"><path  d="m18 16.5-5.14-5.18h-.35a7 7 0 1 0-1.19 1.19v.35L16.5 18zM12 7A5 5 0 1 1 2 7a5 5 0 0 1 10 0"/></svg></button></li>
+                        <li role="none">
+                            <a href="https://skeptics.stackexchange.com/users/login?ssrc=head&returnurl=https%3a%2f%2fskeptics.stackexchange.com%2fquestions" class="s-topbar--item s-topbar--item__unset s-btn s-btn__outlined ws-nowrap js-gps-track" role="menuitem" rel="nofollow"
+                               data-gps-track="login.click" data-ga="[&quot;top navigation&quot;,&quot;login button click&quot;,null,null,null]">Log in</a>
+                        </li>
+                        <li role="none"><a href="https://skeptics.stackexchange.com/users/signup?ssrc=head&returnurl=https%3a%2f%2fskeptics.stackexchange.com%2fquestions" class="s-topbar--item s-topbar--item__unset ml4 s-btn s-btn__filled ws-nowrap js-signup-button js-gps-track" role="menuitem" rel="nofollow" data-gps-track="signup.topbar.click" data-ga="[&quot;sign up&quot;,&quot;Sign Up Navigation&quot;,&quot;Header&quot;,null,null]">Sign up</a></li>
+    </ol>
+</nav>
+
+
+	</div>
+</header>
+
+	<script>
+		StackExchange.ready(function () { StackExchange.topbar.init(); });
+		StackExchange.scrollPadding.setPaddingTop(50, 10); 
+	</script>
+
+
+
+
+        <header class="site-header">
+            <div class="site-header--container">
+            <a class="site-header--link d-flex ai-center fs-headline1 fw-bold" href="https://skeptics.stackexchange.com">
+                <img class="h-auto wmx100" src="https://cdn.sstatic.net/Sites/skeptics/Img/logo.svg?v=868378dff6dc" alt="Skeptics">
+            </a>
+
+            </div>
+        </header>
+
+    <div class="container">
+                
+
+
+
+<div id="left-sidebar" data-is-here-when="md lg" class="left-sidebar js-pinned-left-sidebar ps-relative">
+    <div class="left-sidebar--sticky-container js-sticky-leftnav">
+        <nav aria-label="Primary">
+            <ol class="nav-links">
+                <li>
+                    <ol class="nav-links">
+                        
+
+<li class="ps-relative"  aria-current="false">
+
+
+    <a
+       href="/"
+       class="s-block-link pl8 js-gps-track nav-links--link -link__with-icon"
+       
+       data-gps-track="top_nav.click({is_current: false, location:3, destination:8,  has_activity_notification:False});home_nav.click({location:3})"
+       aria-controls=""
+       data-controller=" "
+       data-s-popover-placement="right"
+       aria-current="false"
+       data-s-popover-auto-show="true" data-s-popover-hide-on-outside-click="never"
+    >
+        <div class="d-flex ai-center">
+<svg aria-hidden="true" class="svg-icon iconHome" width="18" height="18"  viewBox="0 0 18 18"><path  d="M15 10v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5H0l9-9 9 9zm-8 1v6h4v-6z"/></svg>                <span class="-link--channel-name pl6">Home</span>
+
+        </div>
+    </a>
+</li>
+
+
+
+                        
+
+<li class="ps-relative  youarehere"  aria-current="true">
+
+
+    <a id="nav-questions"
+       href="/questions"
+       class="s-block-link pl8 js-gps-track nav-links--link -link__with-icon"
+       
+       data-gps-track="top_nav.click({is_current: true, location:3, destination:1,  has_activity_notification:False})"
+       aria-controls=""
+       data-controller=" "
+       data-s-popover-placement="right"
+       aria-current="page"
+       data-s-popover-auto-show="true" data-s-popover-hide-on-outside-click="never"
+    >
+        <div class="d-flex ai-center">
+<svg aria-hidden="true" class="svg-icon iconQuestion" width="18" height="18"  viewBox="0 0 18 18"><path  d="m4 15-3 3V4c0-1.1.9-2 2-2h12c1.09 0 2 .91 2 2v9c0 1.09-.91 2-2 2zm7.75-3.97c.72-.83.98-1.86.98-2.94 0-1.65-.7-3.22-2.3-3.83a4.4 4.4 0 0 0-3.02 0 3.8 3.8 0 0 0-2.32 3.83q0 1.93 1.03 3a3.8 3.8 0 0 0 2.85 1.07q.94 0 1.71-.34.97.66 1.06.7.34.2.7.3l.59-1.13a5 5 0 0 1-1.28-.66m-1.27-.9a5 5 0 0 0-1.5-.8l-.45.9q.5.18.98.5-.3.1-.65.11-.92 0-1.52-.68c-.86-1-.86-3.12 0-4.11.8-.9 2.35-.9 3.15 0 .9 1.01.86 3.03-.01 4.08"/></svg>                <span class="-link--channel-name pl6">Questions</span>
+
+        </div>
+    </a>
+</li>
+
+
+
+
+
+
+                        
+
+<li class="ps-relative"  aria-current="false">
+
+
+    <a
+       href="/tags"
+       class="s-block-link pl8 js-gps-track nav-links--link -link__with-icon"
+       
+       data-gps-track="top_nav.click({is_current: false, location:3, destination:2,  has_activity_notification:False})"
+       aria-controls=""
+       data-controller=" "
+       data-s-popover-placement="right"
+       aria-current="false"
+       data-s-popover-auto-show="true" data-s-popover-hide-on-outside-click="never"
+    >
+        <div class="d-flex ai-center">
+<svg aria-hidden="true" class="svg-icon iconTags" width="18" height="18"  viewBox="0 0 18 18"><path  d="M9.24 1a3 3 0 0 0-2.12.88l-5.7 5.7a2 2 0 0 0-.38 2.31 3 3 0 0 1 .67-1.01l6-6A3 3 0 0 1 9.83 2H14a3 3 0 0 1 .79.1A2 2 0 0 0 13 1z" opacity=".4"/><path  d="M9.83 3a2 2 0 0 0-1.42.59l-6 6a2 2 0 0 0 0 2.82L6.6 16.6a2 2 0 0 0 2.82 0l6-6A2 2 0 0 0 16 9.17V5a2 2 0 0 0-2-2zM12 9a2 2 0 1 1 0-4 2 2 0 0 1 0 4"/></svg>                <span class="-link--channel-name pl6">Tags</span>
+
+        </div>
+    </a>
+</li>
+
+
+                        
+                        <li class="pb24"></li>
+
+
+                        
+
+<li class="ps-relative"  aria-current="false">
+
+
+    <a id="nav-users"
+       href="/users"
+       class="s-block-link pl8 js-gps-track nav-links--link -link__with-icon"
+       
+       data-gps-track="top_nav.click({is_current: false, location:3, destination:3,  has_activity_notification:False})"
+       aria-controls=""
+       data-controller=" "
+       data-s-popover-placement="right"
+       aria-current="false"
+       data-s-popover-auto-show="true" data-s-popover-hide-on-outside-click="never"
+    >
+        <div class="d-flex ai-center">
+<svg aria-hidden="true" class="svg-icon iconPeople" width="18" height="18"  viewBox="0 0 18 18"><path  d="M17 14c0 .44-.45 1-1 1H9a1 1 0 0 1-1-1H2c-.54 0-1-.56-1-1 0-2.63 3-4 3-4s.23-.4 0-1c-.84-.62-1.06-.59-1-3s1.37-3 2.5-3 2.44.58 2.5 3-.16 2.38-1 3c-.23.59 0 1 0 1s1.55.71 2.42 2.09c.78-.72 1.58-1.1 1.58-1.1s.23-.4 0-1c-.84-.61-1.06-.58-1-3s1.37-3 2.5-3 2.44.59 2.5 3c.05 2.42-.16 2.39-1 3-.23.6 0 1 0 1s3 1.38 3 4"/></svg>                <span class="-link--channel-name pl6">Users</span>
+
+        </div>
+    </a>
+</li>
+
+
+
+                            
+
+<li class="ps-relative"  aria-current="false">
+
+
+    <a id="nav-unanswered"
+       href="/unanswered"
+       class="s-block-link pl8 js-gps-track nav-links--link -link__with-icon"
+       
+       data-gps-track="top_nav.click({is_current: false, location:3, destination:5,  has_activity_notification:False})"
+       aria-controls=""
+       data-controller=" "
+       data-s-popover-placement="right"
+       aria-current="false"
+       data-s-popover-auto-show="true" data-s-popover-hide-on-outside-click="never"
+    >
+        <div class="d-flex ai-center">
+<svg aria-hidden="true" class="svg-icon iconAnswer" width="18" height="18"  viewBox="0 0 18 18"><path  d="M14 15H3c-1.09 0-2-.91-2-2V4c0-1.1.9-2 2-2h12c1.09 0 2 .91 2 2v14zm-1.02-3L9.82 4H8.14l-3.06 8h1.68l.65-1.79h3.15l.69 1.79zm-2.93-3.12H7.9l1.06-2.92z"/></svg>                <span class="-link--channel-name pl6">Unanswered</span>
+
+        </div>
+    </a>
+</li>
+
+
+
+
+
+                        
+                    </ol>
+                </li>
+                
+                
+
+        
+
+<li class="js-overflowai-cta ps-relative mt32 mb8">
+
+
+    <div class="fs-fine tt-uppercase fc-black-600 fw-bold ml8 mt16 mb8">Teams</div>
+
+    <div class="px12 pt12 pb4 mb12 fc-medium overflow-hidden">
+        <div style="width: 131px;">
+            <svg aria-hidden="true" class="native w100 mtn16 svg-icon iconMarketingOverflowai" width="345" height="72"  viewBox="0 0 345 72"><path fill="currentColor"  d="M84.22 32.4c-3.97 0-6.65 1.53-8.32 3.29-2.43 2.5-3.06 5.54-3.06 10.37 0 4.88.63 7.92 3.06 10.43 1.63 1.75 4.35 3.29 8.32 3.29s6.7-1.54 8.38-3.3c2.42-2.5 3.05-5.54 3.05-10.42 0-4.83-.63-7.87-3.05-10.37-1.68-1.76-4.4-3.3-8.38-3.3m3.14 20.17c-.8.79-1.8 1.16-3.14 1.16a4.2 4.2 0 0 1-3.1-1.16c-1.37-1.38-1.54-3.75-1.54-6.55s.17-5.08 1.55-6.46a4 4 0 0 1 3.1-1.17c1.33 0 2.38.42 3.13 1.17 1.39 1.38 1.55 3.71 1.55 6.46 0 2.8-.16 5.17-1.55 6.55m26.12-19.89-5.44 16.55-5.48-16.55h-7.03l9.92 26.8h5.27l9.88-26.8zm18.5-.29c-6.99 0-11.72 4.92-11.72 13.67 0 10.84 6.12 13.72 12.44 13.72 4.85 0 7.49-1.5 10.2-4.21l-4.05-3.96c-1.72 1.7-3.14 2.5-6.11 2.5-3.77 0-5.9-2.5-5.9-5.96h16.82v-3c.05-7.34-4.18-12.76-11.67-12.76m-5.1 11.17c.04-1.16.2-1.91.63-2.87a4.7 4.7 0 0 1 4.48-2.8 4.6 4.6 0 0 1 4.47 2.8c.42.96.59 1.7.63 2.87zm26.75-8.3v-2.58h-6.58v26.8h6.7v-16.1c0-3.38 2.26-4.92 4.35-4.92 1.64 0 2.52.54 3.56 1.58l5.07-5.09c-1.84-1.83-3.73-2.5-6.37-2.5a9 9 0 0 0-6.74 2.84m15.19-5.37v29.56h6.7V38.3h4.98v-5.08h-4.94V30.3c0-1.54.8-2.42 2.38-2.42h2.6v-5.67h-3.8c-5.53 0-7.92 3.88-7.92 7.67m39.3 2.5c-3.97 0-6.65 1.54-8.33 3.3-2.42 2.5-3.05 5.54-3.05 10.37 0 4.88.63 7.92 3.05 10.43 1.64 1.75 4.36 3.29 8.33 3.29 3.98 0 6.7-1.54 8.38-3.3 2.42-2.5 3.05-5.54 3.05-10.42 0-4.83-.63-7.87-3.06-10.37-1.63-1.76-4.39-3.3-8.37-3.3m3.19 20.18c-.8.79-1.8 1.16-3.14 1.16a4.2 4.2 0 0 1-3.1-1.16c-1.38-1.38-1.55-3.75-1.55-6.55s.17-5.08 1.55-6.46c.8-.79 1.76-1.17 3.1-1.17s2.38.42 3.14 1.17c1.38 1.38 1.54 3.71 1.54 6.46 0 2.8-.16 5.17-1.54 6.55m39.97-19.89-4.35 16.55-5.53-16.55h-4.9l-5.48 16.55-4.35-16.55h-7.12l8.25 26.8h5.52l5.61-16.8 5.61 16.8h5.53l8.28-26.8zM190.42 51.4V22.22h-6.7v29.6c0 3.8 2.34 7.67 7.87 7.67h3.8v-5.67h-2.59c-1.71 0-2.38-.84-2.38-2.42"/><path fill="#F48024" d="M283.26 12.25a10 10 0 0 0-9.57 7.09l-11.4 37.5a10 10 0 0 0 9.56 12.91h51.3a10 10 0 0 0 9.57-7.09l11.4-37.5a10 10 0 0 0-9.56-12.91zm31.34 41.03V28.72h-4.1v-5.88h15.29v5.88h-4.1v24.56h4.1v5.88H310.5v-5.88zm-30.69-24.51h-2.69v-5.88h12.47l9.5 30.4h3.83v5.87h-13.45v-5.88h2.86l-1.1-4h-11.25l-1.1 4h3.63v5.88h-13.45v-5.88h3.05zm1.8 14.64h8l-4-14.47z"/><path fill="#BCBBBB" d="M51.56 46.33v18.95H6.75V46.33H0V72h58.3V46.33z"/><path fill="#F48024" d="M12.92 59.17h32.49v-6.11H12.92zm.65-14.62 31.56 6.6 1.3-6.27-31.56-6.6zm4.16-15.06 29.22 13.58 2.72-5.82-29.22-13.58zm8.11-14.3 24.8 20.57 4.16-4.92-24.87-20.56zM41.82 0l-5.2 3.82 19.22 25.8 5.2-3.82z"/></svg>
+        </div>
+        <p class="fs-fine">
+            <span class="fw-bold">Now available on Stack Overflow for Teams! </span>AI features where you work: search, IDE, and chat.
+        </p>
+        <a href="https://stackoverflow.co/teams/ai/?utm_medium=referral&utm_source=skeptics-community&utm_campaign=side-bar&utm_content=overflowai-learn-more"
+           class="w100 s-btn s-btn__filled s-btn__xs bg-orange-400 h:bg-orange-500 js-gps-track pt8 pr7 pb6 pl7"
+           data-gps-track="teams.create.left-sidenav.click({ Action: 7 })"
+           data-ga="[&quot;teams left navigation - anonymous&quot;,&quot;left nav team overflowai click&quot;,&quot;stackoverflow.co/teams/ai&quot;,null,null]">Learn more</a>
+        <a href="https://stackoverflow.co/teams/?utm_medium=referral&utm_source=skeptics-community&utm_campaign=side-bar&utm_content=explore-teams"
+           class="w100 s-btn s-btn__muted s-btn__xs mt1 js-gps-track"
+           data-gps-track="teams.create.left-sidenav.click({ Action: 8 })"
+           data-ga="[&quot;teams left navigation - anonymous&quot;,&quot;left nav team overflowai click&quot;,&quot;stackoverflow.com/teams&quot;,null,null]">Explore Teams</a>
+    </div>
+</li>
+
+
+    <li class="d-flex ai-center jc-space-between ml8 mt32 mb8 js-create-team-cta d-none">
+
+        <a href="javascript:void(0)"
+            class="s-link d-flex fl-grow1 fc-black-400 h:fc-black-600 fs-fine js-gps-track"
+            role="button"
+            aria-controls="popover-teams-create-cta"
+            data-controller="s-popover"
+            data-action="s-popover#toggle"
+            data-s-popover-placement="bottom-start"
+            data-s-popover-toggle-class="is-selected"
+            data-gps-track="teams.create.left-sidenav.click({ Action: ShowInfo })"
+            data-ga="[&quot;teams left navigation - anonymous&quot;,&quot;left nav show teams info&quot;,null,null,null]"
+         >
+            <div class="flex--item fl-grow1 fc-black-600 fw-bold tt-uppercase">Teams</div>
+            <div class="flex--item px12">
+                <svg aria-hidden="true" class="svg-icon iconPlusSm" width="14" height="14"  viewBox="0 0 14 14"><path  d="M8 2H6v4H2v2h4v4h2V8h4V6H8z"/></svg>
+            </div>
+        </a>
+    </li>
+    <li class="ps-relative js-create-team-cta d-none">
+        <p class="fs-fine pr8 pl8 pb4 fc-black-400">
+            Ask questions, find answers and collaborate at work with Stack Overflow for Teams.
+            <a href="https://stackoverflow.co/teams/?utm_medium=referral&utm_source=skeptics-community&utm_campaign=side-bar&utm_content=explore-teams-compact" class="s-link s-link__grayscale s-link__underlined fw-bold">Explore Teams</a>
+        </p>
+    </li> 
+
+            </ol>
+        </nav>
+    </div>
+
+
+
+        <div class="s-popover ws2"
+        id="popover-teams-create-cta"
+        role="menu"
+        aria-hidden="true">
+            <div class="s-popover--arrow"></div>
+
+            <div class="ps-relative overflow-hidden">
+                <p class="mb2"><strong>Teams</strong></p>
+                <p class="mb12 fs-caption fc-black-400">Q&amp;A for work</p>
+                <p class="mb12 fs-caption fc-black-500">Connect and share knowledge within a single location that is structured and easy to search.</p>
+                <a href="https://stackoverflow.co/teams/"
+            class="js-gps-track s-btn s-btn__filled s-btn__xs"
+            data-gps-track="teams.create.left-sidenav.click({ Action: CtaClick })"
+            data-ga="[&quot;teams left navigation - anonymous&quot;,&quot;left nav cta&quot;,&quot;stackoverflow.com/teams&quot;,null,null]">
+                    Learn more about Teams
+                </a>
+            </div>
+
+            <div class="ps-absolute t8 r8">
+                <svg aria-hidden="true" class="fc-orange-400 svg-spot spotPeople" width="48" height="48"  viewBox="0 0 48 48"><path  d="M13.5 28a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9M7 30a1 1 0 0 1 1-1h11a1 1 0 0 1 1 1v5h11v-5a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v10a2 2 0 0 1-2 2H33v5a1 1 0 0 1-1 1H20a1 1 0 0 1-1-1v-5H8a1 1 0 0 1-1-1zm25-6.5a4.5 4.5 0 1 0 9 0 4.5 4.5 0 0 0-9 0M24.5 34a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9" opacity=".2"/><path  d="M16.4 26.08A6 6 0 1 0 7.53 26C5.64 26.06 4 27.52 4 29.45V40a1 1 0 0 0 1 1h9a1 1 0 1 0 0-2h-4v-7a1 1 0 1 0-2 0v7H6v-9.55c0-.73.67-1.45 1.64-1.45H16a1 1 0 0 0 .4-1.92M12 18a4 4 0 1 1 0 8 4 4 0 0 1 0-8m16.47 14a6 6 0 1 0-8.94 0A3.6 3.6 0 0 0 16 35.5V46a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V35.5c0-1.94-1.64-3.42-3.53-3.5M20 28a4 4 0 1 1 8 0 4 4 0 0 1-8 0m-.3 6h8.6c1 0 1.7.75 1.7 1.5V45h-2v-7a1 1 0 1 0-2 0v7h-4v-7a1 1 0 1 0-2 0v7h-2v-9.5c0-.75.7-1.5 1.7-1.5M42 22c0 1.54-.58 2.94-1.53 4A3.5 3.5 0 0 1 44 29.45V40a1 1 0 0 1-1 1h-9a1 1 0 1 1 0-2h4v-7a1 1 0 1 1 2 0v7h2v-9.55A1.5 1.5 0 0 0 40.48 28H32a1 1 0 0 1-.4-1.92A6 6 0 1 1 42 22m-2 0a4 4 0 1 0-8 0 4 4 0 0 0 8 0"/><g  opacity=".35"><path d="M17 10a1 1 0 011-1h12a1 1 0 110 2H18a1 1 0 01-1-1m1-5a1 1 0 100 2h12a1 1 0 100-2zM14 1a1 1 0 00-1 1v12a1 1 0 001 1h5.09l4.2 4.2a1 1 0 001.46-.04l3.7-4.16H34a1 1 0 001-1V2a1 1 0 00-1-1zm1 12V3h18v10h-5a1 1 0 00-.75.34l-3.3 3.7-3.74-3.75a1 1 0 00-.71-.29z"/></g></svg>
+            </div>
+        </div>
+
+
+
+
+</div>
+
+
+
+        <div id="content" class="">
+
+            
+
+<div id="mainbar" role="main" aria-labelledby="h-all-questions">
+        
+
+
+
+            <div class="d-flex fw-wrap mb12">
+                    <h1 class="flex--item fl1 fs-headline1 mr12 mb12">All Questions</h1>
+
+
+                <div class="aside-cta flex--item ml12 mb12 print:d-none">
+                        <a href="/questions/ask" class="ws-nowrap s-btn s-btn__filled">
+        Ask Question
+    </a>
+
+                </div>
+            </div>
+
+
+        
+<script type="application/json" data-role="module-args" data-module-name="entry-points/questions/userQuestionList.mod">{"regularTagsString":"","moderatorTagsString":""}</script>
+<script defer src="https://cdn.sstatic.net/Js/questions/userQuestionList.en.js?v=95e1d78ecaf0"></script>
+
+<div data-controller="se-uql" data-se-uql-id="" data-se-uql-sanitize-tag-query="false">
+    <div class="d-flex ai-center jc-space-between mb12 sm:fd-column sm:ai-stretch">
+            <div class="fs-body3 flex--item fl1 mr12 sm:mr0 sm:mb12">
+                11,315
+                questions
+            </div>
+            <div class="uql-nav flex--item"
+                data-action="se-uql-list:edit-current-requested@document->se-uql#toggleEditor">
+                <div class="d-flex ai-center jc-space-between">
+                    <div class="s-btn-group flex--item mr16 ff-row-nowrap js-uql-navigation">
+                            <a
+                                class="s-btn s-btn__muted s-btn__sm is-selected js-gps-track"
+                                href="/questions?tab=Newest"
+                                aria-current="page"
+                                data-nav-value="Newest"
+                                data-gps-track="question.list.sort.clicked({ SortBy: 'Newest' })"
+                                data-shortcut="N">
+                                <span class="s-btn--text" data-text="Newest">Newest</span>
+                        </a>
+                            <a
+                                class="s-btn s-btn__muted s-btn__sm js-gps-track"
+                                href="/questions?tab=Active"
+                                data-nav-value="Active"
+                                data-gps-track="question.list.sort.clicked({ SortBy: 'Active' })"
+                                data-shortcut="A">
+                                <span class="s-btn--text" data-text="Active">Active</span>
+                        </a>
+                            <a
+                                class="s-btn s-btn__muted s-btn__sm uql-nav--expanded-item js-gps-track"
+                                href="/questions?tab=Bounties"
+                                data-nav-value="Bounties"
+                                data-gps-track="question.list.sort.clicked({ SortBy: 'Bountied' })"
+                                data-shortcut="E">
+                                <span class="s-btn--text" data-text="Bountied">Bountied</span>
+                                    <span class="s-btn--badge o100 bg-blue-500">
+                                        <span class="s-btn--number fc-white">1</span>
+                                    </span>
+                        </a>
+                            <a
+                                class="s-btn s-btn__muted s-btn__sm uql-nav--expanded-item js-gps-track"
+                                href="/questions?tab=Unanswered"
+                                data-nav-value="Unanswered"
+                                data-gps-track="question.list.sort.clicked({ SortBy: 'Unanswered' })"
+                                data-shortcut="U">
+                                <span class="s-btn--text" data-text="Unanswered">Unanswered</span>
+                        </a>
+                        <button
+                            class="s-btn s-btn__muted s-btn__sm s-btn__dropdown"
+                            type="button"
+                            data-controller="s-popover"
+                            data-action="s-popover#toggle"
+                            data-se-uql-target="toggleMoreButton"
+                            aria-haspopup="true"
+                            aria-expanded="false"
+                            aria-controls="uql-more-popover">
+                            <span class="s-btn--text" data-text="More">More</span>
+                        </button>
+                    </div>
+                
+                    <div class="s-popover z-dropdown ws2 px0 py4"
+                         id="uql-more-popover"
+                         data-se-uql-target="morePopover">
+                        <div class="s-popover--arrow"></div>
+                        <ul class="s-menu js-uql-navigation" role="menu">
+                                <li class=" uql-nav--collapsed-item" role="menuitem">
+                                        <a href="/questions?tab=Bounties" 
+                                           class="s-block-link s-block-link__left js-gps-track" 
+                                           data-shortcut=""
+                                           data-gps-track="question.list.sort.clicked({ SortBy: 'Bountied' })">
+                                            Bountied
+                                                <span class="s-badge s-badge__bounty s-badge__bounty s-badge__sm lh-xs px4">1</span>
+                                        </a>
+                                </li>
+                                <li class=" uql-nav--collapsed-item" role="menuitem">
+                                        <a href="/questions?tab=Unanswered" 
+                                           class="s-block-link s-block-link__left js-gps-track" 
+                                           data-shortcut=""
+                                           data-gps-track="question.list.sort.clicked({ SortBy: 'Unanswered' })">
+                                            Unanswered
+                                        </a>
+                                </li>
+                                <li role="menuitem">
+                                        <a href="/questions?tab=Frequent" 
+                                           class="s-block-link s-block-link__left js-gps-track" 
+                                           data-shortcut="F"
+                                           data-gps-track="question.list.sort.clicked({ SortBy: 'Frequent' })">
+                                            Frequent
+                                        </a>
+                                </li>
+                                <li role="menuitem">
+                                        <a href="/questions?tab=Votes" 
+                                           class="s-block-link s-block-link__left js-gps-track" 
+                                           data-shortcut="V"
+                                           data-gps-track="question.list.sort.clicked({ SortBy: 'Score' })">
+                                            Score
+                                        </a>
+                                </li>
+                                    <li class="s-menu--divider" role="separator"></li>
+                                <li role="menuitem">
+                                        <span class="s-block-link c-default fc-black-350 js-gps-track"
+                                              data-gps-track="question.list.sort.clicked({ SortBy: 'Unanswered (my tags)' })">
+                                            Unanswered (my tags)
+                                        </span>
+                                </li>
+                        </ul>
+                    </div>
+                
+                    <div class="flex--item">
+                        <button class="s-btn s-btn__outlined s-btn__sm s-btn__icon ws-nowrap"
+                                role="button"
+                                data-controller="s-expandable-control"
+                                data-s-expandable-control-toggle-class="is-selected"
+                                data-se-uql-target="toggleFormButton"
+                                aria-expanded="false"
+                                aria-controls="uql-form">
+                            <svg aria-hidden="true" class="svg-icon iconFilter" width="18" height="18"  viewBox="0 0 18 18"><path  d="M2 4h14v2H2zm2 4h10v2H4zm8 4H6v2h6z"/></svg> Filter
+                        </button>
+                    </div>
+                </div>
+            </div>
+    </div>
+
+    <form class="s-expandable ps-relative z-active"
+          id="uql-form"
+          data-se-uql-target="form"
+          data-action="se-uql#navigate">
+        <input name="uqlId" type="hidden"/>
+        <div class="s-expandable--content">
+            <div class="bg-black-150 ba bc-black-225 bar-sm mb16">
+                <div class="px12 py16">
+                    <div class="d-flex gs32 fw-wrap">
+                        <div class="flex--item">
+                            <fieldset class="d-flex gs8 gsy fd-column">
+                                <legend class="flex--item s-label px0">Filter by</legend>
+        <div class="flex--item">
+            <div class="d-flex gs4 gsx ai-center">
+                <div class="flex--item">
+                    <input class="s-checkbox d-block"
+                           type="checkbox"
+                           name="filterId"
+                           value="NoAnswers"
+                           id="baac20f9-993d-4f5c-aa08-17adabb576d1" />
+                </div>
+                <label class="flex--item s-label fw-normal ws-nowrap" for="baac20f9-993d-4f5c-aa08-17adabb576d1" id="3761552f-fd77-464d-9b78-7e97c11a8c91">No answers</label>
+            </div>
+        </div>
+        <div class="flex--item">
+            <div class="d-flex gs4 gsx ai-center">
+                <div class="flex--item">
+                    <input class="s-checkbox d-block"
+                           type="checkbox"
+                           name="filterId"
+                           value="NoAcceptedAnswer"
+                           id="f6215d77-0540-4fd4-96e2-d3c3052191e7" />
+                </div>
+                <label class="flex--item s-label fw-normal ws-nowrap" for="f6215d77-0540-4fd4-96e2-d3c3052191e7" id="02b9d482-176a-487f-b53f-cdeb0fd18b88">No accepted answer</label>
+            </div>
+        </div>
+        <div class="flex--item">
+            <div class="d-flex gs4 gsx ai-center">
+                <div class="flex--item">
+                    <input class="s-checkbox d-block"
+                           type="checkbox"
+                           name="filterId"
+                           value="Bounty"
+                           id="d50eed60-1415-4902-a0e4-a82e0aa01a8a" />
+                </div>
+                <label class="flex--item s-label fw-normal ws-nowrap" for="d50eed60-1415-4902-a0e4-a82e0aa01a8a" id="4dd2534c-a237-4c1e-90e9-1831eb35fb4b">Has bounty</label>
+            </div>
+        </div>
+                            </fieldset>
+                        </div>
+                        <div class="flex--item">
+                            <fieldset class="d-flex gs8 gsy fd-column">
+                                <legend class="flex--item s-label px0">Sorted by</legend>
+        <div class="flex--item">
+            <div class="d-flex gs4 gsx ai-center">
+                <div class="flex--item">
+                    <input class="s-radio d-block"
+                           type="radio"
+                           name="sortId"
+                           value="Newest"
+                           checked="checked"
+                           id="d0b15155-b4e1-4085-93e9-7f399c9e341c" />
+                </div>
+                <label class="flex--item s-label fw-normal ws-nowrap" for="d0b15155-b4e1-4085-93e9-7f399c9e341c" id="285daa9d-f39b-4c52-92b2-fcb0f13ce4f4">Newest</label>
+            </div>
+        </div>
+        <div class="flex--item">
+            <div class="d-flex gs4 gsx ai-center">
+                <div class="flex--item">
+                    <input class="s-radio d-block"
+                           type="radio"
+                           name="sortId"
+                           value="RecentActivity"
+                           id="401dde3a-f9be-4611-8e5d-caea559060d3" />
+                </div>
+                <label class="flex--item s-label fw-normal ws-nowrap" for="401dde3a-f9be-4611-8e5d-caea559060d3" id="8522e2e4-f911-45e7-9d5f-89f874a558b7">Recent activity</label>
+            </div>
+        </div>
+        <div class="flex--item">
+            <div class="d-flex gs4 gsx ai-center">
+                <div class="flex--item">
+                    <input class="s-radio d-block"
+                           type="radio"
+                           name="sortId"
+                           value="MostVotes"
+                           id="9a4f17b8-8600-4e7f-bb10-b82644758615" />
+                </div>
+                <label class="flex--item s-label fw-normal ws-nowrap" for="9a4f17b8-8600-4e7f-bb10-b82644758615" id="71a4a973-e0db-47ab-a668-023cee7ca74e">Highest score</label>
+            </div>
+        </div>
+        <div class="flex--item">
+            <div class="d-flex gs4 gsx ai-center">
+                <div class="flex--item">
+                    <input class="s-radio d-block"
+                           type="radio"
+                           name="sortId"
+                           value="MostFrequent"
+                           id="bd379d4a-3639-401a-9f54-2c5fb9daf449" />
+                </div>
+                <label class="flex--item s-label fw-normal ws-nowrap" for="bd379d4a-3639-401a-9f54-2c5fb9daf449" id="f9b0e494-e2e0-4f8b-ac02-beda2919cbdb">Most frequent</label>
+            </div>
+        </div>
+        <div class="flex--item">
+            <div class="d-flex gs4 gsx ai-center">
+                <div class="flex--item">
+                    <input class="s-radio d-block"
+                           type="radio"
+                           name="sortId"
+                           value="BountyEndingSoon"
+                           id="089cb240-19c1-4794-9501-c6eb3e1bb1fb" />
+                </div>
+                <label class="flex--item s-label fw-normal ws-nowrap" for="089cb240-19c1-4794-9501-c6eb3e1bb1fb" id="0d638dc2-b6b3-47e9-8326-af2ea9224b50">Bounty ending soon</label>
+            </div>
+        </div>
+                            </fieldset>
+                        </div>
+                        <div class="flex--item">
+                            <fieldset class="d-flex gs8 gsy fd-column">
+                                <legend class="flex--item s-label px0">Tagged with</legend>
+                                        <div class="flex--item">
+            <div class="d-flex gs4 gsx ai-center">
+                <div class="flex--item">
+                    <input class="s-radio d-block"
+                           type="radio"
+                           name="tagModeId"
+                           value="Watched"
+                           id="569471eb-6ef5-4797-8120-55c1c8d4b22e" />
+                </div>
+                <label class="flex--item s-label fw-normal ws-nowrap" for="569471eb-6ef5-4797-8120-55c1c8d4b22e" id="2b40fec8-16d2-41f4-a6a1-e5d8aff051f9">My watched tags</label>
+            </div>
+        </div>
+
+                                        <div class="flex--item">
+            <div class="d-flex gs4 gsx ai-center">
+                <div class="flex--item">
+                    <input class="s-radio d-block"
+                           type="radio"
+                           name="tagModeId"
+                           value="Specified"
+                           checked="checked"
+                           id="d0d07054-5507-419e-af44-ca27be2f4762" />
+                </div>
+                <label class="flex--item s-label fw-normal ws-nowrap" for="d0d07054-5507-419e-af44-ca27be2f4762" id="ff29fb41-5de7-4ab7-82c7-3427d68e9079">The following tags:</label>
+            </div>
+        </div>
+
+                            </fieldset>
+                            <div class="ps-relative ml24 mt8 ws2">
+                                <input id="uql-modal-tag-input" class="w100 s-input" name="tagQuery" data-se-uql-target="tagQuery" type="text" size="60" tabindex="0" aria-labelledby="ff29fb41-5de7-4ab7-82c7-3427d68e9079" placeholder="e.g. united-states or medical-science">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="p12 bt bc-black-225">
+                    <div class="d-flex">
+                        <div class="d-flex gs4 gsx fl1">
+                            <button class="s-btn s-btn__sm s-btn__filled flex--item js-gps-track" 
+                                    type="submit" 
+                                    data-se-uql-target="applyButton" 
+                                    data-gps-track="question.list.apply_filter.clicked">Apply filter</button>
+                        </div>
+                        <div class="flex--item">
+                            <button class="s-btn s-btn__sm" data-action="se-uql#cancelEditor" type="button">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+
+</div>
+
+
+
+        <div id="questions" class=" flush-left">
+                            
+
+
+<div id="question-summary-57371" class="s-post-summary    js-post-summary" data-post-id="57371" data-post-type-id="1">
+    <div class="s-post-summary--stats js-post-summary-stats">
+        <div class="s-post-summary--stats-item s-post-summary--stats-item__emphasized" title="Score of -3">
+            <span class="s-post-summary--stats-item-number">-3</span>
+            <span class="s-post-summary--stats-item-unit">votes</span>
+        </div>
+        <div class="s-post-summary--stats-item  " title="0 answers">
+            <span class="s-post-summary--stats-item-number">0</span>
+            <span class="s-post-summary--stats-item-unit">answers</span>
+        </div>
+        <div class="s-post-summary--stats-item " title="144 views">
+            <span class="s-post-summary--stats-item-number">144</span>
+            <span class="s-post-summary--stats-item-unit">views</span>
+        </div>
+
+
+
+    </div>
+    <div class="s-post-summary--content">
+
+
+        <h3 class="s-post-summary--content-title">
+            <a href="/questions/57371/when-did-people-start-talking-about-doing-division-before-multiplication-if-divi" class="s-link">When did people start talking about doing division before multiplication if division is first from left to right? [closed]</a>
+        </h3>
+            <div class="s-post-summary--content-excerpt">
+                I've been looking around, and apparently there's this new order of operations that says if division is first when reading from left to right, you do the division before the multiplication. Then some ...
+            </div>
+        <div class="s-post-summary--meta">
+            <div class="s-post-summary--meta-tags d-inline-block tags js-tags t-mathematics">
+
+<ul class='ml0 list-ls-none js-post-tag-list-wrapper d-inline'><li class='d-inline mr4 js-post-tag-list-item'><a href="/questions/tagged/mathematics" class="s-tag post-tag flex--item mt0 js-tagname-mathematics" title="show questions tagged &#39;mathematics&#39;" aria-label="show questions tagged &#39;mathematics&#39;" rel="tag" aria-labelledby="tag-mathematics-tooltip-container" data-tag-menu-origin="Unknown">mathematics</a></li></ul>
+            </div>
+            
+
+
+<div class="s-user-card s-user-card__minimal" aria-live="polite">
+
+                <a href="/users/75821/user75821" class="s-avatar s-avatar__16 s-user-card--avatar" data-user-id="75821">        <div class="gravatar-wrapper-16">
+            <img src="https://www.gravatar.com/avatar/688bf467d92ea7e2da04d7e924b4cbf1?s=32&amp;d=identicon&amp;r=PG&amp;f=y&amp;so-version=2" alt="user75821&#39;s user avatar" width="16" , height="16" class="s-avatar--image" />
+        </div>
+</a>
+
+    <div class="s-user-card--info">
+            <div class="s-user-card--link d-flex gs4" >
+                <a href="/users/75821/user75821" class="flex--item">user75821</a>
+            </div>
+        
+                <ul class="s-user-card--awards">
+            <li class="s-user-card--rep"><span class="todo-no-class-here" title="reputation score " dir="ltr">1</span></li>
+
+        </ul>
+
+        
+    </div>
+
+        <time class="s-user-card--time">asked <span title='2024-10-05 22:40:20Z' class='relativetime'>yesterday</span></time>
+</div>
+
+        </div>
+       
+    </div>
+</div>
+
+                            
+
+
+<div id="question-summary-57370" class="s-post-summary    js-post-summary" data-post-id="57370" data-post-type-id="1">
+    <div class="s-post-summary--stats js-post-summary-stats">
+        <div class="s-post-summary--stats-item s-post-summary--stats-item__emphasized" title="Score of 2">
+            <span class="s-post-summary--stats-item-number">2</span>
+            <span class="s-post-summary--stats-item-unit">votes</span>
+        </div>
+        <div class="s-post-summary--stats-item  " title="0 answers">
+            <span class="s-post-summary--stats-item-number">0</span>
+            <span class="s-post-summary--stats-item-unit">answers</span>
+        </div>
+        <div class="s-post-summary--stats-item " title="135 views">
+            <span class="s-post-summary--stats-item-number">135</span>
+            <span class="s-post-summary--stats-item-unit">views</span>
+        </div>
+
+
+
+    </div>
+    <div class="s-post-summary--content">
+
+
+        <h3 class="s-post-summary--content-title">
+            <a href="/questions/57370/did-iranian-missile-strikes-on-israel-destroy-any-number-of-f-35s" class="s-link">Did Iranian missile strikes on Israel destroy any number of F-35s?</a>
+        </h3>
+            <div class="s-post-summary--content-excerpt">
+                Forbes: Iranian Media Claims Israeli F-35 Fighters Destroyed In Missile Strike
+
+Damage was also reported to be minimal, but on social media on Wednesday, many pro-Iranian supporters echoed reports ...
+            </div>
+        <div class="s-post-summary--meta">
+            <div class="s-post-summary--meta-tags d-inline-block tags js-tags t-israel t-iran">
+
+<ul class='ml0 list-ls-none js-post-tag-list-wrapper d-inline'><li class='d-inline mr4 js-post-tag-list-item'><a href="/questions/tagged/israel" class="s-tag post-tag flex--item mt0 js-tagname-israel" title="show questions tagged &#39;israel&#39;" aria-label="show questions tagged &#39;israel&#39;" rel="tag" aria-labelledby="tag-israel-tooltip-container" data-tag-menu-origin="Unknown">israel</a></li><li class='d-inline mr4 js-post-tag-list-item'><a href="/questions/tagged/iran" class="s-tag post-tag flex--item mt0 js-tagname-iran" title="show questions tagged &#39;iran&#39;" aria-label="show questions tagged &#39;iran&#39;" rel="tag" aria-labelledby="tag-iran-tooltip-container" data-tag-menu-origin="Unknown">iran</a></li></ul>
+            </div>
+            
+
+
+<div class="s-user-card s-user-card__minimal" aria-live="polite">
+
+                <a href="/users/48358/user366312" class="s-avatar s-avatar__16 s-user-card--avatar js-user-hover-target" data-user-id="48358">        <div class="gravatar-wrapper-16">
+            <img src="https://www.gravatar.com/avatar/f19a3ac761df525d20390cf126e6219e?s=32&amp;d=identicon&amp;r=PG&amp;f=y&amp;so-version=2" alt="user366312&#39;s user avatar" width="16" , height="16" class="s-avatar--image" />
+        </div>
+</a>
+
+    <div class="s-user-card--info">
+            <div class="s-user-card--link d-flex gs4" >
+                <a href="/users/48358/user366312" class="flex--item">user366312</a>
+            </div>
+        
+                <ul class="s-user-card--awards">
+            <li class="s-user-card--rep"><span class="todo-no-class-here" title="reputation score " dir="ltr">1,628</span></li>
+
+        </ul>
+
+        
+    </div>
+
+        <time class="s-user-card--time">asked <span title='2024-10-05 16:48:21Z' class='relativetime'>2 days ago</span></time>
+</div>
+
+        </div>
+       
+    </div>
+</div>
+
+                            
+
+
+<div id="question-summary-57364" class="s-post-summary    js-post-summary" data-post-id="57364" data-post-type-id="1">
+    <div class="s-post-summary--stats js-post-summary-stats">
+        <div class="s-post-summary--stats-item s-post-summary--stats-item__emphasized" title="Score of 5">
+            <span class="s-post-summary--stats-item-number">5</span>
+            <span class="s-post-summary--stats-item-unit">votes</span>
+        </div>
+        <div class="s-post-summary--stats-item  " title="0 answers">
+            <span class="s-post-summary--stats-item-number">0</span>
+            <span class="s-post-summary--stats-item-unit">answers</span>
+        </div>
+        <div class="s-post-summary--stats-item " title="218 views">
+            <span class="s-post-summary--stats-item-number">218</span>
+            <span class="s-post-summary--stats-item-unit">views</span>
+        </div>
+
+
+
+    </div>
+    <div class="s-post-summary--content">
+
+
+        <h3 class="s-post-summary--content-title">
+            <a href="/questions/57364/is-replacing-a-bad-habit-with-a-good-one-more-effective-than-stopping-the-bad-ha" class="s-link">Is replacing a bad habit with a good one more effective than stopping the bad habit alone?</a>
+        </h3>
+            <div class="s-post-summary--content-excerpt">
+                Replacing bad habits with good ones is commonplace advice. However, I have seen this claim repeated on reputable sites, suggesting that there is evidence behind it, but no evidence is provided:
+...
+            </div>
+        <div class="s-post-summary--meta">
+            <div class="s-post-summary--meta-tags d-inline-block tags js-tags t-psychology t-healthcare t-behavior t-research t-addiction">
+
+<ul class='ml0 list-ls-none js-post-tag-list-wrapper d-inline'><li class='d-inline mr4 js-post-tag-list-item'><a href="/questions/tagged/psychology" class="s-tag post-tag flex--item mt0 js-tagname-psychology" title="show questions tagged &#39;psychology&#39;" aria-label="show questions tagged &#39;psychology&#39;" rel="tag" aria-labelledby="tag-psychology-tooltip-container" data-tag-menu-origin="Unknown">psychology</a></li><li class='d-inline mr4 js-post-tag-list-item'><a href="/questions/tagged/healthcare" class="s-tag post-tag flex--item mt0 js-tagname-healthcare" title="show questions tagged &#39;healthcare&#39;" aria-label="show questions tagged &#39;healthcare&#39;" rel="tag" aria-labelledby="tag-healthcare-tooltip-container" data-tag-menu-origin="Unknown">healthcare</a></li><li class='d-inline mr4 js-post-tag-list-item'><a href="/questions/tagged/behavior" class="s-tag post-tag flex--item mt0 js-tagname-behavior" title="show questions tagged &#39;behavior&#39;" aria-label="show questions tagged &#39;behavior&#39;" rel="tag" aria-labelledby="tag-behavior-tooltip-container" data-tag-menu-origin="Unknown">behavior</a></li><li class='d-inline mr4 js-post-tag-list-item'><a href="/questions/tagged/research" class="s-tag post-tag flex--item mt0 js-tagname-research" title="show questions tagged &#39;research&#39;" aria-label="show questions tagged &#39;research&#39;" rel="tag" aria-labelledby="tag-research-tooltip-container" data-tag-menu-origin="Unknown">research</a></li><li class='d-inline mr4 js-post-tag-list-item'><a href="/questions/tagged/addiction" class="s-tag post-tag flex--item mt0 js-tagname-addiction" title="show questions tagged &#39;addiction&#39;" aria-label="show questions tagged &#39;addiction&#39;" rel="tag" aria-labelledby="tag-addiction-tooltip-container" data-tag-menu-origin="Unknown">addiction</a></li></ul>
+            </div>
+            
+
+
+<div class="s-user-card s-user-card__minimal" aria-live="polite">
+
+                <a href="/users/43182/arnon-weinberg" class="s-avatar s-avatar__16 s-user-card--avatar js-user-hover-target" data-user-id="43182">        <div class="gravatar-wrapper-16">
+            <img src="https://i.sstatic.net/aBJai.jpg?s=32" alt="Arnon Weinberg&#39;s user avatar" width="16" , height="16" class="s-avatar--image" />
+        </div>
+</a>
+
+    <div class="s-user-card--info">
+            <div class="s-user-card--link d-flex gs4" >
+                <a href="/users/43182/arnon-weinberg" class="flex--item">Arnon Weinberg</a>
+            </div>
+        
+                <ul class="s-user-card--awards">
+            <li class="s-user-card--rep"><span class="todo-no-class-here" title="reputation score " dir="ltr">1,038</span></li>
+
+        </ul>
+
+        
+    </div>
+
+        <time class="s-user-card--time">asked <span title='2024-10-03 05:42:13Z' class='relativetime'>Oct 3 at 5:42</span></time>
+</div>
+
+        </div>
+       
+    </div>
+</div>
+
+                            
+
+
+<div id="question-summary-57360" class="s-post-summary    js-post-summary" data-post-id="57360" data-post-type-id="1">
+    <div class="s-post-summary--stats js-post-summary-stats">
+        <div class="s-post-summary--stats-item s-post-summary--stats-item__emphasized" title="Score of 6">
+            <span class="s-post-summary--stats-item-number">6</span>
+            <span class="s-post-summary--stats-item-unit">votes</span>
+        </div>
+        <div class="s-post-summary--stats-item  " title="0 answers">
+            <span class="s-post-summary--stats-item-number">0</span>
+            <span class="s-post-summary--stats-item-unit">answers</span>
+        </div>
+        <div class="s-post-summary--stats-item " title="471 views">
+            <span class="s-post-summary--stats-item-number">471</span>
+            <span class="s-post-summary--stats-item-unit">views</span>
+        </div>
+
+
+
+    </div>
+    <div class="s-post-summary--content">
+
+
+        <h3 class="s-post-summary--content-title">
+            <a href="/questions/57360/has-the-idf-killed-more-terrorists-on-the-us-watch-list-in-the-last-4-weeks" class="s-link">Has the IDF killed more terrorist[s] on the &quot;US watch list&quot; in the last 4 weeks (i.e. Sep 2024) than the US has done in the last 20 years?</a>
+        </h3>
+            <div class="s-post-summary--content-excerpt">
+                A comment from Sep 29 with some 800 upvotes on reddit claims that:
+
+The IDF has killed more terrorist[s] on the US watch list in the last 4 weeks than the US has done in the last 20 years. It's really ...
+            </div>
+        <div class="s-post-summary--meta">
+            <div class="s-post-summary--meta-tags d-inline-block tags js-tags t-united-states t-mortality t-israel t-terrorism">
+
+<ul class='ml0 list-ls-none js-post-tag-list-wrapper d-inline'><li class='d-inline mr4 js-post-tag-list-item'><a href="/questions/tagged/united-states" class="s-tag post-tag flex--item mt0 js-tagname-united-states" title="show questions tagged &#39;united-states&#39;" aria-label="show questions tagged &#39;united-states&#39;" rel="tag" aria-labelledby="tag-united-states-tooltip-container" data-tag-menu-origin="Unknown">united-states</a></li><li class='d-inline mr4 js-post-tag-list-item'><a href="/questions/tagged/mortality" class="s-tag post-tag flex--item mt0 js-tagname-mortality" title="show questions tagged &#39;mortality&#39;" aria-label="show questions tagged &#39;mortality&#39;" rel="tag" aria-labelledby="tag-mortality-tooltip-container" data-tag-menu-origin="Unknown">mortality</a></li><li class='d-inline mr4 js-post-tag-list-item'><a href="/questions/tagged/israel" class="s-tag post-tag flex--item mt0 js-tagname-israel" title="show questions tagged &#39;israel&#39;" aria-label="show questions tagged &#39;israel&#39;" rel="tag" aria-labelledby="tag-israel-tooltip-container" data-tag-menu-origin="Unknown">israel</a></li><li class='d-inline mr4 js-post-tag-list-item'><a href="/questions/tagged/terrorism" class="s-tag post-tag flex--item mt0 js-tagname-terrorism" title="show questions tagged &#39;terrorism&#39;" aria-label="show questions tagged &#39;terrorism&#39;" rel="tag" aria-labelledby="tag-terrorism-tooltip-container" data-tag-menu-origin="Unknown">terrorism</a></li></ul>
+            </div>
+            
+
+
+<div class="s-user-card s-user-card__minimal" aria-live="polite">
+
+                <a href="/users/29579/believe-it-or-not" class="s-avatar s-avatar__16 s-user-card--avatar" data-user-id="29579">        <div class="gravatar-wrapper-16">
+            <img src="https://i.sstatic.net/51TKynPH.png?s=32" alt="Believe it or not...&#39;s user avatar" width="16" , height="16" class="s-avatar--image" />
+        </div>
+</a>
+
+    <div class="s-user-card--info">
+            <div class="s-user-card--link d-flex gs4" >
+                <a href="/users/29579/believe-it-or-not" class="flex--item">Believe it or not...</a>
+            </div>
+        
+                <ul class="s-user-card--awards">
+            <li class="s-user-card--rep"><span class="todo-no-class-here" title="reputation score 63,736" dir="ltr">63.7k</span></li>
+
+        </ul>
+
+        
+    </div>
+
+        <time class="s-user-card--time">asked <span title='2024-09-30 19:20:24Z' class='relativetime'>Sep 30 at 19:20</span></time>
+</div>
+
+        </div>
+       
+    </div>
+</div>
+
+                            
+
+
+<div id="question-summary-57355" class="s-post-summary    js-post-summary" data-post-id="57355" data-post-type-id="1">
+    <div class="s-post-summary--stats js-post-summary-stats">
+        <div class="s-post-summary--stats-item s-post-summary--stats-item__emphasized" title="Score of 27">
+            <span class="s-post-summary--stats-item-number">27</span>
+            <span class="s-post-summary--stats-item-unit">votes</span>
+        </div>
+        <div class="s-post-summary--stats-item has-answers has-accepted-answer" title="one of the answers was accepted as the correct answer">
+<svg aria-hidden="true" class="svg-icon iconCheckmarkSm" width="14" height="14"  viewBox="0 0 14 14"><path  d="M13 3.41 11.59 2 5 8.59 2.41 6 1 7.41l4 4z"/></svg>            <span class="s-post-summary--stats-item-number">1</span>
+            <span class="s-post-summary--stats-item-unit">answer</span>
+        </div>
+        <div class="s-post-summary--stats-item is-warm" title="6233 views">
+            <span class="s-post-summary--stats-item-number">6k</span>
+            <span class="s-post-summary--stats-item-unit">views</span>
+        </div>
+
+
+
+    </div>
+    <div class="s-post-summary--content">
+
+
+        <h3 class="s-post-summary--content-title">
+            <a href="/questions/57355/did-steven-pinker-test-or-propose-testing-if-adhd-patients-could-sit-still-for" class="s-link">Did Steven Pinker test (or propose testing) if ADHD patients could sit still for 5 minutes while in front of &quot;6 legos and an over turned lamp&quot;?</a>
+        </h3>
+            <div class="s-post-summary--content-excerpt">
+                Harvard professor Steven Pinker proposed a study once where people with ADHD were told they would get $100 if they were able to sit still on a chair in a room for only 5 minutes.  In front of them was ...
+            </div>
+        <div class="s-post-summary--meta">
+            <div class="s-post-summary--meta-tags d-inline-block tags js-tags t-psychology">
+
+<ul class='ml0 list-ls-none js-post-tag-list-wrapper d-inline'><li class='d-inline mr4 js-post-tag-list-item'><a href="/questions/tagged/psychology" class="s-tag post-tag flex--item mt0 js-tagname-psychology" title="show questions tagged &#39;psychology&#39;" aria-label="show questions tagged &#39;psychology&#39;" rel="tag" aria-labelledby="tag-psychology-tooltip-container" data-tag-menu-origin="Unknown">psychology</a></li></ul>
+            </div>
+            
+
+
+<div class="s-user-card s-user-card__minimal" aria-live="polite">
+
+                <a href="/users/25398/rebecca-j-stones" class="s-avatar s-avatar__16 s-user-card--avatar js-user-hover-target" data-user-id="25398">        <div class="gravatar-wrapper-16">
+            <img src="https://i.sstatic.net/Sh7oN.jpg?s=32" alt="Rebecca J. Stones&#39;s user avatar" width="16" , height="16" class="s-avatar--image" />
+        </div>
+</a>
+
+    <div class="s-user-card--info">
+            <div class="s-user-card--link d-flex gs4" >
+                <a href="/users/25398/rebecca-j-stones" class="flex--item">Rebecca J. Stones</a>
+            </div>
+        
+                <ul class="s-user-card--awards">
+            <li class="s-user-card--rep"><span class="todo-no-class-here" title="reputation score " dir="ltr">9,058</span></li>
+
+        </ul>
+
+        
+    </div>
+
+        <time class="s-user-card--time">asked <span title='2024-09-28 04:57:47Z' class='relativetime'>Sep 28 at 4:57</span></time>
+</div>
+
+        </div>
+       
+    </div>
+</div>
+
+                            
+
+
+<div id="question-summary-57353" class="s-post-summary    js-post-summary" data-post-id="57353" data-post-type-id="1">
+    <div class="s-post-summary--stats js-post-summary-stats">
+        <div class="s-post-summary--stats-item s-post-summary--stats-item__emphasized" title="Score of -6">
+            <span class="s-post-summary--stats-item-number">-6</span>
+            <span class="s-post-summary--stats-item-unit">votes</span>
+        </div>
+        <div class="s-post-summary--stats-item  " title="0 answers">
+            <span class="s-post-summary--stats-item-number">0</span>
+            <span class="s-post-summary--stats-item-unit">answers</span>
+        </div>
+        <div class="s-post-summary--stats-item " title="206 views">
+            <span class="s-post-summary--stats-item-number">206</span>
+            <span class="s-post-summary--stats-item-unit">views</span>
+        </div>
+
+
+
+    </div>
+    <div class="s-post-summary--content">
+
+
+        <h3 class="s-post-summary--content-title">
+            <a href="/questions/57353/were-any-of-roseanne-barr-s-fellow-inmates-in-a-human-flesh-eating-cult" class="s-link">Were any of Roseanne Barr’s fellow inmates in a human flesh-eating cult?</a>
+        </h3>
+            <div class="s-post-summary--content-excerpt">
+                Actress and comedian Roseanne Barr just said this to Tucker Carlson:
+
+I think all of them, the Uniparty, they’re scared to death and they’re just trying to protect themselves because when that list ...
+            </div>
+        <div class="s-post-summary--meta">
+            <div class="s-post-summary--meta-tags d-inline-block tags js-tags t-united-states t-politics t-jeffrey-epstein">
+
+<ul class='ml0 list-ls-none js-post-tag-list-wrapper d-inline'><li class='d-inline mr4 js-post-tag-list-item'><a href="/questions/tagged/united-states" class="s-tag post-tag flex--item mt0 js-tagname-united-states" title="show questions tagged &#39;united-states&#39;" aria-label="show questions tagged &#39;united-states&#39;" rel="tag" aria-labelledby="tag-united-states-tooltip-container" data-tag-menu-origin="Unknown">united-states</a></li><li class='d-inline mr4 js-post-tag-list-item'><a href="/questions/tagged/politics" class="s-tag post-tag flex--item mt0 js-tagname-politics" title="show questions tagged &#39;politics&#39;" aria-label="show questions tagged &#39;politics&#39;" rel="tag" aria-labelledby="tag-politics-tooltip-container" data-tag-menu-origin="Unknown">politics</a></li><li class='d-inline mr4 js-post-tag-list-item'><a href="/questions/tagged/jeffrey-epstein" class="s-tag post-tag flex--item mt0 js-tagname-jeffrey-epstein" title="show questions tagged &#39;jeffrey-epstein&#39;" aria-label="show questions tagged &#39;jeffrey-epstein&#39;" rel="tag" aria-labelledby="tag-jeffrey-epstein-tooltip-container" data-tag-menu-origin="Unknown">jeffrey-epstein</a></li></ul>
+            </div>
+            
+
+
+<div class="s-user-card s-user-card__minimal" aria-live="polite">
+
+                <a href="/users/41283/keshav-srinivasan" class="s-avatar s-avatar__16 s-user-card--avatar" data-user-id="41283">        <div class="gravatar-wrapper-16">
+            <img src="https://i.sstatic.net/Y6yHO.png?s=32" alt="Keshav Srinivasan&#39;s user avatar" width="16" , height="16" class="s-avatar--image" />
+        </div>
+</a>
+
+    <div class="s-user-card--info">
+            <div class="s-user-card--link d-flex gs4" >
+                <a href="/users/41283/keshav-srinivasan" class="flex--item">Keshav Srinivasan</a>
+            </div>
+        
+                <ul class="s-user-card--awards">
+            <li class="s-user-card--rep"><span class="todo-no-class-here" title="reputation score " dir="ltr">4,385</span></li>
+
+        </ul>
+
+        
+    </div>
+
+        <time class="s-user-card--time">asked <span title='2024-09-27 19:33:55Z' class='relativetime'>Sep 27 at 19:33</span></time>
+</div>
+
+        </div>
+       
+    </div>
+</div>
+
+                            
+
+
+<div id="question-summary-57347" class="s-post-summary    js-post-summary" data-post-id="57347" data-post-type-id="1">
+    <div class="s-post-summary--stats js-post-summary-stats">
+        <div class="s-post-summary--stats-item s-post-summary--stats-item__emphasized" title="Score of 1">
+            <span class="s-post-summary--stats-item-number">1</span>
+            <span class="s-post-summary--stats-item-unit">vote</span>
+        </div>
+        <div class="s-post-summary--stats-item has-answers has-accepted-answer" title="one of the answers was accepted as the correct answer">
+<svg aria-hidden="true" class="svg-icon iconCheckmarkSm" width="14" height="14"  viewBox="0 0 14 14"><path  d="M13 3.41 11.59 2 5 8.59 2.41 6 1 7.41l4 4z"/></svg>            <span class="s-post-summary--stats-item-number">1</span>
+            <span class="s-post-summary--stats-item-unit">answer</span>
+        </div>
+        <div class="s-post-summary--stats-item " title="899 views">
+            <span class="s-post-summary--stats-item-number">899</span>
+            <span class="s-post-summary--stats-item-unit">views</span>
+        </div>
+
+
+
+    </div>
+    <div class="s-post-summary--content">
+
+
+        <h3 class="s-post-summary--content-title">
+            <a href="/questions/57347/has-azerbaijan-signed-a-contract-to-purchase-jf-17s-from-pakistan" class="s-link">Has Azerbaijan signed a contract to purchase JF-17s from Pakistan?</a>
+        </h3>
+            <div class="s-post-summary--content-excerpt">
+                There is news floating around that Azerbaijan ahas signed a contract with Pakistan to purchase JF-17s. See Azerbaijan confirms purchase of JF-17 fighters.
+However, the article JF-17C multirole ...
+            </div>
+        <div class="s-post-summary--meta">
+            <div class="s-post-summary--meta-tags d-inline-block tags js-tags t-weapons">
+
+<ul class='ml0 list-ls-none js-post-tag-list-wrapper d-inline'><li class='d-inline mr4 js-post-tag-list-item'><a href="/questions/tagged/weapons" class="s-tag post-tag flex--item mt0 js-tagname-weapons" title="show questions tagged &#39;weapons&#39;" aria-label="show questions tagged &#39;weapons&#39;" rel="tag" aria-labelledby="tag-weapons-tooltip-container" data-tag-menu-origin="Unknown">weapons</a></li></ul>
+            </div>
+            
+
+
+<div class="s-user-card s-user-card__minimal" aria-live="polite">
+
+                <a href="/users/48358/user366312" class="s-avatar s-avatar__16 s-user-card--avatar js-user-hover-target" data-user-id="48358">        <div class="gravatar-wrapper-16">
+            <img src="https://www.gravatar.com/avatar/f19a3ac761df525d20390cf126e6219e?s=32&amp;d=identicon&amp;r=PG&amp;f=y&amp;so-version=2" alt="user366312&#39;s user avatar" width="16" , height="16" class="s-avatar--image" />
+        </div>
+</a>
+
+    <div class="s-user-card--info">
+            <div class="s-user-card--link d-flex gs4" >
+                <a href="/users/48358/user366312" class="flex--item">user366312</a>
+            </div>
+        
+                <ul class="s-user-card--awards">
+            <li class="s-user-card--rep"><span class="todo-no-class-here" title="reputation score " dir="ltr">1,628</span></li>
+
+        </ul>
+
+        
+    </div>
+
+        <time class="s-user-card--time">asked <span title='2024-09-26 17:22:14Z' class='relativetime'>Sep 26 at 17:22</span></time>
+</div>
+
+        </div>
+       
+    </div>
+</div>
+
+                            
+
+
+<div id="question-summary-57342" class="s-post-summary    js-post-summary" data-post-id="57342" data-post-type-id="1">
+    <div class="s-post-summary--stats js-post-summary-stats">
+        <div class="s-post-summary--stats-item s-post-summary--stats-item__emphasized" title="Score of -6">
+            <span class="s-post-summary--stats-item-number">-6</span>
+            <span class="s-post-summary--stats-item-unit">votes</span>
+        </div>
+        <div class="s-post-summary--stats-item has-answers " title="1 answer">
+            <span class="s-post-summary--stats-item-number">1</span>
+            <span class="s-post-summary--stats-item-unit">answer</span>
+        </div>
+        <div class="s-post-summary--stats-item " title="319 views">
+            <span class="s-post-summary--stats-item-number">319</span>
+            <span class="s-post-summary--stats-item-unit">views</span>
+        </div>
+
+
+
+    </div>
+    <div class="s-post-summary--content">
+
+
+        <h3 class="s-post-summary--content-title">
+            <a href="/questions/57342/does-reading-to-your-children-unfairly-disadvantage-others" class="s-link">Does reading to your children unfairly disadvantage Others?</a>
+        </h3>
+            <div class="s-post-summary--content-excerpt">
+                National Review writes
+
+Professor: If You Read To Your Kids, You’re ‘Unfairly Disadvantaging’ Others
+
+According to the article the statement was done during &quot;an interview with ABC Radio&quot; by ...
+            </div>
+        <div class="s-post-summary--meta">
+            <div class="s-post-summary--meta-tags d-inline-block tags js-tags t-education t-children t-parenting t-equality">
+
+<ul class='ml0 list-ls-none js-post-tag-list-wrapper d-inline'><li class='d-inline mr4 js-post-tag-list-item'><a href="/questions/tagged/education" class="s-tag post-tag flex--item mt0 js-tagname-education" title="show questions tagged &#39;education&#39;" aria-label="show questions tagged &#39;education&#39;" rel="tag" aria-labelledby="tag-education-tooltip-container" data-tag-menu-origin="Unknown">education</a></li><li class='d-inline mr4 js-post-tag-list-item'><a href="/questions/tagged/children" class="s-tag post-tag flex--item mt0 js-tagname-children" title="show questions tagged &#39;children&#39;" aria-label="show questions tagged &#39;children&#39;" rel="tag" aria-labelledby="tag-children-tooltip-container" data-tag-menu-origin="Unknown">children</a></li><li class='d-inline mr4 js-post-tag-list-item'><a href="/questions/tagged/parenting" class="s-tag post-tag flex--item mt0 js-tagname-parenting" title="show questions tagged &#39;parenting&#39;" aria-label="show questions tagged &#39;parenting&#39;" rel="tag" aria-labelledby="tag-parenting-tooltip-container" data-tag-menu-origin="Unknown">parenting</a></li><li class='d-inline mr4 js-post-tag-list-item'><a href="/questions/tagged/equality" class="s-tag post-tag flex--item mt0 js-tagname-equality" title="show questions tagged &#39;equality&#39;" aria-label="show questions tagged &#39;equality&#39;" rel="tag" aria-labelledby="tag-equality-tooltip-container" data-tag-menu-origin="Unknown">equality</a></li></ul>
+            </div>
+            
+
+
+<div class="s-user-card s-user-card__minimal" aria-live="polite">
+
+                <a href="/users/56721/pinegulf" class="s-avatar s-avatar__16 s-user-card--avatar js-user-hover-target" data-user-id="56721">        <div class="gravatar-wrapper-16">
+            <img src="https://www.gravatar.com/avatar/711cfc0bb87dee45a7a000c00eec67b1?s=32&amp;d=identicon&amp;r=PG&amp;f=y&amp;so-version=2" alt="pinegulf&#39;s user avatar" width="16" , height="16" class="s-avatar--image" />
+        </div>
+</a>
+
+    <div class="s-user-card--info">
+            <div class="s-user-card--link d-flex gs4" >
+                <a href="/users/56721/pinegulf" class="flex--item">pinegulf</a>
+            </div>
+        
+                <ul class="s-user-card--awards">
+            <li class="s-user-card--rep"><span class="todo-no-class-here" title="reputation score " dir="ltr">7,723</span></li>
+
+        </ul>
+
+        
+    </div>
+
+        <time class="s-user-card--time">asked <span title='2024-09-25 10:34:01Z' class='relativetime'>Sep 25 at 10:34</span></time>
+</div>
+
+        </div>
+       
+    </div>
+</div>
+
+                            
+
+
+<div id="question-summary-57340" class="s-post-summary    js-post-summary" data-post-id="57340" data-post-type-id="1">
+    <div class="s-post-summary--stats js-post-summary-stats">
+        <div class="s-post-summary--stats-item s-post-summary--stats-item__emphasized" title="Score of 2">
+            <span class="s-post-summary--stats-item-number">2</span>
+            <span class="s-post-summary--stats-item-unit">votes</span>
+        </div>
+        <div class="s-post-summary--stats-item has-answers " title="1 answer">
+            <span class="s-post-summary--stats-item-number">1</span>
+            <span class="s-post-summary--stats-item-unit">answer</span>
+        </div>
+        <div class="s-post-summary--stats-item " title="404 views">
+            <span class="s-post-summary--stats-item-number">404</span>
+            <span class="s-post-summary--stats-item-unit">views</span>
+        </div>
+
+
+
+    </div>
+    <div class="s-post-summary--content">
+
+
+        <h3 class="s-post-summary--content-title">
+            <a href="/questions/57340/does-this-video-show-israeli-settlers-seizing-a-house-during-the-funeral-of-shir" class="s-link">Does this video show Israeli settlers seizing a house during the funeral of Shireen Abu Akleh?</a>
+        </h3>
+            <div class="s-post-summary--content-excerpt">
+                In 2022, after the killing of Palestinian-American journalist, Shireen Abu Akleh, Al-Jazeera Arabic (@AJArabic) posted this video on X (Twitter).
+The video shows a large number of Israeli Jews ...
+            </div>
+        <div class="s-post-summary--meta">
+            <div class="s-post-summary--meta-tags d-inline-block tags js-tags t-israel t-palestine">
+
+<ul class='ml0 list-ls-none js-post-tag-list-wrapper d-inline'><li class='d-inline mr4 js-post-tag-list-item'><a href="/questions/tagged/israel" class="s-tag post-tag flex--item mt0 js-tagname-israel" title="show questions tagged &#39;israel&#39;" aria-label="show questions tagged &#39;israel&#39;" rel="tag" aria-labelledby="tag-israel-tooltip-container" data-tag-menu-origin="Unknown">israel</a></li><li class='d-inline mr4 js-post-tag-list-item'><a href="/questions/tagged/palestine" class="s-tag post-tag flex--item mt0 js-tagname-palestine" title="show questions tagged &#39;palestine&#39;" aria-label="show questions tagged &#39;palestine&#39;" rel="tag" aria-labelledby="tag-palestine-tooltip-container" data-tag-menu-origin="Unknown">palestine</a></li></ul>
+            </div>
+            
+
+
+<div class="s-user-card s-user-card__minimal" aria-live="polite">
+
+                <a href="/users/69248/levinas" class="s-avatar s-avatar__16 s-user-card--avatar js-user-hover-target" data-user-id="69248">        <div class="gravatar-wrapper-16">
+            <img src="https://i.sstatic.net/QsFpE6Sn.png?s=32" alt="Levinas&#39;s user avatar" width="16" , height="16" class="s-avatar--image" />
+        </div>
+</a>
+
+    <div class="s-user-card--info">
+            <div class="s-user-card--link d-flex gs4" >
+                <a href="/users/69248/levinas" class="flex--item">Levinas</a>
+            </div>
+        
+                <ul class="s-user-card--awards">
+            <li class="s-user-card--rep"><span class="todo-no-class-here" title="reputation score " dir="ltr">946</span></li>
+
+        </ul>
+
+        
+    </div>
+
+        <time class="s-user-card--time">asked <span title='2024-09-24 03:45:09Z' class='relativetime'>Sep 24 at 3:45</span></time>
+</div>
+
+        </div>
+       
+    </div>
+</div>
+
+                            
+
+
+<div id="question-summary-57326" class="s-post-summary    js-post-summary" data-post-id="57326" data-post-type-id="1">
+    <div class="s-post-summary--stats js-post-summary-stats">
+        <div class="s-post-summary--stats-item s-post-summary--stats-item__emphasized" title="Score of 36">
+            <span class="s-post-summary--stats-item-number">36</span>
+            <span class="s-post-summary--stats-item-unit">votes</span>
+        </div>
+        <div class="s-post-summary--stats-item has-answers " title="5 answers">
+            <span class="s-post-summary--stats-item-number">5</span>
+            <span class="s-post-summary--stats-item-unit">answers</span>
+        </div>
+        <div class="s-post-summary--stats-item is-hot" title="11160 views">
+            <span class="s-post-summary--stats-item-number">11k</span>
+            <span class="s-post-summary--stats-item-unit">views</span>
+        </div>
+
+
+
+    </div>
+    <div class="s-post-summary--content">
+
+
+        <h3 class="s-post-summary--content-title">
+            <a href="/questions/57326/does-ai-use-lots-of-water" class="s-link">Does AI use lots of water?</a>
+        </h3>
+            <div class="s-post-summary--content-excerpt">
+                According to Futurism:
+
+Just how much resources are eaten up when you ask OpenAI's ChatGPT to write a simple 100-word email?
+The answer may alarm you. The answer is about equivalent of a full bottle ...
+            </div>
+        <div class="s-post-summary--meta">
+            <div class="s-post-summary--meta-tags d-inline-block tags js-tags t-economics t-computers t-energy t-electronics">
+
+<ul class='ml0 list-ls-none js-post-tag-list-wrapper d-inline'><li class='d-inline mr4 js-post-tag-list-item'><a href="/questions/tagged/economics" class="s-tag post-tag flex--item mt0 js-tagname-economics" title="show questions tagged &#39;economics&#39;" aria-label="show questions tagged &#39;economics&#39;" rel="tag" aria-labelledby="tag-economics-tooltip-container" data-tag-menu-origin="Unknown">economics</a></li><li class='d-inline mr4 js-post-tag-list-item'><a href="/questions/tagged/computers" class="s-tag post-tag flex--item mt0 js-tagname-computers" title="show questions tagged &#39;computers&#39;" aria-label="show questions tagged &#39;computers&#39;" rel="tag" aria-labelledby="tag-computers-tooltip-container" data-tag-menu-origin="Unknown">computers</a></li><li class='d-inline mr4 js-post-tag-list-item'><a href="/questions/tagged/energy" class="s-tag post-tag flex--item mt0 js-tagname-energy" title="show questions tagged &#39;energy&#39;" aria-label="show questions tagged &#39;energy&#39;" rel="tag" aria-labelledby="tag-energy-tooltip-container" data-tag-menu-origin="Unknown">energy</a></li><li class='d-inline mr4 js-post-tag-list-item'><a href="/questions/tagged/electronics" class="s-tag post-tag flex--item mt0 js-tagname-electronics" title="show questions tagged &#39;electronics&#39;" aria-label="show questions tagged &#39;electronics&#39;" rel="tag" aria-labelledby="tag-electronics-tooltip-container" data-tag-menu-origin="Unknown">electronics</a></li></ul>
+            </div>
+            
+
+
+<div class="s-user-card s-user-card__minimal" aria-live="polite">
+
+                <a href="/users/35049/spraff" class="s-avatar s-avatar__16 s-user-card--avatar" data-user-id="35049">        <div class="gravatar-wrapper-16">
+            <img src="https://www.gravatar.com/avatar/ee0a7599f30c29076a3c9a2c022e473b?s=32&amp;d=identicon&amp;r=PG" alt="spraff&#39;s user avatar" width="16" , height="16" class="s-avatar--image" />
+        </div>
+</a>
+
+    <div class="s-user-card--info">
+            <div class="s-user-card--link d-flex gs4" >
+                <a href="/users/35049/spraff" class="flex--item">spraff</a>
+            </div>
+        
+                <ul class="s-user-card--awards">
+            <li class="s-user-card--rep"><span class="todo-no-class-here" title="reputation score " dir="ltr">539</span></li>
+
+        </ul>
+
+        
+    </div>
+
+        <time class="s-user-card--time">asked <span title='2024-09-21 12:11:31Z' class='relativetime'>Sep 21 at 12:11</span></time>
+</div>
+
+        </div>
+       
+    </div>
+</div>
+
+                            
+
+
+<div id="question-summary-57324" class="s-post-summary    js-post-summary" data-post-id="57324" data-post-type-id="1">
+    <div class="s-post-summary--stats js-post-summary-stats">
+        <div class="s-post-summary--stats-item s-post-summary--stats-item__emphasized" title="Score of 1">
+            <span class="s-post-summary--stats-item-number">1</span>
+            <span class="s-post-summary--stats-item-unit">vote</span>
+        </div>
+        <div class="s-post-summary--stats-item has-answers has-accepted-answer" title="one of the answers was accepted as the correct answer">
+<svg aria-hidden="true" class="svg-icon iconCheckmarkSm" width="14" height="14"  viewBox="0 0 14 14"><path  d="M13 3.41 11.59 2 5 8.59 2.41 6 1 7.41l4 4z"/></svg>            <span class="s-post-summary--stats-item-number">1</span>
+            <span class="s-post-summary--stats-item-unit">answer</span>
+        </div>
+        <div class="s-post-summary--stats-item " title="375 views">
+            <span class="s-post-summary--stats-item-number">375</span>
+            <span class="s-post-summary--stats-item-unit">views</span>
+        </div>
+
+
+
+    </div>
+    <div class="s-post-summary--content">
+
+
+        <h3 class="s-post-summary--content-title">
+            <a href="/questions/57324/did-the-earth-shake-and-the-sun-darken-on-the-day-of-the-supposed-ichadon-buddhi" class="s-link">Did the Earth shake and the sun darken on the day of the supposed Ichadon Buddhist miracle?</a>
+        </h3>
+            <div class="s-post-summary--content-excerpt">
+                According to the Wikipedia article on Miracles, section Buddhism:
+
+The Haedong Kosung-jon of Korea (Biographies of High Monks) records that King Beopheung of Silla had desired to promulgate Buddhism ...
+            </div>
+        <div class="s-post-summary--meta">
+            <div class="s-post-summary--meta-tags d-inline-block tags js-tags t-miracle">
+
+<ul class='ml0 list-ls-none js-post-tag-list-wrapper d-inline'><li class='d-inline mr4 js-post-tag-list-item'><a href="/questions/tagged/miracle" class="s-tag post-tag flex--item mt0 js-tagname-miracle" title="show questions tagged &#39;miracle&#39;" aria-label="show questions tagged &#39;miracle&#39;" rel="tag" aria-labelledby="tag-miracle-tooltip-container" data-tag-menu-origin="Unknown">miracle</a></li></ul>
+            </div>
+            
+
+
+<div class="s-user-card s-user-card__minimal" aria-live="polite">
+
+                <a href="/users/74804/setszu" class="s-avatar s-avatar__16 s-user-card--avatar js-user-hover-target" data-user-id="74804">        <div class="gravatar-wrapper-16">
+            <img src="https://i.sstatic.net/mXJ9e.jpg?s=32" alt="setszu&#39;s user avatar" width="16" , height="16" class="s-avatar--image" />
+        </div>
+</a>
+
+    <div class="s-user-card--info">
+            <div class="s-user-card--link d-flex gs4" >
+                <a href="/users/74804/setszu" class="flex--item">setszu</a>
+            </div>
+        
+                <ul class="s-user-card--awards">
+            <li class="s-user-card--rep"><span class="todo-no-class-here" title="reputation score " dir="ltr">113</span></li>
+
+        </ul>
+
+        
+    </div>
+
+        <time class="s-user-card--time">asked <span title='2024-09-20 16:30:33Z' class='relativetime'>Sep 20 at 16:30</span></time>
+</div>
+
+        </div>
+       
+    </div>
+</div>
+
+                            
+
+
+<div id="question-summary-57323" class="s-post-summary    js-post-summary" data-post-id="57323" data-post-type-id="1">
+    <div class="s-post-summary--stats js-post-summary-stats">
+        <div class="s-post-summary--stats-item s-post-summary--stats-item__emphasized" title="Score of -2">
+            <span class="s-post-summary--stats-item-number">-2</span>
+            <span class="s-post-summary--stats-item-unit">votes</span>
+        </div>
+        <div class="s-post-summary--stats-item  " title="0 answers">
+            <span class="s-post-summary--stats-item-number">0</span>
+            <span class="s-post-summary--stats-item-unit">answers</span>
+        </div>
+        <div class="s-post-summary--stats-item " title="259 views">
+            <span class="s-post-summary--stats-item-number">259</span>
+            <span class="s-post-summary--stats-item-unit">views</span>
+        </div>
+
+
+
+    </div>
+    <div class="s-post-summary--content">
+
+
+        <h3 class="s-post-summary--content-title">
+            <a href="/questions/57323/has-robert-f-kennedy-jr-only-met-olivia-nuzzi-once" class="s-link">Has Robert F. Kennedy Jr. only met Olivia Nuzzi once?</a>
+        </h3>
+            <div class="s-post-summary--content-excerpt">
+                A spokesperson for 2024 U.S. Presidential candidate Robert F. Kennedy Jr. just said this to journalist Oliver Darcy:
+
+Mr. Kennedy only met Olivia Nuzzi once in his life for an interview she requested, ...
+            </div>
+        <div class="s-post-summary--meta">
+            <div class="s-post-summary--meta-tags d-inline-block tags js-tags t-united-states t-politics">
+
+<ul class='ml0 list-ls-none js-post-tag-list-wrapper d-inline'><li class='d-inline mr4 js-post-tag-list-item'><a href="/questions/tagged/united-states" class="s-tag post-tag flex--item mt0 js-tagname-united-states" title="show questions tagged &#39;united-states&#39;" aria-label="show questions tagged &#39;united-states&#39;" rel="tag" aria-labelledby="tag-united-states-tooltip-container" data-tag-menu-origin="Unknown">united-states</a></li><li class='d-inline mr4 js-post-tag-list-item'><a href="/questions/tagged/politics" class="s-tag post-tag flex--item mt0 js-tagname-politics" title="show questions tagged &#39;politics&#39;" aria-label="show questions tagged &#39;politics&#39;" rel="tag" aria-labelledby="tag-politics-tooltip-container" data-tag-menu-origin="Unknown">politics</a></li></ul>
+            </div>
+            
+
+
+<div class="s-user-card s-user-card__minimal" aria-live="polite">
+
+                <a href="/users/41283/keshav-srinivasan" class="s-avatar s-avatar__16 s-user-card--avatar" data-user-id="41283">        <div class="gravatar-wrapper-16">
+            <img src="https://i.sstatic.net/Y6yHO.png?s=32" alt="Keshav Srinivasan&#39;s user avatar" width="16" , height="16" class="s-avatar--image" />
+        </div>
+</a>
+
+    <div class="s-user-card--info">
+            <div class="s-user-card--link d-flex gs4" >
+                <a href="/users/41283/keshav-srinivasan" class="flex--item">Keshav Srinivasan</a>
+            </div>
+        
+                <ul class="s-user-card--awards">
+            <li class="s-user-card--rep"><span class="todo-no-class-here" title="reputation score " dir="ltr">4,385</span></li>
+
+        </ul>
+
+        
+    </div>
+
+        <time class="s-user-card--time">asked <span title='2024-09-20 03:31:38Z' class='relativetime'>Sep 20 at 3:31</span></time>
+</div>
+
+        </div>
+       
+    </div>
+</div>
+
+                            
+
+
+<div id="question-summary-57319" class="s-post-summary    js-post-summary" data-post-id="57319" data-post-type-id="1">
+    <div class="s-post-summary--stats js-post-summary-stats">
+        <div class="s-post-summary--stats-item s-post-summary--stats-item__emphasized" title="Score of 5">
+            <span class="s-post-summary--stats-item-number">5</span>
+            <span class="s-post-summary--stats-item-unit">votes</span>
+        </div>
+        <div class="s-post-summary--stats-item  " title="0 answers">
+            <span class="s-post-summary--stats-item-number">0</span>
+            <span class="s-post-summary--stats-item-unit">answers</span>
+        </div>
+        <div class="s-post-summary--stats-item " title="276 views">
+            <span class="s-post-summary--stats-item-number">276</span>
+            <span class="s-post-summary--stats-item-unit">views</span>
+        </div>
+
+
+
+    </div>
+    <div class="s-post-summary--content">
+
+
+        <h3 class="s-post-summary--content-title">
+            <a href="/questions/57319/did-saddams-minister-muhammad-saeed-al-sahhaf-aka-baghdad-bob-hold-a-press-co" class="s-link">Did Saddam&#39;s minister Muhammad Saeed al-Sahhaf aka &quot;Baghdad Bob&quot; hold a press conference with US tanks rolling in the background?</a>
+        </h3>
+            <div class="s-post-summary--content-excerpt">
+                A comment on reddit with 1.1K upvotes in a thread about Saddam's minister Muhammad Saeed al-Sahhaf aka &quot;Baghdad Bob&quot; says:
+
+The best one was the press conference where an American tank ...
+            </div>
+        <div class="s-post-summary--meta">
+            <div class="s-post-summary--meta-tags d-inline-block tags js-tags t-united-states t-war t-media t-iraq">
+
+<ul class='ml0 list-ls-none js-post-tag-list-wrapper d-inline'><li class='d-inline mr4 js-post-tag-list-item'><a href="/questions/tagged/united-states" class="s-tag post-tag flex--item mt0 js-tagname-united-states" title="show questions tagged &#39;united-states&#39;" aria-label="show questions tagged &#39;united-states&#39;" rel="tag" aria-labelledby="tag-united-states-tooltip-container" data-tag-menu-origin="Unknown">united-states</a></li><li class='d-inline mr4 js-post-tag-list-item'><a href="/questions/tagged/war" class="s-tag post-tag flex--item mt0 js-tagname-war" title="show questions tagged &#39;war&#39;" aria-label="show questions tagged &#39;war&#39;" rel="tag" aria-labelledby="tag-war-tooltip-container" data-tag-menu-origin="Unknown">war</a></li><li class='d-inline mr4 js-post-tag-list-item'><a href="/questions/tagged/media" class="s-tag post-tag flex--item mt0 js-tagname-media" title="show questions tagged &#39;media&#39;" aria-label="show questions tagged &#39;media&#39;" rel="tag" aria-labelledby="tag-media-tooltip-container" data-tag-menu-origin="Unknown">media</a></li><li class='d-inline mr4 js-post-tag-list-item'><a href="/questions/tagged/iraq" class="s-tag post-tag flex--item mt0 js-tagname-iraq" title="show questions tagged &#39;iraq&#39;" aria-label="show questions tagged &#39;iraq&#39;" rel="tag" aria-labelledby="tag-iraq-tooltip-container" data-tag-menu-origin="Unknown">iraq</a></li></ul>
+            </div>
+            
+
+
+<div class="s-user-card s-user-card__minimal" aria-live="polite">
+
+                <a href="/users/29579/believe-it-or-not" class="s-avatar s-avatar__16 s-user-card--avatar" data-user-id="29579">        <div class="gravatar-wrapper-16">
+            <img src="https://i.sstatic.net/51TKynPH.png?s=32" alt="Believe it or not...&#39;s user avatar" width="16" , height="16" class="s-avatar--image" />
+        </div>
+</a>
+
+    <div class="s-user-card--info">
+            <div class="s-user-card--link d-flex gs4" >
+                <a href="/users/29579/believe-it-or-not" class="flex--item">Believe it or not...</a>
+            </div>
+        
+                <ul class="s-user-card--awards">
+            <li class="s-user-card--rep"><span class="todo-no-class-here" title="reputation score 63,736" dir="ltr">63.7k</span></li>
+
+        </ul>
+
+        
+    </div>
+
+        <time class="s-user-card--time">asked <span title='2024-09-19 02:39:23Z' class='relativetime'>Sep 19 at 2:39</span></time>
+</div>
+
+        </div>
+       
+    </div>
+</div>
+
+                            
+
+
+<div id="question-summary-57311" class="s-post-summary    js-post-summary" data-post-id="57311" data-post-type-id="1">
+    <div class="s-post-summary--stats js-post-summary-stats">
+        <div class="s-post-summary--stats-item s-post-summary--stats-item__emphasized" title="Score of 5">
+            <span class="s-post-summary--stats-item-number">5</span>
+            <span class="s-post-summary--stats-item-unit">votes</span>
+        </div>
+        <div class="s-post-summary--stats-item  " title="0 answers">
+            <span class="s-post-summary--stats-item-number">0</span>
+            <span class="s-post-summary--stats-item-unit">answers</span>
+        </div>
+        <div class="s-post-summary--stats-item " title="277 views">
+            <span class="s-post-summary--stats-item-number">277</span>
+            <span class="s-post-summary--stats-item-unit">views</span>
+        </div>
+
+
+
+    </div>
+    <div class="s-post-summary--content">
+
+
+        <h3 class="s-post-summary--content-title">
+            <a href="/questions/57311/does-eurasianism-as-a-term-feature-in-the-rhetoric-of-many-afd-figures" class="s-link">Does “Eurasianism” (as a term) feature in the rhetoric of many AfD figures?</a>
+        </h3>
+            <div class="s-post-summary--content-excerpt">
+                According to the NYT
+
+Mr. Dugin also popularized terms like “Eurasianism” that now feature in the rhetoric of many AfD figures.
+
+However, the English Wikipedia article on the AfD doesn't even once ...
+            </div>
+        <div class="s-post-summary--meta">
+            <div class="s-post-summary--meta-tags d-inline-block tags js-tags t-politics t-quotes t-germany">
+
+<ul class='ml0 list-ls-none js-post-tag-list-wrapper d-inline'><li class='d-inline mr4 js-post-tag-list-item'><a href="/questions/tagged/politics" class="s-tag post-tag flex--item mt0 js-tagname-politics" title="show questions tagged &#39;politics&#39;" aria-label="show questions tagged &#39;politics&#39;" rel="tag" aria-labelledby="tag-politics-tooltip-container" data-tag-menu-origin="Unknown">politics</a></li><li class='d-inline mr4 js-post-tag-list-item'><a href="/questions/tagged/quotes" class="s-tag post-tag flex--item mt0 js-tagname-quotes" title="show questions tagged &#39;quotes&#39;" aria-label="show questions tagged &#39;quotes&#39;" rel="tag" aria-labelledby="tag-quotes-tooltip-container" data-tag-menu-origin="Unknown">quotes</a></li><li class='d-inline mr4 js-post-tag-list-item'><a href="/questions/tagged/germany" class="s-tag post-tag flex--item mt0 js-tagname-germany" title="show questions tagged &#39;germany&#39;" aria-label="show questions tagged &#39;germany&#39;" rel="tag" aria-labelledby="tag-germany-tooltip-container" data-tag-menu-origin="Unknown">germany</a></li></ul>
+            </div>
+            
+
+
+<div class="s-user-card s-user-card__minimal" aria-live="polite">
+
+                <a href="/users/29579/believe-it-or-not" class="s-avatar s-avatar__16 s-user-card--avatar" data-user-id="29579">        <div class="gravatar-wrapper-16">
+            <img src="https://i.sstatic.net/51TKynPH.png?s=32" alt="Believe it or not...&#39;s user avatar" width="16" , height="16" class="s-avatar--image" />
+        </div>
+</a>
+
+    <div class="s-user-card--info">
+            <div class="s-user-card--link d-flex gs4" >
+                <a href="/users/29579/believe-it-or-not" class="flex--item">Believe it or not...</a>
+            </div>
+        
+                <ul class="s-user-card--awards">
+            <li class="s-user-card--rep"><span class="todo-no-class-here" title="reputation score 63,736" dir="ltr">63.7k</span></li>
+
+        </ul>
+
+        
+    </div>
+
+        <time class="s-user-card--time">asked <span title='2024-09-18 08:07:30Z' class='relativetime'>Sep 18 at 8:07</span></time>
+</div>
+
+        </div>
+       
+    </div>
+</div>
+
+                            
+
+
+<div id="question-summary-57310" class="s-post-summary    js-post-summary" data-post-id="57310" data-post-type-id="1">
+    <div class="s-post-summary--stats js-post-summary-stats">
+        <div class="s-post-summary--stats-item s-post-summary--stats-item__emphasized" title="Score of 4">
+            <span class="s-post-summary--stats-item-number">4</span>
+            <span class="s-post-summary--stats-item-unit">votes</span>
+        </div>
+        <div class="s-post-summary--stats-item has-answers " title="1 answer">
+            <span class="s-post-summary--stats-item-number">1</span>
+            <span class="s-post-summary--stats-item-unit">answer</span>
+        </div>
+        <div class="s-post-summary--stats-item " title="718 views">
+            <span class="s-post-summary--stats-item-number">718</span>
+            <span class="s-post-summary--stats-item-unit">views</span>
+        </div>
+
+
+
+    </div>
+    <div class="s-post-summary--content">
+
+
+        <h3 class="s-post-summary--content-title">
+            <a href="/questions/57310/did-an-aircraft-have-to-turn-back-because-a-mother-left-her-baby-in-the-terminal" class="s-link">Did an aircraft have to turn back because a mother left her baby in the terminal?</a>
+        </h3>
+            <div class="s-post-summary--content-excerpt">
+                In March of 2019 there were reports in the news that a Saudi airliner had to return to the airport when a mother reported to cabin crew that she had forgotten her baby in the terminal building. The ...
+            </div>
+        <div class="s-post-summary--meta">
+            <div class="s-post-summary--meta-tags d-inline-block tags js-tags t-aviation">
+
+<ul class='ml0 list-ls-none js-post-tag-list-wrapper d-inline'><li class='d-inline mr4 js-post-tag-list-item'><a href="/questions/tagged/aviation" class="s-tag post-tag flex--item mt0 js-tagname-aviation" title="show questions tagged &#39;aviation&#39;" aria-label="show questions tagged &#39;aviation&#39;" rel="tag" aria-labelledby="tag-aviation-tooltip-container" data-tag-menu-origin="Unknown">aviation</a></li></ul>
+            </div>
+            
+
+
+<div class="s-user-card s-user-card__minimal" aria-live="polite">
+
+                <a href="/users/5167/jamiec" class="s-avatar s-avatar__16 s-user-card--avatar" data-user-id="5167">        <div class="gravatar-wrapper-16">
+            <img src="https://i.sstatic.net/iJEXd.jpg?s=32" alt="Jamiec&#39;s user avatar" width="16" , height="16" class="s-avatar--image" />
+        </div>
+</a>
+
+    <div class="s-user-card--info">
+            <div class="s-user-card--link d-flex gs4" >
+                <a href="/users/5167/jamiec" class="flex--item">Jamiec</a><span class="mod-flair " title="Moderator">&#9830;</span>
+            </div>
+        
+                <ul class="s-user-card--awards">
+            <li class="s-user-card--rep"><span class="todo-no-class-here" title="reputation score " dir="ltr">9,067</span></li>
+
+        </ul>
+
+        
+    </div>
+
+        <time class="s-user-card--time">asked <span title='2024-09-18 07:14:27Z' class='relativetime'>Sep 18 at 7:14</span></time>
+</div>
+
+        </div>
+       
+    </div>
+</div>
+
+        </div>
+
+        <br class="clear-both" />
+<div class="s-pagination site212 themed page-sizer float-right">
+  <a href="/questions?tab=newest&amp;pagesize=15" title="Show 15 items per page" class="s-pagination--item is-selected" aria-current="true">15</a>
+  <a href="/questions?tab=newest&amp;pagesize=30" title="Show 30 items per page" class="s-pagination--item">30</a>
+  <a href="/questions?tab=newest&amp;pagesize=50" title="Show 50 items per page" class="s-pagination--item">50</a>
+  <span class="s-pagination--item s-pagination--item__clear">per page</span>
+</div>
+<div class="s-pagination site212 themed pager float-left">
+<div class="s-pagination--item is-selected" aria-current=&quot;page&quot;>1</div>
+<a class="s-pagination--item js-pagination-item" href="/questions?tab=newest&page=2" rel="" title="Go to page 2">2</a>
+<a class="s-pagination--item js-pagination-item" href="/questions?tab=newest&page=3" rel="" title="Go to page 3">3</a>
+<a class="s-pagination--item js-pagination-item" href="/questions?tab=newest&page=4" rel="" title="Go to page 4">4</a>
+<a class="s-pagination--item js-pagination-item" href="/questions?tab=newest&page=5" rel="" title="Go to page 5">5</a>
+<div class="s-pagination--item s-pagination--item__clear" >…</div>
+<a class="s-pagination--item js-pagination-item" href="/questions?tab=newest&page=755" rel="" title="Go to page 755">755</a>
+<a class="s-pagination--item js-pagination-item" href="/questions?tab=newest&page=2" rel="next" title="Go to page 2"> Next</a></div>
+        
+</div>
+    <div id="sidebar" role="complementary" aria-label="sidebar">
+        
+    <div class="s-sidebarwidget s-sidebarwidget__yellow s-anchors s-anchors__grayscale mb16" data-tracker="cb=1">
+        <ul class="d-block p0 m0">
+                        <li class="s-sidebarwidget--header s-sidebarwidget__small-bold-text d-flex fc-black-500 d:fc-black-600 bb bbw1">
+                            Featured on Meta
+                        </li>
+        <li class="s-sidebarwidget--item d-flex px16">
+            <div class="flex--item1 fl-shrink0">
+<div class="favicon favicon-stackexchangemeta" title="Meta Stack Exchange"></div>            </div>
+            <div class="flex--item wmn0 ow-break-word">
+                <a href="https://meta.stackexchange.com/questions/403367/upcoming-initiatives-on-stack-overflow-and-across-the-stack-exchange-network-oc" class="js-gps-track" title="Upcoming initiatives on Stack Overflow and across the Stack Exchange network (October 2024)" data-ga="[&quot;community bulletin board&quot;,&quot;Featured on Meta&quot;,&quot;https://meta.stackexchange.com/questions/403367/upcoming-initiatives-on-stack-overflow-and-across-the-stack-exchange-network-oc&quot;,null,null]" data-gps-track="communitybulletin.click({ priority: 3, position: 0, location: questionspage })">Upcoming initiatives on Stack Overflow and across the Stack Exchange network...</a>
+            </div>
+        </li>
+        <li class="s-sidebarwidget--item d-flex px16">
+            <div class="flex--item1 fl-shrink0">
+<div class="favicon favicon-stackexchangemeta" title="Meta Stack Exchange"></div>            </div>
+            <div class="flex--item wmn0 ow-break-word">
+                <a href="https://meta.stackexchange.com/questions/403002/preventing-unauthorized-automated-access-to-the-network" class="js-gps-track" data-ga="[&quot;community bulletin board&quot;,&quot;Featured on Meta&quot;,&quot;https://meta.stackexchange.com/questions/403002/preventing-unauthorized-automated-access-to-the-network&quot;,null,null]" data-gps-track="communitybulletin.click({ priority: 3, position: 1, location: questionspage })">Preventing unauthorized automated access to the network</a>
+            </div>
+        </li>
+        </ul>
+    </div>
+
+
+
+            <div class="js-sidebar-zone">
+                    <style>
+    </style>
+<div class="js-zone-container zone-container-sidebar">
+    <div id="dfp-tsb" class="everyonelovesstackoverflow everyoneloves__top-sidebar"></div>
+		<div class="js-report-ad-button-container " style="width: 300px"></div>
+</div>
+
+                
+                
+            </div>
+
+            <div class="module js-gps-related-tags" id="related-tags">
+                    <h2 id="h-related-tags" class="fc-black-500">Related Tags</h2>
+        <div data-name="united-states">
+            <a href="/questions/tagged/united-states" class="s-tag post-tag no-tag-menu" title="show questions tagged &#39;united-states&#39;" aria-label="show questions tagged &#39;united-states&#39;" rel="tag" data-tag-menu-origin="Unknown">united-states</a>&nbsp;<span class="item-multiplier"><span class="item-multiplier-x">&times;</span>&nbsp;<span class="item-multiplier-count">1556</span> </span>
+        </div>
+        <div data-name="medical-science">
+            <a href="/questions/tagged/medical-science" class="s-tag post-tag no-tag-menu" title="show questions tagged &#39;medical-science&#39;" aria-label="show questions tagged &#39;medical-science&#39;" rel="tag" data-tag-menu-origin="Unknown">medical-science</a>&nbsp;<span class="item-multiplier"><span class="item-multiplier-x">&times;</span>&nbsp;<span class="item-multiplier-count">1265</span> </span>
+        </div>
+        <div data-name="history">
+            <a href="/questions/tagged/history" class="s-tag post-tag no-tag-menu" title="show questions tagged &#39;history&#39;" aria-label="show questions tagged &#39;history&#39;" rel="tag" data-tag-menu-origin="Unknown">history</a>&nbsp;<span class="item-multiplier"><span class="item-multiplier-x">&times;</span>&nbsp;<span class="item-multiplier-count">870</span> </span>
+        </div>
+        <div data-name="politics">
+            <a href="/questions/tagged/politics" class="s-tag post-tag no-tag-menu" title="show questions tagged &#39;politics&#39;" aria-label="show questions tagged &#39;politics&#39;" rel="tag" data-tag-menu-origin="Unknown">politics</a>&nbsp;<span class="item-multiplier"><span class="item-multiplier-x">&times;</span>&nbsp;<span class="item-multiplier-count">731</span> </span>
+        </div>
+        <div data-name="nutrition">
+            <a href="/questions/tagged/nutrition" class="s-tag post-tag no-tag-menu" title="show questions tagged &#39;nutrition&#39;" aria-label="show questions tagged &#39;nutrition&#39;" rel="tag" data-tag-menu-origin="Unknown">nutrition</a>&nbsp;<span class="item-multiplier"><span class="item-multiplier-x">&times;</span>&nbsp;<span class="item-multiplier-count">688</span> </span>
+        </div>
+        <div data-name="biology">
+            <a href="/questions/tagged/biology" class="s-tag post-tag no-tag-menu" title="show questions tagged &#39;biology&#39;" aria-label="show questions tagged &#39;biology&#39;" rel="tag" data-tag-menu-origin="Unknown">biology</a>&nbsp;<span class="item-multiplier"><span class="item-multiplier-x">&times;</span>&nbsp;<span class="item-multiplier-count">476</span> </span>
+        </div>
+        <div data-name="economics">
+            <a href="/questions/tagged/economics" class="s-tag post-tag no-tag-menu" title="show questions tagged &#39;economics&#39;" aria-label="show questions tagged &#39;economics&#39;" rel="tag" data-tag-menu-origin="Unknown">economics</a>&nbsp;<span class="item-multiplier"><span class="item-multiplier-x">&times;</span>&nbsp;<span class="item-multiplier-count">465</span> </span>
+        </div>
+        <div data-name="quotes">
+            <a href="/questions/tagged/quotes" class="s-tag post-tag no-tag-menu" title="show questions tagged &#39;quotes&#39;" aria-label="show questions tagged &#39;quotes&#39;" rel="tag" data-tag-menu-origin="Unknown">quotes</a>&nbsp;<span class="item-multiplier"><span class="item-multiplier-x">&times;</span>&nbsp;<span class="item-multiplier-count">412</span> </span>
+        </div>
+        <div data-name="psychology">
+            <a href="/questions/tagged/psychology" class="s-tag post-tag no-tag-menu" title="show questions tagged &#39;psychology&#39;" aria-label="show questions tagged &#39;psychology&#39;" rel="tag" data-tag-menu-origin="Unknown">psychology</a>&nbsp;<span class="item-multiplier"><span class="item-multiplier-x">&times;</span>&nbsp;<span class="item-multiplier-count">411</span> </span>
+        </div>
+        <div data-name="physiology">
+            <a href="/questions/tagged/physiology" class="s-tag post-tag no-tag-menu" title="show questions tagged &#39;physiology&#39;" aria-label="show questions tagged &#39;physiology&#39;" rel="tag" data-tag-menu-origin="Unknown">physiology</a>&nbsp;<span class="item-multiplier"><span class="item-multiplier-x">&times;</span>&nbsp;<span class="item-multiplier-count">348</span> </span>
+        </div>
+        <div class="dno js-hidden" data-name="physics">
+            <a href="/questions/tagged/physics" class="s-tag post-tag no-tag-menu" title="show questions tagged &#39;physics&#39;" aria-label="show questions tagged &#39;physics&#39;" rel="tag" data-tag-menu-origin="Unknown">physics</a>&nbsp;<span class="item-multiplier"><span class="item-multiplier-x">&times;</span>&nbsp;<span class="item-multiplier-count">310</span> </span>
+        </div>
+        <div class="dno js-hidden" data-name="law">
+            <a href="/questions/tagged/law" class="s-tag post-tag no-tag-menu" title="show questions tagged &#39;law&#39;" aria-label="show questions tagged &#39;law&#39;" rel="tag" data-tag-menu-origin="Unknown">law</a>&nbsp;<span class="item-multiplier"><span class="item-multiplier-x">&times;</span>&nbsp;<span class="item-multiplier-count">286</span> </span>
+        </div>
+        <div class="dno js-hidden" data-name="covid-19">
+            <a href="/questions/tagged/covid-19" class="s-tag post-tag no-tag-menu" title="show questions tagged &#39;covid-19&#39;" aria-label="show questions tagged &#39;covid-19&#39;" rel="tag" data-tag-menu-origin="Unknown">covid-19</a>&nbsp;<span class="item-multiplier"><span class="item-multiplier-x">&times;</span>&nbsp;<span class="item-multiplier-count">264</span> </span>
+        </div>
+        <div class="dno js-hidden" data-name="zoology">
+            <a href="/questions/tagged/zoology" class="s-tag post-tag no-tag-menu" title="show questions tagged &#39;zoology&#39;" aria-label="show questions tagged &#39;zoology&#39;" rel="tag" data-tag-menu-origin="Unknown">zoology</a>&nbsp;<span class="item-multiplier"><span class="item-multiplier-x">&times;</span>&nbsp;<span class="item-multiplier-count">243</span> </span>
+        </div>
+        <div class="dno js-hidden" data-name="environmental-health">
+            <a href="/questions/tagged/environmental-health" class="s-tag post-tag no-tag-menu" title="show questions tagged &#39;environmental-health&#39;" aria-label="show questions tagged &#39;environmental-health&#39;" rel="tag" data-tag-menu-origin="Unknown">environmental-health</a>&nbsp;<span class="item-multiplier"><span class="item-multiplier-x">&times;</span>&nbsp;<span class="item-multiplier-count">227</span> </span>
+        </div>
+        <div class="dno js-hidden" data-name="religion">
+            <a href="/questions/tagged/religion" class="s-tag post-tag no-tag-menu" title="show questions tagged &#39;religion&#39;" aria-label="show questions tagged &#39;religion&#39;" rel="tag" data-tag-menu-origin="Unknown">religion</a>&nbsp;<span class="item-multiplier"><span class="item-multiplier-x">&times;</span>&nbsp;<span class="item-multiplier-count">216</span> </span>
+        </div>
+        <div class="dno js-hidden" data-name="criminology">
+            <a href="/questions/tagged/criminology" class="s-tag post-tag no-tag-menu" title="show questions tagged &#39;criminology&#39;" aria-label="show questions tagged &#39;criminology&#39;" rel="tag" data-tag-menu-origin="Unknown">criminology</a>&nbsp;<span class="item-multiplier"><span class="item-multiplier-x">&times;</span>&nbsp;<span class="item-multiplier-count">212</span> </span>
+        </div>
+        <div class="dno js-hidden" data-name="sexuality">
+            <a href="/questions/tagged/sexuality" class="s-tag post-tag no-tag-menu" title="show questions tagged &#39;sexuality&#39;" aria-label="show questions tagged &#39;sexuality&#39;" rel="tag" data-tag-menu-origin="Unknown">sexuality</a>&nbsp;<span class="item-multiplier"><span class="item-multiplier-x">&times;</span>&nbsp;<span class="item-multiplier-count">202</span> </span>
+        </div>
+        <div class="dno js-hidden" data-name="climate-change">
+            <a href="/questions/tagged/climate-change" class="s-tag post-tag no-tag-menu" title="show questions tagged &#39;climate-change&#39;" aria-label="show questions tagged &#39;climate-change&#39;" rel="tag" data-tag-menu-origin="Unknown">climate-change</a>&nbsp;<span class="item-multiplier"><span class="item-multiplier-x">&times;</span>&nbsp;<span class="item-multiplier-count">195</span> </span>
+        </div>
+        <div class="dno js-hidden" data-name="environment">
+            <a href="/questions/tagged/environment" class="s-tag post-tag no-tag-menu" title="show questions tagged &#39;environment&#39;" aria-label="show questions tagged &#39;environment&#39;" rel="tag" data-tag-menu-origin="Unknown">environment</a>&nbsp;<span class="item-multiplier"><span class="item-multiplier-x">&times;</span>&nbsp;<span class="item-multiplier-count">195</span> </span>
+        </div>
+        <div class="dno js-hidden" data-name="alternative-medicine">
+            <a href="/questions/tagged/alternative-medicine" class="s-tag post-tag no-tag-menu" title="show questions tagged &#39;alternative-medicine&#39;" aria-label="show questions tagged &#39;alternative-medicine&#39;" rel="tag" data-tag-menu-origin="Unknown">alternative-medicine</a>&nbsp;<span class="item-multiplier"><span class="item-multiplier-x">&times;</span>&nbsp;<span class="item-multiplier-count">193</span> </span>
+        </div>
+        <div class="dno js-hidden" data-name="road-vehicles">
+            <a href="/questions/tagged/road-vehicles" class="s-tag post-tag no-tag-menu" title="show questions tagged &#39;road-vehicles&#39;" aria-label="show questions tagged &#39;road-vehicles&#39;" rel="tag" data-tag-menu-origin="Unknown">road-vehicles</a>&nbsp;<span class="item-multiplier"><span class="item-multiplier-x">&times;</span>&nbsp;<span class="item-multiplier-count">192</span> </span>
+        </div>
+        <div class="dno js-hidden" data-name="united-kingdom">
+            <a href="/questions/tagged/united-kingdom" class="s-tag post-tag no-tag-menu" title="show questions tagged &#39;united-kingdom&#39;" aria-label="show questions tagged &#39;united-kingdom&#39;" rel="tag" data-tag-menu-origin="Unknown">united-kingdom</a>&nbsp;<span class="item-multiplier"><span class="item-multiplier-x">&times;</span>&nbsp;<span class="item-multiplier-count">191</span> </span>
+        </div>
+        <div class="dno js-hidden" data-name="donald-trump">
+            <a href="/questions/tagged/donald-trump" class="s-tag post-tag no-tag-menu" title="show questions tagged &#39;donald-trump&#39;" aria-label="show questions tagged &#39;donald-trump&#39;" rel="tag" data-tag-menu-origin="Unknown">donald-trump</a>&nbsp;<span class="item-multiplier"><span class="item-multiplier-x">&times;</span>&nbsp;<span class="item-multiplier-count">187</span> </span>
+        </div>
+        <div class="dno js-hidden" data-name="mortality">
+            <a href="/questions/tagged/mortality" class="s-tag post-tag no-tag-menu" title="show questions tagged &#39;mortality&#39;" aria-label="show questions tagged &#39;mortality&#39;" rel="tag" data-tag-menu-origin="Unknown">mortality</a>&nbsp;<span class="item-multiplier"><span class="item-multiplier-x">&times;</span>&nbsp;<span class="item-multiplier-count">186</span> </span>
+        </div>
+        <a href="#"
+           class="show-more js-show-more js-gps-track"
+           data-gps-track="related_tags.click({ item_type:2 })">
+            more related tags
+        </a>
+        <script>
+            StackExchange.ready(function () {
+                var $div = $('#h-related-tags').parent();
+                $div.find('.js-show-more').on("click", function () {
+                    $div.find('.js-hidden').show();
+                    $(this).remove();
+                    return false;
+                });
+            });
+        </script>
+
+            </div>
+
+        <div id="hot-network-questions" class="module tex2jax_ignore">
+    <h4>
+        <a href="https://stackexchange.com/questions?tab=hot"
+           class="js-gps-track s-link s-link__inherit" 
+           data-gps-track="posts_hot_network.click({ item_type:1, location:9 })">
+            Hot Network Questions
+        </a>
+    </h4>
+    <ul>
+            <li >
+                <div class="favicon favicon-puzzling" title="Puzzling Stack Exchange"></div><a href="https://puzzling.stackexchange.com/questions/128679/a-marvellous-meaningful-mr-men-maze" class="js-gps-track question-hyperlink mb0" data-gps-track="site.switch({ item_type:9, target_site:559 }); posts_hot_network.click({ item_type:2, location:9 })">
+                    A marvellous meaningful Mr. Men maze!
+                </a>
+
+            </li>
+            <li >
+                <div class="favicon favicon-bicycles" title="Bicycles Stack Exchange"></div><a href="https://bicycles.stackexchange.com/questions/95589/experiencing-multiple-flat-tires-on-kross-evado-1-0-seeking-advice-and-product" class="js-gps-track question-hyperlink mb0" data-gps-track="site.switch({ item_type:9, target_site:126 }); posts_hot_network.click({ item_type:2, location:9 })">
+                    Experiencing Multiple Flat Tires on Kross Evado 1.0 &#x2013; Seeking Advice and Product Recommendations
+                </a>
+
+            </li>
+            <li >
+                <div class="favicon favicon-english" title="English Language &amp; Usage Stack Exchange"></div><a href="https://english.stackexchange.com/questions/626487/making-small-talk-which-verbs-most-commonly-accept-small-talk-as-their-direct" class="js-gps-track question-hyperlink mb0" data-gps-track="site.switch({ item_type:9, target_site:97 }); posts_hot_network.click({ item_type:2, location:9 })">
+                    Making small talk: Which verbs most commonly accept &#x201C;small talk&#x201D; as their direct object?
+                </a>
+
+            </li>
+            <li >
+                <div class="favicon favicon-chemistry" title="Chemistry Stack Exchange"></div><a href="https://chemistry.stackexchange.com/questions/185183/inductive-effect-explanation-with-mo-theory" class="js-gps-track question-hyperlink mb0" data-gps-track="site.switch({ item_type:9, target_site:431 }); posts_hot_network.click({ item_type:2, location:9 })">
+                    Inductive effect explanation with MO theory
+                </a>
+
+            </li>
+            <li >
+                <div class="favicon favicon-bicycles" title="Bicycles Stack Exchange"></div><a href="https://bicycles.stackexchange.com/questions/95585/can-a-carbon-crank-be-safely-put-into-a-vice" class="js-gps-track question-hyperlink mb0" data-gps-track="site.switch({ item_type:9, target_site:126 }); posts_hot_network.click({ item_type:2, location:9 })">
+                    Can a carbon crank be safely put into a vice?
+                </a>
+
+            </li>
+            <li >
+                <div class="favicon favicon-writing" title="Writing Stack Exchange"></div><a href="https://writing.stackexchange.com/questions/70234/linking-verbs-vs-negatives" class="js-gps-track question-hyperlink mb0" data-gps-track="site.switch({ item_type:9, target_site:166 }); posts_hot_network.click({ item_type:2, location:9 })">
+                    Linking verbs vs negatives
+                </a>
+
+            </li>
+            <li >
+                <div class="favicon favicon-security" title="Information Security Stack Exchange"></div><a href="https://security.stackexchange.com/questions/279044/should-chat-audio-be-encrypted-before-sending-it" class="js-gps-track question-hyperlink mb0" data-gps-track="site.switch({ item_type:9, target_site:162 }); posts_hot_network.click({ item_type:2, location:9 })">
+                    Should chat audio be encrypted before sending it?
+                </a>
+
+            </li>
+            <li >
+                <div class="favicon favicon-law" title="Law Stack Exchange"></div><a href="https://law.stackexchange.com/questions/105382/when-mr-incredible-saved-a-man-from-killing-himself-is-he-really-liable-for-da" class="js-gps-track question-hyperlink mb0" data-gps-track="site.switch({ item_type:9, target_site:617 }); posts_hot_network.click({ item_type:2, location:9 })">
+                    When Mr. Incredible saved a man from killing himself, is he really liable for damages?
+                </a>
+
+            </li>
+            <li >
+                <div class="favicon favicon-langdev" title="Programming Language Design and Implementation Stack Exchange"></div><a href="https://langdev.stackexchange.com/questions/4079/what-should-the-semantics-from-branching-from-finally-be" class="js-gps-track question-hyperlink mb0" data-gps-track="site.switch({ item_type:9, target_site:716 }); posts_hot_network.click({ item_type:2, location:9 })">
+                    What should the semantics from branching from finally be?
+                </a>
+
+            </li>
+            <li >
+                <div class="favicon favicon-travel" title="Travel Stack Exchange"></div><a href="https://travel.stackexchange.com/questions/191640/are-french-citizens-banned-by-their-government-from-entering-the-darien-gap-or" class="js-gps-track question-hyperlink mb0" data-gps-track="site.switch({ item_type:9, target_site:273 }); posts_hot_network.click({ item_type:2, location:9 })">
+                    Are French citizens banned by their government from entering the Darien gap, or do they need authorization by the French gov to enter the Darien gap?
+                </a>
+
+            </li>
+            <li >
+                <div class="favicon favicon-workplace" title="The Workplace Stack Exchange"></div><a href="https://workplace.stackexchange.com/questions/199311/during-layoffs-or-mass-layoffs-is-it-common-for-the-selection-process-to-be-ran" class="js-gps-track question-hyperlink mb0" data-gps-track="site.switch({ item_type:9, target_site:423 }); posts_hot_network.click({ item_type:2, location:9 })">
+                    During layoffs or mass layoffs, is it common for the selection process to be random?
+                </a>
+
+            </li>
+            <li >
+                <div class="favicon favicon-math" title="Mathematics Stack Exchange"></div><a href="https://math.stackexchange.com/questions/4981093/is-it-possible-to-write-every-real-function-as-the-sum-of-an-injection-and-a-sur" class="js-gps-track question-hyperlink mb0" data-gps-track="site.switch({ item_type:9, target_site:69 }); posts_hot_network.click({ item_type:2, location:9 })">
+                    Is it possible to write every real function as the sum of an injection and a surjection?
+                </a>
+
+            </li>
+            <li class="dno js-hidden">
+                <div class="favicon favicon-travel" title="Travel Stack Exchange"></div><a href="https://travel.stackexchange.com/questions/191635/does-anywhere-restrict-salbutamol-inhaler-for-asthma" class="js-gps-track question-hyperlink mb0" data-gps-track="site.switch({ item_type:9, target_site:273 }); posts_hot_network.click({ item_type:2, location:9 })">
+                    Does anywhere restrict Salbutamol (inhaler for asthma)?
+                </a>
+
+            </li>
+            <li class="dno js-hidden">
+                <div class="favicon favicon-aviation" title="Aviation Stack Exchange"></div><a href="https://aviation.stackexchange.com/questions/106914/effects-of-gravity-on-glide-ratio" class="js-gps-track question-hyperlink mb0" data-gps-track="site.switch({ item_type:9, target_site:528 }); posts_hot_network.click({ item_type:2, location:9 })">
+                    Effects of Gravity on Glide Ratio
+                </a>
+
+            </li>
+            <li class="dno js-hidden">
+                <div class="favicon favicon-bicycles" title="Bicycles Stack Exchange"></div><a href="https://bicycles.stackexchange.com/questions/95571/i-can-hear-the-rear-wheel-spokes-brushing-on-rear-derailleur" class="js-gps-track question-hyperlink mb0" data-gps-track="site.switch({ item_type:9, target_site:126 }); posts_hot_network.click({ item_type:2, location:9 })">
+                    I can hear the rear wheel spokes brushing on rear derailleur
+                </a>
+
+            </li>
+            <li class="dno js-hidden">
+                <div class="favicon favicon-bicycles" title="Bicycles Stack Exchange"></div><a href="https://bicycles.stackexchange.com/questions/95592/square-taper-bottom-bracket-lock-ring-grease-loctite-or-both" class="js-gps-track question-hyperlink mb0" data-gps-track="site.switch({ item_type:9, target_site:126 }); posts_hot_network.click({ item_type:2, location:9 })">
+                    Square taper bottom bracket lock ring: grease, loctite, or both?
+                </a>
+
+            </li>
+            <li class="dno js-hidden">
+                <div class="favicon favicon-law" title="Law Stack Exchange"></div><a href="https://law.stackexchange.com/questions/105373/what-is-the-situation-when-a-contract-is-altered-during-transmission" class="js-gps-track question-hyperlink mb0" data-gps-track="site.switch({ item_type:9, target_site:617 }); posts_hot_network.click({ item_type:2, location:9 })">
+                    What is the situation when a contract is altered during transmission?
+                </a>
+
+            </li>
+            <li class="dno js-hidden">
+                <div class="favicon favicon-tex" title="TeX - LaTeX Stack Exchange"></div><a href="https://tex.stackexchange.com/questions/728042/portuguese-diacritics-on-capital-letters-messing-up-with-line-spacing" class="js-gps-track question-hyperlink mb0" data-gps-track="site.switch({ item_type:9, target_site:85 }); posts_hot_network.click({ item_type:2, location:9 })">
+                    (Portuguese) Diacritics on Capital Letters Messing Up with Line Spacing
+                </a>
+
+            </li>
+            <li class="dno js-hidden">
+                <div class="favicon favicon-academia" title="Academia Stack Exchange"></div><a href="https://academia.stackexchange.com/questions/214059/i-forgot-to-tell-a-journal-that-the-submitted-article-is-actually-a-condensed-ve" class="js-gps-track question-hyperlink mb0" data-gps-track="site.switch({ item_type:9, target_site:415 }); posts_hot_network.click({ item_type:2, location:9 })">
+                    I forgot to tell a journal that the submitted article is actually a condensed version of my MA thesis!
+                </a>
+
+            </li>
+            <li class="dno js-hidden">
+                <div class="favicon favicon-electronics" title="Electrical Engineering Stack Exchange"></div><a href="https://electronics.stackexchange.com/questions/727197/is-it-safe-to-assume-that-if-a-device-is-designed-to-charge-via-30-w-it-can-also" class="js-gps-track question-hyperlink mb0" data-gps-track="site.switch({ item_type:9, target_site:135 }); posts_hot_network.click({ item_type:2, location:9 })">
+                    Is it safe to assume that if a device is designed to charge via 30 W it can also output 30 W from the very same USB C port?
+                </a>
+
+            </li>
+            <li class="dno js-hidden">
+                <div class="favicon favicon-politics" title="Politics Stack Exchange"></div><a href="https://politics.stackexchange.com/questions/89335/what-is-irans-long-term-objective-in-the-middle-east" class="js-gps-track question-hyperlink mb0" data-gps-track="site.switch({ item_type:9, target_site:475 }); posts_hot_network.click({ item_type:2, location:9 })">
+                    What is Iran&#x27;s long-term objective in the Middle East?
+                </a>
+
+            </li>
+            <li class="dno js-hidden">
+                <div class="favicon favicon-movies" title="Movies &amp; TV Stack Exchange"></div><a href="https://movies.stackexchange.com/questions/123609/is-it-practical-in-real-life-to-drill-magnetic-screws-into-someones-skull-in-or" class="js-gps-track question-hyperlink mb0" data-gps-track="site.switch({ item_type:9, target_site:367 }); posts_hot_network.click({ item_type:2, location:9 })">
+                    Is it practical in real life to drill magnetic screws into someone&#x27;s skull in order to wear a wig?
+                </a>
+
+            </li>
+            <li class="dno js-hidden">
+                <div class="favicon favicon-politics" title="Politics Stack Exchange"></div><a href="https://politics.stackexchange.com/questions/89327/what-is-the-standing-of-russia-and-china-regarding-israels-imminent-attack-on-i" class="js-gps-track question-hyperlink mb0" data-gps-track="site.switch({ item_type:9, target_site:475 }); posts_hot_network.click({ item_type:2, location:9 })">
+                    What is the standing of Russia and China regarding Israel&#x27;s imminent attack on Iran?
+                </a>
+
+            </li>
+            <li class="dno js-hidden">
+                <div class="favicon favicon-literature" title="Literature Stack Exchange"></div><a href="https://literature.stackexchange.com/questions/27860/why-did-gabriela-mistral-adopt-a-pseudonym-instead-of-using-her-real-name" class="js-gps-track question-hyperlink mb0" data-gps-track="site.switch({ item_type:9, target_site:668 }); posts_hot_network.click({ item_type:2, location:9 })">
+                    Why did Gabriela Mistral adopt a pseudonym instead of using her real name?
+                </a>
+
+            </li>
+    </ul>
+
+        <a href="#" 
+           class="show-more js-show-more js-gps-track" 
+           data-gps-track="posts_hot_network.click({ item_type:3, location:9 })">
+            more hot questions
+        </a>
+</div>
+    </div>
+
+        </div>
+    </div>
+
+    
+
+        
+    <script type="text/javascript">
+    var cam = cam || { opt: {} };
+    var clcGamLoaderOptions = cam || { opt: {} };
+    var opt = clcGamLoaderOptions.opt;
+
+    opt.refresh = !1;
+    opt.refreshInterval = 0;
+    opt.sf = !1;
+    opt.hb = !1;
+    opt.ll = !0;
+    opt.tlb_position = 0;
+    opt.personalization_consent = !1;
+    opt.targeting_consent = !1;
+    opt.performance_consent = !1;
+
+    opt.targeting = {Registered:['false'],Reputation:['new']};
+    opt.adReportEnabled = !1;
+    opt.adReportUrl = '/ads/report-ad';
+    opt.adReportText = 'Report this ad';
+	opt.adReportFileTypeErrorMessage = 'Please select a PNG or JPG file.';
+    opt.adReportFileSizeErrorMessage = 'The file must be under 2 MiB.';
+	opt.adReportErrorText = 'Error uploading ad report.';
+	opt.adReportThanksText = 'Thanks for your feedback. We’ll review this against our code of conduct and take action if necessary.';
+    opt.adReportLoginExpiredMessage = 'Your login session has expired, please login and try again.';
+    opt.adReportLoginErrorMessage = 'An error occurred when loading the report form - please try again';
+	opt.adReportModalClass = 'js-ad-report';
+    opt.countryCode = 'PL';
+    opt.qualtricsSurveyData = '{"isRegistered":"False","repBucket":"new","referrer":"https%3a%2f%2fskeptics.stackexchange.com%2fquestions","accountAge":"0"}';
+
+    opt.perRequestGuid = 'db666861-bcc5-4fb6-8148-1b78640dee35';
+    opt.responseHash = 'ZRIuJvC2PTpYhu2iD6k83cdBgbwhCi5uyYRNLnNk1a8=';
+
+
+    opt.targeting.TargetingConsent = ['False_Passive'];
+    opt.allowAccountTargetingForThisRequest = !1;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('dfptestads')) {
+        const dfptestads = urlParams.get('dfptestads');
+        opt.targeting.DfpTestAds = dfptestads;
+    }
+</script>
+<script>;(()=>{"use strict";var __webpack_modules__={23:(e,t,s)=>{s.d(t,{Z7:()=>c,eq:()=>l,kG:()=>d});const n="248424177",o=(a=location.pathname,/^\/tags\//.test(a)||/^\/questions\/tagged\//.test(a)?"tag-pages":/^\/discussions\//.test(a)||/^\/beta\/discussions/.test(a)?"discussions":/^\/$/.test(a)||/^\/home/.test(a)?"home-page":/^\/jobs$/.test(a)||/^\/jobs\//.test(a)?"jobs":"question-pages");var a;let i=location.hostname;const r={slots:{lb:[[728,90]],mlb:[[728,90]],smlb:[[728,90]],bmlb:[[728,90]],sb:e=>"dfp-tsb"===e?[[300,250],[300,600]]:[[300,250]],"tag-sponsorship":[[730,135]],"mobile-below-question":[[320,50],[300,250]],msb:[[300,250],[300,600]],"talent-conversion-tracking":[[1,1]],"site-sponsorship":[[230,60]]},ids:{"dfp-tlb":"lb","dfp-mlb":"mlb","dfp-smlb":"smlb","dfp-bmlb":"bmlb","dfp-tsb":"sb","dfp-isb":"sb","dfp-tag":"tag-sponsorship","dfp-msb":"msb","dfp-sspon":"site-sponsorship","dfp-m-aq":"mobile-below-question"},idsToExcludeFromAdReports:["dfp-sspon"]};function d(){return Object.keys(r.ids)}function l(e){return r.idsToExcludeFromAdReports.indexOf(e)<0}function c(e){var t=e.split("_")[0];const s=r.ids[t];let a=r.slots[s];return"function"==typeof a&&(a=a(t)),{path:`/${n}/${i}/${s}/${o}`,sizes:a,zone:s}}},865:(e,t,s)=>{function n(e){return"string"==typeof e?document.getElementById(e):e}function o(e){return!!(e=n(e))&&"none"===getComputedStyle(e).display}function a(e){return!o(e)}function i(e){return!!e}function r(e){return/^\s*$/.test(n(e).innerHTML)}function d(e){const{style:t}=e;t.height=t.maxHeight=t.minHeight="auto",t.display="none"}function l(e){const{style:t}=e;t.height=t.maxHeight=t.minHeight="auto",t.display="none",[].forEach.call(e.children,l)}function c(e){const{style:t}=e;t.height=t.maxHeight=t.minHeight="auto",t.removeProperty("display")}function g(e){const t=document.createElement("script");t.src=e,document.body.appendChild(t)}function p(e){return s=e,(t=[]).push=function(e){return s(),delete this.push,this.push(e)},t;var t,s}function h(e){let t="function"==typeof HTMLTemplateElement;var s=document.createElement(t?"template":"div");return e=e.trim(),s.innerHTML=e,t?s.content.firstChild:s.firstChild}s.d(t,{$Z:()=>c,Bv:()=>h,Gx:()=>g,Nj:()=>n,QZ:()=>p,cf:()=>d,pn:()=>a,wo:()=>l,xb:()=>r,xj:()=>o,yb:()=>i})},763:(__unused_webpack_module,__webpack_exports__,__webpack_require__)=>{__webpack_require__.d(__webpack_exports__,{t:()=>AdReports});var _common_helper__WEBPACK_IMPORTED_MODULE_2__=__webpack_require__(865),_console__WEBPACK_IMPORTED_MODULE_1__=__webpack_require__(276),_ad_units__WEBPACK_IMPORTED_MODULE_0__=__webpack_require__(23);class AdReports{constructor(e,t){if(this.googletag=e,this.cam=t,this.allowedFileTypes=["image/png","image/jpg","image/jpeg"],this.ignoreValidation=!1,_console__WEBPACK_IMPORTED_MODULE_1__.cM("Ad reporting init"),this.cam=t,this.callOnButtonClick=e=>this.onButtonClick(e),this.googletag.pubads().addEventListener("slotRenderEnded",e=>this.handleSlotRendered(e)),Array.isArray(t.slotsRenderedEvents)){_console__WEBPACK_IMPORTED_MODULE_1__.cM("Adding report button to "+t.slotsRenderedEvents.length+" events that have transpired");for(var s=0;s<t.slotsRenderedEvents.length;s++)this.handleSlotRendered(t.slotsRenderedEvents[s])}}handleSlotRendered(e){if(e&&e.slot&&!e.isEmpty&&(e.creativeId||e.lineItemId||!e.isEmpty)){var t=e.slot.getSlotElementId();if(t){var s=document.getElementById(t);if(s)if((0,_ad_units__WEBPACK_IMPORTED_MODULE_0__.eq)(t)){var n=s?.closest(".js-zone-container")?.querySelector(".js-report-ad-button-container");n?(n.innerHTML="",n.append(this.createButton(e)),n.style.height="24px",_console__WEBPACK_IMPORTED_MODULE_1__.cM("Added report button to the bottom of "+t)):_console__WEBPACK_IMPORTED_MODULE_1__.cM("Ad report button not found, may be intentional, element: "+t)}else _console__WEBPACK_IMPORTED_MODULE_1__.cM("Not adding report button to the bottom of "+t+": shouldHaveReportButton = false");else _console__WEBPACK_IMPORTED_MODULE_1__.cM("Not adding report button to the bottom of "+t+": resolved invalid adUnit element")}else _console__WEBPACK_IMPORTED_MODULE_1__.cM("Not adding report button to the bottom of element: invalid adUnitElementId")}else _console__WEBPACK_IMPORTED_MODULE_1__.cM("Not adding report button to the bottom of element: invalid SlotRenderEndedEvent")}async onButtonClick(e){e.preventDefault();let t=e.target;const s=t.dataset.modalUrl,n=t.dataset.googleEventData;return await this.loadModal(s,t,n),!1}createButton(e){let t=document.createElement("button");var s=JSON.stringify(e);return t.dataset.googleEventData=s,t.dataset.modalUrl=this.cam.opt.adReportUrl,t.dataset.adUnit=e.slot.getSlotElementId(),t.classList.add("js-report-ad","s-btn","s-btn__link","fs-fine","mt2","float-right"),t.append(document.createTextNode(this.cam.opt.adReportText)),t.removeEventListener("click",this.callOnButtonClick),t.addEventListener("click",this.callOnButtonClick),t}async loadModal(url,$link,googleEventData){try{await window.StackExchange.helpers.loadModal(url,{returnElements:window.$($link)}),this.initForm(googleEventData)}catch(e){var message="",response=e.responseText?eval(`(${e.responseText})`):null;message=response&&response.isLoggedOut?this.cam.opt.adReportLoginExpiredMessage:this.cam.opt.adReportLoginErrorMessage,window.StackExchange.helpers.showToast(message,{type:"danger"})}}removeModal(){window.StackExchange.helpers.closePopups(document.querySelectorAll("."+this.cam.opt.adReportModalClass),"dismiss")}initForm(e,t=!1){this.ignoreValidation=t,this.$form=document.querySelector(".js-ad-report-form"),this.$googleEventData=this.$form.querySelector(".js-json-data"),this.$adReportReasons=this.$form.querySelectorAll(".js-ad-report-reason"),this.$adReportReasonOther=this.$form.querySelector(".js-ad-report-reason-other"),this.$fileUploaderInput=this.$form.querySelector(".js-file-uploader-input"),this.$imageUploader=this.$form.querySelector(".js-image-uploader"),this.$clearImageUpload=this.$form.querySelector(".js-clear-image-upload"),this.$imageUploaderText=this.$form.querySelector(".js-image-uploader-text"),this.$imageUploaderPreview=this.$form.querySelector(".js-image-uploader-preview"),this.$fileErrorMessage=this.$form.querySelector(".js-file-error");const s=this.$form.querySelector(".js-drag-drop-enabled"),n=this.$form.querySelector(".js-drag-drop-disabled");this.$googleEventData.value=e,this.$adReportReasons.forEach((e,t)=>e.addEventListener("change",e=>{this.$adReportReasonOther.classList.toggle("d-none","3"!==e.target.value)})),this.$fileUploaderInput.addEventListener("change",()=>{this.validateFileInput()&&this.updateImagePreview(this.$fileUploaderInput.files)}),this.$clearImageUpload.addEventListener("click",e=>{e.preventDefault(),this.clearImageUpload()});try{this.$fileUploaderInput[0].value="",this.$imageUploader.addEventListener("dragenter dragover dragleave drop",this.preventDefaults),this.$imageUploader.addEventListener("dragenter dragover",this.handleDragStart),this.$imageUploader.addEventListener("dragleave drop",this.handleDragEnd),this.$imageUploader.addEventListener("drop",this.handleDrop)}catch(e){s.classList.add("d-none"),n.classList.remove("d-none")}this.$form.removeEventListener("",this.handleDragEnd),this.$form.addEventListener("submit",async e=>(e.preventDefault(),this.submitForm(),!1))}clearImageUpload(){this.$fileUploaderInput.value="",this.$imageUploaderPreview.setAttribute("src",""),this.$imageUploaderPreview.classList.add("d-none"),this.$clearImageUpload.classList.add("d-none"),this.$imageUploaderText.classList.remove("d-none"),this.$imageUploader.classList.add("p16","ba","bas-dashed","bc-black-100")}preventDefaults(e){e.preventDefault(),e.stopPropagation()}handleDragStart(e){this.$imageUploader.classList.remove("bas-dashed"),this.$imageUploader.classList.add("bas-solid","bc-black-100")}handleDragEnd(e){this.$imageUploader.classList.remove("bas-solid","bc-black-100"),this.$imageUploader.classList.add("bas-dashed")}handleDrop(e){var t=e.originalEvent.dataTransfer.files;FileReader&&t&&1===t.length&&(this.$fileUploaderInput.files=t,this.validateFileInput()&&this.updateImagePreview(t))}setError(e){this.$fileErrorMessage.parentElement.classList.toggle("has-error",e)}updateImagePreview(e){this.$imageUploader.classList.remove("p16","ba","bas-dashed","bc-black-100"),this.$clearImageUpload.classList.remove("d-none"),this.$imageUploaderText.classList.add("d-none");var t=new FileReader;t.onload=e=>{null!=e.target&&(this.$imageUploaderPreview.setAttribute("src",e.target.result),this.$imageUploaderPreview.classList.remove("d-none"))},t.readAsDataURL(e[0])}validateFileInput(){if(this.ignoreValidation)return!0;const e=this.cam.opt.adReportFileTypeErrorMessage,t=this.cam.opt.adReportFileSizeErrorMessage;if(null==this.$fileUploaderInput.files)return!1;var s=this.$fileUploaderInput.files[0];return null==s?(this.setError(!0),!1):this.allowedFileTypes.indexOf(s.type)<0?(this.$fileErrorMessage.textContent=e,this.$fileErrorMessage.classList.remove("d-none"),this.setError(!0),!1):s.size>2097152?(this.$fileErrorMessage.textContent=t,this.$fileErrorMessage.classList.remove("d-none"),this.setError(!0),!1):(this.$fileErrorMessage.classList.add("d-none"),this.setError(!1),!0)}async gatherDiagnosticInfo(){return{BrowserVersion:await this.getBrowserVersion()}}getElementSource(e){return e.outerHTML}getNestedIFrameElement(e){var t=e.querySelector("iframe");return t.contentDocument?t.contentDocument.documentElement:t.contentWindow.document.documentElement}async getBrowserVersion(){return await navigator.userAgentData.getHighEntropyValues(["fullVersionList"]).then(e=>JSON.stringify(e.fullVersionList))}async submitForm(){if(!this.validateFileInput())return!1;this.$form.querySelector("[type=submit]").setAttribute("disabled","true");var e=JSON.parse(this.$googleEventData.value||"{}");e.Reason=parseInt(this.$form.querySelector(".js-ad-report-reason:checked").value,10),e.Description=this.$adReportReasonOther.value,this.$googleEventData.value=JSON.stringify(e);var t=new FormData(this.$form);if("1"===t.get("shareDiagnosticInfo")){var s=await this.gatherDiagnosticInfo();Object.keys(s).forEach(e=>t.append(e,s[e]))}try{const e=await window.fetch(this.$form.getAttribute("action"),{method:this.$form.getAttribute("method"),body:t,cache:"no-cache"}),s=e.headers.get("content-type")||"",o=await e.text();if(!e.ok)throw new Error("response not valid");if(0===s.indexOf("text/html")){var n=(0,_common_helper__WEBPACK_IMPORTED_MODULE_2__.Bv)(o);const e=n?n.querySelector(".js-modal-content"):null;if(_console__WEBPACK_IMPORTED_MODULE_1__.cM("$popupContent"),_console__WEBPACK_IMPORTED_MODULE_1__.cM(e),!e)throw new Error(`Could not find .js-modal-content in response from ${this.$form.getAttribute("action")}`);document.querySelector(".js-modal-content").replaceWith(e)}else window.StackExchange.helpers.showToast(this.cam.opt.adReportThanksText,{type:"success"}),this.removeModal()}catch(e){window.StackExchange.helpers.showToast(this.cam.opt.adReportErrorText,{type:"danger"})}finally{let e=this.$form.querySelector("[type=submit]");e&&e.removeAttribute("disabled")}}}},276:(e,t,s)=>{function n(...e){}function o(...e){}s.d(t,{cM:()=>n,vU:()=>o})}},__webpack_module_cache__={};function __webpack_require__(e){var t=__webpack_module_cache__[e];if(void 0!==t)return t.exports;var s=__webpack_module_cache__[e]={exports:{}};return __webpack_modules__[e](s,s.exports,__webpack_require__),s.exports}__webpack_require__.d=(e,t)=>{for(var s in t)__webpack_require__.o(t,s)&&!__webpack_require__.o(e,s)&&Object.defineProperty(e,s,{enumerable:!0,get:t[s]})},__webpack_require__.o=(e,t)=>Object.prototype.hasOwnProperty.call(e,t);var __webpack_exports__={};(()=>{var e=__webpack_require__(276),t=(e=>(e[e.Above=0]="Above",e[e.Below=1]="Below",e))(t||{});const s=Object.assign({},{"lib":"https://clc.stackoverflow.com/Content/bundles/js/gam_loader_script.bundle.741.25e3e63be9a306287d9f.js?v=d5f908ccaade","style":null,"u":null,"wa":true,"kt":2000,"tto":true,"h":"clc.stackoverflow.com","allowed":"^(((talent\\.)?stackoverflow)|(blog\\.codinghorror)|(.*\\.googlesyndication)|(serverfault|askubuntu|superuser)|([^\\.]+\\.stackexchange))\\.com$","wv":true,"al":false,"abd":true,"cpa_liid":[5882654614],"cpa_cid":[138377597667],"dp":false,"tgt_to":1000,"tgt_u":"https://clc.stackoverflow.com/get-user-acct-tgt","tgt_e":true,"tgt_p":100,"dv_enabled":false});var n=__webpack_require__(23),o=__webpack_require__(865),a=__webpack_require__(763);class i{constructor(t,s){this.googletag=t,this.interval=s,e.cM("Ad refresh init. interval: "+s),this.googletag.pubads().addEventListener("impressionViewable",e=>this.onImpressionViewable(e)),e.cM("done enabling ad refresh")}onImpressionViewable(t){var s=t.slot;e.cM("ad refresh - slot "+s.getSlotElementId()+" is viewable, initializing refresh"),this.scheduleRefresh(s)}scheduleRefresh(e){setTimeout(()=>this.refreshAdSlot(e),1e3*this.interval)}static refreshMyAd(t,s){let n=t.pubads().getSlots().find(e=>e.getSlotElementId()===s);n&&(e.cM("refreshMyAd - refreshing ad slot "+s),t.pubads().refresh([n]))}static removeMyAd(t,s){let n=t.pubads().getSlots().find(e=>e.getSlotElementId()===s);n&&(e.cM("removeMyAd - destroying ad slot "+s),t.destroySlots([n]))}refreshAdSlot(t){var s=t.getSlotElementId();this.isElementVisibleInBrowser(s)?(e.cM("refreshing ad slot "+s),googletag.pubads().refresh([t])):(e.cM("refresh skipped this time; ad slot not viewable:"+s),this.scheduleRefresh(t))}isElementVisibleInBrowser(e){var t=document.getElementById(e);if(null!==t){var s=t.getBoundingClientRect();if(s.top>=0&&s.left>=0&&s.bottom<=(window.innerHeight||document.documentElement.clientHeight)&&s.right<=(window.innerWidth||document.documentElement.clientWidth))return!0}return!1}}var r=(e=>(e.Off="Off",e.PreSurvey="PreSurvey",e.Collect="Collect",e.PostSurvey="PostSurvey",e))(r||{});class d{constructor(e,t){this.lineItemImpressions=[],this.surveysIdsCompleted=[],this.lineItemImpressions=e,this.surveysIdsCompleted=t}addImpression(e,t){let s={brandId:e,lineItemId:t,timestamp:new Date};this.lineItemImpressions.push(s)}addBrandSurveyCompleted(e){-1===this.surveysIdsCompleted.indexOf(e)&&this.surveysIdsCompleted.push(e)}getTotalBrandImpressions(){let e=new Map;for(let t of this.lineItemImpressions)if(e.has(t.brandId)){let s=e.get(t.brandId);e.set(t.brandId,s+1)}else e.set(t.brandId,1);return e}getBrandLineItemImpressions(e){let t={};for(let s of this.lineItemImpressions)if(s.brandId==e)if(void 0!==t[s.lineItemId]){let e=t[s.lineItemId];t[s.lineItemId]=e+1}else t[s.lineItemId]=1;return t}}class l{constructor(){this.surveyEngagementLocalStorageKey="clc-survey-engagement"}getBrandSurveyEngagement(){let e=localStorage.getItem(this.surveyEngagementLocalStorageKey);if(null===e)return new d([],[]);let t=JSON.parse(e);return new d(t.lineItemImpressions,t.surveysIdsCompleted)}saveBrandSurveyEngagement(e){let t=JSON.stringify(e);localStorage.setItem(this.surveyEngagementLocalStorageKey,t)}}class c{constructor(){this.surveyRepository=new l}getBrandSurveyEngagement(){return this.surveyRepository.getBrandSurveyEngagement()}recordImpression(e,t){let s=this.getBrandSurveyEngagement();s.addImpression(e,t),this.surveyRepository.saveBrandSurveyEngagement(s)}recordBrandSurveyCompleted(e){let t=this.getBrandSurveyEngagement();t.addBrandSurveyCompleted(e),this.surveyRepository.saveBrandSurveyEngagement(t)}}class g{constructor(t,s){this.googletag=t,this.brandSettings=s,this.brandSlotMap=new Map,this.brandSurveyEngagementService=new c,e.cM("Brand Survey init: "+JSON.stringify(s)),void 0!==s?(this.googletag.pubads().addEventListener("slotRenderEnded",e=>this.handleSlotRendered(e)),this.googletag.pubads().addEventListener("impressionViewable",e=>this.onImpressionViewable(e)),e.cM("done enabling Brand Survey")):e.cM("Brand Survey init: brandSettings is undefined, not initializing")}handleSlotRendered(t){e.cM("Brand Survey - slot rendered - slot:"+JSON.stringify(t.slot.getSlotElementId())+" lineItem: "+t.lineItemId);let s=this.findItemWithId(t.lineItemId);if(null===s||s.mode!==r.Collect)this.brandSlotMap.delete(t.slot.getSlotElementId());else{let e={brandId:s.brandId,lineItemId:t.lineItemId};this.brandSlotMap.set(t.slot.getSlotElementId(),e)}}onImpressionViewable(t){let s=t.slot;if(e.cM("ad - Brand Survey - impression viewable.  Details: "+JSON.stringify(s.getSlotElementId())),e.cM("ad - Brand Survey - slot "+s.getSlotElementId()+" is viewable"),this.brandSlotMap.has(s.getSlotElementId())){let t=this.brandSlotMap.get(s.getSlotElementId());e.cM("Brand Survey - brand "+t.brandId+" is viewable"),this.recordImpression(this.brandSlotMap.get(s.getSlotElementId()))}}recordImpression(t){e.cM("ad - Brand Survey - recording impression for brand "+t.brandId),this.brandSurveyEngagementService.recordImpression(t.brandId,t.lineItemId)}findItemWithId(t){return e.cM("brand settings: "+JSON.stringify(this.brandSettings)),this.brandSettings.find(e=>e.lineItemIds.includes(t))||null}}const p="response-brand-survey-submit|",h="request-brand-survey-metadata|",m="record-metric-on-server|",u="request-dsp-tags",f="response-dsp-tags|";class v{static refreshAdIfBrandSurveyIsDuplicated(e,t,s){if(this.alreadyCompletedThisBrandSurvey(t)){var n=document.getElementById(s).closest(".js-zone-container");i.removeMyAd(e,s),n&&n.remove()}}static alreadyCompletedThisBrandSurvey(e){return(new c).getBrandSurveyEngagement().surveysIdsCompleted.includes(e)}}window.cam=new class{constructor(t=null){if(this.gptImported=!1,this.slotsRenderedEvents=[],this.collapsed={},e.cM("constructor"),this.clc_options=s,window.clcGamLoaderOptions)Object.assign(this,window.clcGamLoaderOptions);else if(void 0===this.opt){let e=window.opt;e&&(this.opt=e)}}init(){if(e.cM("init"),void 0===this.opt)throw new Error("opt not set, required by GAM Loader");e.cM("init brand survey service"),this.getUserMetaPromise=this.getUserMeta(),e.cM("setup message handler"),window.addEventListener("message",e=>{this.onmessage(e)})}handleSlotRenderedNoAdReport(){if(googletag.pubads().addEventListener("slotRenderEnded",e=>this.applyExtraMarginBottom(e)),Array.isArray(this.slotsRenderedEvents))for(var e=0;e<this.slotsRenderedEvents.length;e++)this.applyExtraMarginBottom(this.slotsRenderedEvents[e])}onmessage(t){let s="omni";if(t.data&&("string"==typeof t.data||t.data instanceof String))if(0===t.data.indexOf("get-omni-")){e.cM("Recevied get-omni message, sending back omni");var n=t.source,a=this.opt.omni,i="string"==typeof a?a:"";n.postMessage([s,i,this.opt.perRequestGuid].join("|"),"*")}else if(0===t.data.indexOf("collapse-")){e.cM("Recevied collapse message, collapse ad iframe"),e.cM(t);for(var r=t.source.window,d=document.getElementsByTagName("IFRAME"),l=0;l<d.length;l++){var g=d[l];if(g.contentWindow==r)return void(0,o.wo)(g.parentElement.parentElement.parentElement)}}else if(0===t.data.indexOf("resize|")){e.cM("Recevied resize message, resize ad iframe"),e.cM(t);let s=this._getFrameByEvent(t),n=t.data.indexOf("|")+1,o=t.data.slice(n),a=parseFloat(o)+.5;e.cM("New iframe height "+a),s.height=a.toString(),s.parentElement.style.height=a.toString()+"px"}else if(0===t.data.indexOf("getmarkup|")){let s=t.data.indexOf("|")+1,n=t.data.slice(s);e.cM("Recevied get markup message: "+n);let o=this._getFrameByEvent(t).closest(".everyonelovesstackoverflow");const a=document.createElement("script");a.dataset.adZoneId=o.id,a.src=n,document.body.appendChild(a)}else if(0===t.data.indexOf("window-location|")){let s=t.data.indexOf("|")+1,n=t.data.slice(s);e.cM("Recevied window location message: "+n),n.startsWith("/")||(n="/"+n),window.open(window.location.protocol+"//"+window.location.host+n,"_blank")}else if(0===t.data.indexOf("request-brand-survey-submit|")){let s=t.data.split("|"),n=s[1],o=s[2],a=s[3],i=JSON.parse(a);e.cM(n),e.cM(o),e.cM(a),e.cM("Received brand survey "+n+" response message: "+o);var _=new FormData;for(var b in i)_.append(b,i[b]);let r=this._getFrameByEvent(t);if(v.alreadyCompletedThisBrandSurvey(+n))return e.cM("Already completed this brand survey.  Not submitting duplicate to server."),void r.contentWindow.postMessage("response-brand-survey-submit-duplicate|","*");e.cM("Send the brand survey to the server"),fetch(o,{method:"POST",body:_}).then(e=>e.json()).then(e=>r.contentWindow.postMessage({messageType:p},"*")).catch(e=>r.contentWindow.postMessage({messageType:p},"*"))}else if(0===t.data.indexOf("brand-survey-completed-store|")){let s=t.data.split("|"),n=(s[1],s[2]);if(e.cM("Received brand survey completed store message for survey ID "+n),v.alreadyCompletedThisBrandSurvey(+n))return void e.cM("Already completed this brand survey.  Not recording duplicate locally.");e.cM("Record brand survey completion locally"),(new c).recordBrandSurveyCompleted(+n)}else if(0===t.data.indexOf(h)){let s=t.data.split("|"),n=s[1],o=s[2];e.cM("Received message: "+h+" with Brand Survey ID "+o);let a=(new c).getBrandSurveyEngagement().getBrandLineItemImpressions(+n),i=JSON.stringify(a),r=this._getFrameByEvent(t);e.cM("sending impression data: "+i),r.contentWindow.postMessage("response-brand-survey-metadata|"+this.opt.responseHash+"|"+this.opt.perRequestGuid+"|"+i+"|"+this.opt.countryCode+"|"+this.opt.qualtricsSurveyData,"*")}else if(0===t.data.indexOf("refresh-if-duplicate-brand-survey|")){let e=t.data.split("|")[1],s=this.getSlotElementIdByEvent(t);v.refreshAdIfBrandSurveyIsDuplicated(googletag,+e,s)}else if(0===t.data.indexOf(m)){e.cM("Received message: "+m+" with args: "+t.data);let s=t.data.split("|"),n=s[1],o=s[2],a=s[3],i=s[4],r=new FormData;r.append("brandSurveyId",a.toString()),r.append("responseHash",this.opt.responseHash),r.append("perRequestGuid",this.opt.perRequestGuid),r.append("questionNumber",n.toString()),r.append("metricType",i.toString()),fetch(o,{method:"POST",body:r}).then(e=>e.ok).catch(t=>{e.cM("SendMetricToServer: Error sending metric to server: "+t)})}else if(0===t.data.indexOf(u)){e.cM("Received message: "+u+" with args: "+t.data);let s=this._getFrameByEvent(t);if(!this.opt.targeting["so-tag"])return void s.contentWindow.postMessage(f,"*");const n=this.opt.targeting["so-tag"].join(",");e.cM("sending targeting tags: "+n),s.contentWindow.postMessage(f+n,"*")}else e.cM("Received unhandled message")}getSlotElementIdByEvent(e){let t=this._getFrameByEvent(e),s=t.parentElement?.parentElement?.id;return s||""}_getFrameByEvent(e){return Array.from(document.getElementsByTagName("iframe")).filter(t=>t.contentWindow===e.source)[0]}classifyZoneIds(e){const t=e.map(o.Nj).filter(o.yb);return{eligible:t.filter(o.xb).filter(o.pn),ineligible:t.filter(o.xj)}}applyExtraMarginBottom(t){if(t&&t.slot&&!t.isEmpty&&(t.creativeId||t.lineItemId||!t.isEmpty)){var s=t.slot.getSlotElementId();if(s){var o=document.getElementById(s);if(o)if((0,n.eq)(s)){var a=o?.closest(".js-zone-container");a.style.marginBottom="24px",e.cM("Applied extra margin to the bottom of "+s)}else e.cM("Not applying extra margin to the bottom of "+s+": shouldHaveReportButton = false");else e.cM("Not applying extra margin to the bottom of "+s+": resolved invalid adUnit element")}else e.cM("Not applying extra margin to the bottom of element: invalid adUnitElementId")}else e.cM("Not applying extra margin to the bottom of element: invalid SlotRenderEndedEvent")}async load(s=(0,n.kG)()){const r=this.opt.tlb_position===t.Above?["dfp-mlb","dfp-smlb"]:["dfp-mlb","dfp-smlb","dfp-tlb"];if(!this.isGptReady())return e.cM("Initializing..."),this.initGpt(),void googletag.cmd.push(()=>this.load(s));this.opt.adReportEnabled?(e.cM("Ad reporting enabled"),this.adReports=new a.t(googletag,this)):(e.cM("Ad reporting not enabled"),this.handleSlotRenderedNoAdReport()),this.opt.refresh?(e.cM("Ad refresh enabled"),this.adRefresh=new i(googletag,this.opt.refreshInterval)):e.cM("Ad refresh not enabled"),this.opt.brandSurveyEnabled&&(e.cM("Brand Survey enabled"),this.brandSurvey=new g(googletag,this.opt.brandSurveySettings)),e.cM("Attempting to load ads into ids: ",s);const{eligible:d,ineligible:l}=this.classifyZoneIds(s);if(this.initDebugPanel(googletag,d.concat(l)),d.forEach(e=>(0,o.cf)(e)),l.forEach(o.wo),0===d.length)return void e.cM("Found no ad ids on page");e.cM("Eligible ids:",d),this.opt.abd&&this.appendAdblockDetector();var c=googletag.pubads().getSlots();if(c){var p=c.filter(e=>s.indexOf(e.getSlotElementId())>=0);googletag.destroySlots(p)}this.opt.sf&&(googletag.pubads().setForceSafeFrame(!0),googletag.pubads().setSafeFrameConfig({allowOverlayExpansion:!0,allowPushExpansion:!0,sandbox:!0})),e.cM("Targeting consent: Checking...");let h=!1,m=!1;void 0!==this.opt.targeting_consent&&(m=!0,e.cM("Targeting consent: Parameter set"),e.cM("Targeting consent: Consent given? ",this.opt.targeting_consent),h=this.opt.targeting_consent),void 0!==this.opt.personalization_consent&&(e.cM("Personalization consent: Parameter set"),e.cM("Personalization consent: Consent given? ",this.opt.personalization_consent),h=h&&this.opt.personalization_consent),h=h&&m,this.setPrivacySettings(h),this.opt.ll||googletag.pubads().enableSingleRequest(),cam.sreEvent||(googletag.pubads().addEventListener("slotRenderEnded",e=>this.onSlotRendered(e)),cam.sreEvent=!0),await this.setTargeting();var u=d.filter(e=>!this.opt.ll||r.indexOf(e.id)<0),f=d.filter(e=>!!this.opt.ll&&r.indexOf(e.id)>=0);e.cM("Up front ids:",u),e.cM("Lazy loaded ids:",f),u.forEach(t=>{e.cM(`Defining ad for element ${t.id}`),this.defineSlot(t.id,googletag),t.setAttribute("data-dfp-zone","true")}),googletag.enableServices(),u.forEach(t=>{e.cM(`Displaying ad for element ${t.id}`),this.clc_options.dv_enabled?window.onDvtagReady(function(){googletag.display(t.id)}):googletag.cmd.push(()=>googletag.display(t.id))}),this.opt.ll&&(e.cM("Enabling lazy loading for GAM"),googletag.pubads().enableLazyLoad({fetchMarginPercent:0,renderMarginPercent:0}),e.cM("Setting up lazy loaded ad units"),f.forEach(t=>{e.cM(`Lazy loading - Defining Slot ${t.id}`),this.defineSlot(t.id,googletag)}),f.forEach(t=>{e.cM(`Lazy loading - Displaying ad for element ${t.id}`),this.clc_options.dv_enabled?window.onDvtagReady(function(){googletag.display(t.id)}):googletag.cmd.push(()=>googletag.display(t.id))}))}setPrivacySettings(e){e||googletag.pubads().setPrivacySettings({nonPersonalizedAds:!0})}async setTargeting(){if(!googletag)throw new Error("googletag not defined");let t=this.opt.targeting;if(!t)throw new Error("Targeting not defined (is "+typeof t+")");Object.keys(t).forEach(s=>{e.cM(`-> targeting - ${s}: ${t[s]}`),googletag.pubads().setTargeting(s,t[s])});let s=!1;if(void 0!==this.opt.targeting_consent&&(s=this.opt.targeting_consent),s){let t=(new c).getBrandSurveyEngagement();if(t.getTotalBrandImpressions().forEach((t,s)=>{e.cM(`-> targeting - BrandImpressions: ${s}: ${t}`),googletag.pubads().setTargeting("brand_"+s.toString()+"_impressions",t.toString())}),t.surveysIdsCompleted.forEach(t=>{e.cM(`-> targeting - SurveysTaken: ${t}`),googletag.pubads().setTargeting("survey_"+t+"_taken","true")}),this.clc_options.tgt_e&&this.getUserMetaPromise){let t=await this.getUserMetaPromise;t&&t.tgt_acct?(e.cM("-> targeting - User Account: "+t.tgt_acct),googletag.pubads().setTargeting("user-acct",t.tgt_acct.company_name),googletag.pubads().setTargeting("user_acct_top",t.tgt_acct.company_name),googletag.pubads().setTargeting("user_industry",t.tgt_acct.industry),googletag.pubads().setTargeting("user_employee_count",t.tgt_acct.employee_range)):e.cM("-> targeting - User Account: Not Found"),t&&Object.prototype.hasOwnProperty.call(t,"is_high_rep_earner")?(e.cM("-> targeting - High Rep Earner: "+t.is_high_rep_earner),googletag.pubads().setTargeting("IsHighRepEarner",t.is_high_rep_earner?"true":"false")):e.cM("-> targeting - High Rep Earner: not found")}if(localStorage){e.cM('Checking local storage for "jobs-last-clicked" key.');let t=localStorage.getItem("jobs-last-clicked")?"true":"false";e.cM(`-> targeting - jobs_clicked: ${t}`),googletag.pubads().setTargeting("jobs_clicked",t)}}}appendAdblockDetector(){const e=document.createElement("div");e.className="adsbox",e.id="clc-abd",e.style.position="absolute",e.style.pointerEvents="none",e.innerHTML="&nbsp;",document.body.appendChild(e)}onSlotRendered(s){try{const i=s.slot.getSlotElementId();let r=[];i||r.push("id=0");const d=document.getElementById(i);if(i&&!d&&r.push("el=0"),0!==r.length)return void this.stalled(r.join("&"));const{path:l,sizes:c,zone:g}=(0,n.Z7)(i);if(this.collapsed[g]&&s.isEmpty)return e.cM(`No line item for the element #${d.id}... collapsing.`),void(0,o.wo)(d);if(this.slotsRenderedEvents.push(s),s.lineItemId||s.creativeId||!s.isEmpty){e.cM(`Rendered ad for element #${d.id} [line item #${s.lineItemId}]`),e.cM(s);var a=d.parentElement;if(a.classList.contains("js-zone-container")){switch((0,o.cf)(a),i){case"dfp-tlb":this.opt.tlb_position===t.Above?a.classList.add("mb8"):a.classList.add("mt16");break;case"dfp-tag":a.classList.add("mb8");break;case"dfp-msb":a.classList.add("mt16");break;case"dfp-mlb":case"dfp-smlb":case"dfp-bmlb":a.classList.add("my8");break;case"dfp-isb":a.classList.add("mt24");break;case"dfp-m-aq":a.classList.add("my12"),a.classList.add("mx-auto")}(0,o.$Z)(a),(0,o.$Z)(d)}else e.cM(`No ad for element #${d.id}, collapsing`),e.cM(s),(0,o.wo)(d)}}catch(t){e.cM("Exception thrown onSlotRendered"),e.cM(t),this.stalled("e=1")}}stalled(e){(new Image).src=`https://${this.clc_options.h}/stalled.gif?${e}`}defineSlot(t,s){"dfp-isb"===t&&(e.cM("-> targeting - Sidebar: Inline"),s.pubads().setTargeting("Sidebar",["Inline"])),"dfp-tsb"===t&&(e.cM("-> targeting - Sidebar: Right"),s.pubads().setTargeting("Sidebar",["Right"]));const{path:o,sizes:a,zone:i}=(0,n.Z7)(t);e.cM(`Defining slot for ${t}: ${o}, sizes: ${JSON.stringify(a)}`),s.defineSlot(o,a,t).addService(s.pubads())}importGptLibrary(){this.gptImported||(this.gptImported=!0,void 0===this.opt.targeting_consent||this.opt.targeting_consent?(0,o.Gx)("https://securepubads.g.doubleclick.net/tag/js/gpt.js"):(0,o.Gx)("https://pagead2.googlesyndication.com/tag/js/gpt.js"))}importDvLibrary(){this.clc_options.dv_enabled&&(e.cM("Adding DoubleVerify library"),(0,o.Gx)("https://pub.doubleverify.com/dvtag/21569774/DV1289064/pub.js"),e.cM("Adding DoubleVerify onDvtagReady handler"),window.onDvtagReady=function(t,s=750){e.cM("DoubleVerify onDvtagReady called"),window.dvtag=window.dvtag||{},dvtag.cmd=dvtag.cmd||[];const n={callback:t,timeout:s,timestamp:(new Date).getTime()};dvtag.cmd.push(function(){dvtag.queueAdRequest(n)}),setTimeout(function(){const e=n.callback;n.callback=null,e&&e()},s)})}isGptReady(){return"undefined"!=typeof googletag&&!!googletag.apiReady}initGpt(){"undefined"==typeof googletag&&(window.googletag={cmd:(0,o.QZ)(()=>{this.importGptLibrary(),this.importDvLibrary()})})}getUserMeta(){if(this.opt.allowAccountTargetingForThisRequest&&this.clc_options.tgt_e&&this.clc_options.tgt_p>0){if(e.cM("Targeting enabled."),this.clc_options.tgt_p<100){e.cM("Targeting rate limit enabled.  Rolling the dice...");const t=Math.floor(100*Math.random())+1;if(e.cM("Rolled "+t+" and the max is "+this.clc_options.tgt_p),t>this.clc_options.tgt_p)return void e.cM("Will not request targeting.")}return e.cM("Will request targeting."),function(e,t,s,n){if(t){const t=new Headers;return t.append("Accept","application/json"),async function(e,t={},s=5e3){if("number"!=typeof s&&null!=s&&!1!==s){if("string"!=typeof s)throw new Error("fetchWithTimeout: timeout must be a number");if(s=parseInt(s),isNaN(s))throw new Error("fetchWithTimeout: timeout must be a number (or string that can be parsed to a number)")}const n=new AbortController,{signal:o}=n,a=fetch(e,{...t,signal:o}),i=setTimeout(()=>n.abort(),s);try{const e=await a;return clearTimeout(i),e}catch(e){throw clearTimeout(i),e}}(s+"?"+new URLSearchParams({omni:e}),{method:"GET",mode:"cors",headers:t},n).then(e=>e.json())}return Promise.reject("No consent")}(this.opt.omni,this.opt.targeting_consent,this.clc_options.tgt_u,this.clc_options.tgt_to).catch(t=>{e.vU("Error fetching user account targeting"),e.vU(t)})}e.cM("Targeting disabled.  Will not request account targeting data.")}initDebugPanel(t,s){e.cM("initDebugPanel"),e.cM("Not showing debug panel.")}},window.clcGamLoaderOptions&&(cam.init(),cam.load())})()})();</script>
+        
+    <footer id="footer" class="site-footer js-footer" role="contentinfo">
+        <div class="site-footer--container">
+            <nav class="site-footer--nav" aria-label="Footer">
+                    <div class="site-footer--col">
+                        <h5 class="-title"><a href="/">Skeptics</a></h5>
+                        <ul class="-list js-primary-footer-links">
+                                    <li><a class="js-gps-track -link" data-gps-track="footer.click({ location: 3, link: 2 })" href="/tour">Tour</a></li>
+                                <li><a href="/help" class="js-gps-track -link" data-gps-track="footer.click({ location: 3, link: 3 })">Help</a></li>
+                                    <li><a class="js-gps-track -link" data-gps-track="footer.click({ location: 3, link: 5 })" href="https://chat.stackexchange.com?tab=site&host=skeptics.stackexchange.com">Chat</a></li>
+                            <li><a class="js-gps-track -link" data-gps-track="footer.click({ location: 3, link: 13 })" href="/contact">Contact</a></li>
+                                <li><a class="js-gps-track -link" data-gps-track="footer.click({ location: 3, link: 14 })" href="https://skeptics.meta.stackexchange.com">Feedback</a></li>
+                        </ul>
+                    </div>
+                <div class="site-footer--col">
+                    <h5 class="-title"><a class="js-gps-track" data-gps-track="footer.click({ location: 3, link: 1 })" href="https://stackoverflow.co/">Company</a></h5>
+                    <ul class="-list">
+                            <li><a href="https://stackoverflow.com" class="js-gps-track -link" data-gps-track="footer.click({ location: 3, link: 15})">Stack Overflow</a></li>
+                            <li><a href="https://stackoverflow.co/teams/" class="js-gps-track -link" data-gps-track="footer.click({ location: 3, link: 29 })">Teams</a></li>
+                            <li><a href="https://stackoverflow.co/advertising/" class="js-gps-track -link" data-gps-track="footer.click({ location: 3, link: 21 })">Advertising</a></li>
+                            <li><a href="https://stackoverflow.co/advertising/employer-branding/" class="js-gps-track -link" data-gps-track="footer.click({ location: 3, link: 20 })">Talent</a></li>
+                                <li><a class="js-gps-track -link" data-gps-track="footer.click({ location: 3, link: 1 })" href="https://stackoverflow.co/">About</a></li>
+                        <li><a class="js-gps-track -link" data-gps-track="footer.click({ location: 3, link: 27 })" href="https://stackoverflow.co/company/press/">Press</a></li>
+                        <li><a class="js-gps-track -link" data-gps-track="footer.click({ location: 3, link: 7 })" href="https://stackoverflow.com/legal">Legal</a></li>
+                        <li><a class="js-gps-track -link" data-gps-track="footer.click({ location: 3, link: 8 })" href="https://stackoverflow.com/legal/privacy-policy">Privacy Policy</a></li>
+                        <li><a class="js-gps-track -link" data-gps-track="footer.click({ location: 3, link: 37 })" href="https://stackoverflow.com/legal/terms-of-service/public">Terms of Service</a></li>
+                            <li id="consent-footer-link"><button type="button" data-controller="cookie-settings" data-action="click->cookie-settings#toggle" class="s-btn s-btn__link py4 js-gps-track -link" data-gps-track="footer.click({ location: 3, link: 38 })" data-consent-popup-loader="footer">Cookie Settings</button></li>
+                        <li><a class="js-gps-track -link" data-gps-track="footer.click({ location: 3, link: 39 })" href="https://stackoverflow.com/legal/cookie-policy">Cookie Policy</a></li>
+                    </ul>
+                </div>
+                <div class="site-footer--col site-footer--categories-nav">
+                    <div>
+                        <h5 class="-title"><a href="https://stackexchange.com" data-gps-track="footer.click({ location: 3, link: 30 })">Stack Exchange Network</a></h5>
+                        <ul class="-list">
+                            <li>
+                                <a href="https://stackexchange.com/sites#technology" class="-link js-gps-track" data-gps-track="footer.click({ location: 3, link: 24 })">
+                                    Technology
+                                </a>
+                            </li>
+                            <li>
+                                <a href="https://stackexchange.com/sites#culturerecreation" class="-link js-gps-track" data-gps-track="footer.click({ location: 3, link: 24 })">
+                                    Culture &amp; recreation
+                                </a>
+                            </li>
+                            <li>
+                                <a href="https://stackexchange.com/sites#lifearts" class="-link js-gps-track" data-gps-track="footer.click({ location: 3, link: 24 })">
+                                    Life &amp; arts
+                                </a>
+                            </li>
+                            <li>
+                                <a href="https://stackexchange.com/sites#science" class="-link js-gps-track" data-gps-track="footer.click({ location: 3, link: 24 })">
+                                    Science
+                                </a>
+                            </li>
+                            <li>
+                                <a href="https://stackexchange.com/sites#professional" class="-link js-gps-track" data-gps-track="footer.click({ location: 3, link: 24 })">
+                                    Professional
+                                </a>
+                            </li>
+                            <li>
+                                <a href="https://stackexchange.com/sites#business" class="-link js-gps-track" data-gps-track="footer.click({ location: 3, link: 24 })">
+                                    Business
+                                </a>
+                            </li>
+
+                            <li class="mt16 md:mt0">
+                                <a href="https://api.stackexchange.com/" class="-link js-gps-track" data-gps-track="footer.click({ location: 3, link: 24 })">
+                                    API
+                                </a>
+                            </li>
+
+                            <li>
+                                <a href="https://data.stackexchange.com/" class="-link js-gps-track" data-gps-track="footer.click({ location: 3, link: 24 })">
+                                    Data
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </nav>
+            <div class="site-footer--copyright fs-fine md:mt24">
+                <ul class="-list -social md:mb8">
+                    <li><a class="js-gps-track -link" data-gps-track="footer.click({ location: 3, link:4 })" href="https://stackoverflow.blog?blb=1">Blog</a></li>
+                    <li><a href="https://www.facebook.com/officialstackoverflow/" class="-link js-gps-track" data-gps-track="footer.click({ location: 3, link: 31 })">Facebook</a></li>
+                    <li><a href="https://twitter.com/stackoverflow" class="-link js-gps-track" data-gps-track="footer.click({ location: 3, link: 32 })">Twitter</a></li>
+                    <li><a href="https://linkedin.com/company/stack-overflow" class="-link js-gps-track" data-gps-track="footer.click({ location: 3, link: 33 })">LinkedIn</a></li>
+                    <li><a href="https://www.instagram.com/thestackoverflow" class="-link js-gps-track" data-gps-track="footer.click({ location: 3, link: 36 })">Instagram</a></li>
+                </ul>
+
+                <p class="md:mb0">
+                    <span>Site design / logo © 2024 Stack Exchange Inc; </span>
+                    <span>user contributions licensed under </span>
+                    <a class="-link s-link td-underline" href="https://stackoverflow.com/help/licensing">CC BY-SA</a>
+                    <span>. </span>
+                    <span id="svnrev">rev&nbsp;2024.10.7.16451</span>
+                </p>
+            </div>
+        </div>
+
+    </footer>
+
+
+    
+
+            <!-- Google tag (gtag.js) -->
+            <script async src="https://www.googletagmanager.com/gtag/js?id=G-S812YQPLT2"></script>
+            <script>
+                window.dataLayer = window.dataLayer || [];
+                function gtag() { dataLayer.push(arguments); }
+            </script>
+        <script>
+            StackExchange.ready(function() {
+
+                var ga3Settings = {
+                    autoLink: ["stackoverflow.blog","info.stackoverflowsolutions.com","stackoverflowsolutions.com"],
+                    sendTitles: true,
+                    tracker: window.ga,
+                    trackingCodes: [
+                        'UA-108242619-5'
+                    ],
+                    checkDimension: 'dimension42'
+                };
+
+                var customGA4Dimensions = {};
+
+
+                customGA4Dimensions["requestid"] = "db666861-bcc5-4fb6-8148-1b78640dee35";
+
+                    customGA4Dimensions["routename"] = "Questions/List";
+
+
+
+
+
+
+                var ga4Settings = {
+                    tracker: gtag,
+                    trackingCodes: [
+                        'G-S812YQPLT2'
+                    ],
+                    consentsToPerformanceCookies: "denied",
+                    consentsToTargetingCookies: "denied",
+                    eventParameters: customGA4Dimensions,
+                    checkForAdBlock: true,
+                    sendTitles: true,
+                    trackClicks: false,
+                };
+
+                StackExchange.ga.init({ GA3: ga3Settings, GA4: ga4Settings });
+
+
+
+
+                StackExchange.ga.setDimension('dimension3', 'Questions/List');
+
+
+                StackExchange.ga.setDimension('dimension7', "1728321458.468278622");
+
+                StackExchange.ga.trackPageView();
+            });
+        </script>
+        
+            <script src="https://cdn.cookielaw.org/scripttemplates/otSDKStub.js" charset="UTF-8" data-document-language="true" data-domain-script="cb0f3c87-b769-4e66-bbaa-377f9194216d"></script>
+<script defer src="https://cdn.sstatic.net/Js/modules/cookie-consent.en.js?v=36bebc18e04f"></script>
+
+    
+    <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'8cef8bba9f353bcd',t:'MTcyODMyMTQ1OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+    </html>

@@ -1,0 +1,70 @@
+#!/bin/sh
+# by Dominik Stanisław Suchora <suchora.dominik7@gmail.com>
+# License: GNU GPLv3
+
+set -e
+
+if [ "$#" -lt 2 ]
+then
+    echo "$0 <DIR> <COMMAND...>" >/dev/stderr
+    exit 1
+fi
+
+src="$1"
+shift
+if [ \! -e "$src" ]
+then
+    echo "$src doesn't exist" >/dev/stderr
+    exit 1
+fi
+if [ \! -d "$src" ]
+then
+    echo "$src is not a directory" >/dev/stderr
+    exit 1
+fi
+if [ \! -r "$src" ]
+then
+    echo "$src is not readable" >/dev/stderr
+    exit 1
+fi
+
+ramfs="/tmp/ramfs"
+
+if [ \! -d "$ramfs" ]
+then
+    if [ -e "$ramfs" ]
+    then
+        echo "$ramfs exists and is not a directory" >/dev/stderr
+        exit 1
+    fi
+    echo "$ramfs does not exist" >/dev/stderr
+    sudo sh -c "mkdir \"$ramfs\"; mount -t ramfs ramfs \"$ramfs\"; chmod -R 777 \"$ramfs\""
+fi
+
+if [ \! -w "$ramfs" ]
+then
+    echo "$ramfs is not writeable" >/dev/stderr
+    exit 1
+fi
+
+dir=$(mktemp -d -p "$ramfs")
+
+cp -r "$src" "$dir/input"
+mkdir "$dir/output"
+
+comm=""
+while [ "$#" -gt 0 ]
+do
+    add="$1"
+    if echo "$1" | grep -q "/" && [ -r "$1" ]
+    then
+        cp -r "$1" "$dir"
+        add="$dir/$(basename "$1")"
+    fi
+
+    comm="$comm $add"
+
+    shift
+done
+
+afl-fuzz -i "$dir/input" -o "$dir/output" $comm
