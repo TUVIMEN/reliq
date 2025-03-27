@@ -2,11 +2,13 @@
 # by Dominik Stanisław Suchora <suchora.dominik7@gmail.com>
 # License: GNU GPLv3
 
+#this script should be run in screen session
+
 set -e
 
-if [ "$#" -lt 2 ]
+if [ "$#" -lt 3 ]
 then
-    echo "$0 <DIR> <COMMAND...>" >/dev/stderr
+    echo "$0 <DIR> <THREADS> <COMMAND...>" >/dev/stderr
     exit 1
 fi
 
@@ -27,6 +29,15 @@ then
     echo "$src is not readable" >/dev/stderr
     exit 1
 fi
+
+threads="$1"
+[ -z "$threads" ] && threads=1
+if echo "$threads" | grep -vq '^0*[1-9][0-9]*$'
+then
+    echo "number of threads '$threads' is too small"
+    exit 1
+fi
+shift
 
 ramfs="/tmp/ramfs"
 
@@ -67,4 +78,15 @@ do
     shift
 done
 
-afl-fuzz -i "$dir/input" -o "$dir/output" $comm
+if [ "$threads" == '1' ]
+then
+    afl-fuzz -i "$dir/input" -o "$dir/output" $comm
+else
+    screen afl-fuzz -i "$dir/input" -M fuzzer1 -o "$dir/output" $comm &
+    for i in $(seq 2 "$threads")
+    do
+        screen afl-fuzz -i "$dir/input" -S fuzzer"$i" -o "$dir/output" $comm &
+    done
+
+    wait
+fi
