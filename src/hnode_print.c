@@ -197,7 +197,12 @@ chnode_printf(SINK *outfile, const char *format, const size_t formatl, const rel
           if (!printf_C(&hnode,format[i],outfile))
             i++;
           break;
-        case 'A': print_chars(hnode.all.b,hnode.all.s,printflags|PC_UNTRIM,outfile); break;
+        case 'A':
+          if (hnode.type == RELIQ_HNODE_TYPE_TAG) {
+            print_chars(hnode.all.b,hnode.all.s,printflags|PC_UNTRIM,outfile);
+          } else
+            print_chars(hnode.all.b,hnode.all.s,printflags,outfile);
+          break;
         case 'S':
           src = reliq_hnode_starttag(&hnode,&srcl);
           print_chars(src,srcl,printflags|PC_UNTRIM,outfile);
