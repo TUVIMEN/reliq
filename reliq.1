@@ -132,7 +132,9 @@ Matching options:
 .SS ATTRIBUTE_NAME
 Attribute's name \fBPATTERN\fR. Starting by '+' or '-' will ensure that it will be treated as attribute, but in most cases can be omitted. '-' signifies its negation. It can be followed by \fB[RANGE]\fR which matches attribute's position in tag.
 
-Attribute name can be shortened to '.' or '#' (see below). This sets \fBATTRIB_NAME\fR flags to 'uWsfi' and 'uwsf' for \fBPATTERN\fR.
+\fBATTRIB_NAME\fR has 'uWncfs' pattern flags, \fBPATTERN\fR has 'tWncfs'.
+
+Attribute name can be shortened to '.' or '#' (see below). This sets \fBATTRIB_NAME\fR flags to 'uWnsfi' and 'uwncsf' for \fBPATTERN\fR.
 .nf
 \&
 .in +4m
@@ -281,21 +283,27 @@ Hooks for tag type:
 .TP
 .BR A ",  " all " " \fI"PATTERN"\fR
 Get tags with text creating them matching to \fIPATTERN\fR.
+Pattern flags set to "uWcnas".
 .TP
 .BR i ",  " insides " " \fI"PATTERN"\fR
-Get tags with insides that match \fIPATTERN\fR, by default pattern flags set to "uWcas".
+Get tags with insides that match \fIPATTERN\fR.
+Pattern flags set to "tWncas".
 .TP
 .BR S ",  " start " " \fI"PATTERN"\fR
 Get tags which head tag matches to \fIPATTERN\fR.
+Pattern flags set to "uWcnas".
 .TP
 .BR e ",  " endstrip " " \fI"PATTERN"\fR
-Get tags which tail tag stripped from <> matches to \fIPATTERN\fR, by default pattern flags set to "tWcnfs".
+Get tags which tail tag stripped from <> matches to \fIPATTERN\fR.
+Pattern flags set to "tWcnfs".
 .TP
 .BR E ",  " end " " \fI"PATTERN"\fR
-Get tags which tail tag matches to \fIPATTERN\fR, by default pattern flags set to "uWcas".
+Get tags which tail tag matches to \fIPATTERN\fR.
+Pattern flags set to "uWcnas".
 .TP
 .BR n ",  " name " " \fI"PATTERN"\fR
-Get tags which name matches \fIPATTERN\fR, by default pattern flags set to "uWcfs".
+Get tags which name matches \fIPATTERN\fR. Used as \fBTAG\fR matcher.
+Pattern flags set to "uWcnfs".
 .TP
 .BR a ",  " attributes " " \fI[URANGE]\fR
 Get tags with attributes that are within the \fIURANGE\fR.
@@ -308,17 +316,20 @@ Hooks for comment type:
 
 .TP
 .BR A ",  " all " " \fI"PATTERN"\fR
-Get comments with text creating them matching to \fIPATTERN\fR.
+Get comments with text creating them matching to \fIPATTERN\fR. Used as \fBTAG\fR matcher.
+Pattern flags set to "tWncas".
 .TP
 .BR i ",  " insides " " \fI"PATTERN"\fR
 Get comments with insides that match \fIPATTERN\fR.
+Pattern flags set to "tWncas".
 .TP
 
 Hooks for text types:
 
 .TP
 .BR A ",  " all " " \fI"PATTERN"\fR
-Get text matching to \fIPATTERN\fR.
+Get text matching to \fIPATTERN\fR. Used as \fBTAG\fR matcher.
+Pattern flags set to "tWncas".
 .TP
 
 Access hooks specify what nodes will be matched, specifying multiple will not preserve order:

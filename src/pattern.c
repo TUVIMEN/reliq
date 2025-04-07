@@ -104,6 +104,7 @@ static void
 regcomp_get_flags(reliq_pattern *pattern, const char *src, size_t *pos, const size_t size, const char *flags)
 {
   size_t p = *pos;
+  // tWfsnc
   pattern->flags = RELIQ_PATTERN_TRIM|RELIQ_PATTERN_PASS_WHOLE|RELIQ_PATTERN_MATCH_FULL|RELIQ_PATTERN_TYPE_STR;
   pattern->range.s= 0;
 

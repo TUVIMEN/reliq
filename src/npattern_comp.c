@@ -124,94 +124,94 @@ X(text_all) {
 
 const struct hook_t hooks_list[] = {
   //global matching
-  {{"l",1},H_GLOBAL|H_RANGE_SIGNED,(uintptr_t)XN(global_level_relative)},
-  {{"L",1},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_level)},
-  {{"c",1},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_tag_count)},
-  {{"Cc",2},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_comments_count)},
-  {{"Ct",2},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_text_count)},
-  {{"Ca",2},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_all_count)},
-  {{"p",1},H_GLOBAL|H_RANGE_SIGNED,(uintptr_t)XN(global_position_relative)},
-  {{"P",1},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_position)},
-  {{"I",1},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_index)},
+  {{"l",1},H_GLOBAL|H_RANGE_SIGNED,(uintptr_t)XN(global_level_relative),0},
+  {{"L",1},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_level),0},
+  {{"c",1},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_tag_count),0},
+  {{"Cc",2},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_comments_count),0},
+  {{"Ct",2},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_text_count),0},
+  {{"Ca",2},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_all_count),0},
+  {{"p",1},H_GLOBAL|H_RANGE_SIGNED,(uintptr_t)XN(global_position_relative),0},
+  {{"P",1},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_position),0},
+  {{"I",1},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_index),0},
 
-  {{"levelrelative",13},H_GLOBAL|H_RANGE_SIGNED,(uintptr_t)XN(global_level_relative)},
-  {{"level",5},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_level)},
-  {{"count",5},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_tag_count)},
-  {{"countcomments",13},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_comments_count)},
-  {{"counttext",9},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_text_count)},
-  {{"countall",8},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_all_count)},
-  {{"positionrelative",16},H_GLOBAL|H_RANGE_SIGNED,(uintptr_t)XN(global_position_relative)},
-  {{"position",8},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_position)},
-  {{"index",5},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_index)},
+  {{"levelrelative",13},H_GLOBAL|H_RANGE_SIGNED,(uintptr_t)XN(global_level_relative),0},
+  {{"level",5},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_level),0},
+  {{"count",5},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_tag_count),0},
+  {{"countcomments",13},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_comments_count),0},
+  {{"counttext",9},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_text_count),0},
+  {{"countall",8},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_all_count),0},
+  {{"positionrelative",16},H_GLOBAL|H_RANGE_SIGNED,(uintptr_t)XN(global_position_relative),0},
+  {{"position",8},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_position),0},
+  {{"index",5},H_GLOBAL|H_RANGE_UNSIGNED,(uintptr_t)XN(global_index),0},
 
   //node matching
-  {{"A",1},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_all)},
-  {{"i",1},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_insides)},
-  {{"S",1},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_start)},
-  {{"n",1},H_MATCH_NODE|H_PATTERN|H_MATCH_NODE_MAIN,(uintptr_t)XN(node_name)},
-  {{"a",1},H_MATCH_NODE|H_RANGE_UNSIGNED,(uintptr_t)XN(node_attributes)},
-  {{"e",1},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_end_strip)},
-  {{"E",1},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_end)},
+  {{"A",1},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_all),(uintptr_t)"uWcnas"},
+  {{"i",1},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_insides),(uintptr_t)"tWncas"},
+  {{"S",1},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_start),(uintptr_t)"uWcnas"},
+  {{"n",1},H_MATCH_NODE|H_PATTERN|H_MATCH_NODE_MAIN,(uintptr_t)XN(node_name),(uintptr_t)"uWcnfs"},
+  {{"a",1},H_MATCH_NODE|H_RANGE_UNSIGNED,(uintptr_t)XN(node_attributes),0},
+  {{"E",1},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_end),(uintptr_t)"uWcnas"},
+  {{"e",1},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_end_strip),(uintptr_t)"tWcnfs"},
 
-  {{"all",3},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_all)},
-  {{"insides",7},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_insides)},
-  {{"start",5},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_start)},
-  {{"name",4},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_name)},
-  {{"attributes",10},H_MATCH_NODE|H_RANGE_UNSIGNED,(uintptr_t)XN(node_attributes)},
-  {{"has",3},H_MATCH_NODE|H_EXPRS,(uintptr_t)NULL},
-  {{"end",3},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_end)},
-  {{"endstrip",8},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_end_strip)},
+  {{"all",3},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_all),(uintptr_t)"uWcnas"},
+  {{"insides",7},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_insides),(uintptr_t)"tWncas"},
+  {{"start",5},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_start),(uintptr_t)"uWcnas"},
+  {{"name",4},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_name),(uintptr_t)"uWcnfs"},
+  {{"attributes",10},H_MATCH_NODE|H_RANGE_UNSIGNED,(uintptr_t)XN(node_attributes),0},
+  {{"end",3},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_end),(uintptr_t)"uWcnas"},
+  {{"endstrip",8},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_end_strip),(uintptr_t)"tWcnfs"},
+  {{"has",3},H_MATCH_NODE|H_EXPRS,(uintptr_t)NULL,0},
 
   //comment matching
-  {{"A",1},H_MATCH_COMMENT|H_PATTERN|H_MATCH_COMMENT_MAIN,(uintptr_t)XN(comment_all)},
-  {{"i",1},H_MATCH_COMMENT|H_PATTERN,(uintptr_t)XN(comment_insides)},
+  {{"A",1},H_MATCH_COMMENT|H_PATTERN|H_MATCH_COMMENT_MAIN,(uintptr_t)XN(comment_all),(uintptr_t)"tWncas"},
+  {{"i",1},H_MATCH_COMMENT|H_PATTERN,(uintptr_t)XN(comment_insides),(uintptr_t)"tWncas"},
 
-  {{"all",3},H_MATCH_COMMENT|H_PATTERN,(uintptr_t)XN(comment_all)},
-  {{"insides",7},H_MATCH_COMMENT|H_PATTERN,(uintptr_t)XN(comment_insides)},
+  {{"all",3},H_MATCH_COMMENT|H_PATTERN,(uintptr_t)XN(comment_all),(uintptr_t)"tWncas"},
+  {{"insides",7},H_MATCH_COMMENT|H_PATTERN,(uintptr_t)XN(comment_insides),(uintptr_t)"tWncas"},
 
   //text matching
-  {{"A",1},H_MATCH_TEXT|H_PATTERN|H_MATCH_TEXT_MAIN,(uintptr_t)XN(text_all)},
+  {{"A",1},H_MATCH_TEXT|H_PATTERN|H_MATCH_TEXT_MAIN,(uintptr_t)XN(text_all),(uintptr_t)"tWncas"},
 
-  {{"all",3},H_MATCH_TEXT|H_PATTERN,(uintptr_t)XN(text_all)},
+  {{"all",3},H_MATCH_TEXT|H_PATTERN,(uintptr_t)XN(text_all),(uintptr_t)"tWncas"},
 
   //access
-  {{"",0},H_ACCESS|H_NOARG,AXIS_SELF},
-  {{"desc",4},H_ACCESS|H_NOARG,AXIS_DESCENDANTS},
-  {{"rparent",7},H_ACCESS|H_NOARG,AXIS_RELATIVE_PARENT},
-  {{"sibl",4},H_ACCESS|H_NOARG,AXIS_SIBLINGS_PRECEDING|AXIS_SIBLINGS_SUBSEQUENT},
-  {{"spre",4},H_ACCESS|H_NOARG,AXIS_SIBLINGS_PRECEDING},
-  {{"ssub",4},H_ACCESS|H_NOARG,AXIS_SIBLINGS_SUBSEQUENT},
-  {{"fsibl",5},H_ACCESS|H_NOARG,AXIS_FULL_SIBLINGS_PRECEDING|AXIS_FULL_SIBLINGS_SUBSEQUENT},
-  {{"fspre",5},H_ACCESS|H_NOARG,AXIS_FULL_SIBLINGS_PRECEDING},
-  {{"fssub",5},H_ACCESS|H_NOARG,AXIS_FULL_SIBLINGS_SUBSEQUENT},
+  {{"",0},H_ACCESS|H_NOARG,AXIS_SELF,0},
+  {{"desc",4},H_ACCESS|H_NOARG,AXIS_DESCENDANTS,0},
+  {{"rparent",7},H_ACCESS|H_NOARG,AXIS_RELATIVE_PARENT,0},
+  {{"sibl",4},H_ACCESS|H_NOARG,AXIS_SIBLINGS_PRECEDING|AXIS_SIBLINGS_SUBSEQUENT,0},
+  {{"spre",4},H_ACCESS|H_NOARG,AXIS_SIBLINGS_PRECEDING,0},
+  {{"ssub",4},H_ACCESS|H_NOARG,AXIS_SIBLINGS_SUBSEQUENT,0},
+  {{"fsibl",5},H_ACCESS|H_NOARG,AXIS_FULL_SIBLINGS_PRECEDING|AXIS_FULL_SIBLINGS_SUBSEQUENT,0},
+  {{"fspre",5},H_ACCESS|H_NOARG,AXIS_FULL_SIBLINGS_PRECEDING,0},
+  {{"fssub",5},H_ACCESS|H_NOARG,AXIS_FULL_SIBLINGS_SUBSEQUENT,0},
 
-  {{"everything",10},H_ACCESS|H_NOARG,AXIS_EVERYTHING},
-  {{"full",4},H_ACCESS|H_NOARG,AXIS_SELF|AXIS_DESCENDANTS},
-  {{"self",4},H_ACCESS|H_NOARG,AXIS_SELF},
-  {{"child",5},H_ACCESS|H_NOARG,AXIS_CHILDREN},
-  {{"descendant",10},H_ACCESS|H_NOARG,AXIS_DESCENDANTS},
-  {{"ancestor",8},H_ACCESS|H_NOARG,AXIS_ANCESTORS},
-  {{"parent",6},H_ACCESS|H_NOARG,AXIS_PARENT},
-  {{"relative_parent",15},H_ACCESS|H_NOARG,AXIS_RELATIVE_PARENT},
-  {{"sibling",7},H_ACCESS|H_NOARG,AXIS_SIBLINGS_PRECEDING|AXIS_SIBLINGS_SUBSEQUENT},
-  {{"sibling_preceding",17},H_ACCESS|H_NOARG,AXIS_SIBLINGS_PRECEDING},
-  {{"sibling_subsequent",18},H_ACCESS|H_NOARG,AXIS_SIBLINGS_SUBSEQUENT},
-  {{"full_sibling",12},H_ACCESS|H_NOARG,AXIS_FULL_SIBLINGS_PRECEDING|AXIS_FULL_SIBLINGS_SUBSEQUENT},
-  {{"full_sibling_preceding",22},H_ACCESS|H_NOARG,AXIS_FULL_SIBLINGS_PRECEDING},
-  {{"full_sibling_subsequent",23},H_ACCESS|H_NOARG,AXIS_FULL_SIBLINGS_SUBSEQUENT},
-  {{"preceding",9},H_ACCESS|H_NOARG,AXIS_PRECEDING},
-  {{"before",6},H_ACCESS|H_NOARG,AXIS_BEFORE},
-  {{"after",5},H_ACCESS|H_NOARG,AXIS_AFTER},
-  {{"subsequent",10},H_ACCESS|H_NOARG,AXIS_SUBSEQUENT},
+  {{"everything",10},H_ACCESS|H_NOARG,AXIS_EVERYTHING,0},
+  {{"full",4},H_ACCESS|H_NOARG,AXIS_SELF|AXIS_DESCENDANTS,0},
+  {{"self",4},H_ACCESS|H_NOARG,AXIS_SELF,0},
+  {{"child",5},H_ACCESS|H_NOARG,AXIS_CHILDREN,0},
+  {{"descendant",10},H_ACCESS|H_NOARG,AXIS_DESCENDANTS,0},
+  {{"ancestor",8},H_ACCESS|H_NOARG,AXIS_ANCESTORS,0},
+  {{"parent",6},H_ACCESS|H_NOARG,AXIS_PARENT,0},
+  {{"relative_parent",15},H_ACCESS|H_NOARG,AXIS_RELATIVE_PARENT,0},
+  {{"sibling",7},H_ACCESS|H_NOARG,AXIS_SIBLINGS_PRECEDING|AXIS_SIBLINGS_SUBSEQUENT,0},
+  {{"sibling_preceding",17},H_ACCESS|H_NOARG,AXIS_SIBLINGS_PRECEDING,0},
+  {{"sibling_subsequent",18},H_ACCESS|H_NOARG,AXIS_SIBLINGS_SUBSEQUENT,0},
+  {{"full_sibling",12},H_ACCESS|H_NOARG,AXIS_FULL_SIBLINGS_PRECEDING|AXIS_FULL_SIBLINGS_SUBSEQUENT,0},
+  {{"full_sibling_preceding",22},H_ACCESS|H_NOARG,AXIS_FULL_SIBLINGS_PRECEDING,0},
+  {{"full_sibling_subsequent",23},H_ACCESS|H_NOARG,AXIS_FULL_SIBLINGS_SUBSEQUENT,0},
+  {{"preceding",9},H_ACCESS|H_NOARG,AXIS_PRECEDING,0},
+  {{"before",6},H_ACCESS|H_NOARG,AXIS_BEFORE,0},
+  {{"after",5},H_ACCESS|H_NOARG,AXIS_AFTER,0},
+  {{"subsequent",10},H_ACCESS|H_NOARG,AXIS_SUBSEQUENT,0},
 
   //type
-  {{"tag",3},H_TYPE|H_NOARG,NM_TAG},
-  {{"comment",7},H_TYPE|H_NOARG,NM_COMMENT},
-  {{"text",4},H_TYPE|H_NOARG,NM_TEXT},
-  {{"textempty",9},H_TYPE|H_NOARG,NM_TEXT_EMPTY},
-  {{"textnoerr",9},H_TYPE|H_NOARG,NM_TEXT_NOERR},
-  {{"texterr",7},H_TYPE|H_NOARG,NM_TEXT_ERR},
-  {{"textall",7},H_TYPE|H_NOARG,NM_TEXT_ALL},
+  {{"tag",3},H_TYPE|H_NOARG,NM_TAG,0},
+  {{"comment",7},H_TYPE|H_NOARG,NM_COMMENT,0},
+  {{"text",4},H_TYPE|H_NOARG,NM_TEXT,0},
+  {{"textempty",9},H_TYPE|H_NOARG,NM_TEXT_EMPTY,0},
+  {{"textnoerr",9},H_TYPE|H_NOARG,NM_TEXT_NOERR,0},
+  {{"texterr",7},H_TYPE|H_NOARG,NM_TEXT_ERR,0},
+  {{"textall",7},H_TYPE|H_NOARG,NM_TEXT_ALL,0},
 };
 
 #undef XN
@@ -389,13 +389,8 @@ match_hook_handle_pattern(const char *src, const size_t size, size_t *pos, reliq
 {
   reliq_error *err = NULL;
   size_t i = *pos;
-  char *rflags = "uWcas";
-  if (hook->hook->arg == (uintptr_t)h_node_end_strip)
-    rflags = "tWcnfs";
-  else if (hook->hook->arg == (uintptr_t)h_node_name)
-    rflags = "uWcfs";
 
-  if ((err = reliq_regcomp(&hook->match.pattern,src,&i,size,' ',rflags,NULL)))
+  if ((err = reliq_regcomp(&hook->match.pattern,src,&i,size,' ',(const char*)hook->hook->arg2,NULL)))
     goto ERR;
   if (!hook->match.pattern.range.s && hook->match.pattern.flags&RELIQ_PATTERN_ALL) { //ignore if it matches everything
     reliq_regfree(&hook->match.pattern);
@@ -693,16 +688,16 @@ match_hook_add_access_type(const size_t pos, const reliq_hook *hook, const uchar
   if (isaccess) {
     if (st->lvl != 0)
       return script_err("node: %lu: groups cannot have access hooks",pos);
-    st->axisflags |= hook->hook->arg;
+    st->axisflags |= hook->hook->arg1;
   } else {
     if (st->typehooks_count)
       return script_err("hook \"%s\": type hooks can be specified only once",hook->hook->name.b);
     if (result->size != 0)
       return script_err("hook \"%s\": type hooks have to be specified before everything else",hook->hook->name.b);
-    if (nmatchers_type_conflict(st->matches->type,hook->hook->arg))
+    if (nmatchers_type_conflict(st->matches->type,hook->hook->arg1))
       return script_err("hook \"%s\" is in conflict with higher type hook",hook->hook->name.b);
 
-    st->matches->type = hook->hook->arg;
+    st->matches->type = hook->hook->arg1;
     st->typehooks_count = 1;
   }
 
@@ -763,12 +758,13 @@ comp_node_add_tag(const char *src, size_t *pos, const size_t size, const uchar i
 {
   reliq_pattern tag;
   reliq_error *err;
-  if ((err = reliq_regcomp(&tag,src,pos,size,' ',NULL,strclass_tagname)))
+  const hook_t *hook = find_main_hook(H_MATCH_NODE_MAIN);
+  if ((err = reliq_regcomp(&tag,src,pos,size,' ',(const char*)hook->arg2,strclass_tagname)))
     return err;
   reliq_hook h = {
       .match.pattern = tag,
       .invert = invert,
-      .hook = find_main_hook(H_MATCH_NODE_MAIN)
+      .hook = hook
   };
   nmatchers_node_add(result,MATCHES_TYPE_HOOK,&h,sizeof(reliq_hook));
   return NULL;
@@ -817,14 +813,14 @@ comp_node(const char *src, size_t *pos, const size_t size, uchar invert, uchar *
   if (shortcut == '.' || shortcut == '#') {
     char *t_name = (shortcut == '.') ? "class" : "id";
     size_t t_pos=0,t_size=(shortcut == '.' ? 5 : 2);
-    if ((err = reliq_regcomp(&attrib.r[0],t_name,&t_pos,t_size,' ',"uWsfi",strclass_attrib)))
+    if ((err = reliq_regcomp(&attrib.r[0],t_name,&t_pos,t_size,' ',"uWnsfi",strclass_attrib)))
       goto END;
 
-    if ((err = reliq_regcomp(&attrib.r[1],src,&i,size,' ',"uwsf",NULL)))
+    if ((err = reliq_regcomp(&attrib.r[1],src,&i,size,' ',"uwncsf",NULL)))
       goto END;
     attrib.flags |= A_VAL_MATTERS;
   } else {
-    if ((err = reliq_regcomp(&attrib.r[0],src,&i,size,'=',NULL,strclass_attrib)))
+    if ((err = reliq_regcomp(&attrib.r[0],src,&i,size,'=',"uWncfs",strclass_attrib)))
       goto END;
 
     while_is(isspace,src,i,size);
@@ -836,7 +832,7 @@ comp_node(const char *src, size_t *pos, const size_t size, uchar invert, uchar *
       if (i >= size)
         goto END;
 
-      if ((err = reliq_regcomp(&attrib.r[1],src,&i,size,' ',NULL,NULL)))
+      if ((err = reliq_regcomp(&attrib.r[1],src,&i,size,' ',"tWncfs",NULL)))
         goto END;
       attrib.flags |= A_VAL_MATTERS;
     } else {
@@ -865,15 +861,16 @@ comp_single_text(const char *src, size_t *pos, const size_t size, uchar invert, 
   reliq_error *err = NULL;
 
   reliq_pattern tag;
-  if ((err = reliq_regcomp(&tag,src,pos,size,' ',"at",NULL)))
+  const hook_t *hook = find_main_hook(main_hook_mask);
+  if ((err = reliq_regcomp(&tag,src,pos,size,' ',(const char*)hook->arg2,NULL)))
     goto END;
 
   *hastag = 1;
 
   reliq_hook h = {
     .match.pattern = tag,
-    .hook = find_main_hook(main_hook_mask),
-    .invert = invert
+    .invert = invert,
+    .hook = hook
   };
 
   nmatchers_node_add(result,MATCHES_TYPE_HOOK,&h,sizeof(reliq_hook));

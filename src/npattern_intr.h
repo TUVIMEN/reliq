@@ -69,7 +69,8 @@
 struct hook_t {
   cstr8 name;
   uint16_t flags; //H_
-  uintptr_t arg;
+  uintptr_t arg1;
+  uintptr_t arg2;
 };
 typedef struct hook_t hook_t;
 

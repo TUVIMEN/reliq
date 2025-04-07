@@ -100,7 +100,7 @@ match_hook(const nmatcher_state *st, const reliq_hook *hook)
   const reliq_chnode *parent = st->parent;
   const reliq_hnode *hnode = st->hnode;
 
-  const uintptr_t arg = hook->hook->arg;
+  const uintptr_t arg = hook->hook->arg1;
   if (arg)
     ((hook_func_t)arg)(rq,chnode,hnode,parent,&src,&srcl);
 
