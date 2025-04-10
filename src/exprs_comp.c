@@ -935,7 +935,9 @@ reliq_ecomp_intr(const char *src, const size_t size, reliq_expr *expr)
       EXPR_TYPE_SET(expr->flags,EXPR_BLOCK);
       expr->e = st.ret;
     }
-  }
+  } else
+      *expr = (reliq_expr){0};
+
   return err;
 }
 

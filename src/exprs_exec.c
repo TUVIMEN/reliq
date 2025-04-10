@@ -225,6 +225,8 @@ static reliq_error *
 exec_block(const reliq_expr *expr, const flexarr *source, flexarr *dest, exec_state *st) //source: reliq_compressed, dest: reliq_compressed
 {
   flexarr *expr_e = (flexarr*)expr->e;
+  if (!expr_e)
+      return NULL;
   const reliq_expr *exprs = expr_e->v;
   const size_t exprsl = expr_e->size;
   reliq_error *err = NULL;
