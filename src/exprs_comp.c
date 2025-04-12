@@ -32,6 +32,9 @@
 #include "exprs.h"
 #include "reliq.h"
 
+/*#define EXPR_DEBUG*/
+/*#define TOKEN_DEBUG*/
+
 #define PATTERN_SIZE_INC (1<<5)
 
 void reliq_efree_intr(reliq_expr *expr);
@@ -71,26 +74,118 @@ reliq_efree(reliq_expr *expr)
   free(expr);
 }
 
-/*static void //just for debugging
-reliq_expr_print(flexarr *expr, size_t tab)
+#ifdef EXPR_DEBUG
+
+static void
+reliq_expr_print_tab(size_t tab)
 {
-  reliq_expr *a = (reliq_expr*)expr->v;
   for (size_t j = 0; j < tab; j++)
     fputs("  ",stderr);
-  fprintf(stderr,"%% %lu",expr->size);
+}
+
+static void reliq_expr_print_array(const flexarr *expr, size_t tab);
+
+static void
+reliq_expr_print_field(const reliq_expr *e, size_t tab)
+{
+  if (e->outfield.name.s)
+      fprintf(stderr,"\033[33;1m.%.*s\033[0m ",(int)e->outfield.name.s,e->outfield.name.b);
+}
+
+static void
+reliq_expr_print_format(const reliq_expr *e, size_t tab)
+{
+  if (e->nodefl)
+      fprintf(stderr,"\033[32m|\033[0m\033[;1m%lu\033[0m ",e->nodefl);
+  if (e->exprfl)
+      fprintf(stderr,"\033[32m/\033[0m\033[;1m%lu\033[0m ",e->exprfl);
+}
+
+static void
+reliq_expr_print_nontable(const reliq_expr *e, size_t tab)
+{
+  reliq_expr_print_tab(tab);
+  assert((e->flags&EXPR_CONDITION) == 0);
+  fputs("node ",stderr);
+  reliq_expr_print_field(e,tab);
+
+  reliq_expr_print_format(e,tab);
+}
+
+static void
+reliq_expr_print_table(const reliq_expr *e, size_t tab)
+{
+  reliq_expr_print_tab(tab);
+
+  const char *name = "Unidentified";
+  switch (e->flags&EXPR_TYPE) {
+    case EXPR_BLOCK: name = "block"; break;
+    case EXPR_BLOCK_CONDITION: name = "condition"; break;
+    case EXPR_CHAIN: name = "chain"; break;
+    case EXPR_SINGULAR: name = "singular"; break;
+  }
+  fputs(name,stderr);
+  fputc(' ',stderr);
+
+  reliq_expr_print_field(e,tab);
+
+  char *cond;
+  switch ((e->flags&EXPR_CONDITION)&~(EXPR_ALL)) {
+    case EXPR_CONDITION_EXPR: cond = "cond_expr"; break;
+    case EXPR_AND: cond = "&"; break;
+    case EXPR_AND_BLANK: cond = "&&"; break;
+    case EXPR_OR: cond = "||"; break;
+    default:
+      cond = NULL;
+  }
+  if (cond) {
+    fputs("\033[35m",stderr);
+    if (e->flags&EXPR_ALL)
+        fputc('^',stderr);
+    fputs(cond,stderr);
+    fputc(' ',stderr);
+    fputs("\033[0m",stderr);
+  }
+
+  reliq_expr_print_format(e,tab);
+
+  fputs("\033[36m{\033[0m",stderr);
   fputc('\n',stderr);
+
+  reliq_expr_print_array((const flexarr*)e->e,tab);
+
+  reliq_expr_print_tab(tab);
+  fputs("\033[36m}\033[0m",stderr);
+}
+
+static void
+reliq_expr_print_array(const flexarr *expr, size_t tab)
+{
+  const reliq_expr *e = (const reliq_expr*)expr->v;
   tab++;
   for (size_t i = 0; i < expr->size; i++) {
-    for (size_t j = 0; j < tab; j++)
-      fputs("  ",stderr);
-    if (EXPR_IS_TABLE(a[i].flags)) {
-      fprintf(stderr,"table %d node(%lu) expr(%lu) field('%.*s')\n",a[i].flags,a[i].nodefl,a[i].exprfl,(int)a[i].outfield.name.s,a[i].outfield.name.b);
-      reliq_expr_print((flexarr*)a[i].e,tab);
+    if (EXPR_IS_TABLE(e[i].flags)) {
+      reliq_expr_print_table(e+i,tab);
     } else {
-      fprintf(stderr,"nodes node(%lu) expr(%lu) field('%.*s')\n",a[i].nodefl,a[i].exprfl,(int)a[i].outfield.name.s,a[i].outfield.name.b);
+      reliq_expr_print_nontable(e+i,tab);
     }
+    if (i < expr->size-1)
+      fputc(',',stderr);
+    fputc('\n',stderr);
   }
-}*/
+}
+
+static void //just for debugging
+reliq_expr_print(const flexarr *expr, size_t tab)
+{
+  reliq_expr_print_tab(tab);
+  fprintf(stderr,"\033[31mroot\033[0m {\n");
+
+  reliq_expr_print_array(expr,tab);
+
+  fprintf(stderr,"}\n\n");
+}
+#endif //EXPR_DEBUG
 
 enum tokenName {
   tInvalidThing = 0,
@@ -115,10 +210,13 @@ typedef struct {
   enum tokenName name;
 } token;
 
-/*static const char *
+#ifdef TOKEN_DEBUG
+
+static const char *
 token_name(enum tokenName name)
 {
   switch (name) {
+    case tInvalidThing: return "tInvalidThing";
     case tText: return "tText";
     case tBlockStart: return "tBlockStart";
     case tBlockEnd: return "tBlockEnd";
@@ -136,21 +234,57 @@ token_name(enum tokenName name)
   return NULL;
 }
 
+static char
+tosplchar(const char c)
+{
+  char r;
+  switch (c) {
+    case '\0': r = '0'; break;
+    case '\a': r = 'a'; break;
+    case '\b': r = 'b'; break;
+    case '\t': r = 't'; break;
+    case '\n': r = 'n'; break;
+    case '\v': r = 'v'; break;
+    case '\f': r = 'f'; break;
+    case '\r': r = 'r'; break;
+    default: r = c;
+  }
+  return r;
+}
+
 static void
 tokens_print(const token *tokens, const size_t tokensl)
 {
   uint16_t lvl = 0;
+  fprintf(stderr,"\033[34;1m%-21s\033[0m | \033[32;1m%-4s\033[0m | \033[33;1mcontent\033[0m\n","name","size");
+  fprintf(stderr,"--------------------- | ---- | -------\n");
   for (size_t i = 0; i < tokensl; i++) {
     const char *name = token_name(tokens[i].name);
-    if (tokens[i].name == tBlockEnd && lvl)
+    const token *tk = tokens+i;
+    if (tk->name == tBlockEnd && lvl)
       lvl--;
     for (size_t k = 0; k < lvl; k++)
       fwrite("  ",1,2,stderr);
-    fprintf(stderr,"%s - %lu - '%.*s'\n",name,tokens[i].size,(int)tokens[i].size,tokens[i].start);
-    if (tokens[i].name == tBlockStart)
+    fprintf(stderr,"\033[34m%-21s\033[0m | \033[32;1m%-4lu\033[0m | '\033[33m",name,tk->size);
+
+    for (size_t j = 0; j < tk->size; j++) {
+        char c = tosplchar(tk->start[j]);
+        if (c != tk->start[j]) {
+            fputs("\033[0m\033[35m",stderr);
+            fputc('\\',stderr);
+            fputc(c,stderr);
+            fputs("\033[0m\033[33m",stderr);
+        } else
+            fputc(c,stderr);
+    }
+    fputs("\033[0m'\n",stderr);
+
+    if (tk->name == tBlockStart)
       lvl++;
   }
-}*/
+  fputc('\n',stderr);
+}
+#endif //TOKEN_DEBUG
 
 static reliq_error *
 skip_quotes(const char *src, size_t *pos, const size_t s)
@@ -914,7 +1048,9 @@ reliq_ecomp_intr(const char *src, const size_t size, reliq_expr *expr)
   if ((err = tokenize(src,size,&tokens,&tokensl)))
     return err;
 
-  //tokens_print(tokens,tokensl);
+  #ifdef TOKEN_DEBUG
+  tokens_print(tokens,tokensl);
+  #endif
 
   size_t pos=0;
   tcomp_state st = {
@@ -926,7 +1062,9 @@ reliq_ecomp_intr(const char *src, const size_t size, reliq_expr *expr)
   tokens_free(tokens,tokensl);
 
   if (st.ret) {
-    //reliq_expr_print(st.ret,0);
+    #ifdef EXPR_DEBUG
+    reliq_expr_print(st.ret,0);
+    #endif
 
     if (err) {
       reliq_expr_free_pre(st.ret);
