@@ -28,6 +28,8 @@
 #include "format.h"
 #include "exprs.h"
 
+/*#define PRINT_CODE_DEBUG*/
+
 #define FCOLLECTOR_OUT_INC (1<<4)
 #define OUTFIELDS_INC (1<<4)
 
@@ -541,16 +543,18 @@ outfields_free(flexarr *outfields) //struct outfield*
   flexarr_free(outfields);
 }
 
-/*static void
+#ifdef PRINT_CODE_DEBUG
+static void
 print_code_debug(const size_t nodeindex, uint16_t fieldlvl, const enum outfieldCode code, const enum outfieldCode prevcode)
 {
   if (fieldlvl && code == ofBlockEnd)
     fieldlvl--;
   if (nodeindex != 0 && (code != ofBlockEnd || prevcode != ofNamed))
     for (size_t k = 0; k < fieldlvl; k++)
-      sink_put(stderr,'\t');
+      fputc('\t',stderr);
 
   switch (code) {
+    case ofNULL: fprintf(stderr,"|NULL %lu| {}\n",nodeindex); break;
     case ofUnnamed: fprintf(stderr,"|unnamed %lu| {}\n",nodeindex); break;
     case ofBlock: fprintf(stderr,"|block %lu| {\n",nodeindex); break;
     case ofArray: fprintf(stderr,"|array %lu| {\n",nodeindex); break;
@@ -558,7 +562,8 @@ print_code_debug(const size_t nodeindex, uint16_t fieldlvl, const enum outfieldC
     case ofNamed: fprintf(stderr,"|named %lu| {",nodeindex); break;
     case ofBlockEnd: fprintf(stderr,"} |blockEnd %lu|\n",nodeindex); break;
   }
-}*/
+}
+#endif //PRINT_CODE_DEBUG
 
 reliq_error *
 nodes_output(const reliq *rq, SINK *output, flexarr *compressed_nodes, flexarr *ncollector, flexarr *fcollector) //compressed_nodes: reliq_compressed, ncollector: reliq_cstr, fcollector: struct fcollector_expr
@@ -624,7 +629,9 @@ nodes_output(const reliq *rq, SINK *output, flexarr *compressed_nodes, flexarr *
     if (code) {
       struct outfield *field,**field_pre;
 
-      //print_code_debug(j,fieldlvl,code,prevcode);
+      #ifdef PRINT_CODE_DEBUG
+      print_code_debug(j,fieldlvl,code,prevcode);
+      #endif
 
       /*the if ends in hard to manage ways so these values are assigned before it ends
         and copied variables are used*/

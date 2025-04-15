@@ -86,14 +86,14 @@ reliq_expr_print_tab(size_t tab)
 static void reliq_expr_print_array(const flexarr *expr, size_t tab);
 
 static void
-reliq_expr_print_field(const reliq_expr *e, size_t tab)
+reliq_expr_print_field(const reliq_expr *e)
 {
   if (e->outfield.name.s)
       fprintf(stderr,"\033[33;1m.%.*s\033[0m ",(int)e->outfield.name.s,e->outfield.name.b);
 }
 
 static void
-reliq_expr_print_format(const reliq_expr *e, size_t tab)
+reliq_expr_print_format(const reliq_expr *e)
 {
   if (e->nodefl)
       fprintf(stderr,"\033[32m|\033[0m\033[;1m%lu\033[0m ",e->nodefl);
@@ -107,9 +107,9 @@ reliq_expr_print_nontable(const reliq_expr *e, size_t tab)
   reliq_expr_print_tab(tab);
   assert((e->flags&EXPR_CONDITION) == 0);
   fputs("node ",stderr);
-  reliq_expr_print_field(e,tab);
+  reliq_expr_print_field(e);
 
-  reliq_expr_print_format(e,tab);
+  reliq_expr_print_format(e);
 }
 
 static void
@@ -127,7 +127,7 @@ reliq_expr_print_table(const reliq_expr *e, size_t tab)
   fputs(name,stderr);
   fputc(' ',stderr);
 
-  reliq_expr_print_field(e,tab);
+  reliq_expr_print_field(e);
 
   char *cond;
   switch ((e->flags&EXPR_CONDITION)&~(EXPR_ALL)) {
@@ -147,7 +147,7 @@ reliq_expr_print_table(const reliq_expr *e, size_t tab)
     fputs("\033[0m",stderr);
   }
 
-  reliq_expr_print_format(e,tab);
+  reliq_expr_print_format(e);
 
   fputs("\033[36m{\033[0m",stderr);
   fputc('\n',stderr);
