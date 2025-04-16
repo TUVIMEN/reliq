@@ -354,14 +354,7 @@ skip_comment_c_multiline(const char *src, size_t *pos, const size_t s)
 static inline void
 skip_comment_haskell_oneline(const char *src, size_t *pos, const size_t s)
 {
-  size_t i = *pos+2;
-  for (; i < s; i++) {
-    if (i+1 < s && src[i] == '-' && src[i+1] == '-') {
-      i += 2;
-      break;
-    }
-  }
-  *pos = i;
+  skip_comment_c_oneline(src,pos,s);
 }
 
 static inline void
