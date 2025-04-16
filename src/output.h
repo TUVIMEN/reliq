@@ -23,7 +23,12 @@
 #include "flexarr.h"
 #include "sink.h"
 
-struct fcollector_expr {
+struct ncollector {
+    const reliq_expr *e;
+    size_t amount;
+};
+
+struct fcollector {
   const reliq_expr *e;
   size_t start;
   size_t end;
@@ -56,6 +61,6 @@ typedef struct {
 
 reliq_error *reliq_output_field_comp(const char *src, size_t *pos, const size_t s, reliq_output_field *outfield);
 
-reliq_error *nodes_output(const reliq *rq, SINK *output, flexarr *compressed_nodes, flexarr *ncollector, flexarr *fcollector); //compressed_nodes: reliq_compressed, ncollector: reliq_cstr, fcollector: struct fcollector_expr
+reliq_error *nodes_output(const reliq *rq, SINK *output, const flexarr *compressed_nodes, const flexarr *ncollector, flexarr *fcollector); //compressed_nodes: reliq_compressed, ncollector: reliq_cstr, fcollector: struct fcollector_expr
 
 #endif

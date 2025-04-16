@@ -33,6 +33,31 @@
 #define FCOLLECTOR_OUT_INC (1<<4)
 #define OUTFIELDS_INC (1<<4)
 
+typedef struct {
+    const reliq *rq;
+    flexarr *outfields; //struct outfield*
+    flexarr *fcol_outs; //struct fcollector_out*
+    const struct fcollector *fcols;
+    const struct ncollector *ncols;
+    char *ncol_ptr;
+
+    SINK *out_origin;
+    SINK *out_ncol;
+    SINK *out_fcol;
+    SINK **out_field;
+
+    const size_t ncolsl;
+    const size_t fcolsl;
+    size_t ncol_ptrl;
+
+    size_t fcols_i;
+    size_t ncols_i;
+    size_t amount_i; //iterator of ncols[ncols_i].amount
+
+    uint16_t field_lvl;
+    uchar field_ended;
+} nodes_output_state;
+
 static void outfields_value_print(SINK *out, const reliq_output_field *field, const char *value, const size_t valuel);
 
 static inline reliq_error *
@@ -202,7 +227,7 @@ struct outfield {
 };
 
 static void
-fcollector_rearrange_pre(struct fcollector_expr *fcols, size_t start, size_t end, const uint16_t lvl)
+fcollector_rearrange_pre(struct fcollector *fcols, size_t start, size_t end, const uint16_t lvl)
 {
   size_t i=start;
   while (start < end) {
@@ -210,12 +235,8 @@ fcollector_rearrange_pre(struct fcollector_expr *fcols, size_t start, size_t end
       i++;
 
     if (i < end && i != start) {
-      struct fcollector_expr t = fcols[i];
-      for (size_t j = i-1;; j--) {
-        fcols[j+1] = fcols[j];
-        if (j == start)
-          break;
-      }
+      struct fcollector t = fcols[i];
+      memmove(fcols+start+1,fcols+start,(i-start)*sizeof(struct fcollector));
       fcols[start] = t;
 
       if (i-start > 1)
@@ -227,47 +248,68 @@ fcollector_rearrange_pre(struct fcollector_expr *fcols, size_t start, size_t end
 }
 
 void
-fcollector_rearrange(flexarr *fcollector) //fcollector: struct fcollector_expr
+fcollector_rearrange(flexarr *fcollector) //fcollector: struct fcollector
 {
-  fcollector_rearrange_pre((struct fcollector_expr*)fcollector->v,0,fcollector->size,0);
+  if (!fcollector->size)
+    return;
+  fcollector_rearrange_pre((struct fcollector*)fcollector->v,0,fcollector->size,0);
 }
 
 static reliq_error *
-fcollector_out_end(flexarr *outs, const size_t ncurrent, struct fcollector_expr *fcols, const reliq *rq, SINK *rout, SINK **fout) //outs: struct fcollector_out*
+fcollector_out_end(flexarr *outs, const size_t ncurrent, const struct fcollector *fcols, const reliq *rq, SINK *out, SINK **out_fcol) //outs: struct fcollector_out*
 {
   reliq_error *err = NULL;
-  START: ;
-  if (!outs->size)
-    return err;
+  while (1) {
+    if (!outs->size)
+      return err;
 
-  struct fcollector_out *fcol_out_last = ((struct fcollector_out**)outs->v)[outs->size-1];
-  struct fcollector_expr *ecurrent = &fcols[fcol_out_last->current];
+    struct fcollector_out *fcol_out_last = ((struct fcollector_out**)outs->v)[outs->size-1];
+    const struct fcollector *ecurrent = fcols+fcol_out_last->current;
 
-  if (ecurrent->end != ncurrent)
-    return err;
+    if (ecurrent->end != ncurrent)
+      return err;
 
-  reliq_expr const *rqe = ecurrent->e;
+    reliq_expr const *rqe = ecurrent->e;
 
-  reliq_format_func *format = rqe->exprf;
-  size_t formatl = rqe->exprfl;
-  if (ecurrent->isnodef) {
-    format = rqe->nodef;
-    formatl = rqe->nodefl;
+    reliq_format_func *format = rqe->exprf;
+    size_t formatl = rqe->exprfl;
+    if (ecurrent->isnodef) {
+      format = rqe->nodef;
+      formatl = rqe->nodefl;
+    }
+    SINK *out_t;
+    if (ecurrent->lvl == 0) {
+      out_t =  out;
+      *out_fcol = NULL;
+    } else {
+      out_t = ((struct fcollector_out**)outs->v)[outs->size-2]->f;
+      *out_fcol = out_t;
+    }
+
+    sink_close(fcol_out_last->f);
+    err = format_exec(fcol_out_last->v,fcol_out_last->s,out_t,NULL,NULL,format,formatl,rq);
+    free(fcol_out_last->v);
+
+    free(fcol_out_last);
+    flexarr_dec(outs);
+
+    if (err)
+      return err;
   }
-  SINK *tmp_out = (ecurrent->lvl == 0) ? rout : ((struct fcollector_out**)outs->v)[outs->size-2]->f;
-  *fout = tmp_out;
+}
 
-  sink_close(fcol_out_last->f);
-  err = format_exec(fcol_out_last->v,fcol_out_last->s,tmp_out,NULL,NULL,format,formatl,rq);
-  free(fcol_out_last->v);
-
-  free(fcol_out_last);
-  flexarr_dec(outs);
-
-  if (err)
-    return err;
-
-  goto START;
+static void
+fcollector_outs_free(flexarr *outs) //outs: struct fcollector_out*
+{
+  struct fcollector_out **outsv = (struct fcollector_out**)outs->v;
+  size_t size = outs->size;
+  for (size_t i = 0; i < size; i++) {
+    sink_close(outsv[i]->f);
+    if (outsv[i]->s)
+      free(outsv[i]->v);
+    free(outsv[i]);
+  }
+  flexarr_free(outs);
 }
 
 #define OUTFIELDS_NUM_FLOAT 1
@@ -504,8 +546,7 @@ outfields_print_pre(struct outfield **fields, size_t *pos, const size_t size, co
       if (field->v)
         free(field->v);
       field->s = 0;
-    }
-    if (field->code == ofBlock || field->code == ofArray) {
+    } else if (field->code == ofBlock || field->code == ofArray) {
       i++;
       outfields_print_pre(fields,&i,size,lvl+1,(field->code == ofArray) ? 1 : 0,out);
       i--;
@@ -551,7 +592,7 @@ print_code_debug(const size_t nodeindex, uint16_t fieldlvl, const enum outfieldC
     fieldlvl--;
   if (nodeindex != 0 && (code != ofBlockEnd || prevcode != ofNamed))
     for (size_t k = 0; k < fieldlvl; k++)
-      fputc('\t',stderr);
+      fputs("  ",stderr);
 
   switch (code) {
     case ofNULL: fprintf(stderr,"|NULL %lu| {}\n",nodeindex); break;
@@ -565,183 +606,249 @@ print_code_debug(const size_t nodeindex, uint16_t fieldlvl, const enum outfieldC
 }
 #endif //PRINT_CODE_DEBUG
 
-reliq_error *
-nodes_output(const reliq *rq, SINK *output, flexarr *compressed_nodes, flexarr *ncollector, flexarr *fcollector) //compressed_nodes: reliq_compressed, ncollector: reliq_cstr, fcollector: struct fcollector_expr
+static SINK *
+output_default(nodes_output_state *st)
 {
-  struct fcollector_expr *fcols = (struct fcollector_expr*)fcollector->v;
-  if (fcollector->size)
-      fcollector_rearrange(fcollector);
-  if (!compressed_nodes->size || !ncollector->size)
-    return NULL;
+  if (st->out_ncol)
+    return st->out_ncol;
+  if (st->out_fcol)
+    return st->out_fcol;
+  if (st->out_field)
+    return *st->out_field;
+  return st->out_origin;
+}
+
+static void
+field_ended_free(SINK ***out_field, uchar *field_ended)
+{
+  if (*out_field) {
+    sink_close(**out_field);
+    **out_field = NULL;
+    *out_field = NULL;
+  }
+  *field_ended = 0;
+}
+
+static void
+fcollector_start(nodes_output_state *st)
+{
+  while (st->fcols_i < st->fcolsl && st->fcols[st->fcols_i].start == st->ncols_i) {
+    struct fcollector_out *ff,**ff_r;
+    ff_r = flexarr_inc(st->fcol_outs);
+    *ff_r = malloc(sizeof(struct fcollector_out));
+
+    ff = *ff_r;
+    ff->f = sink_open(&ff->v,&ff->s);
+    ff->current = st->fcols_i++;
+    st->out_fcol = ff->f;
+  }
+}
+
+static void
+ncollector_new(nodes_output_state *st)
+{
+  if (st->ncols_i >= st->ncolsl || !st->ncols[st->ncols_i].e || !((reliq_expr*)st->ncols[st->ncols_i].e)->exprfl)
+    return;
+  if (st->out_ncol) {
+    sink_close(st->out_ncol);
+    free(st->ncol_ptr);
+  }
+  st->out_ncol = sink_open(&st->ncol_ptr,&st->ncol_ptrl);
+}
+
+static reliq_error *
+ncollector_end(nodes_output_state *st)
+{
   reliq_error *err = NULL;
-  reliq_cstr *ncol = (reliq_cstr*)ncollector->v;
-  reliq_chnode *nodes = rq->nodes;
+  const struct ncollector *ncol = st->ncols+st->ncols_i;
+  if (ncol->e && st->out_ncol) {
+    sink_close(st->out_ncol);
+    st->out_ncol = NULL;
 
-  SINK *out = output;
-  SINK *fout = out;
-  size_t j=0, //iterator of compressed_nodes
-      ncurrent=0, //iterator of ncollector
-      g=0; //iterator of u in ncollector
-  flexarr *outs = flexarr_init(sizeof(struct fcollector_out*),FCOLLECTOR_OUT_INC);
-  size_t fcurrent=0;
-  size_t fsize;
-  char *ptr;
-
-  flexarr *outfields = flexarr_init(sizeof(struct outfield*),OUTFIELDS_INC);
-  uint16_t fieldlvl = 0;
-  SINK **oout = NULL; //outfields output
-  enum outfieldCode prevcode = ofUnnamed;
-  size_t prev_j = j;
-  uchar field_ended = 0;
-
-  for (;; j++) {
-    if (compressed_nodes->size && g == 0) {
-      while (fcurrent < fcollector->size && fcols[fcurrent].start == ncurrent) {
-        struct fcollector_out *ff,**ff_pre;
-        ff_pre = flexarr_inc(outs);
-        *ff_pre = malloc(sizeof(struct fcollector_out));
-        ff = *ff_pre;
-        ff->f = sink_open(&ff->v,&ff->s);
-        ff->current = fcurrent++;
-        fout = ff->f;
-      }
-
-      if (j >= compressed_nodes->size)
-        break;
-
-      if (ncurrent < ncollector->size && ncol[ncurrent].b && ((reliq_expr*)ncol[ncurrent].b)->exprfl) {
-        if (out != output && out) {
-          sink_close(out);
-          free(ptr);
-        }
-        out = sink_open(&ptr,&fsize);
-      }
-    }
-    if (j >= compressed_nodes->size)
-      break;
-
-    SINK *rout = (out == output) ? fout : out;
-    if (rout == output && oout)
-      rout = *oout;
-
-    reliq_compressed *x = &((reliq_compressed*)compressed_nodes->v)[j];
-    enum outfieldCode code = OUTFIELDCODE(x->hnode);
-    if (code) {
-      struct outfield *field,**field_pre;
-
-      #ifdef PRINT_CODE_DEBUG
-      print_code_debug(j,fieldlvl,code,prevcode);
-      #endif
-
-      /*the if ends in hard to manage ways so these values are assigned before it ends
-        and copied variables are used*/
-      const enum outfieldCode prevcode_r = prevcode;
-      prevcode = code;
-      const size_t prev_j_r = prev_j;
-      prev_j = j;
-
-      switch (code) {
-        case ofUnnamed:
-          sink_put(rout,'\n');
-          break;
-        case ofBlock:
-        case ofArray:
-        case ofNoFieldsBlock:
-        case ofNamed:
-          field_pre = flexarr_inc(outfields);
-          *field_pre = malloc(sizeof(struct outfield));
-          field = *field_pre;
-          field->s = 0;
-          field->f = NULL;
-          if (code == ofNamed || code == ofNoFieldsBlock) {
-            field->f = sink_open(&field->v,&field->s);
-            oout = &field->f;
-          }
-          field->lvl = fieldlvl;
-          field->code = (uchar)code;
-          field->o = (reliq_output_field const*)x->parent;
-          struct outfield **outfieldsv = (struct outfield**)outfields->v;
-          if (outfields->size > 2 && field->o == outfieldsv[outfields->size-2]->o)
-            field->o = NULL;
-          fieldlvl++;
-          field_ended = 0;
-          break;
-        case ofBlockEnd:
-          if (fieldlvl)
-            fieldlvl--;
-          field_ended = 1;
-
-          if ((prevcode_r == ofNoFieldsBlock || prevcode_r == ofArray || prevcode_r == ofBlock) && j-prev_j_r == 1)
-            goto NCOLLECTOR_END; //j-prev_j_r is 1 meaning that block was immedietly ended, and so it has to end
-
-          if (g == 0) //the first node in ncol[ncurrent] was ending block, so the previous one did not free oout
-            goto FIELD_ENDED_FREE_OOUT;
-          break;
-        default:
-          break;
-      }
-
-      if (code != ofUnnamed && code != ofNamed && (prevcode_r != ofNamed || code != ofBlockEnd))
-         continue;
-    } else if (ncurrent < ncollector->size && ncol[ncurrent].b) {
-      err = node_output(x->hnode+nodes,
-        (x->parent == (uint32_t)-1) ? NULL : x->parent+nodes,
-        ((reliq_expr*)ncol[ncurrent].b)->nodef,
-        ((reliq_expr*)ncol[ncurrent].b)->nodefl,rout,rq);
-      if (err)
-        goto END;
-    }
-
-    g++;
-    if (ncurrent < ncollector->size && ncol[ncurrent].s == g) {
-      NCOLLECTOR_END: ;
-      if (ncol[ncurrent].b && out != output) {
-        sink_close(out);
-        out = NULL;
-        err = format_exec(ptr,fsize,(oout && fout == output) ? *oout : fout,NULL,NULL,
-          ((reliq_expr*)ncol[ncurrent].b)->exprf,
-          ((reliq_expr*)ncol[ncurrent].b)->exprfl,rq);
-        free(ptr);
-        if (err)
-          goto END;
-        out = output;
-      }
-
-      if ((err = fcollector_out_end(outs,ncurrent,fcols,rq,oout ? *oout : output,&fout)))
-        goto END;
-      if (oout && fout == *oout)
-        fout = output;
-
-      g = 0;
-      ncurrent++;
-
-      if (field_ended) {
-        FIELD_ENDED_FREE_OOUT: ;
-        if (oout) {
-          sink_close(*oout);
-          *oout = NULL;
-          oout = NULL;
-        }
-        field_ended = 0;
-      }
-    }
+    SINK *out_default = output_default(st);
+    err = format_exec(st->ncol_ptr,st->ncol_ptrl,out_default,NULL,NULL,
+      (ncol->e)->exprf,
+      (ncol->e)->exprfl,st->rq);
+    free(st->ncol_ptr);
+    if (err)
+      goto END;
   }
 
-  outfields_print(outfields,output);
+  /*
+     if output for field is not NULL, it means that this ncollector
+     is a child of it and its outputs, if there isn't one then
+     fallback to the original output
+  */
+  SINK *out_default = st->out_field ? *st->out_field : st->out_origin;
+  if ((err = fcollector_out_end(st->fcol_outs,st->ncols_i,st->fcols,st->rq,out_default,&st->out_fcol)))
+    goto END;
+
+  st->amount_i = 0;
+  st->ncols_i++;
+
+  if (st->field_ended)
+    field_ended_free(&st->out_field,&st->field_ended);
 
   END: ;
+  return err;
+}
 
-  struct fcollector_out **outsv = (struct fcollector_out**)outs->v;
-  size_t size = outs->size;
-  for (size_t i = 0; i < size; i++) {
-    sink_close(outsv[i]->f);
-    if (outsv[i]->s)
-      free(outsv[i]->v);
-    free(outsv[i]);
+static struct outfield *
+outfields_inc(enum outfieldCode code, uint16_t lvl, reliq_output_field const *fieldname, flexarr *outfields)
+{
+  struct outfield *field,
+      **field_pre = flexarr_inc(outfields);
+  *field_pre = malloc(sizeof(struct outfield));
+  field = *field_pre;
+
+  field->s = 0;
+  field->f = NULL;
+  field->lvl = lvl;
+  field->code = (uchar)code;
+
+  struct outfield **outfieldsv = (struct outfield**)outfields->v;
+  if (outfields->size > 2 && fieldname == outfieldsv[outfields->size-2]->o) {
+    field->o = NULL;
+  } else
+    field->o = fieldname;
+
+  return field;
+}
+
+static uchar
+nodes_output_code_handle(enum outfieldCode code, enum outfieldCode prevcode, size_t nodes_i_diff, SINK *out, const reliq_compressed *compn, nodes_output_state *st)
+{
+  struct outfield *field;
+
+  #ifdef PRINT_CODE_DEBUG
+  print_code_debug(st->nodes_i,st->field_lvl,code,prevcode);
+  #endif
+
+  switch (code) {
+    case ofUnnamed:
+      sink_put(out,'\n');
+      break;
+    case ofBlock:
+    case ofArray:
+    case ofNoFieldsBlock:
+    case ofNamed:
+      field = outfields_inc(code,st->field_lvl,(reliq_output_field const*)compn->parent,st->outfields);
+
+      if (code == ofNamed || code == ofNoFieldsBlock) {
+        field->f = sink_open(&field->v,&field->s);
+        st->out_field = &field->f;
+      }
+
+      st->field_lvl++;
+      st->field_ended = 0;
+      break;
+    case ofBlockEnd:
+      if (st->field_lvl)
+        st->field_lvl--;
+      st->field_ended = 1;
+
+      if ((prevcode == ofNoFieldsBlock || prevcode == ofArray || prevcode == ofBlock)
+        && nodes_i_diff == 1) {
+        //st->nodes_i-prev_nodes_i is 1 meaning that block was immedietly ended, and so it has to end
+        ncollector_end(st);
+      }
+
+      if (st->amount_i == 0) {
+        //the first node in st->ncols[st->ncols_i] was ending block, so the previous one did not free st->out_field
+        field_ended_free(&st->out_field,&st->field_ended);
+        return 1;
+      }
+      break;
+    default:
+      break;
   }
-  flexarr_free(outs);
 
-  outfields_free(outfields);
+  if (code != ofUnnamed && code != ofNamed && (prevcode != ofNamed || code != ofBlockEnd))
+    return 1;
+  return 0;
+}
+
+static reliq_error *
+nodes_output_r(const flexarr *comp_nodes, nodes_output_state *st) //comp_nodes: reliq_compressed
+{
+  size_t nodes_i = 0;
+  const size_t nodesl = comp_nodes->size;
+  const reliq_compressed *nodes = comp_nodes->v;
+
+  reliq_error *err = NULL;
+  enum outfieldCode prevcode = ofUnnamed;
+  size_t prev_nodes_i = 0;
+
+  for (;; nodes_i++) {
+    if (nodesl && st->amount_i == 0) {
+      fcollector_start(st);
+      ncollector_new(st);
+    }
+    if (nodes_i >= nodesl)
+      break;
+
+    const struct ncollector *ncol =
+      (st->ncols_i < st->ncolsl) ? st->ncols+st->ncols_i : NULL;
+
+    SINK *out_default = output_default(st);
+    const reliq_compressed *compn = nodes+nodes_i;
+    enum outfieldCode code = OUTFIELDCODE(compn->hnode);
+    if (code) {
+      enum outfieldCode prevcode_r = prevcode;
+      size_t prev_nodes_i_r = prev_nodes_i;
+      prevcode = code;
+      prev_nodes_i = nodes_i;
+
+      size_t diff = (nodes_i < nodesl)
+          ? nodes_i-prev_nodes_i_r : 0;
+      if (nodes_output_code_handle(code,prevcode_r,diff,out_default,compn,st))
+        continue;
+    } else if (ncol && ncol->e) {
+      const reliq_expr *e = (const reliq_expr*)ncol->e;
+      if ((err = node_output(compn->hnode+st->rq->nodes,
+        (compn->parent == (uint32_t)-1) ? NULL : compn->parent+st->rq->nodes,
+        e->nodef,
+        e->nodefl,out_default,st->rq)))
+        break;
+    }
+
+    st->amount_i++;
+    if (ncol && ncol->amount == st->amount_i
+      && (err = ncollector_end(st)))
+      break;
+  }
+
+  return err;
+}
+
+reliq_error *
+nodes_output(const reliq *rq, SINK *output, const flexarr *compressed_nodes, const flexarr *ncollector, flexarr *fcollector) //compressed_nodes: reliq_compressed, ncollector: struct ncollector, fcollector: struct fcollector
+{
+  if (!compressed_nodes->size || !ncollector->size)
+    return NULL;
+
+  fcollector_rearrange(fcollector);
+
+  nodes_output_state st = {
+    .outfields = flexarr_init(sizeof(struct outfield*),OUTFIELDS_INC),
+    .fcol_outs = flexarr_init(sizeof(struct fcollector_out*),FCOLLECTOR_OUT_INC),
+
+    .rq = rq,
+    .out_origin = output,
+
+    .fcols = (struct fcollector*)fcollector->v,
+    .fcolsl = fcollector->size,
+    .ncols = (struct ncollector*)ncollector->v,
+    .ncolsl = ncollector->size,
+  };
+
+  reliq_error *err = nodes_output_r(compressed_nodes,&st);
+
+  if (!err)
+    outfields_print(st.outfields,st.out_origin);
+
+  fcollector_outs_free(st.fcol_outs);
+  outfields_free(st.outfields);
 
   return err;
 }

@@ -114,17 +114,17 @@ static uchar
 printf_C(const reliq_hnode *hn, char c, SINK *outfile)
 {
   switch (c) {
-      case 'a':
-        print_uint(hn->tag_count+hn->text_count+hn->comment_count,outfile);
-        break;
-      case 't':
-        print_uint(hn->text_count,outfile);
-        break;
-      case 'c':
-        print_uint(hn->comment_count,outfile);
-        break;
-      default:
-        return 1;
+    case 'a':
+      print_uint(hn->tag_count+hn->text_count+hn->comment_count,outfile);
+      break;
+    case 't':
+      print_uint(hn->text_count,outfile);
+      break;
+    case 'c':
+      print_uint(hn->comment_count,outfile);
+      break;
+    default:
+      return 1;
   }
   return 0;
 }

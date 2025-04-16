@@ -41,8 +41,8 @@ typedef struct {
   const reliq *rq;
   const reliq_chnode *parent;
   SINK *output;
-  flexarr *ncollector; //reliq_cstr
-  flexarr *fcollector; //struct fcollector_expr
+  flexarr *ncollector; //struct ncollector
+  flexarr *fcollector; //struct fcollector
   flexarr **out; //reliq_compressed
   uchar isempty : 1;
   uchar noncol : 1; //no ncollector
@@ -91,10 +91,10 @@ expr_check_chain(const reliq_expr *expr)
 }
 
 /*static reliq_error *
-ncollector_check(flexarr *ncollector, size_t correctsize) //ncollector: reliq_cstr
+ncollector_check(flexarr *ncollector, size_t correctsize) //ncollector: struct ncollector
 {
   size_t ncollector_sum = 0;
-  reliq_cstr *pcol = (reliq_cstr*)ncollector->v;
+  struct ncollector *pcol = (struct ncollector*)ncollector->v;
   for (size_t j = 0; j < ncollector->size; j++)
     ncollector_sum += pcol[j].s;
   if (ncollector_sum != correctsize)
@@ -103,7 +103,7 @@ ncollector_check(flexarr *ncollector, size_t correctsize) //ncollector: reliq_cs
 }*/
 
 static void
-ncollector_add(flexarr *ncollector, flexarr *dest, flexarr *source, size_t startn, size_t lastn, const reliq_expr *lastnode, uchar flags, uchar useformat, uchar isempty, uchar noncollector) //ncollector: reliq_cstr, dest: reliq_compressed, source: reliq_compressed
+ncollector_add(flexarr *ncollector, flexarr *dest, flexarr *source, size_t startn, size_t lastn, const reliq_expr *lastnode, uchar flags, uchar useformat, uchar isempty, uchar noncollector) //ncollector: struct ncollector, dest: reliq_compressed, source: reliq_compressed
 {
   if (!source->size && !isempty)
     return;
@@ -115,31 +115,31 @@ ncollector_add(flexarr *ncollector, flexarr *dest, flexarr *source, size_t start
     if (startn != lastn) { //truncate previously added, now useless ncollector
       const size_t size = ncollector->size;
       for (size_t i = lastn; i < size; i++)
-        ((reliq_cstr*)ncollector->v)[startn+i] = ((reliq_cstr*)ncollector->v)[i];
+        ((struct ncollector*)ncollector->v)[startn+i] = ((struct ncollector*)ncollector->v)[i];
       ncollector->size -= lastn-startn;
     }
   } else {
     ncollector->size = startn;
-    *(reliq_cstr*)flexarr_inc(ncollector) = (reliq_cstr){(char const*)lastnode,dest->size-prevsize};
+    *(struct ncollector*)flexarr_inc(ncollector) = (struct ncollector){lastnode,dest->size-prevsize};
   }
   END: ;
   source->size = 0;
 }
 
 static void
-fcollector_add(const size_t lastn, const uchar isnodef, const reliq_expr *expr, flexarr *ncollector, flexarr *fcollector) //ncollector: reliq_cstr, fcollector: struct fcollector_expr
+fcollector_add(const size_t lastn, const uchar isnodef, const reliq_expr *expr, flexarr *ncollector, flexarr *fcollector) //ncollector: struct ncollector, fcollector: struct fcollector
 {
-  struct fcollector_expr *fcols = (struct fcollector_expr*)fcollector->v;
+  struct fcollector *fcols = (struct fcollector*)fcollector->v;
   for (size_t i = fcollector->size; i > 0; i--) {
     if (fcols[i-1].start < lastn)
       break;
     fcols[i-1].lvl++;
   }
-  *(struct fcollector_expr*)flexarr_inc(fcollector) = (struct fcollector_expr){expr,lastn,ncollector->size-1,0,isnodef};
+  *(struct fcollector*)flexarr_inc(fcollector) = (struct fcollector){expr,lastn,ncollector->size-1,0,isnodef};
 }
 
 /*static reliq_error *
-exec_chainlink(const reliq *rq, const reliq_chnode *parent, SINK *output, const reliq_expr *expr, const flexarr *source, flexarr *dest, flexarr **out, uchar noncol, uchar isempty, flexarr *ncollector, flexarr *fcollector //struct fcollector_expr)   //source: reliq_compressed, dest: reliq_compressed, out: reliq_compressed, ncollector: reliq_cstr
+exec_chainlink(const reliq *rq, const reliq_chnode *parent, SINK *output, const reliq_expr *expr, const flexarr *source, flexarr *dest, flexarr **out, uchar noncol, uchar isempty, flexarr *ncollector, flexarr *fcollector //struct fcollector)   //source: reliq_compressed, dest: reliq_compressed, out: reliq_compressed, ncollector: struct ncollector
 {
   if (current->e) {
     lastnode = current;
@@ -279,7 +279,7 @@ exec_block(const reliq_expr *expr, const flexarr *source, flexarr *dest, exec_st
 }
 
 static reliq_error *
-exec_table(const reliq_expr *expr, const reliq_output_field *named, const flexarr *source, flexarr *dest, exec_state *st) //source: reliq_compressed, dest: reliq_compressed, out: reliq_compressed, ncollector: reliq_cstr
+exec_table(const reliq_expr *expr, const reliq_output_field *named, const flexarr *source, flexarr *dest, exec_state *st) //source: reliq_compressed, dest: reliq_compressed, out: reliq_compressed, ncollector: struct ncollector
 {
   reliq_error *err = NULL;
 
@@ -306,7 +306,7 @@ exec_table(const reliq_expr *expr, const reliq_output_field *named, const flexar
       if (named && expr->childfields)
         add_compressed_blank(dest,ofBlockEnd,NULL);
       if (!st->noncol && st->ncollector->size-lastn && expr->nodefl)
-        fcollector_add(lastn,ofNamed,expr,st->ncollector,st->fcollector);
+        fcollector_add(lastn,1,expr,st->ncollector,st->fcollector);
     }
 
     flexarr_free(in);
@@ -451,8 +451,8 @@ reliq_exec_r(reliq *rq, const reliq_chnode *parent, SINK *output, reliq_compress
   flexarr *compressed=NULL;
   reliq_error *err;
 
-  flexarr *ncollector = flexarr_init(sizeof(reliq_cstr),NCOLLECTOR_INC);
-  flexarr *fcollector = flexarr_init(sizeof(struct fcollector_expr),FCOLLECTOR_INC);
+  flexarr *ncollector = flexarr_init(sizeof(struct ncollector),NCOLLECTOR_INC);
+  flexarr *fcollector = flexarr_init(sizeof(struct fcollector),FCOLLECTOR_INC);
 
   exec_state state = {
     .rq = rq,
