@@ -29,6 +29,8 @@
 #include "exprs.h"
 
 /*#define PRINT_CODE_DEBUG*/
+/*#define NCOLLECTOR_DEBUG*/
+/*#define FCOLLECTOR_DEBUG*/
 
 #define FCOLLECTOR_OUT_INC (1<<4)
 #define OUTFIELDS_INC (1<<4)
@@ -821,6 +823,63 @@ nodes_output_r(const flexarr *comp_nodes, nodes_output_state *st) //comp_nodes: 
   return err;
 }
 
+#if defined(NCOLLECTOR_DEBUG) || defined(FCOLLECTOR_DEBUG)
+
+static void
+reliq_expr_print(const reliq_expr *e)
+{
+  if (!e) {
+    fprintf(stderr,"\033[31mNULL\033[0m");
+    return;
+  }
+  fprintf(stderr,"\033[35m%p\033[0m childfields(\033[31m%u\33[0m) childformats(\033[34m%u\033[0m)",(void*)e,e->childfields,e->childformats);
+}
+
+#endif
+
+#ifdef NCOLLECTOR_DEBUG
+
+static void
+ncollector_print(const flexarr *ncollector) //ncollector: struct ncollector
+{
+  const size_t ncolsl = ncollector->size;
+  const struct ncollector *ncols = ncollector->v;
+  size_t start = 0;
+
+  fprintf(stderr,"\033[34;2m//\033[0m\033[32;6mNCOLLECTOR\033[0m\n");
+  for (size_t i = 0; i < ncolsl; i++) {
+    fprintf(stderr,"\033[34m%03lu\033[0m ",i);
+
+    reliq_expr_print(ncols[i].e);
+    fprintf(stderr," amount(\033[33m%02lu\033[0m) start(\033[32m%04lu\033[0m)\n",ncols[i].amount,start);
+    start += ncols[i].amount;
+  }
+  fputc('\n',stderr);
+}
+
+#endif //NCOLLECTOR_DEBUG
+
+#ifdef FCOLLECTOR_DEBUG
+
+static void
+fcollector_print(const flexarr *fcollector) //fcollector: struct fcollector
+{
+  const size_t fcolsl = fcollector->size;
+  const struct fcollector *fcols = fcollector->v;
+
+  fprintf(stderr,"\033[34;2m//\033[0m\033[32;6mFCOLLECTOR\033[0m\n");
+  for (size_t i = 0; i < fcolsl; i++) {
+    for (size_t j = 0; j < fcols[i].lvl; j++)
+      fputs("  ",stderr);
+    fprintf(stderr,"\033[3%cm%03lu\033[0m%*s",((fcols[i].lvl)%7)+'1',i,12-fcols[i].lvl*2," ");
+    reliq_expr_print(fcols[i].e);
+    fprintf(stderr," %03lu-%03lu lvl(%u) nodef(%u)\n",fcols[i].start,fcols[i].end,fcols[i].lvl,fcols[i].isnodef);
+  }
+  fputc('\n',stderr);
+}
+
+#endif //FCOLLECTOR_DEBUG
+
 reliq_error *
 nodes_output(const reliq *rq, SINK *output, const flexarr *compressed_nodes, const flexarr *ncollector, flexarr *fcollector) //compressed_nodes: reliq_compressed, ncollector: struct ncollector, fcollector: struct fcollector
 {
@@ -828,6 +887,14 @@ nodes_output(const reliq *rq, SINK *output, const flexarr *compressed_nodes, con
     return NULL;
 
   fcollector_rearrange(fcollector);
+
+  #ifdef NCOLLECTOR_DEBUG
+  ncollector_print(ncollector);
+  #endif
+
+  #ifdef FCOLLECTOR_DEBUG
+  fcollector_print(fcollector);
+  #endif
 
   nodes_output_state st = {
     .outfields = flexarr_init(sizeof(struct outfield*),OUTFIELDS_INC),
