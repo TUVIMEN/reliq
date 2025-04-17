@@ -447,7 +447,7 @@ hook_handle(const char *src, size_t *pos, const size_t size, reliq_hook *out_hoo
     goto_script_seterr(ERR,"hook \"%.*s\" does not exists for %s",(int)namel,name,matched_type_str(type));
 
   const struct hook_t *mhook = hooks_list+i;
-  reliq_hook hook = { .hook = mhook };
+  out_hook->hook = mhook;
   const uint16_t hflags = mhook->flags;
 
   #define HOOK_EXPECT(x) if (!(hflags&(x))) \
@@ -464,21 +464,20 @@ hook_handle(const char *src, size_t *pos, const size_t size, reliq_hook *out_hoo
     HOOK_EXPECT(H_NOARG);
   } else if (src[p] == '[') {
     HOOK_EXPECT(H_RANGE_UNSIGNED|H_RANGE_SIGNED);
-    if ((err = range_comp(src,&p,size,&hook.match.range)))
+    if ((err = range_comp(src,&p,size,&out_hook->match.range)))
       goto ERR;
   } else if (hflags&H_EXPRS) {
     HOOK_EXPECT(H_EXPRS);
-    if ((err = match_hook_handle_expr(src,size,&p,&hook)))
+    if ((err = match_hook_handle_expr(src,size,&p,out_hook)))
       goto ERR;
   } else {
     HOOK_EXPECT(H_PATTERN);
-    if ((err = match_hook_handle_pattern(src,size,&p,&hook)))
+    if ((err = match_hook_handle_pattern(src,size,&p,out_hook)))
       goto ERR;
   }
 
   #undef HOOK_EXPECT
 
-  memcpy(out_hook,&hook,sizeof(hook));
   ERR:
   *pos = p;
   return err;
@@ -709,7 +708,7 @@ hook_add(size_t *pos, const uchar invert, flexarr *result, struct nmatchers_stat
 {
   const char *src = st->src;
   const size_t size = st->size;
-  reliq_hook hook;
+  reliq_hook hook = {0};
   size_t prev = *pos;
   if ((st->err = hook_handle(src,pos,size,&hook,st->matches->type)))
     return 0;
