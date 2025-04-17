@@ -208,6 +208,9 @@ exec_block_conditional(const reliq_expr *expr, const flexarr *source, flexarr *d
       st->fcollector->size = prevfcolsize;
     }
 
+    if (current->e)
+      lastnode = current;
+
     if (current->flags&(EXPR_AND|EXPR_AND_BLANK) && !success)
       break;
 
@@ -215,11 +218,15 @@ exec_block_conditional(const reliq_expr *expr, const flexarr *source, flexarr *d
       break;
   }
 
-  ncollector_add(st->ncollector,dest,desttemp,startn,lastn,lastnode,expr->flags,1,st->isempty,st->noncol);
+  uchar isempty = st->isempty;
+  if (!isempty && !desttemp->size && expr->outfield.isset && expr->outfield.name.b)
+    isempty = 1;
+
+  ncollector_add(st->ncollector,dest,desttemp,startn,lastn,lastnode,expr->flags,1,isempty,st->noncol);
 
   END: ;
   if ((expr->outfield.isset))
-    add_compressed_blank(dest,ofBlockEnd,NULL); // culprit for some reason
+    add_compressed_blank(dest,ofBlockEnd,NULL);
 
   flexarr_free(desttemp);
   return err;
@@ -253,8 +260,6 @@ exec_block(const reliq_expr *expr, const flexarr *source, flexarr *dest, exec_st
     } else {
       assert(EXPR_TYPE_IS(current->flags,EXPR_BLOCK_CONDITION));
 
-      //fprintf(stderr,"fieldsize %lu\n",current->outfield.name.s);
-      //assert(current->outfield.name.s == 0);
       if ((err = exec_block_conditional(current,source,desttemp,st)))
         goto END;
     }

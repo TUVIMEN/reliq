@@ -592,7 +592,7 @@ print_code_debug(const size_t nodeindex, uint16_t fieldlvl, const enum outfieldC
 {
   if (fieldlvl && code == ofBlockEnd)
     fieldlvl--;
-  if (nodeindex != 0 && (code != ofBlockEnd || prevcode != ofNamed))
+  if (nodeindex != 0 && (code != ofBlockEnd || prevcode != ofNamed || prevcode != ofNoFieldsBlock))
     for (size_t k = 0; k < fieldlvl; k++)
       fputs("  ",stderr);
 
@@ -601,7 +601,7 @@ print_code_debug(const size_t nodeindex, uint16_t fieldlvl, const enum outfieldC
     case ofUnnamed: fprintf(stderr,"|unnamed %lu| {}\n",nodeindex); break;
     case ofBlock: fprintf(stderr,"|block %lu| {\n",nodeindex); break;
     case ofArray: fprintf(stderr,"|array %lu| {\n",nodeindex); break;
-    case ofNoFieldsBlock: fprintf(stderr,"|noFieldsBlock %lu| {\n",nodeindex); break;
+    case ofNoFieldsBlock: fprintf(stderr,"|noFieldsBlock %lu| {",nodeindex); break;
     case ofNamed: fprintf(stderr,"|named %lu| {",nodeindex); break;
     case ofBlockEnd: fprintf(stderr,"} |blockEnd %lu|\n",nodeindex); break;
   }
@@ -722,10 +722,6 @@ nodes_output_code_handle(enum outfieldCode code, enum outfieldCode prevcode, siz
 {
   struct outfield *field;
 
-  #ifdef PRINT_CODE_DEBUG
-  print_code_debug(st->nodes_i,st->field_lvl,code,prevcode);
-  #endif
-
   switch (code) {
     case ofUnnamed:
       sink_put(out,'\n');
@@ -796,6 +792,9 @@ nodes_output_r(const flexarr *comp_nodes, nodes_output_state *st) //comp_nodes: 
     const reliq_compressed *compn = nodes+nodes_i;
     enum outfieldCode code = OUTFIELDCODE(compn->hnode);
     if (code) {
+      #ifdef PRINT_CODE_DEBUG
+      print_code_debug(nodes_i,st->field_lvl,code,prevcode);
+      #endif
       enum outfieldCode prevcode_r = prevcode;
       size_t prev_nodes_i_r = prev_nodes_i;
       prevcode = code;

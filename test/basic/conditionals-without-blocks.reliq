@@ -1,0 +1,23 @@
+.t1 [0] * self@ | "val",
+
+[0] imga || [0] nam | "%(src)v\n" || [0] a | "val\n",
+
+. never; not ever | "val"
+        || list; later | "val",
+
+.s never; not ever | "val"
+        || list; later | "val",
+
+.s2 li; [0] a | "val"
+        || list; later | "val",
+
+.s3 { never; not ever | "val"
+        || list; { later | "val" } | "val" } / trim,
+
+.ab { ab },
+
+[0:1] li | "val\n",
+
+.t2 [0] * self@ | "val",
+.t3 [0] * self@ | "val",
+.t4 [0] * self@ | "val",

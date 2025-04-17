@@ -11,3 +11,5 @@ c2decb865c3c916d144dead88148c345,'{ h1, h9, h2 } ^|| footer && ul'
 175141becb995cb6f8fc8196b33588e0,'header; h2 || h3'
 55112482c8d724654a5ef04e3c232570,'{ li | "%A -- namel\n" / line [0] } / sed "s/l/L/g" & img, { li | "%A -- namel\n" / line [0] } / sed "s/l/L/g" && img, { li | "%A -- namel\n" / line [0] } / sed "s/l/L/g" || img'
 c2e415243e541c3bc53ad840e27ca021,'ul & li | "%i\n" & { { a, { img | "%(class)v - cc\n" } / sed "s/$/ -1-/" } /sed "s/$/ -2-/" } / sed "s/$/-3-/" & img && a'
+
+e9aa16cca86ef3a506252cb0f4cf6439,-f conditionals-without-blocks.reliq
