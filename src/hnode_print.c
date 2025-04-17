@@ -18,6 +18,8 @@
 
 #include "ext.h"
 
+#include <stdlib.h>
+
 #include "ctype.h"
 #include "decode_entities.h"
 #include "utils.h"
@@ -88,13 +90,10 @@ print_attrib_value(const reliq *rq, const reliq_cattrib *attribs, const size_t a
 }
 
 static void
-print_text(const reliq *rq, const reliq_chnode *hnode, uint8_t flags, SINK *outfile, uchar recursive)
+print_text_r(const reliq *rq, const reliq_chnode *hnode, uint8_t flags, SINK *outfile, uchar recursive)
 {
   if (hnode->text_count == 0)
     return;
-
-  const char *data = rq->data;
-  flags |= PC_UNTRIM;
 
   const size_t size = hnode->tag_count+hnode->text_count+hnode->comment_count;
   for (size_t i = 1; i <= size; i++) {
@@ -102,11 +101,34 @@ print_text(const reliq *rq, const reliq_chnode *hnode, uint8_t flags, SINK *outf
 
     uint8_t type = reliq_chnode_type(n);
     if (type == RELIQ_HNODE_TYPE_TEXT || type == RELIQ_HNODE_TYPE_TEXT_ERR || type == RELIQ_HNODE_TYPE_TEXT_EMPTY) {
-      print_chars(data+n->all,n->all_len,flags,outfile);
+      print_chars(rq->data+n->all,n->all_len,flags,outfile);
     } else if (recursive && type == RELIQ_HNODE_TYPE_TAG)
-      print_text(rq,n,flags,outfile,recursive);
+      print_text_r(rq,n,flags,outfile,recursive);
 
     i += n->tag_count+n->text_count+n->comment_count;
+  }
+}
+
+
+static void
+print_text(const reliq *rq, const reliq_chnode *hnode, uint8_t flags, SINK *outfile, uchar recursive)
+{
+  SINK *out = outfile;
+  const uchar trim = (flags&PC_UNTRIM) ? 0 : 1;
+  char *ptr;
+  size_t ptrl;
+  if (trim)
+    out = sink_open(&ptr,&ptrl);
+
+  print_text_r(rq,hnode,flags|PC_UNTRIM,out,recursive);
+
+  if (trim) {
+    sink_close(out);
+    char const *ptr_r;
+    size_t ptrl_r;
+    memtrim(&ptr_r,&ptrl_r,ptr,ptrl);;
+    sink_write(outfile,ptr_r,ptrl_r);
+    free(ptr);
   }
 }
 
