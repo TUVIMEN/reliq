@@ -72,4 +72,5 @@ d7ee07e0ea14d000b4bb8fea226d28dc,'a / wc "wc"'
 def5318b05f50c5472d92563bda00818,'li | tr "\x61-\x64" tr "\k\x22" "\o12" tr "[\x20*3]" "$"'
 60b130f6c4b64ba1b2899b0284a615f2,'li / line [0:2] "\o141", li  / line [0] "\P"'
 < 2.html
-741ed4c871a5f8ca395a07a82d2c117e,'encoding / decode'
+4d7d90200a80ad5c2859de0c25646782,'encoding / decode'
+54bfc9eae0557c3aacd8192017efcb55,'encoding / decode "e"'

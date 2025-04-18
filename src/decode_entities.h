@@ -19,10 +19,12 @@
 #ifndef RELIQ_DECODE_ENTITIES_H
 #define RELIQ_DECODE_ENTITIES_H
 
+#include <stdbool.h>
+
 #include "sink.h"
 #include "types.h"
 #include "reliq.h"
 
-void reliq_decode_entities_sink(const char *src, const size_t srcl, SINK *out);
+void reliq_decode_entities_sink(const char *src, const size_t srcl, SINK *out, bool no_nbsp);
 
 #endif

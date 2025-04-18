@@ -23,6 +23,7 @@
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -147,6 +148,7 @@ typedef struct {
 
 typedef struct reliq_expr reliq_expr;
 
+//if .freedata is set than it will be called with reliq_free() to free .data
 typedef struct {
   int (*freedata)(void *addr, size_t len);
   char const *data;
@@ -185,10 +187,15 @@ void reliq_efree(reliq_expr *expr);
 
 reliq_error *reliq_set_error(const int code, const char *fmt, ...);
 
-#define RELIQ_DECODE_ENTITIES_MAXSIZE 16
-int reliq_decode_entities(const char *src, const size_t srcl, size_t *traversed, char *result, const size_t resultl, size_t *written);
-void reliq_decode_entities_file(const char *src, const size_t srcl, FILE *out);
-void reliq_decode_entities_str(const char *src, const size_t srcl, char **str, size_t *strl);
+//if no_nbsp is set then &nbsp; entity will be converted to space instead of \u00a0, this is desirable unless you're a browser
+
+#define RELIQ_DECODE_ENTITY_MAXSIZE 7 //maximum size that decoded entity can take
+//resultl ideally should be at least RELIQ_DECODE_ENTITY_MAXSIZE
+//it returns 0 on success and -1 on size conflict
+int reliq_decode_entities(const char *src, const size_t srcl, size_t *traversed, char *result, const size_t resultl, size_t *written, bool no_nbsp);
+
+void reliq_decode_entities_file(const char *src, const size_t srcl, FILE *out, bool no_nbsp);
+void reliq_decode_entities_str(const char *src, const size_t srcl, char **str, size_t *strl, bool no_nbsp);
 
 
 #ifdef __cplusplus

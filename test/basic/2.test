@@ -55,8 +55,8 @@ deaf40879d1751559a47d00ac02969f9,'main; [0] div; * rparent@ preceding@ parent@ s
 05f950e04eb5443bd9f58cfadfb6aea0,'*; * everything@'
 
 < 2.html
-b2d1440b8bb1749fe92ed310fc3de87a,'encoding | "%Di\n"'
-57891b0cdd7687877b9fc491dbd601a5,-l
+4ed1be49b84a46b7ed8834e955c90ca2,'encoding | "%Di\n"'
+11b2f34f35861afa12e08d4e9310ac4a,-l
 315fb372f9bc1fd000203399967dfee0,'inescapable; { table, td, div, section, tr }'
 b6e5e53260a6571eba5fc38010f225f4,'escaping; { div | "%A -- \"%E\" -- \"%e\"\n" , section}'
 4f415a5faceb3e17f357a3e9aec892a7,'weird-conditionals; { { * .i2 } || * #i1 }'

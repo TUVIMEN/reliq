@@ -20,6 +20,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 #include "ctype.h"
 #include "utils.h"
@@ -2230,6 +2231,7 @@ handle_number(const char *src, const size_t srcl, size_t *traversed, char *resul
     data = get_fromhex(src+i,srcl-i,&trav,DECODE_ENTITIES_MAX_XDIGITS);
   }
   i += trav;
+  uchar ended = (i < srcl && src[i] == ';');
 
   data = enc32utf8(data);
 
@@ -2239,7 +2241,7 @@ handle_number(const char *src, const size_t srcl, size_t *traversed, char *resul
   }
 
   j += trav;
-  if (i < srcl && src[i] == ';')
+  if (ended)
     i++;
 
   END: ;
@@ -2317,7 +2319,7 @@ find_name(const char *name, const size_t maxnamel, size_t *len)
 }
 
 static int
-handle_name(const char *src, const size_t srcl, size_t *traversed, char *result, const size_t resultl, size_t *written, uchar *ignore)
+handle_name(const char *src, const size_t srcl, size_t *traversed, char *result, const size_t resultl, size_t *written, uchar *ignore, bool no_nbsp)
 {
   size_t i = *traversed;
   size_t j = *written;
@@ -2336,14 +2338,21 @@ handle_name(const char *src, const size_t srcl, size_t *traversed, char *result,
   if (len == 0 || (i+len < srcl && src[i+len] == ';'))
     ended = 1;
 
-  size_t vall = strlen(first->val);
+  const char *val = first->val;
+  size_t vall = strlen(val);
   if (j+vall >= resultl) {
     ret = -1;
     goto END;
   }
 
-  memcpy(result+j,first->val,vall);
-  j += vall;
+  if (no_nbsp && vall == 2 && ((uchar)val[0]) == 0xc2 && ((uchar)val[1]) == 0xa0) { // \u00a0
+    result[j] = ' ';
+    j += 1;
+  } else {
+    memcpy(result+j,val,vall);
+    j += vall;
+  }
+
   i += first->name.s;
   if (ended)
     i++;
@@ -2355,7 +2364,7 @@ handle_name(const char *src, const size_t srcl, size_t *traversed, char *result,
 }
 
 int
-reliq_decode_entities(const char *src, const size_t srcl, size_t *traversed, char *result, const size_t resultl, size_t *written)
+reliq_decode_entities(const char *src, const size_t srcl, size_t *traversed, char *result, const size_t resultl, size_t *written, bool no_nbsp)
 {
   int ret = 0;
   size_t i=0,j=0;
@@ -2363,7 +2372,7 @@ reliq_decode_entities(const char *src, const size_t srcl, size_t *traversed, cha
   if (src[0] == '&' && 2 < srcl) {
     if (isalpha(src[1]) && isalpha(src[2])) {
       uchar ignore = 0;
-      ret = handle_name(src,srcl,&i,result,resultl,&j,&ignore);
+      ret = handle_name(src,srcl,&i,result,resultl,&j,&ignore,no_nbsp);
       if (ignore)
         goto IGNORE;
     } else if (src[1] == '#' && (isdigit(src[2]) || ((src[2] == 'x' || src[2] == 'X') && 3 < srcl && isxdigit(src[3])))) {
@@ -2372,7 +2381,8 @@ reliq_decode_entities(const char *src, const size_t srcl, size_t *traversed, cha
       goto IGNORE;
   } else {
     IGNORE: ;
-    result[j++] = src[i++];
+    uchar c = src[i++];
+    result[j++] = c;
   }
 
   *traversed = i;
@@ -2381,19 +2391,19 @@ reliq_decode_entities(const char *src, const size_t srcl, size_t *traversed, cha
 }
 
 void
-reliq_decode_entities_sink(const char *src, const size_t srcl, SINK *out)
+reliq_decode_entities_sink(const char *src, const size_t srcl, SINK *out, bool no_nbsp)
 {
   char buf[BUF_SIZE];
   size_t buf_used = 0;
 
   for (size_t i = 0; i < srcl;) {
-    if (unlikely(BUF_SIZE-buf_used < RELIQ_DECODE_ENTITIES_MAXSIZE)) {
+    if (unlikely(BUF_SIZE-buf_used < RELIQ_DECODE_ENTITY_MAXSIZE)) {
       sink_write(out,buf,buf_used);
       buf_used = 0;
     }
 
     size_t traversed,written;
-    reliq_decode_entities(src+i,srcl-i,&traversed,buf+buf_used,BUF_SIZE-buf_used,&written);
+    reliq_decode_entities(src+i,srcl-i,&traversed,buf+buf_used,BUF_SIZE-buf_used,&written,no_nbsp);
     i += traversed;
     buf_used += written;
   }
@@ -2402,17 +2412,17 @@ reliq_decode_entities_sink(const char *src, const size_t srcl, SINK *out)
 }
 
 void
-reliq_decode_entities_file(const char *src, const size_t srcl, FILE *out)
+reliq_decode_entities_file(const char *src, const size_t srcl, FILE *out, bool no_nbsp)
 {
   SINK *o = sink_from_file(out);
-  reliq_decode_entities_sink(src,srcl,o);
+  reliq_decode_entities_sink(src,srcl,o,no_nbsp);
   sink_close(o);
 }
 
 void
-reliq_decode_entities_str(const char *src, const size_t srcl, char **str, size_t *strl)
+reliq_decode_entities_str(const char *src, const size_t srcl, char **str, size_t *strl, bool no_nbsp)
 {
   SINK *o = sink_open(str,strl);
-  reliq_decode_entities_sink(src,srcl,o);
+  reliq_decode_entities_sink(src,srcl,o,no_nbsp);
   sink_close(o);
 }

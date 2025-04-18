@@ -534,6 +534,20 @@ tac_edit(const char *src, const size_t size, SINK *output, const void *arg[4], c
 reliq_error *
 decode_edit(const char *src, const size_t size, SINK *output, const void UNUSED *arg[4], const uint8_t UNUSED flag)
 {
-  reliq_decode_entities_sink(src,size,output);
+  const char argv0[] = "decode";
+  bool exact = false;
+
+  if (arg[0]) {
+    if (flag&FORMAT_ARG0_ISSTR && ((reliq_str*)arg[0])->b) {
+      reliq_str *str = (reliq_str*)arg[0];
+      for (size_t i = 0; i < str->s; i++) {
+        if (str->b[i] == 'e')
+          exact = true;
+      }
+    } else
+      return script_err("%s: arg %d: incorrect type of argument, expected string",argv0,1);
+  }
+
+  reliq_decode_entities_sink(src,size,output,!exact);
   return NULL;
 }

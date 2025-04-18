@@ -36,7 +36,7 @@ print_chars(char const *src, size_t size, const uint8_t flags, SINK *outfile)
   if (!size)
     return;
   if (flags&PC_DECODE) {
-    reliq_decode_entities_sink(src,size,outfile);
+    reliq_decode_entities_sink(src,size,outfile,true);
   } else
     sink_write(outfile,src,size);
 }
