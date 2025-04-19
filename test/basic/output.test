@@ -1,7 +1,6 @@
 < output.html
 b0ec3c9decae7fd89cdf2f8e4a9c1d7d,'.u li; { .a img, .b code } |'
 f57e356d9c11f00155be01de2734e38d,'.u li; { img, code } |'
-c89cdd67e65c5a1d11e37a0882dd8482,'li; { .a img, .b code } |'
 1705334172fbf28670893f807200a7ca,'.0 h2, li; { .a img, .b code }, img, .c code'
 01254d5a940063698fca18b078c8d639,'li; { .a img, .b li; [0] code, img }, .c h3'
 0a25479801aef74716bd053e15a1db02,'li; asfasf; k; { .a b, .b d }, .c h2'
@@ -35,4 +34,3 @@ dd89f4ba0315f16c0791b35ab6287c79,'.va ul1 .n1; { .title h21 | "%i", .values ul1 
 fe8552a3f6522e529d2c6de9d3334371,'.va ul1 .n1; { .title h21 | "%i", .values ul1 l@[1]; { usaf, usii } ; { .value span1 | "%i" , .nothing p1 | "%i" }  } |'
 6c00a4f25001c4845898ed3a2699370c,'.g ul1 .n1; { .r p1, .h ul1 l@[0],  .c ul1 l@[1]; { la, ua } ; { p1  } | , .k span1 }'
 05a7e3fb87a143edff739ee7c844bd39,'.covers.a("\o7") img | "%(src)v\a", .links.a("\x5C") a | "%(href)v \\ \U0e0a"'
-c5c16b0ba4667635c662d78db10e98c2,'li; { .u li | "%i" } |'

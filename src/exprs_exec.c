@@ -289,8 +289,10 @@ exec_table(const reliq_expr *expr, const reliq_output_field *named, const flexar
   reliq_error *err = NULL;
 
   if (EXPR_TYPE_IS(expr->flags,EXPR_SINGULAR)) {
-    if (named)
+    if (named) {
       add_compressed_blank(dest,expr->childfields ? ofArray : ofNoFieldsBlock,named);
+    } else if (expr->childfields)
+      goto_script_seterr(END,"output field: array with child fields is not assigned to any name");
 
     if (!source->size)
       goto END;
