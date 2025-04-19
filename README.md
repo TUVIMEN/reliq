@@ -181,7 +181,7 @@ Fields can be nested in another fields
 
 will return
 
-```
+```json
 {
   "user": {
     "name": "TUVIMEN",
@@ -240,7 +240,7 @@ Unless fields are nested they will be on the same level no matter where they are
 
 will return
 
-```
+```json
 {
   "signature": "Helicopter: \"helico\" -> spiral, \"pter\" -> with wings",
   "avatar": "https://other.org/as/d.png",
@@ -266,7 +266,7 @@ If field is presented with block with `|` with empty format that contains fields
 
 will return
 
-```
+```json
 {
     "posts": [
         {
@@ -294,7 +294,7 @@ If field name is followed by another `.` with alphanumeric string it will have d
 
 will return
 
-```
+```json
 {
     "years": [
         1930,
