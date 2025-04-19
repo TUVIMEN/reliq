@@ -2505,8 +2505,8 @@ reliq_encode_entity(const char *src, const size_t srcl, size_t *traversed, char 
     find_entity(src,srcl,&ent,&ent_vall);
     if (ent) {
       entity = ent->name.b;
-      i = ent->name.s;
-      j = ent_vall;
+      j = ent->name.s;
+      i = ent_vall;
     }
   }
 
