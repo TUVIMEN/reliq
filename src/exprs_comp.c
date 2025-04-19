@@ -493,6 +493,83 @@ isconditional(const enum tokenName name)
   }
 }
 
+static inline uchar
+tokenize_is_struct_token_char(const char c)
+{
+  return (c == ',' || c == ';' || c == '{' || c == '}');
+}
+
+static uchar
+tokenize_is_struct_token_following(const char *src, size_t pos, const size_t size)
+{
+  while (1) {
+    if (!tokenize_is_struct_token_char(src[pos]))
+      return 0;
+
+    if (pos+1 >= size || isspace(src[pos+1]))
+      return 1;
+
+    pos++;
+  }
+}
+
+static uchar
+tokenize_is_struct_token_preceding(const char *src, size_t pos)
+{
+  char prev = 0;
+  while (1) {
+    if (!tokenize_is_struct_token_char(src[pos])) {
+      if (prev == ';' || prev == ',')
+        return 1;
+      return 0;
+    }
+
+    if (!pos || isspace(src[pos-1]))
+      return 1;
+
+    prev = src[pos];
+    pos--;
+  }
+}
+
+static uchar
+tokenize_isNextNode(const char *src, size_t pos, const size_t size)
+{
+  if (src[pos] != ',')
+    return 0;
+  return tokenize_is_struct_token_following(src,pos,size);
+}
+
+static uchar
+tokenize_isChainLink(const char *src, size_t pos, const size_t size)
+{
+  if (src[pos] != ';')
+    return 0;
+  return tokenize_is_struct_token_following(src,pos,size);
+}
+
+static uchar
+tokenize_isBlockEnd(const char *src, size_t pos, const size_t size)
+{
+  if (src[pos] != '}')
+    return 0;
+  uchar r = tokenize_is_struct_token_preceding(src,pos);
+  if (!r)
+    return 0;
+  return tokenize_is_struct_token_following(src,pos,size);
+}
+
+static uchar
+tokenize_isBlockStart(const char *src, size_t pos, const size_t size)
+{
+  if (src[pos] != '{')
+    return 0;
+  uchar r = tokenize_is_struct_token_preceding(src,pos);
+  if (!r)
+    return 0;
+  return tokenize_is_struct_token_following(src,pos,size);
+}
+
 static reliq_error *
 tokenize(const char *src, const size_t size, token **tokens, size_t *tokensl) //tokens: token
 {
@@ -539,21 +616,21 @@ tokenize(const char *src, const size_t size, token **tokens, size_t *tokensl) //
       continue;
     }
 
-    if (src[i] == '{')
+    if (tokenize_isBlockStart(src,i,size))
       token_found(tBlockStart,1);
-    if (src[i] == '}')
+    if (tokenize_isBlockEnd(src,i,size))
       token_found(tBlockEnd,1);
-    if (src[i] == ',')
+    if (tokenize_isNextNode(src,i,size))
       token_found(tNextNode,1);
-    if (src[i] == ';')
+    if (tokenize_isChainLink(src,i,size))
       token_found(tChainLink,1);
 
     if (i && isspace(src[i-1])) {
       size_t tk_size = 0;
       enum tokenName tk_name = tokenize_conditionals(src,i,size,&tk_size);
       if (tk_name != tInvalidThing) {
-          i--; //conditionals start and end with space, this accounts for first, already found
-          token_found(tk_name,tk_size);
+        i--; //conditionals start and end with space, this accounts for first, already found
+        token_found(tk_name,tk_size);
       }
     }
 

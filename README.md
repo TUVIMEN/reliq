@@ -260,7 +260,7 @@ If field is presented with block with `|` with empty format that contains fields
             .postid.u div #B>subject_[0-9]* | "%(id)v" / sed "s/.*_//",
             .date td valign=middle; div .smalltext | "%i" / sed "s/.* ://;s/^<\/b> //;s/ &#187;//g;s/<br *\/>.*//;s/<[^>]*>//g;s/ *$//",
             .avatar td valign=top rowspan=2; img .avatar src | "%(src)v",
-        } | ,
+        } |,
         .title td #top_subject | "%i" / sed "s/[^:]*: //;s/([^(]*)//;s/&nbsp;//g;s/ *$//"
     '
 
@@ -283,8 +283,6 @@ will return
     "title": "Bitcoins held by the US government"
 }
 ```
-
-Note that `,` was separated by space from `|`. Formats can be specified only when `|` or `/` is separated from both sides with whitespaces. You cannot write `li |tr "\n"` or `p/tr "a-z" "A-Z"`, when format is empty that space is still required.
 
 If field name is followed by another `.` with alphanumeric string it will have different type. Types are described in the manual. The most used ones are `.u` and `.a`.
 

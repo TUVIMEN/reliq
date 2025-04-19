@@ -1,6 +1,6 @@
 < editing.html
 8977b8874205c303a7c3d52818786d74,'la || li, lg || h1 || li , li || ul, li & ul & la & img, in & a, li && ul && p, li && p && img'
-5e181063e72ff0f81b64127867e33886,'li && ul & img || li, lp && ul & img || li, { li && lk & img} || li'
+5e181063e72ff0f81b64127867e33886,'li && ul & img || li, lp && ul & img || li, { li && lk & img } || li'
 7a7a509b4e8a78c4f98b4f1f9c4a266f,'.g { .a li; { { img | "img - %A\n" , a | "a - %A\n", c } | ^|| img }, .b li; { { img | "img - %A\n" , a | "a - %A\n" } | || img } }'
 0892a8d86466b8ef9b9e1d3a67dafdf8,'li & a & ia'
 4ba2aa670b154b8d77afe78ea5c2ff32,'.g { .a { img || li }; a, .b { li || img }; a }'
