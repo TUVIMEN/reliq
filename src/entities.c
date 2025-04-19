@@ -2539,7 +2539,7 @@ reliq_encode_entities_sink(const char *src, const size_t srcl, SINK *out, bool f
       buf_used = 0;
     }
 
-    size_t traversed,written;
+    size_t traversed=0,written=0;
     reliq_encode_entity(src+i,srcl-i,&traversed,buf+buf_used,BUF_SIZE-buf_used,&written,full);
     i += traversed;
     buf_used += written;

@@ -107,23 +107,153 @@ handle_reliq_error(reliq_error *err) {
   exit(c);
 }
 
+static uchar
+should_colorize(FILE *o)
+{
+  #ifdef __unix__
+
+  int fd = fileno(o);
+  if (fd == -1)
+    return 0;
+
+  const char *term = getenv("TERM");
+  if (strcmp(term,"dump") == 0)
+    return 0;
+
+  struct stat st;
+  fstat(fd,&st);
+  if (!S_ISCHR(st.st_mode))
+    return 0;
+
+  struct stat t_st;
+  stat("/dev/null",&t_st);
+  if (st.st_ino == t_st.st_ino && st.st_dev == t_st.st_dev)
+    return 0;
+
+  return isatty(fd);
+
+  #else
+
+  return 0;
+
+  #endif
+}
+
 static void
 usage(FILE *o)
 {
-  uchar color = (o == stderr || o == stdout)
-  fprintf(o,"Usage: %s [OPTION]... PATTERNS [FILE]...\n"\
-      "Search for PATTERNS in each html FILE.\n"\
-      "Example: %s 'div id; a href=e>\".org\"' index.html\n\n"\
-      "Options:\n"\
-      "  -l, --list-structure\t\tlist structure of FILE\n"\
-      "  -o, --output \033[34mFILE\033[0m\t\tchange output to a FILE instead of stdout\n"\
-      "  -e, --error-file FILE\t\tchange output of errors to a FILE instead of stderr\n"\
-      "  -f, --file FILE\t\tobtain PATTERNS from FILE\n"\
-      "  -r, --recursive\t\tread all files under each directory, recursively\n"\
-      "  -R, --dereference-recursive\tlikewise but follow all symlinks\n"\
-      "  -h, --help\t\t\tshow help\n"\
-      "  -v, --version\t\t\tshow version\n\n"\
-      "When input files aren't specified, standard input will be read.\n",argv0,argv0);
+  volatile uchar cancolor = should_colorize(o);
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wunused-value"
+  #pragma GCC diagnostic ignored "-Wnonnull"
+
+  #define color(x,y) for (size_t _i = 0; _i == 0; _i++, cancolor && fputs("\033[0m",o)) { \
+    cancolor && ( fputs("\033[",o), fputs(y,o), fputc('m',o) ); \
+    fputs(x,o); \
+  }
+  #define COLOR_OPTION "35;1"
+  #define COLOR_ARG "36"
+  #define COLOR_SCRIPT "32"
+  #define COLOR_INPUT "33"
+  #define COLOR_SECTION "34;1"
+
+  color("Usage",COLOR_SECTION)
+  fprintf(o,": %s [",argv0);
+  color("OPTION",COLOR_OPTION);
+  fputs("]... ",o);
+  color("PATTERNS",COLOR_SCRIPT);
+  fputs(" [",o);
+  color("FILE",COLOR_INPUT);
+  fputs("]...\n",o);
+
+  fputs("Search for ",o);
+  color("PATTERNS",COLOR_SCRIPT);
+  fputs(" in each html ",o);
+  color("FILE",COLOR_INPUT);
+  fputs(".\n",o);
+
+  color("Example",COLOR_SECTION)
+  fputs(": ",o);
+  fputs(argv0,o);
+  fputs(" \'",o);
+  color("div id; a href=e>\".org\"",COLOR_SCRIPT);
+  fputs("' ",o);
+  color("index.html",COLOR_INPUT);
+  fputs("\n\n",o);
+
+  color("Options",COLOR_SECTION);
+  fputs(":\n",o);
+
+  #define color_option(w,x,y) do { \
+    fputs("  ",o); \
+    if (w) { \
+      fputc('-',o); \
+      color(w,COLOR_OPTION); \
+      if (x) \
+        fputs(", ",o); \
+    } \
+    if (x) { \
+      fputs("--",o); \
+      color(x,COLOR_OPTION); \
+    } \
+    if (y != NULL) { \
+      fputc(' ',o); \
+      color(y,COLOR_ARG); \
+    } \
+  } while (0)
+
+  color_option("l","list-structure",NULL);
+  fputs("\t\tlist structure of ",o);
+  color("FILE",COLOR_INPUT);
+  fputc('\n',o);
+
+  color_option("i","output","FILE");
+  fputs("\t\tchange output to a ",o);
+  color("FILE",COLOR_ARG);
+  fputs(" instead of ",o);
+  color("stdout",COLOR_ARG);
+  fputc('\n',o);
+
+  color_option("e","error-file","FILE");
+  fputs("\t\tchange output of errors to a ",o);
+  color("FILE",COLOR_ARG);
+  fputs(" instead of ",o);
+  color("stderr",COLOR_ARG);
+  fputc('\n',o);
+
+  color_option("f","file","FILE");
+  fputs("\t\tobtain ",o);
+  color("PATTERNS",COLOR_SCRIPT);
+  fputs(" from ",o);
+  color("FILE",COLOR_ARG);
+  fputc('\n',o);
+
+  color_option("r","recursive",NULL);
+  fputs("\t\tread all files under each directory, recursively\n",o);
+
+  color_option("R","dereference-recursive",NULL);
+  fputs("\tlikewise but follow all symlinks\n",o);
+
+  color_option("h","help",NULL);
+  fputs("\t\t\tshow help\n",o);
+
+  color_option("v","version",NULL);
+  fputs("\t\t\tshow version\n\n",o);
+
+  fputc('\n',o);
+
+  fputs("When input files aren't specified, standard input will be read.\n",o);
+
+  #pragma GCC diagnostic pop
+
+  #undef color
+  #undef color_option
+  #undef COLOR_OPTION
+  #undef COLOR_ARG
+  #undef COLOR_SCRIPT
+  #undef COLOR_INPUT
+  #undef COLOR_SECTION
+
   exit(1);
 }
 
