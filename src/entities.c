@@ -24,7 +24,7 @@
 
 #include "ctype.h"
 #include "utils.h"
-#include "decode_entities.h"
+#include "entities.h"
 
 #define DECODE_ENTITIES_MAX_NAME 31
 #define DECODE_ENTITIES_MAX_DIGITS 10
@@ -2364,7 +2364,7 @@ handle_name(const char *src, const size_t srcl, size_t *traversed, char *result,
 }
 
 int
-reliq_decode_entities(const char *src, const size_t srcl, size_t *traversed, char *result, const size_t resultl, size_t *written, bool no_nbsp)
+reliq_decode_entity(const char *src, const size_t srcl, size_t *traversed, char *result, const size_t resultl, size_t *written, bool no_nbsp)
 {
   int ret = 0;
   size_t i=0,j=0;
@@ -2403,7 +2403,7 @@ reliq_decode_entities_sink(const char *src, const size_t srcl, SINK *out, bool n
     }
 
     size_t traversed,written;
-    reliq_decode_entities(src+i,srcl-i,&traversed,buf+buf_used,BUF_SIZE-buf_used,&written,no_nbsp);
+    reliq_decode_entity(src+i,srcl-i,&traversed,buf+buf_used,BUF_SIZE-buf_used,&written,no_nbsp);
     i += traversed;
     buf_used += written;
   }
@@ -2424,5 +2424,143 @@ reliq_decode_entities_str(const char *src, const size_t srcl, char **str, size_t
 {
   SINK *o = sink_open(str,strl);
   reliq_decode_entities_sink(src,srcl,o,no_nbsp);
+  sink_close(o);
+}
+
+static void
+find_entity(const char *src, const size_t srcl, struct htmlcode const **found, size_t *found_vall)
+{
+  const size_t likely_sz = 32;
+  struct htmlcode const *found_likely[likely_sz];
+  size_t found_likely_sizes[likely_sz];
+  size_t found_likelyl = 0;
+
+  #define search_entity_table(x) for (size_t i = 0; i < LENGTH(x); i++) { \
+    const struct htmlcode *ent = (x)+i; \
+    size_t len = strlen(ent->val); \
+    if (len > srcl) \
+      continue; \
+    if (memcmp(src,ent->val,len) != 0) \
+      continue; \
+    found_likely_sizes[found_likelyl] = len; \
+    found_likely[found_likelyl++] = ent; \
+    if (found_likelyl >= likely_sz) \
+      goto END; \
+  }
+
+  search_entity_table(html_codes);
+  search_entity_table(html_special_codes);
+
+  #undef search_entity_table
+
+  END: ;
+  if (found_likelyl == 0) {
+    *found = NULL;
+    *found_vall = 0;
+    return;
+  }
+
+  size_t maxi = 0;
+  size_t max = 0;
+  for (size_t i = 0; i < found_likelyl; i++) {
+    if (max >= found_likely_sizes[i])
+      continue;
+
+    max = found_likely_sizes[i];
+    maxi = i;
+  }
+  *found = found_likely[maxi];
+  *found_vall = max;
+}
+
+int
+reliq_encode_entity(const char *src, const size_t srcl, size_t *traversed, char *restrict result, const size_t resultl, size_t *written, bool full)
+{
+  if (srcl < 1 || resultl == 0)
+    return -1;
+
+  size_t i=1,j=1;
+
+  char c = src[0];
+  const char *entity = src;
+
+  if (c == '&') {
+    j = 5;
+    entity = "amp";
+  } else if (c == '<') {
+    j = 2;
+    entity = "lt";
+  } else if (c == '>') {
+    j = 2;
+    entity = "gt";
+  } else if (c == '"') {
+    j = 4;
+    entity = "quot";
+  } else if (c == '\'') {
+    j = 4;
+    entity = "#x27"; //"apos" can be used, but this is more popular
+  } else if (full) {
+    struct htmlcode const *ent;
+    size_t ent_vall;
+    find_entity(src,srcl,&ent,&ent_vall);
+    if (ent) {
+      entity = ent->name.b;
+      i = ent->name.s;
+      j = ent_vall;
+    }
+  }
+
+  if (i == 1 && j == 1) {
+    *result = c;
+  } else {
+    if (resultl < j+2)
+      return -1;
+
+    result[0] = '&';
+    memcpy(result+1,entity,j);
+    result[j+1] = ';';
+    j += 2;
+  }
+
+  *traversed = i;
+  *written = j;
+  return 0;
+}
+
+void
+reliq_encode_entities_sink(const char *src, const size_t srcl, SINK *out, bool full)
+{
+  char buf[BUF_SIZE];
+  size_t buf_used = 0;
+
+  for (size_t i = 0; i < srcl;) {
+    if (unlikely(BUF_SIZE-buf_used < RELIQ_ENCODE_ENTITY_MAXSIZE)) {
+      sink_write(out,buf,buf_used);
+      buf_used = 0;
+    }
+
+    size_t traversed,written;
+    reliq_encode_entity(src+i,srcl-i,&traversed,buf+buf_used,BUF_SIZE-buf_used,&written,full);
+    i += traversed;
+    buf_used += written;
+  }
+  if (buf_used)
+    sink_write(out,buf,buf_used);
+}
+
+
+void
+reliq_encode_entities_file(const char *src, const size_t srcl, FILE *out, bool full)
+{
+  SINK *o = sink_from_file(out);
+  reliq_encode_entities_sink(src,srcl,o,full);
+  sink_close(o);
+}
+
+void
+reliq_encode_entities_str(const char *src, const size_t srcl, char **str, size_t *strl, bool full)
+{
+  SINK *o = sink_open(str,strl);
+  reliq_encode_entities_sink(src,srcl,o,full);
   sink_close(o);
 }

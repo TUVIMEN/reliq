@@ -21,7 +21,7 @@
 #include <stdlib.h>
 
 #include "ctype.h"
-#include "decode_entities.h"
+#include "entities.h"
 #include "utils.h"
 #include "hnode_print.h"
 

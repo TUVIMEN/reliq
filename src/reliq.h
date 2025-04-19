@@ -192,10 +192,21 @@ reliq_error *reliq_set_error(const int code, const char *fmt, ...);
 #define RELIQ_DECODE_ENTITY_MAXSIZE 7 //maximum size that decoded entity can take
 //resultl ideally should be at least RELIQ_DECODE_ENTITY_MAXSIZE
 //it returns 0 on success and -1 on size conflict
-int reliq_decode_entities(const char *src, const size_t srcl, size_t *traversed, char *result, const size_t resultl, size_t *written, bool no_nbsp);
+int reliq_decode_entity(const char *src, const size_t srcl, size_t *traversed, char *result, const size_t resultl, size_t *written, bool no_nbsp);
 
 void reliq_decode_entities_file(const char *src, const size_t srcl, FILE *out, bool no_nbsp);
 void reliq_decode_entities_str(const char *src, const size_t srcl, char **str, size_t *strl, bool no_nbsp);
+
+
+//if full is set than all entities will be considered, there's probably no reason to use it
+
+#define RELIQ_ENCODE_ENTITY_MAXSIZE 31 //maximum size that encoded entity can take
+//resultl ideally should be at least RELIQ_ENCODE_ENTITY_MAXSIZE
+//it returns 0 on success and -1 on size conflict
+int reliq_encode_entity(const char *src, const size_t srcl, size_t *traversed, char *result, const size_t resultl, size_t *written, bool full);
+
+void reliq_encode_entities_file(const char *src, const size_t srcl, FILE *out, bool full);
+void reliq_encode_entities_str(const char *src, const size_t srcl, char **str, size_t *strl, bool full);
 
 
 #ifdef __cplusplus

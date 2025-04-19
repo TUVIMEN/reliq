@@ -22,13 +22,11 @@
 #include <string.h>
 
 #include "flexarr.h"
-#include "ctype.h"
 #include "utils.h"
-#include "decode_entities.h"
 #include "range.h"
-#include "hnode_print.h"
 #include "format.h"
 #include "edit.h"
+#include "entities.h"
 
 #define LINE_EDIT_INC (1<<8)
 
