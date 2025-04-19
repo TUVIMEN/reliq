@@ -2461,12 +2461,16 @@ find_entity(const char *src, const size_t srcl, struct htmlcode const **found, s
   }
 
   size_t maxi = 0;
-  size_t max = 0;
+  size_t max = 0, minnamel = -1;
   for (size_t i = 0; i < found_likelyl; i++) {
-    if (max >= found_likely_sizes[i])
+    size_t len = found_likely_sizes[i];
+    if (max > len)
+      continue;
+    if (max == len && minnamel <= found_likely[i]->name.s)
       continue;
 
     max = found_likely_sizes[i];
+    minnamel = found_likely[i]->name.s;
     maxi = i;
   }
   *found = found_likely[maxi];
