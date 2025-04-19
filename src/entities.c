@@ -2485,7 +2485,7 @@ reliq_encode_entity(const char *src, const size_t srcl, size_t *traversed, char 
   const char *entity = src;
 
   if (c == '&') {
-    j = 5;
+    j = 3;
     entity = "amp";
   } else if (c == '<') {
     j = 2;
