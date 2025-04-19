@@ -28,9 +28,9 @@
 #include "format.h"
 #include "exprs.h"
 
-/*#define PRINT_CODE_DEBUG*/
 /*#define NCOLLECTOR_DEBUG*/
 /*#define FCOLLECTOR_DEBUG*/
+/*#define PRINT_CODE_DEBUG*/
 
 #define FCOLLECTOR_OUT_INC (1<<4)
 #define OUTFIELDS_INC (1<<4)
@@ -777,6 +777,10 @@ nodes_output_r(const flexarr *comp_nodes, nodes_output_state *st) //comp_nodes: 
   enum outfieldCode prevcode = ofUnnamed;
   size_t prev_nodes_i = 0;
 
+  #ifdef PRINT_CODE_DEBUG
+  RELIQ_DEBUG_SECTION_HEADER("CODES");
+  #endif
+
   for (;; nodes_i++) {
     if (nodesl && st->amount_i == 0) {
       fcollector_start(st);
@@ -819,6 +823,10 @@ nodes_output_r(const flexarr *comp_nodes, nodes_output_state *st) //comp_nodes: 
       break;
   }
 
+  #ifdef PRINT_CODE_DEBUG
+  fputc('\n',stderr);
+  #endif
+
   return err;
 }
 
@@ -845,7 +853,7 @@ ncollector_print(const flexarr *ncollector) //ncollector: struct ncollector
   const struct ncollector *ncols = ncollector->v;
   size_t start = 0;
 
-  fprintf(stderr,"\033[34;2m//\033[0m\033[32;6mNCOLLECTOR\033[0m\n");
+  RELIQ_DEBUG_SECTION_HEADER("NCOLLECTOR");
   for (size_t i = 0; i < ncolsl; i++) {
     fprintf(stderr,"\033[34m%03lu\033[0m ",i);
 
@@ -866,7 +874,7 @@ fcollector_print(const flexarr *fcollector) //fcollector: struct fcollector
   const size_t fcolsl = fcollector->size;
   const struct fcollector *fcols = fcollector->v;
 
-  fprintf(stderr,"\033[34;2m//\033[0m\033[32;6mFCOLLECTOR\033[0m\n");
+  RELIQ_DEBUG_SECTION_HEADER("FCOLLECTOR");
   for (size_t i = 0; i < fcolsl; i++) {
     for (size_t j = 0; j < fcols[i].lvl; j++)
       fputs("  ",stderr);

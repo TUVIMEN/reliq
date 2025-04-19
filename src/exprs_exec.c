@@ -291,6 +291,7 @@ exec_table(const reliq_expr *expr, const reliq_output_field *named, const flexar
   if (EXPR_TYPE_IS(expr->flags,EXPR_SINGULAR)) {
     if (named)
       add_compressed_blank(dest,expr->childfields ? ofArray : ofNoFieldsBlock,named);
+
     if (!source->size)
       goto END;
 

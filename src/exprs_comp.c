@@ -179,7 +179,7 @@ static void //just for debugging
 reliq_expr_print(const flexarr *expr, size_t tab)
 {
   reliq_expr_print_tab(tab);
-  fprintf(stderr,"\033[34;2m//\033[0m\033[32;6mEXPR\033[0m\n");
+  RELIQ_DEBUG_SECTION_HEADER("EXPR");
   fprintf(stderr,"\033[31mroot\033[0m {\n");
 
   reliq_expr_print_array(expr,tab);
@@ -258,7 +258,7 @@ static void
 tokens_print(const token *tokens, const size_t tokensl)
 {
   uint16_t lvl = 0;
-  fprintf(stderr,"\033[34;2m//\033[0m\033[32;6mTOKENS\033[0m\n");
+  RELIQ_DEBUG_SECTION_HEADER("TOKENS");
   fprintf(stderr,"\033[34;1m%-21s\033[0m | \033[32;1m%-4s\033[0m | \033[33;1mcontent\033[0m\n","name","size");
   fprintf(stderr,"--------------------- | ---- | -------\n");
   for (size_t i = 0; i < tokensl; i++) {

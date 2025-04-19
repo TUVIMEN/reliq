@@ -25,6 +25,11 @@
 
 #define REGEX_PATTERN_SIZE (1<<9)
 
+#define RELIQ_DEBUG_SECTION_HEADER(x) \
+    ( fputs("\033[34;2m//\033[0m\033[32;6m",stderr), \
+      fputs(x,stderr), \
+      fputs("\033[0m\n",stderr) )
+
 #define while_is(w,x,y,z) while ((y) < (z) && w((x)[(y)])) {(y)++;}
 #define while_isnt(w,x,y,z) while ((y) < (z) && !w((x)[(y)])) {(y)++;}
 #define LENGTH(x) (sizeof(x)/(sizeof(*x)))
