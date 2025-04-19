@@ -60,3 +60,7 @@ deaf40879d1751559a47d00ac02969f9,'main; [0] div; * rparent@ preceding@ parent@ s
 315fb372f9bc1fd000203399967dfee0,'inescapable; { table, td, div, section, tr }'
 b6e5e53260a6571eba5fc38010f225f4,'escaping; { div | "%A -- \"%E\" -- \"%e\"\n" , section}'
 4f415a5faceb3e17f357a3e9aec892a7,'weird-conditionals; { { * .i2 } || * #i1 }'
+f0bfbb2c512e350147628acafca2cd01,--encode
+39d5c38d8aa868753078c28dbf96c0af,--encode-full
+a932b05ade33e63d71620ac1c02e24a7,--decode
+e3da409a2583ab490adb1394c2cf68a4,--decode-exact

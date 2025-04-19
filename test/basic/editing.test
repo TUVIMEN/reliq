@@ -74,3 +74,5 @@ def5318b05f50c5472d92563bda00818,'li | tr "\x61-\x64" tr "\k\x22" "\o12" tr "[\x
 < 2.html
 4d7d90200a80ad5c2859de0c25646782,'encoding / decode'
 54bfc9eae0557c3aacd8192017efcb55,'encoding / decode "e"'
+f3ff670c6f8ec3515c5823cc013a7ccc,'encoding / encode'
+ce6a2c4f9cd6ffe4d5279590c91d3397,'encoding / encode "f"'
