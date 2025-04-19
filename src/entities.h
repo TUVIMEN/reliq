@@ -26,5 +26,6 @@
 #include "reliq.h"
 
 void reliq_decode_entities_sink(const char *src, const size_t srcl, SINK *out, bool no_nbsp);
+void reliq_encode_entities_sink(const char *src, const size_t srcl, SINK *out, bool full);
 
 #endif

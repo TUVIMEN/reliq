@@ -34,6 +34,7 @@ reliq_error *trim_edit(const char *src, const size_t size, SINK *output, const v
 reliq_error *cut_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag);
 reliq_error *line_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag);
 reliq_error *decode_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag);
+reliq_error *encode_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag);
 reliq_error *sort_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag);
 reliq_error *uniq_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag);
 reliq_error *echo_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag);

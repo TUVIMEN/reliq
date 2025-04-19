@@ -42,6 +42,7 @@ const struct reliq_format_function format_functions[] = {
   {{"line",4},(reliq_format_function_t)line_edit},
   {{"cut",3},(reliq_format_function_t)cut_edit},
   {{"decode",6},(reliq_format_function_t)decode_edit},
+  {{"encode",6},(reliq_format_function_t)encode_edit},
   {{"sort",4},(reliq_format_function_t)sort_edit},
   {{"uniq",4},(reliq_format_function_t)uniq_edit},
   {{"echo",4},(reliq_format_function_t)echo_edit},
