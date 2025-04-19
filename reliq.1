@@ -29,46 +29,64 @@ will become standard input.
 .SH OPTIONS
 .SS "Generic Program Information"
 .TP
-.B \-h
+.B \-h ", " --help
 Output a usage message and exit.
 .TP
-.BR \-v
+.BR \-v ", " --version
 Output the version number of
 .B reliq
 and exit.
 
-.SS "Matching Control"
+.SS "Modes of execution"
 .TP
-.BI \-f " FILE"
+.BR \-f ", " --file "\fI FILE\fR"
 Obtain pattern from
 .IR FILE.
 The empty file contains zero patterns, and therefore matches nothing.
+.TP
+.BR \-e ", " --expression "\fI PATTERN\fR"
+use
+.IR PATTERN
+instead of first input argument
+.TP
+.BR \--encode
+encode '\fB&\fR', '\fB<\fR', '\fB>\fR', '\fB"\fR', '\fB\\'\fR' to html entities in input files
+.TP
+.BR \--encode-full
+encode all possible characters to html entities in input files
+.TP
+.BR \--decode
+decode html entities, while translating &nbsp; to space in input files
+.TP
+.BR \--decode-exact
+decode html entities in input files
+
 
 .SS "General Output Control"
 .TP
-.BI \-o " FILE"
+.BR \-o ", " --output " \fIFILE\fR"
 Change output to a
 .IR FILE
 instead of stdout.
 
 .TP
-.BI \-e " FILE"
+.BI \-E ", " --error-file " \fIFILE\fR"
 Change output of errors to a
 .IR FILE
 instead of stderr.
 
 .SS "File and Directory Selection"
 .TP
-.BR \-r
+.BR \-r ", " --recursive
 Read all files under each directory, recursively.
 .TP
-.BR \-R
+.BR \-R ", " --dereference-recursive
 Read all files under each directory, recursively.
 Follow all symbolic links, unlike
 .BR \-r .
 .SS "Other Options"
 .TP
-.B \-l
+.B \-l ", " --list-structure
 set
 .IR PATTERN
 to '| "%n%Ua - desc(%c) lvl(%L) size(%s) pos(%I)\\n"'.
@@ -668,9 +686,12 @@ If multiple values are returned each will be separated with '\\t'.
 If no flags are given then flags are set to "lwc".
 .TP
 
-.B decode
+.B decode \fI"FLAGS"\fR
 .IP
-Decode html escape codes.
+Decode html escape codes while translating &nbsp; to space.
+
+Flags:
+    e - decode &nbsp; correctly
 
 .SS FORMAT
 Consists of \fBFUNCTION\fRs separated by whitespace. Output of the tag is passed to \fBFUNCTION\fR, and its output is passed to the next until the last one which will print it.
