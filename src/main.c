@@ -31,6 +31,7 @@
 #include <ftw.h>
 #include <errno.h>
 #include <libgen.h>
+#include <getopt.h>
 
 #include "reliq.h"
 
@@ -107,21 +108,23 @@ handle_reliq_error(reliq_error *err) {
 }
 
 static void
-usage(void)
+usage(FILE *o)
 {
-  die("Usage: %s [OPTION]... PATTERNS [FILE]...\n"\
+  uchar color = (o == stderr || o == stdout)
+  fprintf(o,"Usage: %s [OPTION]... PATTERNS [FILE]...\n"\
       "Search for PATTERNS in each html FILE.\n"\
       "Example: %s 'div id; a href=e>\".org\"' index.html\n\n"\
       "Options:\n"\
-      "  -l\t\t\tlist structure of FILE\n"\
-      "  -o FILE\t\tchange output to a FILE instead of stdout\n"\
-      "  -e FILE\t\tchange output of errors to a FILE instead of stderr\n"\
-      "  -f FILE\t\tobtain PATTERNS from FILE\n"\
-      "  -r\t\t\tread all files under each directory, recursively\n"\
-      "  -R\t\t\tlikewise but follow all symlinks\n"\
-      "  -h\t\t\tshow help\n"\
-      "  -v\t\t\tshow version\n\n"\
-      "When FILE isn't specified, FILE will become standard input.",argv0,argv0,argv0);
+      "  -l, --list-structure\t\tlist structure of FILE\n"\
+      "  -o, --output \033[34mFILE\033[0m\t\tchange output to a FILE instead of stdout\n"\
+      "  -e, --error-file FILE\t\tchange output of errors to a FILE instead of stderr\n"\
+      "  -f, --file FILE\t\tobtain PATTERNS from FILE\n"\
+      "  -r, --recursive\t\tread all files under each directory, recursively\n"\
+      "  -R, --dereference-recursive\tlikewise but follow all symlinks\n"\
+      "  -h, --help\t\t\tshow help\n"\
+      "  -v, --version\t\t\tshow version\n\n"\
+      "When input files aren't specified, standard input will be read.\n",argv0,argv0);
+  exit(1);
 }
 
 static void
@@ -239,6 +242,8 @@ load_expr_from_file(char *filename)
   size_t filel;
   pipe_to_str(fd,&file,&filel);
   close(fd);
+  if (expr)
+    reliq_efree(expr);
   reliq_error *err = reliq_ecomp(file,filel,&expr);
   free(file);
   handle_reliq_error(err);
@@ -265,8 +270,6 @@ open_file(const char *path, const char *mode)
 int
 main(int argc, char **argv)
 {
-  int opt;
-
   #if defined(__MINGW32__) || defined(__MINGW64__)
   _setmode(1,O_BINARY);
   _setmode(2,O_BINARY);
@@ -275,11 +278,27 @@ main(int argc, char **argv)
   outfile = stdout;
   errfile = stderr;
 
-  argv0 = basename(argv[0]);
+  argv0 = strdup(basename(argv[0]));
   if (argc < 2)
-    usage();
+    usage(errfile);
 
-  while ((opt = getopt(argc,argv,"lo:e:f:HrRvh")) != -1) {
+  struct option long_options[] = {
+    {"output",required_argument,NULL,'o'},
+    {"help",no_argument,NULL,'h'},
+    {"version",no_argument,NULL,'v'},
+    {"recursive",no_argument,NULL,'r'},
+    {"dereference-recursive",no_argument,NULL,'R'},
+    {"list-structure",no_argument,NULL,'l'},
+    {"error-file",required_argument,NULL,'e'},
+    {"file",required_argument,NULL,'f'},
+    {NULL,0,NULL,0}
+  };
+
+  while (1) {
+    int index;
+    int opt = getopt_long(argc,argv,"lo:e:f:HrRvh",long_options,&index);
+    if (opt == -1)
+      break;
     switch (opt) {
       case 'l':
         handle_reliq_error(reliq_ecomp("| \"%n%Ua - desc(%c) lvl(%L) size(%s) pos(%I)\\n\"",47,&expr));
@@ -294,7 +313,9 @@ main(int argc, char **argv)
       case 'r': settings |= F_RECURSIVE; break;
       case 'R': settings |= F_RECURSIVE; nftwflags &= ~FTW_PHYS; break;
       case 'v': die(RELIQ_VERSION); break;
-      case 'h': usage(); break;
+      case 'h': usage(errfile); break;
+      case 0:
+        break;
       default: exit(1);
     }
   }
@@ -302,9 +323,9 @@ main(int argc, char **argv)
   if (!expr && optind < argc) {
     handle_reliq_error(reliq_ecomp(argv[optind],strlen(argv[optind]),&expr));
     optind++;
+    if (!expr)
+      return -1;
   }
-  if (!expr)
-    return -1;
   int g = optind;
   for (; g < argc; g++)
     file_handle(argv[g]);
@@ -313,7 +334,11 @@ main(int argc, char **argv)
 
   if (outfile != stdout)
     fclose(outfile);
-  reliq_efree(expr);
+
+  if (expr)
+    reliq_efree(expr);
+
+  free(argv0);
 
   return 0;
 }
