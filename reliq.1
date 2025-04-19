@@ -688,10 +688,18 @@ If no flags are given then flags are set to "lwc".
 
 .B decode \fI"FLAGS"\fR
 .IP
-Decode html escape codes while translating &nbsp; to space.
+Decode html entities while translating &nbsp; to space.
 
 Flags:
     e - decode &nbsp; correctly
+.TP
+
+.B encode \fI"FLAGS"\fR
+.IP
+Encode '&', '<', '>', '"', '\\'' to html entities
+
+Flags:
+    f - encode all possible characters to html entities
 
 .SS FORMAT
 Consists of \fBFUNCTION\fRs separated by whitespace. Output of the tag is passed to \fBFUNCTION\fR, and its output is passed to the next until the last one which will print it.
