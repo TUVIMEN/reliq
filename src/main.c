@@ -49,6 +49,8 @@ int nftwflags = FTW_PHYS;
 FILE *outfile;
 FILE *errfile;
 
+void (*file_exec)(char*,size_t s,int (*)(void*,size_t));
+
 static int nftw_func(const char *fpath, const struct stat *sb, int typeflag, struct FTW *ftwbuf);
 
 static void
@@ -202,24 +204,41 @@ usage(FILE *o)
     } \
   } while (0)
 
-  color_option("l","list-structure",NULL);
-  fputs("\t\tlist structure of ",o);
-  color("FILE",COLOR_INPUT);
-  fputc('\n',o);
+  color_option("h","help",NULL);
+  fputs("\t\t\tshow help\n",o);
 
-  color_option("i","output","FILE");
+  color_option("v","version",NULL);
+  fputs("\t\t\tshow version\n",o);
+
+  color_option("r","recursive",NULL);
+  fputs("\t\tread all files under each directory, recursively\n",o);
+
+  color_option("R","dereference-recursive",NULL);
+  fputs("\tlikewise but follow all symlinks\n",o);
+
+  color_option("o","output","FILE");
   fputs("\t\tchange output to a ",o);
   color("FILE",COLOR_ARG);
   fputs(" instead of ",o);
   color("stdout",COLOR_ARG);
   fputc('\n',o);
 
-  color_option("e","error-file","FILE");
+  color_option("E","error-file","FILE");
   fputs("\t\tchange output of errors to a ",o);
   color("FILE",COLOR_ARG);
   fputs(" instead of ",o);
   color("stderr",COLOR_ARG);
   fputc('\n',o);
+
+  color_option("l","list-structure",NULL);
+  fputs("\t\tlist structure of ",o);
+  color("FILE",COLOR_INPUT);
+  fputc('\n',o);
+
+  color_option("e","expression","PATTERNS");
+  fputs("\tuse ",o);
+  color("PATTERNS",COLOR_ARG);
+  fputs(" instead of first input\n",o);
 
   color_option("f","file","FILE");
   fputs("\t\tobtain ",o);
@@ -228,17 +247,17 @@ usage(FILE *o)
   color("FILE",COLOR_ARG);
   fputc('\n',o);
 
-  color_option("r","recursive",NULL);
-  fputs("\t\tread all files under each directory, recursively\n",o);
+  color_option(NULL,"encode",NULL);
+  fputs("\t\t\tencode '&', '<', '>', '\"', '\\'' to html entities\n",o);
 
-  color_option("R","dereference-recursive",NULL);
-  fputs("\tlikewise but follow all symlinks\n",o);
+  color_option(NULL,"encode-full",NULL);
+  fputs("\t\t\tencode all possible characters to html entities\n",o);
 
-  color_option("h","help",NULL);
-  fputs("\t\t\tshow help\n",o);
+  color_option(NULL,"decode",NULL);
+  fputs("\t\t\tdecode html entities, while translating &nbsp; to space\n",o);
 
-  color_option("v","version",NULL);
-  fputs("\t\t\tshow version\n\n",o);
+  color_option(NULL,"decode-exact",NULL);
+  fputs("\t\tdecode html entities\n",o);
 
   fputc('\n',o);
 
@@ -258,26 +277,44 @@ usage(FILE *o)
 }
 
 static void
-expr_exec(char *f, size_t s, const uchar inpipe)
+str_decode(char *f, size_t s, int (*freedata)(void*,size_t)) {
+  reliq_decode_entities_file(f,s,outfile,true);
+  freedata(f,s);
+}
+
+static void
+str_decode_exact(char *f, size_t s, int (*freedata)(void*,size_t)) {
+  reliq_decode_entities_file(f,s,outfile,false);
+  freedata(f,s);
+}
+
+static void
+str_encode(char *f, size_t s, int (*freedata)(void*,size_t)) {
+  reliq_encode_entities_file(f,s,outfile,false);
+  freedata(f,s);
+}
+
+static void
+str_encode_full(char *f, size_t s, int (*freedata)(void*,size_t)) {
+  reliq_encode_entities_file(f,s,outfile,true);
+  freedata(f,s);
+}
+
+static void
+expr_exec(char *f, size_t s, int (*freedata)(void*,size_t))
 {
   if (f == NULL || s == 0)
     return;
 
   reliq_error *err;
-  int (*freedata)(void*,size_t) = inpipe ? reliq_std_free :
-  #if defined(__MINGW32__) || defined(__MINGW64__)
-    reliq_std_free;
-  #else
-    munmap;
-  #endif
 
   reliq rq;
   if ((err = reliq_init(f,s,&rq)))
     goto ERR;
-  rq.freedata = freedata;
   err = reliq_exec_file(&rq,outfile,expr);
 
   reliq_free(&rq);
+  freedata(f,s);
   ERR: ;
 
   if (err) {
@@ -311,7 +348,7 @@ file_handle(const char *f)
   if (f == NULL) {
     size_t size;
     pipe_to_str(0,&file,&size);
-    expr_exec(file,size,1);
+    file_exec(file,size,reliq_std_free);
     return;
   }
 
@@ -356,7 +393,13 @@ file_handle(const char *f)
     close(fd);
   } else {
     close(fd);
-    expr_exec(file,st.st_size,0);
+    file_exec(file,st.st_size,
+      #if defined(__MINGW32__) || defined(__MINGW64__)
+        reliq_std_free
+      #else
+        munmap
+      #endif
+    );
   }
 }
 
@@ -412,6 +455,14 @@ main(int argc, char **argv)
   if (argc < 2)
     usage(errfile);
 
+  enum {
+    htmlProcess,
+    entityDecode,
+    entityDecodeExact,
+    entityEncode,
+    entityEncodeFull
+  } mode = htmlProcess;
+
   struct option long_options[] = {
     {"output",required_argument,NULL,'o'},
     {"help",no_argument,NULL,'h'},
@@ -419,43 +470,81 @@ main(int argc, char **argv)
     {"recursive",no_argument,NULL,'r'},
     {"dereference-recursive",no_argument,NULL,'R'},
     {"list-structure",no_argument,NULL,'l'},
-    {"error-file",required_argument,NULL,'e'},
+    {"error-file",required_argument,NULL,'E'},
+    {"expression",required_argument,NULL,'e'},
     {"file",required_argument,NULL,'f'},
+    {"encode",no_argument,NULL,0},
+    {"encode-full",no_argument,NULL,0},
+    {"decode",no_argument,NULL,0},
+    {"decode-exact",no_argument,NULL,0},
     {NULL,0,NULL,0}
   };
 
   while (1) {
     int index;
-    int opt = getopt_long(argc,argv,"lo:e:f:HrRvh",long_options,&index);
+    char const *name;
+    int opt = getopt_long(argc,argv,"lo:e:E:f:HrRvh",long_options,&index);
     if (opt == -1)
       break;
+
     switch (opt) {
       case 'l':
+        mode = htmlProcess;
         handle_reliq_error(reliq_ecomp("| \"%n%Ua - desc(%c) lvl(%L) size(%s) pos(%I)\\n\"",47,&expr));
         break;
       case 'o':
         outfile = open_file(optarg,"wb");
         break;
       case 'e':
+        mode = htmlProcess;
+        handle_reliq_error(reliq_ecomp(optarg,strlen(optarg),&expr));
+        break;
+      case 'E':
         errfile = open_file(optarg,"wb");
         break;
-      case 'f': load_expr_from_file(optarg); break;
+      case 'f':
+        mode = htmlProcess;
+        load_expr_from_file(optarg);
+        break;
       case 'r': settings |= F_RECURSIVE; break;
       case 'R': settings |= F_RECURSIVE; nftwflags &= ~FTW_PHYS; break;
       case 'v': die(RELIQ_VERSION); break;
       case 'h': usage(errfile); break;
-      case 0:
+      case 0: {
+          name = long_options[index].name;
+          if (strcmp(name,"encode") == 0) {
+            mode = entityEncode;
+          } else if (strcmp(name,"encode-full") == 0) {
+            mode = entityEncodeFull;
+          } else if (strcmp(name,"decode") == 0) {
+            mode = entityDecode;
+          } if (strcmp(name,"decode-exact") == 0) {
+            mode = entityDecodeExact;
+          }
+        }
         break;
       default: exit(1);
     }
   }
 
-  if (!expr && optind < argc) {
-    handle_reliq_error(reliq_ecomp(argv[optind],strlen(argv[optind]),&expr));
-    optind++;
-    if (!expr)
-      return -1;
+  if (mode == htmlProcess) {
+    if (!expr && optind < argc) {
+      handle_reliq_error(reliq_ecomp(argv[optind],strlen(argv[optind]),&expr));
+      optind++;
+      if (!expr)
+        return -1;
+    }
+    file_exec = expr_exec;
+  } else if (mode == entityDecode) {
+    file_exec = str_decode;
+  } else if (mode == entityDecodeExact) {
+    file_exec = str_decode_exact;
+  } else if (mode == entityEncode) {
+    file_exec = str_encode;
+  } else if (mode == entityEncodeFull) {
+    file_exec = str_encode_full;
   }
+
   int g = optind;
   for (; g < argc; g++)
     file_handle(argv[g]);
@@ -464,7 +553,8 @@ main(int argc, char **argv)
 
   if (outfile != stdout)
     fclose(outfile);
-
+  if (errfile != stderr)
+    fclose(outfile);
   if (expr)
     reliq_efree(expr);
 

@@ -1,4 +1,4 @@
-^ -e /dev/stdout
+^ -E /dev/stdout
 < 1.html
 75b5b9d9906a06b2d6eebc182356d4e1,-f limits-recursion-groups
 1a8767423603cc7a9b68471edc517a4d,-f limits-recursion-blocks

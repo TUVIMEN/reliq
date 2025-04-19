@@ -1,4 +1,4 @@
-^ -e /dev/stdout
+^ -E /dev/stdout
 < 1.html
 838acf6c5d60db08399703822c7cc16f,'.a {.a li, .c u} / "j"',a
 2eea2c10e7cc309e28cf58ef8f32ece3,'a | sed "k" "c" "l" "u" "d"'

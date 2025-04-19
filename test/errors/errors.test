@@ -1,5 +1,5 @@
 < 1.html
-^ -e /dev/stdout
+^ -E /dev/stdout
 1ec7ebc35165e0d58c597e771aa8877c,'E>(las'
 85fb8ac9432dc0110d814139b12e78e2,'li has@"i,a"'
 4b059b78182aba9f57ae746d2a6b569b,'a l@'
