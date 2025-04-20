@@ -53,6 +53,7 @@ enum outfieldCode {
 
 typedef struct {
   reliq_str name;
+  reliq_str annotation;
   char type;
   char arr_delim;
   char arr_type;

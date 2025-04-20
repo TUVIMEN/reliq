@@ -311,24 +311,6 @@ skip_quotes(const char *src, size_t *pos, const size_t s)
   return err;
 }
 
-static reliq_error *
-skip_sbrackets(const char *src, size_t *pos, const size_t s)
-{
-  size_t i = *pos;
-  reliq_error *err = NULL;
-
-  i++;
-  while (i < s && src[i] != ']')
-    i++;
-  if (i < s && src[i] == ']') {
-    i++;
-  } else
-    err = script_err("range: char %lu: unprecedented end of range",i);
-
-  *pos = i;
-  return err;
-}
-
 static inline void
 skip_comment_c_oneline(const char *src, size_t *pos, const size_t s)
 {
@@ -601,14 +583,6 @@ tokenize(const char *src, const size_t size, token **tokens, size_t *tokensl) //
         goto END;
       if (i)
         i--;
-      continue;
-    }
-    if (src[i] == '[') {
-      if (!textstart)
-        textstart = src+i;
-      if ((err = skip_sbrackets(src,&i,size)))
-        goto END;
-      i--;
       continue;
     }
     if ((i == 0 || isspace(src[i-1])) && skip_comment(src,&i,size)) {

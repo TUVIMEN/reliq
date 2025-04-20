@@ -475,9 +475,9 @@ reliq_exec_r(reliq *rq, const reliq_chnode *parent, SINK *output, reliq_compress
 
   if (compressed && !err && !output) {
     *outnodesl = compressed->size;
-    if (outnodes)
+    if (outnodes) {
       flexarr_conv(compressed,(void**)outnodes,outnodesl);
-    else
+    } else
       flexarr_free(compressed);
   }
 

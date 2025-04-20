@@ -523,17 +523,16 @@ main(int argc, char **argv)
       case 'R': settings |= F_RECURSIVE; nftwflags &= ~FTW_PHYS; break;
       case 'v': die(RELIQ_VERSION); break;
       case 'h': usage(errfile); break;
-      case 0: {
-          name = long_options[index].name;
-          if (strcmp(name,"encode") == 0) {
-            mode = entityEncode;
-          } else if (strcmp(name,"encode-full") == 0) {
-            mode = entityEncodeFull;
-          } else if (strcmp(name,"decode") == 0) {
-            mode = entityDecode;
-          } if (strcmp(name,"decode-exact") == 0) {
-            mode = entityDecodeExact;
-          }
+      case 0:
+        name = long_options[index].name;
+        if (strcmp(name,"encode") == 0) {
+          mode = entityEncode;
+        } else if (strcmp(name,"encode-full") == 0) {
+          mode = entityEncodeFull;
+        } else if (strcmp(name,"decode") == 0) {
+          mode = entityDecode;
+        } if (strcmp(name,"decode-exact") == 0) {
+          mode = entityDecodeExact;
         }
         break;
       default: exit(1);
