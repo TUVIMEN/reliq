@@ -142,67 +142,82 @@ should_colorize(FILE *o)
 }
 
 static void
+usage_color(FILE *o, char *color, const char *s, ...)
+{
+  if (color) {
+    fputs("\033[",o);
+    fputs(color,o);
+    fputc('m',o);
+  }
+
+  va_list ap;
+  va_start(ap,s);
+  vfprintf(errfile,s,ap);
+  va_end(ap);
+
+  if (color)
+    fputs("\033[0m",o);
+}
+
+#define color(x,...) usage_color(o,cancolor ? (x) : NULL,__VA_ARGS__)
+#define COLOR_OPTION "35;1"
+#define COLOR_ARG "36"
+#define COLOR_SCRIPT "32"
+#define COLOR_INPUT "33"
+#define COLOR_SECTION "34;1"
+
+static void
+usage_color_option(FILE *o, const uchar cancolor, const char *shortopt, const char *longopt, const char *arg)
+{
+  fputs("  ",o);
+  if (shortopt) {
+    fputc('-',o);
+    color(COLOR_OPTION,shortopt);
+    if (longopt)
+      fputs(", ",o);
+  }
+  if (longopt) {
+    fputs("--",o);
+    color(COLOR_OPTION,longopt);
+  }
+  if (arg != NULL) {
+    fputc(' ',o);
+    color(COLOR_ARG,arg);
+  }
+}
+#define color_option(x,y,z) usage_color_option(o,cancolor,x,y,z)
+
+static void
 usage(FILE *o)
 {
-  volatile uchar cancolor = should_colorize(o);
-  #pragma GCC diagnostic push
-  #pragma GCC diagnostic ignored "-Wunused-value"
-  #pragma GCC diagnostic ignored "-Wnonnull"
+  uchar cancolor = should_colorize(o);
 
-  #define color(x,y) for (size_t _i = 0; _i == 0; _i++, cancolor && fputs("\033[0m",o)) { \
-    cancolor && ( fputs("\033[",o), fputs(y,o), fputc('m',o) ); \
-    fputs(x,o); \
-  }
-  #define COLOR_OPTION "35;1"
-  #define COLOR_ARG "36"
-  #define COLOR_SCRIPT "32"
-  #define COLOR_INPUT "33"
-  #define COLOR_SECTION "34;1"
-
-  color("Usage",COLOR_SECTION)
+  color(COLOR_SECTION,"Usage");
   fprintf(o,": %s [",argv0);
-  color("OPTION",COLOR_OPTION);
+  color(COLOR_OPTION,"OPTION");
   fputs("]... ",o);
-  color("PATTERNS",COLOR_SCRIPT);
+  color(COLOR_SCRIPT,"PATTERNS");
   fputs(" [",o);
-  color("FILE",COLOR_INPUT);
+  color(COLOR_INPUT,"FILE");
   fputs("]...\n",o);
 
   fputs("Search for ",o);
-  color("PATTERNS",COLOR_SCRIPT);
+  color(COLOR_SCRIPT,"PATTERNS");
   fputs(" in each html ",o);
-  color("FILE",COLOR_INPUT);
+  color(COLOR_INPUT,"FILE");
   fputs(".\n",o);
 
-  color("Example",COLOR_SECTION)
+  color(COLOR_SECTION,"Example");
   fputs(": ",o);
   fputs(argv0,o);
   fputs(" \'",o);
-  color("div id; a href=e>\".org\"",COLOR_SCRIPT);
+  color(COLOR_SCRIPT,"div id; a href=e>\".org\"");
   fputs("' ",o);
-  color("index.html",COLOR_INPUT);
+  color(COLOR_INPUT,"index.html");
   fputs("\n\n",o);
 
-  color("Options",COLOR_SECTION);
+  color(COLOR_SECTION,"Options");
   fputs(":\n",o);
-
-  #define color_option(w,x,y) do { \
-    fputs("  ",o); \
-    if (w) { \
-      fputc('-',o); \
-      color(w,COLOR_OPTION); \
-      if (x) \
-        fputs(", ",o); \
-    } \
-    if (x) { \
-      fputs("--",o); \
-      color(x,COLOR_OPTION); \
-    } \
-    if (y != NULL) { \
-      fputc(' ',o); \
-      color(y,COLOR_ARG); \
-    } \
-  } while (0)
 
   color_option("h","help",NULL);
   fputs("\t\t\tshow help\n",o);
@@ -218,33 +233,33 @@ usage(FILE *o)
 
   color_option("o","output","FILE");
   fputs("\t\tchange output to a ",o);
-  color("FILE",COLOR_ARG);
+  color(COLOR_ARG,"FILE");
   fputs(" instead of ",o);
-  color("stdout",COLOR_ARG);
+  color(COLOR_ARG,"stdout");
   fputc('\n',o);
 
   color_option("E","error-file","FILE");
   fputs("\t\tchange output of errors to a ",o);
-  color("FILE",COLOR_ARG);
+  color(COLOR_ARG,"FILE");
   fputs(" instead of ",o);
-  color("stderr",COLOR_ARG);
+  color(COLOR_ARG,"stderr");
   fputc('\n',o);
 
   color_option("l","list-structure",NULL);
   fputs("\t\tlist structure of ",o);
-  color("FILE",COLOR_INPUT);
+  color(COLOR_INPUT,"FILE");
   fputc('\n',o);
 
   color_option("e","expression","PATTERNS");
   fputs("\tuse ",o);
-  color("PATTERNS",COLOR_ARG);
+  color(COLOR_ARG,"PATTERNS");
   fputs(" instead of first input\n",o);
 
   color_option("f","file","FILE");
   fputs("\t\tobtain ",o);
-  color("PATTERNS",COLOR_SCRIPT);
+  color(COLOR_SCRIPT,"PATTERNS");
   fputs(" from ",o);
-  color("FILE",COLOR_ARG);
+  color(COLOR_ARG,"FILE");
   fputc('\n',o);
 
   color_option(NULL,"encode",NULL);
@@ -263,18 +278,16 @@ usage(FILE *o)
 
   fputs("When input files aren't specified, standard input will be read.\n",o);
 
-  #pragma GCC diagnostic pop
-
-  #undef color
-  #undef color_option
-  #undef COLOR_OPTION
-  #undef COLOR_ARG
-  #undef COLOR_SCRIPT
-  #undef COLOR_INPUT
-  #undef COLOR_SECTION
-
   exit(1);
 }
+
+#undef color
+#undef color_option
+#undef COLOR_OPTION
+#undef COLOR_ARG
+#undef COLOR_SCRIPT
+#undef COLOR_INPUT
+#undef COLOR_SECTION
 
 static void
 str_decode(char *f, size_t s, int (*freedata)(void*,size_t)) {
