@@ -94,7 +94,7 @@ do
             t_used_file="$(realpath "$t_used_file" | awk -v prevdir="$previousdir/" 'BEGIN {prevdirl=length(prevdir);} { if (length($0) < prevdirl) { print " " $0; exit; } r=substr($0,0,prevdirl); if (r != prevdir) print " " $0; else print " " substr($0,prevdirl+1); }')"
         fi
         t_lastargs="$(echo "$lastargs" | trim_g)"
-        echo "./$tested_program$t_firstargs $args$t_used_file$t_lastargs - failed"
+        printf "%s - \033[31mfailed\033[0m\n" "./$tested_program$t_firstargs $args$t_used_file$t_lastargs"
     fi
 done
 
