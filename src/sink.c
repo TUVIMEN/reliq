@@ -19,6 +19,7 @@
 #include "ext.h"
 
 #include <stdlib.h>
+#include <string.h>
 #include "sink.h"
 
 SINK *
@@ -50,7 +51,7 @@ sink_set(SINK *sn, const size_t size) //makes sure that SINK has at least size b
     return;
 
   flexarr *fl = sn->v.sf.fl;
-  if (fl->asize < size)
+  if (fl->asize*fl->elsize < size)
     flexarr_set(fl,size);
 }
 
@@ -96,11 +97,22 @@ sink_change(SINK *sn, char **ptr, size_t *ptrl, const size_t size)
 {
   if (sn->type != SINK_TYPE_FLEXARR)
     return sn;
-  sn->v.sf.fl->size = size;
+  flexarr *fl = sn->v.sf.fl;
+  fl->size = size*fl->elsize;
   sn->v.sf.ptr = ptr;
   sn->v.sf.ptrl = ptrl;
   sink_flexarr_flush(sn);
   return sn;
+}
+
+int
+sink_zero(SINK *sn)
+{
+  if (sn->type != SINK_TYPE_FLEXARR)
+    return -1;
+
+  sn->v.sf.fl->size = 0;
+  return 0;
 }
 
 void

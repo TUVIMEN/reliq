@@ -56,8 +56,7 @@ reliq_efree_intr(reliq_expr *expr)
 {
   format_free(expr->nodef,expr->nodefl);
   format_free(expr->exprf,expr->exprfl);
-  if (expr->outfield.name.b)
-    free(expr->outfield.name.b);
+  reliq_output_field_free(&expr->outfield);
 
   if (EXPR_IS_TABLE(expr->flags)) {
     reliq_expr_free_pre(expr->e);
@@ -289,27 +288,6 @@ tokens_print(const token *tokens, const size_t tokensl)
 }
 
 #endif //TOKEN_DEBUG
-
-static reliq_error *
-skip_quotes(const char *src, size_t *pos, const size_t s)
-{
-  size_t i = *pos;
-  char quote = src[i++];
-  reliq_error *err = NULL;
-
-  while (i < s && src[i] != quote) {
-    if (src[i] == '\\' && (src[i+1] == '\\' || src[i+1] == quote))
-      i++;
-    i++;
-  }
-  if (i < s && src[i] == quote) {
-    i++;
-  } else
-    err = script_err("string: could not find the end of %c quote",quote);
-
-  *pos = i;
-  return err;
-}
 
 static inline void
 skip_comment_c_oneline(const char *src, size_t *pos, const size_t s)

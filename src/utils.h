@@ -69,7 +69,9 @@ unsigned int get_dec(const char *src, const size_t size, size_t *traversed);
 uint64_t get_fromdec(const char *src, const size_t srcl, size_t *traversed, const unsigned char maxlength);
 uint64_t get_fromhex(const char *src, const size_t srcl, size_t *traversed, const unsigned char maxlength);
 unsigned int number_handle(const char *src, size_t *pos, const size_t size);
+reliq_error *skip_quotes(const char *src, size_t *pos, const size_t size);
 reliq_error *get_quoted(const char *src, size_t *pos, const size_t size, const char delim, char **result, size_t *resultl);
 void splchars_conv(char *src, size_t *size);
+void splchars_conv_sink(const char *src, const size_t size, SINK *sn);
 
 #endif

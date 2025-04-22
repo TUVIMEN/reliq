@@ -26,7 +26,7 @@
 /*
     SINK type was created to replace open_memstream(), since it's not portable and slow.
 
-    If created by sink_from_file(), sink_close() will not run fclose() on passed file.
+    If created by sink_from_file(), sink_close() will not run fclose() on passed file, unless sink_destroy() is called.
 
     Accessing ptr after writing to SINK will produce segfault if sink_flush() or sink_close() is not called.
 
@@ -59,6 +59,7 @@ SINK *sink_from_file(FILE *f);
 SINK *sink_change(SINK *sn, char **ptr, size_t *ptrl, const size_t size);
 
 void sink_set(SINK *sn, const size_t size);
+int sink_zero(SINK *sn); //sets size of flexarr to 0, doesn't work for FILE for which returns -1
 
 void sink_write(SINK *sn, const char *src, const size_t size);
 void sink_put(SINK *sn, const char c);

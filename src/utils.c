@@ -483,6 +483,27 @@ number_handle(const char *src, size_t *pos, const size_t size)
   return ret;
 }
 
+reliq_error *
+skip_quotes(const char *src, size_t *pos, const size_t size)
+{
+  size_t i = *pos;
+  char quote = src[i++];
+  reliq_error *err = NULL;
+
+  while (i < size && src[i] != quote) {
+    if (src[i] == '\\' && (src[i+1] == '\\' || src[i+1] == quote))
+      i++;
+    i++;
+  }
+  if (i < size && src[i] == quote) {
+    i++;
+  } else
+    err = script_err("string: could not find the end of %c quote at %lu",quote,*pos);
+
+  *pos = i;
+  return err;
+}
+
 static char
 get_quoted_skip(const char *src, size_t *pos, const size_t size, flexarr *res) //res: char
 {
@@ -547,5 +568,26 @@ splchars_conv(char *src, size_t *size)
 
     i += resultl-1;
     delstr(src,i+1,size,traversed-resultl+1);
+  }
+}
+
+void
+splchars_conv_sink(const char *src, const size_t size, SINK *sn)
+{
+  for (size_t i = 0; i < size; i++) {
+    if (src[i] != '\\') {
+      SINGLE: ;
+      sink_put(sn,src[i]);
+      continue;
+    }
+
+    size_t resultl,traversed;
+    char buf[8];
+    splchar3(src+i+1,size-i-1,buf,&resultl,&traversed);
+    if (resultl == 0)
+      goto SINGLE;
+
+    sink_write(sn,buf,resultl);
+    i += traversed;
   }
 }

@@ -51,17 +51,25 @@ enum outfieldCode {
   ofBlockEnd //end of all the above
 };
 
+typedef struct reliq_output_field_type reliq_output_field_type;
+struct reliq_output_field_type {
+  char type;
+  reliq_str *args;
+  size_t argsl;
+  reliq_output_field_type *subtype;
+};
+
 typedef struct {
+  reliq_output_field_type type;
   reliq_str name;
   reliq_str annotation;
-  char type;
-  char arr_delim;
-  char arr_type;
   unsigned char isset;
 } reliq_output_field;
 
 reliq_error *reliq_output_field_comp(const char *src, size_t *pos, const size_t s, reliq_output_field *outfield);
 
 reliq_error *nodes_output(const reliq *rq, SINK *output, const flexarr *compressed_nodes, const flexarr *ncollector, flexarr *fcollector); //compressed_nodes: reliq_compressed, ncollector: reliq_cstr, fcollector: struct fcollector_expr
+
+void reliq_output_field_free(reliq_output_field *outfield);
 
 #endif

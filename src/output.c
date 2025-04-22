@@ -60,7 +60,7 @@ typedef struct {
     uchar field_ended;
 } nodes_output_state;
 
-static void outfields_value_print(SINK *out, const reliq_output_field *field, const char *value, const size_t valuel);
+static void outfields_value_print(SINK *out, const reliq_output_field_type *type, const char *value, const size_t valuel);
 
 static inline reliq_error *
 node_output(const reliq_chnode *hnode, const reliq_chnode *parent, const reliq_format_func *format, const size_t formatl, SINK *output, const reliq *rq)
@@ -68,100 +68,160 @@ node_output(const reliq_chnode *hnode, const reliq_chnode *parent, const reliq_f
   return format_exec(NULL,0,output,hnode,parent,format,formatl,rq);
 }
 
-static reliq_error *
-reliq_output_type_get(const char *src, size_t *pos, const size_t s, uchar arraypossible, char const **type, size_t *typel)
+static void
+outfield_type_name_get(const char *src, size_t *pos, const size_t s, char const **type, size_t *typel)
 {
   size_t i = *pos;
-  reliq_error *err = NULL;
 
   *type = src+i;
   while (i < s && isalnum(src[i]))
     (i)++;
   *typel = i-(*type-src);
-  if (i < s && !isspace(src[i]) && !(arraypossible && (**type == 'a' && (src[i] == '(' || src[i] == '.'))))
-    err = script_err("output field: unexpected character in type 0x%02x",src[i]);
 
   *pos = i;
-  return err;
+}
+
+static void
+outfield_name_get(const char *src, size_t *pos, const size_t s, char const **name, size_t *namel)
+{
+  size_t i = *pos;
+
+  *name = src+i;
+  while (i < s && (isalnum(src[i]) || src[i] == '-' || src[i] == '_'))
+    i++;
+  *namel = i-(*name-src);
+
+  *pos = i;
 }
 
 static reliq_error *
-reliq_output_type_array_get_delim(const char *src, size_t *pos, const size_t s, char *delim)
+outfield_type_get_args(const char *src, size_t *pos, const size_t size, reliq_str **args, size_t *argsl)
 {
+  if (*pos >= size)
+    return NULL;
+
   reliq_error *err = NULL;
   size_t i = *pos;
+  *args = NULL;
+  *argsl = 0;
+  flexarr *a = NULL;
 
-  if (i >= s || src[i] != '(')
-    goto END;
+  a = flexarr_init(sizeof(reliq_str),8);
+  char *arg;
+  size_t argl;
+  SINK *buf = sink_open(&arg,&argl);
 
-  i++;
-  char const *b_start = src+i;
-  char *b_end = memchr(b_start,')',s-i);
-  if (!b_end)
-    goto_script_seterr(END,"output field: array: could not find the end of '(' bracket");
+  while (i < size) {
+    while_is(isspace,src,i,size);
+    if (i >= size)
+      break;
 
-  while (b_start != b_end && isspace(*b_start))
-    b_start++;
-  if (b_start == b_end || *b_start != '"')
-    goto_script_seterr(END,"output field: array: expected argument in '(' bracket");
+    if (src[i] == ')')
+      goto_script_seterr(END,"output field: type: expected an argument in '(' bracket");
 
-  b_start++;
-  char *q_end = memchr(b_start,'"',s-i);
-  if (!q_end)
-    goto_script_seterr(END,"output field: array: could not find the end of '\"' quote");
+    if (src[i] != '"' && src[i] != '\'') {
+      UNEXPECTED_CHAR: ;
+      goto_script_seterr(END,"output field: type argument list: unexpected character 0x%02x at %lu",src[i],i);
+    }
 
-  *delim = *b_start;
-  if (*b_start == '\\' && b_start+1 != b_end) {
-    b_start++;
-    size_t traversed;
-    *delim = splchar2(b_start,b_end-b_start,&traversed);
-    if (*delim != '\\' && *delim == *b_start) {
-      *delim = '\\';
-      b_start--;
-    } else
-      b_start += traversed-1;
+    size_t qstart = i+1;
+    if ((err = skip_quotes(src,&i,size)))
+      goto END;
+    size_t qend = i-1;
+
+    sink_zero(buf);
+    splchars_conv_sink(src+qstart,qend-qstart,buf);
+    sink_flush(buf);
+    *(reliq_str*)flexarr_inc(a) = (reliq_str){
+      .b = memdup(arg,argl),
+      .s = argl
+    };
+
+    while_is(isspace,src,i,size);
+    if (i >= size)
+      break;
+
+    if (src[i] == ')') {
+      i++;
+      goto END;
+    }
+
+    if (src[i] != ',')
+      goto UNEXPECTED_CHAR;
+    i++;
   }
-  b_start++;
-  if (b_start != q_end)
-    goto_script_seterr(END,"output field: array: expected a single character argument");
 
-  q_end++;
-  while (q_end != b_end && isspace(*q_end))
-    q_end++;
-  if (q_end != b_end)
-    goto_script_seterr(END,"output field: array: expected only one argument");
-
-  i = b_end-src+1;
+  if (i >= size)
+    goto_script_seterr(END,"output field: type argument list: unprecedented end of list at %lu",i);
 
   END: ;
+  if (err) {
+    const size_t a_size = a->size;
+    reliq_str *av = a->v;
+    for (size_t i = 0; i < a_size; i++)
+      free(av[i].b);
+    flexarr_free(a);
+  } else
+    flexarr_conv(a,(void**)args,argsl);
+
+  sink_destroy(buf);
+
   *pos = i;
   return err;
 }
 
 static reliq_error *
-reliq_output_type_array_get(const char *src, size_t *pos, const size_t s, reliq_output_field *outfield)
+outfield_validate_args(const reliq_output_field_type *type)
+{
+  char c = type->type;
+  switch (c) {
+    case 'a':
+      if (type->argsl > 1)
+        return script_err("output field: type %c takes at most 1 argument yet %lu were specified",c,type->argsl);
+      if (type->args[0].s > 1)
+        return script_err("output field: type %c: expected a single character argument",c);
+      break;
+
+    default:
+      return script_err("output field: type %c doesn't take any arguments yet %lu were specified",c,type->argsl);
+  }
+  return NULL;
+}
+
+static reliq_error *
+outfield_type_get(const char *src, size_t *pos, const size_t size, reliq_output_field_type *type, const uchar isarray)
 {
   reliq_error *err = NULL;
   size_t i = *pos;
 
-  if (i >= s || (err = reliq_output_type_array_get_delim(src,&i,s,&outfield->arr_delim)))
-    goto END;
+  const char *name;
+  size_t namel;
+  outfield_type_name_get(src,&i,size,&name,&namel);
+  if (namel == 0)
+    goto_script_seterr(END,"output field: unspecified type name at %lu",i);
 
-  if (i < s && !isspace(src[i]) && src[i] != '.')
-    goto_script_seterr(END,"output field: array: unexpected character 0x%02x",src[i]);
+  if (isarray && *name == 'a')
+    goto_script_seterr(END,"output field: array: array type in array is not allowed");
 
-  if (i < s && src[i] == '.') {
+  type->type = *name;
+
+  if (i < size && src[i] == '(') {
     i++;
-    char const *arr_type;
-    size_t arr_typel = 0;
-    if ((err = reliq_output_type_get(src,&i,s,0,&arr_type,&arr_typel)))
+    if ((err = outfield_type_get_args(src,&i,size,&type->args,&type->argsl)))
       goto END;
-    if (arr_typel) {
-      if (*arr_type == 'a')
-        goto_script_seterr(END,"output field: array: array type in array is not allowed");
-      outfield->arr_type = *arr_type;
-    }
+    if ((err = outfield_validate_args(type)))
+      goto END;
   }
+
+  if (*name == 'a' && i < size && src[i] == '.') {
+    i++;
+    type->subtype = calloc(1,sizeof(reliq_output_field_type));
+    type->subtype->type = 's';
+
+    if ((err = outfield_type_get(src,&i,size,type->subtype,1)))
+      goto END;
+  }
+
   END:
   *pos = i;
   return err;
@@ -174,36 +234,37 @@ reliq_output_field_comp(const char *src, size_t *pos, const size_t s, reliq_outp
     return NULL;
 
   reliq_error *err = NULL;
-  const char *name,*type;
-  size_t i=*pos,namel=0,typel=0;
+  const char *name;
+  size_t i=*pos,namel=0;
 
-  outfield->arr_type = 's';
-  outfield->arr_delim = '\n';
+  *outfield = (reliq_output_field){
+    .type = (reliq_output_field_type){
+        .type = 's'
+    }
+  };
 
   i++;
-  name = src+i;
-  while (i < s && (isalnum(src[i]) || src[i] == '-' || src[i] == '_'))
-    i++;
-  namel = i-(name-src);
-  if (i < s && !isspace(src[i])) {
-    if (src[i] != '.')
-      goto_script_seterr(ERR,"output field: unexpected character in name 0x%02x",src[i]);
-    i++;
 
-    if ((err = reliq_output_type_get(src,&i,s,1,&type,&typel)))
+  outfield_name_get(src,&i,s,&name,&namel);
+
+  if (i < s && src[i] == '.') {
+    i++;
+    if ((err = outfield_type_get(src,&i,s,&outfield->type,0)))
       goto ERR;
-
-    if (typel && *type == 'a')
-      if ((err = reliq_output_type_array_get(src,&i,s,outfield)))
-        goto ERR;
   }
 
   outfield->isset = 1;
 
+  if (i < s && !isspace(src[i])) {
+    if (isprint(src[i])) {
+      goto_script_seterr(ERR,"output field: unexpected character '%c' at %lu",src[i],i);
+    } else
+      goto_script_seterr(ERR,"output field: unexpected character 0x%02x at %lu",src[i],i);
+  }
+
   if (!namel)
     goto ERR;
 
-  outfield->type = typel ? *type : 's';
   outfield->name.s = namel;
   outfield->name.b = memdup(name,namel);
 
@@ -467,24 +528,27 @@ outfields_str_print(SINK *out, const char *value, const size_t valuel)
 }
 
 static void
-outfields_array_print(SINK *out, const reliq_output_field *field, const char *value, const size_t valuel)
+outfields_array_print(SINK *out, const reliq_output_field_type *type, const char *value, const size_t valuel)
 {
-
   sink_put(out,'[');
 
   char const *start=value,*end,*last=value+valuel;
-  reliq_output_field f = {
-    .type = field->arr_type
-  };
+  reliq_output_field_type sub = { .type = 's' };
+  char delim = '\n';
+  if (type->subtype)
+    sub.type = type->subtype->type;
+  if (type->argsl)
+    delim = *type->args[0].b;
 
   while (start < last) {
-    end = memchr(start,field->arr_delim,last-start);
+    end = memchr(start,delim,last-start);
     if (!end)
       end = last;
 
     if (start != value)
       sink_put(out,',');
-    outfields_value_print(out,&f,start,end-start);
+
+    outfields_value_print(out,&sub,start,end-start);
     start = end+1;
   }
 
@@ -492,11 +556,9 @@ outfields_array_print(SINK *out, const reliq_output_field *field, const char *va
 }
 
 static void
-outfields_value_print(SINK *out, const reliq_output_field *field, const char *value, const size_t valuel)
+outfields_value_print(SINK *out, const reliq_output_field_type *type, const char *value, const size_t valuel)
 {
-  if (!field)
-    return;
-  switch (field->type) {
+  switch (type->type) {
     case 's':
       outfields_str_print(out,value,valuel);
       break;
@@ -513,7 +575,7 @@ outfields_value_print(SINK *out, const reliq_output_field *field, const char *va
       outfields_bool_print(out,value,valuel);
       break;
     case 'a':
-      outfields_array_print(out,field,value,valuel);
+      outfields_array_print(out,type,value,valuel);
       break;
     default:
       sink_write(out,"null",4);
@@ -544,7 +606,8 @@ outfields_print_pre(struct outfield **fields, size_t *pos, const size_t size, co
         sink_close(field->f);
       field->f = NULL;
 
-      outfields_value_print(out,field->o,field->v,field->s);
+      if (field->o)
+        outfields_value_print(out,&field->o->type,field->v,field->s);
       if (field->v)
         free(field->v);
       field->s = 0;
@@ -569,6 +632,31 @@ outfields_print(flexarr *fields, SINK *out) //fields: struct outfield*
     return;
   size_t pos = 0;
   outfields_print_pre((struct outfield**)fields->v,&pos,fields->size,0,0,out);
+}
+
+static void
+reliq_output_field_type_free(reliq_output_field_type *type)
+{
+  if (type->args) {
+    const size_t argsl = type->argsl;
+    reliq_str *args = type->args;
+    for (size_t i = 0; i < argsl; i++)
+      free(args[i].b);
+    free(args);
+  }
+
+  if (type->subtype) {
+    reliq_output_field_type_free(type->subtype);
+    free(type->subtype);
+  }
+}
+
+void
+reliq_output_field_free(reliq_output_field *outfield)
+{
+  if (outfield->name.b)
+    free(outfield->name.b);
+  reliq_output_field_type_free(&outfield->type);
 }
 
 static void
