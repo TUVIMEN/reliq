@@ -255,6 +255,19 @@ reliq_output_field_comp(const char *src, size_t *pos, const size_t s, reliq_outp
 
   outfield->isset = 1;
 
+  if (i < s && (src[i] == '\'' || src[i] == '"')) {
+    size_t qstart = i+1;
+    if ((err = skip_quotes(src,&i,s)))
+      goto ERR;
+    size_t qend = i-1;
+
+    size_t qlen = qend-qstart;
+    outfield->annotation = (reliq_str){
+      .b = memdup(src+qstart,qlen),
+      .s = qlen
+    };
+  }
+
   if (i < s && !isspace(src[i])) {
     if (isprint(src[i])) {
       goto_script_seterr(ERR,"output field: unexpected character '%c' at %lu",src[i],i);
@@ -656,6 +669,9 @@ reliq_output_field_free(reliq_output_field *outfield)
 {
   if (outfield->name.b)
     free(outfield->name.b);
+  if (outfield->annotation.b)
+    free(outfield->annotation.b);
+
   reliq_output_field_type_free(&outfield->type);
 }
 
