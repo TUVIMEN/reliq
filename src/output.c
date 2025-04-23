@@ -20,6 +20,8 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
+#include <assert.h>
 
 #include "flexarr.h"
 #include "ctype.h"
@@ -180,6 +182,8 @@ outfield_validate_args(const reliq_output_field_type *type)
         return script_err("output field: type %c takes at most 1 argument yet %lu were specified",c,type->argsl);
       if (type->args[0].s > 1)
         return script_err("output field: type %c: expected a single character argument",c);
+      break;
+    case 'd':
       break;
 
     default:
@@ -568,6 +572,73 @@ outfields_array_print(SINK *out, const reliq_output_field_type *type, const char
   sink_put(out,']');
 }
 
+static char *
+fuck_libc(const char *str, const size_t strl, const size_t minsize)
+{
+  const size_t s = (strl+1 < minsize+1) ? minsize+1 : strl+1;
+  char *r = memcpy(malloc(s),str,strl);
+  r[strl] = '\0';
+  return r;
+}
+
+static size_t
+outfields_date_maxsize(const reliq_str *args, const size_t argsl)
+{
+  size_t max_sz = 0;
+  for (size_t i = 0; i < argsl; i++)
+    if (max_sz < args[i].s)
+      max_sz = args[i].s;
+  return max_sz;
+}
+
+static uchar
+outfields_date_match(const reliq_str *args, const size_t argsl, char *matched, struct tm *date)
+{
+  size_t max_sz = outfields_date_maxsize(args,argsl);
+  uchar found = 0;
+  if (!max_sz)
+    return found;
+  char *format = malloc(max_sz+1);
+
+  *date = (struct tm){0};
+  for (size_t i = 0; i < argsl; i++) {
+    memcpy(format,args[i].b,args[i].s);
+    format[args[i].s] = '\0';
+
+    char *r = strptime(matched,format,date);
+    if (r && *r == '\0') {
+      found = 1;
+      break;
+    }
+  }
+  free(format);
+  return found;
+}
+
+static void
+outfields_date_print(SINK *out, const reliq_output_field_type *type, const char *value, const size_t valuel)
+{
+  if (!valuel || !type->argsl) {
+    PRINT_SAME: ;
+    outfields_str_print(out,value,valuel);
+    return;
+  }
+
+  const size_t max_iso_format_size = 24;
+  char *buf = fuck_libc(value,valuel,max_iso_format_size);
+
+  struct tm date;
+  uchar r = outfields_date_match(type->args,type->argsl,buf,&date);
+  if (r) {
+    assert(strftime(buf,max_iso_format_size+1,"%FT%T%z",&date) == 24);
+    outfields_str_print(out,buf,max_iso_format_size);
+  }
+
+  free(buf);
+  if (!r)
+    goto PRINT_SAME;
+}
+
 static void
 outfields_value_print(SINK *out, const reliq_output_field_type *type, const char *value, const size_t valuel)
 {
@@ -586,6 +657,9 @@ outfields_value_print(SINK *out, const reliq_output_field_type *type, const char
       break;
     case 'b':
       outfields_bool_print(out,value,valuel);
+      break;
+    case 'd':
+      outfields_date_print(out,type,value,valuel);
       break;
     case 'a':
       outfields_array_print(out,type,value,valuel);
