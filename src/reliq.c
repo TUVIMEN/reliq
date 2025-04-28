@@ -47,6 +47,16 @@ reliq_set_error(const int code, const char *fmt, ...)
   return err;
 }
 
+static inline void
+reliq_free_url(reliq *rq)
+{
+  if (!rq->url.url.b)
+    return;
+
+  reliq_url_free(&rq->url);
+  rq->url.url.b = NULL;
+}
+
 int
 reliq_free(reliq *rq)
 {
@@ -61,7 +71,17 @@ reliq_free(reliq *rq)
 
   if (rq->freedata)
     return (*rq->freedata)((void*)rq->data,rq->datal);
+
+  reliq_free_url(rq);
+
   return 0;
+}
+
+void
+reliq_set_url(reliq *rq, const char *url, const size_t urll)
+{
+  reliq_free_url(rq);
+  reliq_url_parse(url,urll,NULL,0,&rq->url);
 }
 
 static void
@@ -168,6 +188,7 @@ reliq_init(const char *data, const size_t size, reliq *rq)
   rq->data = data;
   rq->datal = size;
   rq->freedata = NULL;
+  memset(&rq->url,0,sizeof(reliq_url));
 
   reliq_error *err = html_handle(data,size,&rq->nodes,&rq->nodesl,&rq->attribs,&rq->attribsl);
 

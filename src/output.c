@@ -62,7 +62,7 @@ typedef struct {
     uchar field_ended;
 } nodes_output_state;
 
-static void outfields_value_print(SINK *out, const reliq_output_field_type *type, const char *value, const size_t valuel);
+static void outfields_value_print(const reliq *rq, SINK *out, const reliq_output_field_type *type, const char *value, const size_t valuel);
 
 static inline reliq_error *
 node_output(const reliq_chnode *hnode, const reliq_chnode *parent, const reliq_format_func *format, const size_t formatl, SINK *output, const reliq *rq)
@@ -178,9 +178,10 @@ outfield_validate_args(const reliq_output_field_type *type)
   char c = type->type;
   switch (c) {
     case 'a':
+    case 'U':
       if (type->argsl > 1)
         return script_err("output field: type %c takes at most 1 argument yet %lu were specified",c,type->argsl);
-      if (type->args[0].s > 1)
+      if (c == 'a' && type->args[0].s > 1)
         return script_err("output field: type %c: expected a single character argument",c);
       break;
     case 'd':
@@ -545,7 +546,7 @@ outfields_str_print(SINK *out, const char *value, const size_t valuel)
 }
 
 static void
-outfields_array_print(SINK *out, const reliq_output_field_type *type, const char *value, const size_t valuel)
+outfields_array_print(const reliq *rq, SINK *out, const reliq_output_field_type *type, const char *value, const size_t valuel)
 {
   sink_put(out,'[');
 
@@ -565,7 +566,7 @@ outfields_array_print(SINK *out, const reliq_output_field_type *type, const char
     if (start != value)
       sink_put(out,',');
 
-    outfields_value_print(out,&sub,start,end-start);
+    outfields_value_print(rq,out,&sub,start,end-start);
     start = end+1;
   }
 
@@ -640,7 +641,33 @@ outfields_date_print(SINK *out, const reliq_output_field_type *type, const char 
 }
 
 static void
-outfields_value_print(SINK *out, const reliq_output_field_type *type, const char *value, const size_t valuel)
+outfields_url_print(const reliq *rq, SINK *out, const reliq_output_field_type *type, const char *value, const size_t valuel)
+{
+  const reliq_url *ref = &rq->url;
+  reliq_url ref_buf;
+  uchar uses_arg = type->argsl > 0;
+
+  if (uses_arg) {
+    reliq_str *s = &type->args[0];
+    reliq_url_parse(s->b,s->s,NULL,0,&ref_buf);
+    ref = &ref_buf;
+  }
+
+  reliq_url url,outurl;
+
+  reliq_url_parse(value,valuel,ref->scheme.b,ref->scheme.s,&url);
+  reliq_url_join(ref,&url,&outurl);
+
+  outfields_str_print(out,outurl.url.b,outurl.url.s);
+
+  reliq_url_free(&url);
+  reliq_url_free(&outurl);
+  if (uses_arg)
+    reliq_url_free(&ref_buf);
+}
+
+static void
+outfields_value_print(const reliq *rq, SINK *out, const reliq_output_field_type *type, const char *value, const size_t valuel)
 {
   switch (type->type) {
     case 's':
@@ -661,8 +688,11 @@ outfields_value_print(SINK *out, const reliq_output_field_type *type, const char
     case 'd':
       outfields_date_print(out,type,value,valuel);
       break;
+    case 'U':
+      outfields_url_print(rq,out,type,value,valuel);
+      break;
     case 'a':
-      outfields_array_print(out,type,value,valuel);
+      outfields_array_print(rq,out,type,value,valuel);
       break;
     default:
       sink_write(out,"null",4);
@@ -671,7 +701,7 @@ outfields_value_print(SINK *out, const reliq_output_field_type *type, const char
 }
 
 static void
-outfields_print_pre(struct outfield **fields, size_t *pos, const size_t size, const uint16_t lvl, uchar isarray, SINK *out)
+outfields_print_pre(const reliq *rq, struct outfield **fields, size_t *pos, const size_t size, const uint16_t lvl, uchar isarray, SINK *out)
 {
   size_t i = *pos;
 
@@ -694,13 +724,13 @@ outfields_print_pre(struct outfield **fields, size_t *pos, const size_t size, co
       field->f = NULL;
 
       if (field->o)
-        outfields_value_print(out,&field->o->type,field->v,field->s);
+        outfields_value_print(rq,out,&field->o->type,field->v,field->s);
       if (field->v)
         free(field->v);
       field->s = 0;
     } else if (field->code == ofBlock || field->code == ofArray) {
       i++;
-      outfields_print_pre(fields,&i,size,lvl+1,(field->code == ofArray) ? 1 : 0,out);
+      outfields_print_pre(rq,fields,&i,size,lvl+1,(field->code == ofArray) ? 1 : 0,out);
       i--;
     }
 
@@ -713,12 +743,12 @@ outfields_print_pre(struct outfield **fields, size_t *pos, const size_t size, co
 }
 
 static void
-outfields_print(flexarr *fields, SINK *out) //fields: struct outfield*
+outfields_print(const reliq *rq, flexarr *fields, SINK *out) //fields: struct outfield*
 {
   if (!fields->size)
     return;
   size_t pos = 0;
-  outfields_print_pre((struct outfield**)fields->v,&pos,fields->size,0,0,out);
+  outfields_print_pre(rq,(struct outfield**)fields->v,&pos,fields->size,0,0,out);
 }
 
 static void
@@ -1097,7 +1127,7 @@ nodes_output(const reliq *rq, SINK *output, const flexarr *compressed_nodes, con
   reliq_error *err = nodes_output_r(compressed_nodes,&st);
 
   if (!err)
-    outfields_print(st.outfields,st.out_origin);
+    outfields_print(rq,st.outfields,st.out_origin);
 
   fcollector_outs_free(st.fcol_outs);
   outfields_free(st.outfields);

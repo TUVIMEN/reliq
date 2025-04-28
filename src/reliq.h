@@ -31,14 +31,14 @@ extern "C" {
 
 //#RELIQ_COMPILE_FLAGS
 
-#ifndef RELIQ_SMALL_STACK
-#define RELIQ_MAX_NODE_LEVEL 8192 //stack overflows at 32744 at 8192kb stack
-#define RELIQ_MAX_GROUP_LEVEL 3552 //stack overflows at 14160 at 8192kb stack
-#define RELIQ_MAX_BLOCK_LEVEL 6892 //stack overflows at 27576 at 8192kb stack
-#else
+#ifdef RELIQ_SMALL_STACK
 #define RELIQ_MAX_NODE_LEVEL 256
 #define RELIQ_MAX_GROUP_LEVEL 256
 #define RELIQ_MAX_BLOCK_LEVEL 256
+#else
+#define RELIQ_MAX_NODE_LEVEL 8192 //stack overflows at 32744 at 8192kb stack
+#define RELIQ_MAX_GROUP_LEVEL 3552 //stack overflows at 14160 at 8192kb stack
+#define RELIQ_MAX_BLOCK_LEVEL 6892 //stack overflows at 27576 at 8192kb stack
 #endif
 
 #if RELIQ_HTML_SIZE == 2
@@ -148,8 +148,28 @@ typedef struct {
 
 typedef struct reliq_expr reliq_expr;
 
+typedef struct {
+  reliq_str url;
+
+  reliq_cstr scheme; //should be treated without case distinction
+  reliq_cstr netloc;
+  reliq_cstr path;
+  reliq_cstr params;
+  reliq_cstr query;
+  reliq_cstr fragment;
+} reliq_url;
+
+//scheme is optional
+void reliq_url_parse(const char *url, const size_t urll, const char *scheme, size_t schemel, reliq_url *dest);
+
+void reliq_url_join(const reliq_url *ref, const reliq_url *url, reliq_url *dest);
+
+void reliq_url_free(reliq_url *url);
+
 //if .freedata is set than it will be called with reliq_free() to free .data
 typedef struct {
+  reliq_url url;
+
   int (*freedata)(void *addr, size_t len);
   char const *data;
   reliq_chnode *nodes;
@@ -163,16 +183,19 @@ typedef struct {
 int reliq_std_free(void *addr, size_t len); //mapping to free(3) that can be used for reliq.freedata
 
 reliq_error *reliq_init(const char *data, const size_t size, reliq *rq);
-int reliq_free(reliq *rq);
+int reliq_free(reliq *rq); //returns result of .freedata() otherwise 0
+
+void reliq_set_url(reliq *rq, const char *url, const size_t urll); //sets reliq.url, which automatically gets freed by reliq_free()
 
 uint32_t reliq_chnode_attribsl(const reliq *rq, const reliq_chnode *hnode);
 uint32_t reliq_chnode_insides(const reliq *rq, const reliq_chnode *hnode, const uint8_t type);
 uint8_t reliq_chnode_type(const reliq_chnode *c);
-void reliq_chnode_conv(const reliq *rq, const reliq_chnode *c, reliq_hnode *d);
-void reliq_cattrib_conv(const reliq *rq, const reliq_cattrib *c, reliq_attrib *d);
 const char *reliq_hnode_starttag(const reliq_hnode *hn, size_t *len);
 const char *reliq_hnode_endtag(const reliq_hnode *hn, size_t *len);
 const char *reliq_hnode_endtag_strip(const reliq_hnode *hn, size_t *len);
+
+void reliq_chnode_conv(const reliq *rq, const reliq_chnode *c, reliq_hnode *d);
+void reliq_cattrib_conv(const reliq *rq, const reliq_cattrib *c, reliq_attrib *d);
 
 reliq reliq_from_compressed(const reliq_compressed *compressed, const size_t compressedl, const reliq *rq);
 reliq reliq_from_compressed_independent(const reliq_compressed *compressed, const size_t compressedl, const reliq *rq);
