@@ -120,7 +120,7 @@ get_netloc(reliq_cstr *url, reliq_cstr *dest)
   const char *urlb = url->b;
   const size_t urll = url->s;
 
-  if (2 >= urll || urlb[0] != '/' || urlb[1] != '/')
+  if (2 > urll || urlb[0] != '/' || urlb[1] != '/')
     goto END;
 
   size_t i = 2;
@@ -270,21 +270,30 @@ get_params(reliq_cstr *path, reliq_cstr *scheme, reliq_cstr *dest)
 }
 
 static size_t
-url_finalize_size(const reliq_url *url)
+url_finalize_size(const reliq_url *url, const uchar path_exists, const uchar path_slash, const uchar path_dslash)
 {
   size_t r = 0;
 
   if (url->scheme.s)
     r += url->scheme.s+1; // ":"
-  if (url->netloc.s)
+
+  if (url->netloc.s) {
     r += url->netloc.s+2; // "//"
+    if (path_exists && !path_slash)
+      r++;
+  } else if (path_dslash
+    || (url->scheme.s && scheme_in(&url->scheme,scheme_uses_netloc)
+      && (!path_exists || path_slash)))
+    r += 2;
+
   r += url->path.s;
+
   if (url->params.s)
     r += url->params.s+1; // ";"
-  if (url->fragment.s)
-    r += url->fragment.s+1; // "#"
   if (url->query.s)
     r += url->query.s+1; // "?"
+  if (url->fragment.s)
+    r += url->fragment.s+1; // "#"
 
   return r;
 }
@@ -313,7 +322,7 @@ append_c_to(char **dest, char c)
 }
 
 static char *
-url_finalize_copy_before(reliq_url *url, char *dest)
+url_finalize_copy_before(reliq_url *url, char *dest, const uchar path_exists, const uchar path_slash, const uchar path_dslash)
 {
   if (url->scheme.s) {
     append_finalize(&dest,&url->scheme);
@@ -324,6 +333,13 @@ url_finalize_copy_before(reliq_url *url, char *dest)
     append_c_to(&dest,'/');
     append_c_to(&dest,'/');
     append_finalize(&dest,&url->netloc);
+    if (path_exists && !path_slash)
+      append_c_to(&dest,'/');
+  } else if (path_dslash
+    || (url->scheme.s && scheme_in(&url->scheme,scheme_uses_netloc)
+      && (!path_exists || path_slash))) {
+    append_c_to(&dest,'/');
+    append_c_to(&dest,'/');
   }
   return dest;
 }
@@ -336,13 +352,13 @@ url_finalize_copy_after(reliq_url *url, char *dest)
     append_finalize(&dest,&url->params);
   }
 
-  if (url->fragment.s) {
-    append_c_to(&dest,'#');
-    append_finalize(&dest,&url->fragment);
-  }
   if (url->query.s) {
     append_c_to(&dest,'?');
     append_finalize(&dest,&url->query);
+  }
+  if (url->fragment.s) {
+    append_c_to(&dest,'#');
+    append_finalize(&dest,&url->fragment);
   }
   return dest;
 }
@@ -350,14 +366,26 @@ url_finalize_copy_after(reliq_url *url, char *dest)
 static void
 url_finalize(reliq_url *url)
 {
-  const size_t s = url_finalize_size(url);
+  uchar path_exists=0,path_slash=0,path_dslash=0;
+  if (url->params.s)
+    path_exists = 1;
+  if (url->path.s) {
+    path_exists = 1;
+    if (url->path.b[0] == '/') {
+      path_slash = 1;
+      if (url->path.s >= 2 && url->path.b[1] == '/')
+        path_dslash = 1;
+    }
+  }
+
+  const size_t s = url_finalize_size(url,path_exists,path_slash,path_dslash);
   char *u = NULL;
   if (!s)
     goto END;
 
   char *t = u = malloc(s);
 
-  t = url_finalize_copy_before(url,t);
+  t = url_finalize_copy_before(url,t,path_exists,path_slash,path_dslash);
   append_finalize(&t,&url->path);
   t = url_finalize_copy_after(url,t);
 
@@ -371,6 +399,8 @@ url_finalize(reliq_url *url)
 static size_t
 url_finalize_path_size(const struct urldir *dirs, const size_t dirs_size)
 {
+  if (!dirs_size)
+    return 0;
   size_t r = dirs_size-1; //slashes in between
   for (size_t i = 0; i < dirs_size; i++)
     r += dirs[i].to-dirs[i].from;
@@ -381,14 +411,15 @@ static void
 url_finalize_path(reliq_url *url, const struct urldir *dirs, const size_t dirs_size, const uchar first_slash, const uchar last_slash)
 {
   url->path.s = url_finalize_path_size(dirs,dirs_size)+first_slash+last_slash;
-  const size_t s = url_finalize_size(url);
+  uchar path_exists = (dirs_size || url->params.s);
+  const size_t s = url_finalize_size(url,path_exists,first_slash,0);
   char *u = NULL;
   if (!s)
     goto END;
 
   char *t = u = malloc(s);
 
-  t = url_finalize_copy_before(url,t);
+  t = url_finalize_copy_before(url,t,path_exists,first_slash,0);
 
   url->path.b = t;
   if (first_slash)
@@ -475,19 +506,26 @@ url_join_mkpath(struct urldir *dirs, size_t *dirs_size, uchar *first_slash, ucha
 {
   size_t dirs_sz = 0;
   *last_slash = 0;
-  *first_slash = 1;
+  *first_slash = 0;
 
   if (path->s && path->b[0] == '/') {
     urldirs_append(dirs,&dirs_sz,path->b,path->s);
+    *first_slash = 1;
   } else {
     if (rpath->s) {
+      if (rpath->s && rpath->b[0] == '/')
+        *first_slash = 1;
       urldirs_append(dirs,&dirs_sz,rpath->b,rpath->s);
       if (dirs_sz && rpath->b[rpath->s-1] != '/')
         dirs_sz--;
-    } else if (!path->s)
-      *first_slash = 0;
+    }
 
+    size_t p = dirs_sz;
     urldirs_append(dirs,&dirs_sz,path->b,path->s);
+    if (p && p == dirs_sz)
+      *last_slash = 1;
+    if (!rpath->s && dirs_sz)
+      *first_slash = 1;
   }
 
   if (path->s > 1 && path->b[path->s-1] == '/')
@@ -512,7 +550,7 @@ url_join_mkpath(struct urldir *dirs, size_t *dirs_size, uchar *first_slash, ucha
     } else
       memmove(dirs+i-(i && drop),dirs+i+1,sizeof(struct urldir)*(dirs_sz-i-1));
 
-    dirs_sz -= 1+drop;
+    dirs_sz -= 1+(i && drop);
 
     if (i)
      i -= drop;
@@ -525,7 +563,14 @@ void
 reliq_url_join(const reliq_url *ref, const reliq_url *url, reliq_url *dest)
 {
   reliq_url u;
+  if (!url->url.s) {
+    memcpy(&u,ref,sizeof(reliq_url));
+    goto END_PRE;
+  }
   memcpy(&u,url,sizeof(reliq_url));
+
+  if (!ref->url.s)
+    goto END_PRE;
 
   if (!memcasecomp(ref->scheme.b,u.scheme.b,ref->scheme.s,u.scheme.s)
     || (u.scheme.s != 0 && !scheme_in(&u.scheme,scheme_uses_relative)))
@@ -551,6 +596,8 @@ reliq_url_join(const reliq_url *ref, const reliq_url *url, reliq_url *dest)
   uchar first_slash,last_slash;
   url_join_mkpath(dirs,&dirs_size,&first_slash,&last_slash,&u.path,&ref->path);
 
+  if (!dirs_size && first_slash && last_slash)
+    last_slash = 0;
   url_finalize_path(&u,dirs,dirs_size,first_slash,last_slash);
   memcpy(dest,&u,sizeof(reliq_url));
   return;
