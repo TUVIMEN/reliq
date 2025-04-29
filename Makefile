@@ -60,7 +60,7 @@ ifeq ($(strip ${O_AUTOCLOSING}),1)
 	CFLAGS_D += -DRELIQ_AUTOCLOSING
 endif
 
-SRC = src/main.c ${LIB_SRC}
+SRC = src/main.c src/usage.c ${LIB_SRC}
 
 ifeq ($(strip ${O_LIB}),1)
 	SRC = ${LIB_SRC}
