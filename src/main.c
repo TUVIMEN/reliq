@@ -170,6 +170,7 @@ usage_color(FILE *o, char *color, const char *s, ...)
 #define COLOR_SECTION "34;1"
 #define COLOR_CHAR_STR "31"
 #define COLOR_CHAR_ESCAPE "35"
+#define COLOR_HIGHLIGHT "36;1"
 
 static void
 usage_color_option(FILE *o, const uchar cancolor, const char *shortopt, const char *longopt, const char *arg)
@@ -221,7 +222,7 @@ usage(FILE *o)
   color(COLOR_INPUT,"index.html");
   fputs("\n\n",o);
 
-  color(COLOR_SECTION,"Options");
+  color(COLOR_SECTION,"General");
   fputs(":\n",o);
 
   color_option("h","help",NULL);
@@ -250,6 +251,20 @@ usage(FILE *o)
   color(COLOR_ARG,"stderr");
   fputc('\n',o);
 
+  fputs("\nFollowing options can be threated as subcommands that change mode of operation,\nuse of suboption that is unique to subcommand will implicitly change mode.\n",o);
+
+  fputs("\n--",o);
+  color(COLOR_SECTION,"html");
+  fputs(": process html, first argument is treated as ",o);
+  color(COLOR_SCRIPT,"PATTERNS");
+  fputs(" unless -",o);
+  color(COLOR_OPTION,"f");
+  fputs(" or -",o);
+  color(COLOR_OPTION,"e");
+  fputs(" options are set (",o);
+  color(COLOR_HIGHLIGHT,"default");
+  fputs(")\n",o);
+
   color_option("l","list-structure",NULL);
   fputs("\t\tlist structure of ",o);
   color(COLOR_INPUT,"FILE");
@@ -271,8 +286,9 @@ usage(FILE *o)
   fputs("\t\t\tset url reference for joining",o);
   fputc('\n',o);
 
-  color_option(NULL,"encode",NULL);
-  fputs("\t\t\tencode ",o);
+  fputs("\n--",o);
+  color(COLOR_SECTION,"encode");
+  fputs(": encode ",o);
   color(COLOR_CHAR_STR,"'&'");
   fputs(", ",o);
   color(COLOR_CHAR_STR,"'<'");
@@ -286,18 +302,19 @@ usage(FILE *o)
   color(COLOR_CHAR_STR,"'");
   fputs(" to html entities\n",o);
 
-  color_option(NULL,"encode-full",NULL);
-  fputs("\t\t\tencode all possible characters to html entities\n",o);
+  fputs("\n--",o);
+  color(COLOR_SECTION,"encode-full");
+  fputs(": encode all possible characters to html entities\n",o);
 
-  color_option(NULL,"decode",NULL);
-  fputs("\t\t\tdecode html entities, while translating &nbsp; to space\n",o);
+  fputs("\n--",o);
+  color(COLOR_SECTION,"decode");
+  fputs(": decode html entities, while translating &nbsp; to space\n",o);
 
-  color_option(NULL,"decode-exact",NULL);
-  fputs("\t\tdecode html entities\n",o);
+  fputs("\n--",o);
+  color(COLOR_SECTION,"decode-exact");
+  fputs(": decode html entities\n",o);
 
-  fputc('\n',o);
-
-  fputs("When input files aren't specified, standard input will be read.\n",o);
+  fputs("\nWhen input files aren't specified, standard input will be read.\n",o);
 
   exit(1);
 }
