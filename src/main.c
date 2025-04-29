@@ -314,6 +314,8 @@ main(int argc, char **argv)
     {"expression",required_argument,NULL,'e'},
     {"file",required_argument,NULL,'f'},
     {"url",required_argument,NULL,'u'},
+
+    {"html",no_argument,NULL,0},
     {"encode",no_argument,NULL,0},
     {"encode-full",no_argument,NULL,0},
     {"decode",no_argument,NULL,0},
@@ -358,7 +360,9 @@ main(int argc, char **argv)
       case 'h': usage(argv0,errfile); break;
       case 0:
         name = long_options[index].name;
-        if (strcmp(name,"encode") == 0) {
+        if (strcmp(name,"html") == 0) {
+          mode = htmlProcess;
+        } else if (strcmp(name,"encode") == 0) {
           mode = entityEncode;
         } else if (strcmp(name,"encode-full") == 0) {
           mode = entityEncodeFull;
