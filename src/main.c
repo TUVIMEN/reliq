@@ -138,6 +138,30 @@ str_encode_full(char *f, size_t s, int (*freedata)(void*,size_t)) {
 }
 
 static void
+join_urls(const char *url, char **argv, size_t pos, const size_t argc)
+{
+  if (pos >= argc)
+    return;
+
+  reliq_url ref;
+  reliq_url_parse(url,strlen(url),NULL,0,&ref);
+
+  for (; pos < argc; pos++) {
+    reliq_url c,r;
+    reliq_url_parse(argv[pos],strlen(argv[pos]),ref.scheme.b,ref.scheme.s,&c);
+    reliq_url_join(&ref,&c,&r);
+
+    fwrite(r.url.b,1,r.url.s,outfile);
+    fputc('\n',outfile);
+
+    reliq_url_free(&c);
+    reliq_url_free(&r);
+  }
+
+  reliq_url_free(&ref);
+}
+
+static void
 expr_exec(char *f, size_t s, int (*freedata)(void*,size_t))
 {
   if (f == NULL || s == 0)
@@ -297,6 +321,7 @@ main(int argc, char **argv)
 
   enum {
     htmlProcess,
+    urlJoin,
     entityDecode,
     entityDecodeExact,
     entityEncode,
@@ -316,6 +341,7 @@ main(int argc, char **argv)
     {"url",required_argument,NULL,'u'},
 
     {"html",no_argument,NULL,0},
+    {"urljoin",no_argument,NULL,0},
     {"encode",no_argument,NULL,0},
     {"encode-full",no_argument,NULL,0},
     {"decode",no_argument,NULL,0},
@@ -362,6 +388,8 @@ main(int argc, char **argv)
         name = long_options[index].name;
         if (strcmp(name,"html") == 0) {
           mode = htmlProcess;
+        } else if (strcmp(name,"urljoin") == 0) {
+          mode = urlJoin;
         } else if (strcmp(name,"encode") == 0) {
           mode = entityEncode;
         } else if (strcmp(name,"encode-full") == 0) {
@@ -395,10 +423,15 @@ main(int argc, char **argv)
   }
 
   int g = optind;
-  for (; g < argc; g++)
-    file_handle(argv[g]);
-  if (g-optind == 0)
-    file_handle(NULL);
+  if (mode == urlJoin) {
+    if (optind < argc)
+      join_urls(argv[g],argv,g+1,argc);
+  } else {
+    for (; g < argc; g++)
+      file_handle(argv[g]);
+    if (g-optind == 0)
+      file_handle(NULL);
+  }
 
   if (outfile != stdout)
     fclose(outfile);

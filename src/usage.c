@@ -206,6 +206,10 @@ usage(const char *argv0, FILE *o)
   fputc('\n',o);
 
   fputs("\n--",o);
+  color(COLOR_SECTION,"urljoin");
+  fputs(": join urls passed as arguments with first url passed\n",o);
+
+  fputs("\n--",o);
   color(COLOR_SECTION,"encode");
   fputs(": encode ",o);
   color(COLOR_CHAR_STR,"'&'");
