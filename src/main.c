@@ -53,6 +53,9 @@ void (*file_exec)(char*,size_t s,int (*)(void*,size_t));
 
 static int nftw_func(const char *fpath, const struct stat *sb, int typeflag, struct FTW *ftwbuf);
 
+char *url_ref = NULL;
+size_t url_refl = 0;
+
 static void
 die(const char *s, ...)
 {
@@ -165,6 +168,8 @@ usage_color(FILE *o, char *color, const char *s, ...)
 #define COLOR_SCRIPT "32"
 #define COLOR_INPUT "33"
 #define COLOR_SECTION "34;1"
+#define COLOR_CHAR_STR "31"
+#define COLOR_CHAR_ESCAPE "35"
 
 static void
 usage_color_option(FILE *o, const uchar cancolor, const char *shortopt, const char *longopt, const char *arg)
@@ -262,8 +267,24 @@ usage(FILE *o)
   color(COLOR_ARG,"FILE");
   fputc('\n',o);
 
+  color_option("u","url","URL");
+  fputs("\t\t\tset url reference for joining",o);
+  fputc('\n',o);
+
   color_option(NULL,"encode",NULL);
-  fputs("\t\t\tencode '&', '<', '>', '\"', '\\'' to html entities\n",o);
+  fputs("\t\t\tencode ",o);
+  color(COLOR_CHAR_STR,"'&'");
+  fputs(", ",o);
+  color(COLOR_CHAR_STR,"'<'");
+  fputs(", ",o);
+  color(COLOR_CHAR_STR,"'>'");
+  fputs(", ",o);
+  color(COLOR_CHAR_STR,"'\"'");
+  fputs(", ",o);
+  color(COLOR_CHAR_STR,"'");
+  color(COLOR_CHAR_ESCAPE,"\\'");
+  color(COLOR_CHAR_STR,"'");
+  fputs(" to html entities\n",o);
 
   color_option(NULL,"encode-full",NULL);
   fputs("\t\t\tencode all possible characters to html entities\n",o);
@@ -324,6 +345,9 @@ expr_exec(char *f, size_t s, int (*freedata)(void*,size_t))
   reliq rq;
   if ((err = reliq_init(f,s,&rq)))
     goto ERR;
+  if (url_ref)
+    reliq_set_url(&rq,url_ref,url_refl);
+
   err = reliq_exec_file(&rq,outfile,expr);
 
   reliq_free(&rq);
@@ -486,6 +510,7 @@ main(int argc, char **argv)
     {"error-file",required_argument,NULL,'E'},
     {"expression",required_argument,NULL,'e'},
     {"file",required_argument,NULL,'f'},
+    {"url",required_argument,NULL,'u'},
     {"encode",no_argument,NULL,0},
     {"encode-full",no_argument,NULL,0},
     {"decode",no_argument,NULL,0},
@@ -496,7 +521,7 @@ main(int argc, char **argv)
   while (1) {
     int index;
     char const *name;
-    int opt = getopt_long(argc,argv,"lo:e:E:f:HrRvh",long_options,&index);
+    int opt = getopt_long(argc,argv,"lo:e:E:f:u:HrRvh",long_options,&index);
     if (opt == -1)
       break;
 
@@ -518,6 +543,11 @@ main(int argc, char **argv)
       case 'f':
         mode = htmlProcess;
         load_expr_from_file(optarg);
+        break;
+      case 'u':
+        mode = htmlProcess;
+        url_ref = optarg;
+        url_refl = strlen(optarg);
         break;
       case 'r': settings |= F_RECURSIVE; break;
       case 'R': settings |= F_RECURSIVE; nftwflags &= ~FTW_PHYS; break;

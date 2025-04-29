@@ -424,6 +424,11 @@ reliq_url_free(reliq_url *url)
 void
 reliq_url_parse(const char *url, const size_t urll, const char *scheme, size_t schemel, reliq_url *dest)
 {
+  if (!urll || !url) {
+    memset(dest,0,sizeof(reliq_url));
+    return;
+  }
+
   reliq_str u = {
     .b = memcpy(alloca(urll),url,urll),
     .s = urll
