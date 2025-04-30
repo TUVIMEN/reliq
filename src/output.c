@@ -576,7 +576,7 @@ outfields_array_print(const reliq *rq, SINK *out, const reliq_output_field_type 
 static char *
 fuck_libc(const char *str, const size_t strl, const size_t minsize)
 {
-  const size_t s = (strl+1 < minsize+1) ? minsize+1 : strl+1;
+  const size_t s = MAX(minsize+1,strl+1);
   char *r = memcpy(malloc(s),str,strl);
   r[strl] = '\0';
   return r;
@@ -649,19 +649,17 @@ outfields_url_print(const reliq *rq, SINK *out, const reliq_output_field_type *t
 
   if (uses_arg) {
     reliq_str *s = &type->args[0];
-    reliq_url_parse(s->b,s->s,NULL,0,&ref_buf);
+    reliq_url_parse(s->b,s->s,NULL,0,&ref_buf,false);
     ref = &ref_buf;
   }
 
-  reliq_url url,outurl;
+  reliq_url url;
+  reliq_url_parse(value,valuel,ref->scheme.b,ref->scheme.s,&url,false);
+  reliq_url_join(ref,&url,&url);
 
-  reliq_url_parse(value,valuel,ref->scheme.b,ref->scheme.s,&url);
-  reliq_url_join(ref,&url,&outurl);
-
-  outfields_str_print(out,outurl.url.b,outurl.url.s);
+  outfields_str_print(out,url.url.b,url.url.s);
 
   reliq_url_free(&url);
-  reliq_url_free(&outurl);
   if (uses_arg)
     reliq_url_free(&ref_buf);
 }

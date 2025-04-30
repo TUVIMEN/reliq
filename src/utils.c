@@ -226,7 +226,7 @@ get_fromdec(const char *src, const size_t srcl, size_t *traversed, const uchar m
     return 0;
   size_t i = 0;
   uint64_t ret = 0;
-  const size_t size = (srcl < maxlength) ? srcl : maxlength;
+  const size_t size = MIN(srcl,maxlength);
 
   for (; i < size && isdigit(src[i]); i++)
     ret = (ret*10)+(src[i]-'0');
@@ -255,7 +255,7 @@ get_fromhex(const char *src, const size_t srcl, size_t *traversed, const uchar m
     return 0;
   size_t i = 0;
   uint64_t ret = 0;
-  const size_t size = (srcl < maxlength) ? srcl : maxlength;
+  const size_t size = MIN(srcl,maxlength);
 
   for (; i < size; i++) {
     int val = hextodec(src[i]);

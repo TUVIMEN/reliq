@@ -227,7 +227,7 @@ range_comp_pre(const char *src, size_t *pos, const size_t size, flexarr *nodes) 
       return err;
 
     if (node.flags&(R_RANGE|R_NOTEMPTY))
-      memcpy(flexarr_inc(nodes),&node,sizeof(struct reliq_range_node));
+      *(struct reliq_range_node*)flexarr_inc(nodes) = node;
     *pos = end+((src[end] == ',') ? 1 : 0);
   }
   if (*pos >= size || src[*pos] != ']') {

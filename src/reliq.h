@@ -157,16 +157,28 @@ typedef struct {
   reliq_cstr params;
   reliq_cstr query;
   reliq_cstr fragment;
+
+  size_t allocated; // allocated size for .url
 } reliq_url;
 
-//scheme is optional
-void reliq_url_parse(const char *url, const size_t urll, const char *scheme, size_t schemel, reliq_url *dest);
+//scheme is optional so scheme and schemel can be set to NULL and 0
+//if reuse is set then dest structure will be reused, but it has to be
+//  initiated either by setting it to zero or calling reliq_url_parse
+//  without reuse set
+void reliq_url_parse(const char *url, const size_t urll, const char *scheme, const size_t schemel, reliq_url *dest, const bool reuse);
 
+//if url and dest point to the same location url will be reused
+//url should be initialized by passing scheme and schemel from ref e.g.
+//  void urljoin(const reliq_url *ref, const char *url, const size_t urll, reliq_url *dest) {
+//    reliq_url u;
+//    reliq_url_parse(url,urll,ref->scheme,ref->schemel,&u,false);
+//    reliq_url_join(ref,&u,dest);
+//  }
 void reliq_url_join(const reliq_url *ref, const reliq_url *url, reliq_url *dest);
 
 void reliq_url_free(reliq_url *url);
 
-//if .freedata is set than it will be called with reliq_free() to free .data
+//if reliq.freedata is set than it will be called with reliq_free() to free reliq.data
 typedef struct {
   reliq_url url;
 
@@ -185,7 +197,10 @@ int reliq_std_free(void *addr, size_t len); //mapping to free(3) that can be use
 reliq_error *reliq_init(const char *data, const size_t size, reliq *rq);
 int reliq_free(reliq *rq); //returns result of .freedata() otherwise 0
 
-void reliq_set_url(reliq *rq, const char *url, const size_t urll); //sets reliq.url, which automatically gets freed by reliq_free()
+//sets reliq.url, which automatically gets freed by reliq_free()
+//if reliq.url was already set, it will be reused so reliq.url
+//  doesn't have to be deallocated before calling this function
+void reliq_set_url(reliq *rq, const char *url, const size_t urll);
 
 uint32_t reliq_chnode_attribsl(const reliq *rq, const reliq_chnode *hnode);
 uint32_t reliq_chnode_insides(const reliq *rq, const reliq_chnode *hnode, const uint8_t type);

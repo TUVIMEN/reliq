@@ -144,20 +144,18 @@ join_urls(const char *url, char **argv, size_t pos, const size_t argc)
     return;
 
   reliq_url ref;
-  reliq_url_parse(url,strlen(url),NULL,0,&ref);
+  reliq_url_parse(url,strlen(url),NULL,0,&ref,false);
+  reliq_url c = (reliq_url){0};
 
   for (; pos < argc; pos++) {
-    reliq_url c,r;
-    reliq_url_parse(argv[pos],strlen(argv[pos]),ref.scheme.b,ref.scheme.s,&c);
-    reliq_url_join(&ref,&c,&r);
+    reliq_url_parse(argv[pos],strlen(argv[pos]),ref.scheme.b,ref.scheme.s,&c,true);
+    reliq_url_join(&ref,&c,&c);
 
-    fwrite(r.url.b,1,r.url.s,outfile);
+    fwrite(c.url.b,1,c.url.s,outfile);
     fputc('\n',outfile);
-
-    reliq_url_free(&c);
-    reliq_url_free(&r);
   }
 
+  reliq_url_free(&c);
   reliq_url_free(&ref);
 }
 

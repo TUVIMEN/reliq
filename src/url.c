@@ -269,8 +269,22 @@ get_params(reliq_cstr *path, reliq_cstr *scheme, reliq_cstr *dest)
   };
 }
 
+static inline uchar
+is_path_notabsolute(const uchar path_exists, const uchar path_slash)
+{
+  return (path_exists && !path_slash);
+}
+
+static inline uchar
+is_path_hasnetloc(const reliq_cstr *scheme, const uchar path_exists, const uchar path_slash, const uchar path_dslash)
+{
+  return (path_dslash ||
+    (scheme->s && scheme_in(scheme,scheme_uses_netloc)
+      && (!path_exists || path_slash)));
+}
+
 static size_t
-url_finalize_size(const reliq_url *url, const uchar path_exists, const uchar path_slash, const uchar path_dslash)
+finalize_size(const reliq_url *url, const uchar path_notabsolute, const uchar path_hasnetloc)
 {
   size_t r = 0;
 
@@ -279,11 +293,9 @@ url_finalize_size(const reliq_url *url, const uchar path_exists, const uchar pat
 
   if (url->netloc.s) {
     r += url->netloc.s+2; // "//"
-    if (path_exists && !path_slash)
+    if (path_notabsolute)
       r++;
-  } else if (path_dslash
-    || (url->scheme.s && scheme_in(&url->scheme,scheme_uses_netloc)
-      && (!path_exists || path_slash)))
+  } else if (path_hasnetloc)
     r += 2;
 
   r += url->path.s;
@@ -299,7 +311,7 @@ url_finalize_size(const reliq_url *url, const uchar path_exists, const uchar pat
 }
 
 static inline void
-append_to(char **dest, reliq_cstr *str)
+append_to(char **dest, const reliq_cstr *str)
 {
   if (str->s == 0)
     return;
@@ -322,7 +334,7 @@ append_c_to(char **dest, char c)
 }
 
 static char *
-url_finalize_copy_before(reliq_url *url, char *dest, const uchar path_exists, const uchar path_slash, const uchar path_dslash)
+finalize_copy_before(reliq_url *url, char *dest, const uchar path_notabsolute, const uchar path_hasnetloc)
 {
   if (url->scheme.s) {
     append_finalize(&dest,&url->scheme);
@@ -333,11 +345,9 @@ url_finalize_copy_before(reliq_url *url, char *dest, const uchar path_exists, co
     append_c_to(&dest,'/');
     append_c_to(&dest,'/');
     append_finalize(&dest,&url->netloc);
-    if (path_exists && !path_slash)
+    if (path_notabsolute)
       append_c_to(&dest,'/');
-  } else if (path_dslash
-    || (url->scheme.s && scheme_in(&url->scheme,scheme_uses_netloc)
-      && (!path_exists || path_slash))) {
+  } else if (path_hasnetloc) {
     append_c_to(&dest,'/');
     append_c_to(&dest,'/');
   }
@@ -345,7 +355,7 @@ url_finalize_copy_before(reliq_url *url, char *dest, const uchar path_exists, co
 }
 
 static char *
-url_finalize_copy_after(reliq_url *url, char *dest)
+finalize_copy_after(reliq_url *url, char *dest)
 {
   if (url->params.s) {
     append_c_to(&dest,';');
@@ -363,8 +373,29 @@ url_finalize_copy_after(reliq_url *url, char *dest)
   return dest;
 }
 
+static inline void *
+url_realloc(reliq_url *url, const size_t newsize)
+{
+  // benchmarks have shown that it's faster to free() and malloc() memory again for small sizes than to use realloc()
+  //return realloc(url->url.b,newsize);
+  if (url->url.b)
+    free(url->url.b);
+  return malloc(newsize);
+}
+
 static void
-url_finalize(reliq_url *url)
+url_change_base(reliq_url *url, const char *from, const char *to)
+{
+  url->scheme.b = url->scheme.b-from+to;
+  url->netloc.b = url->netloc.b-from+to;
+  url->path.b = url->path.b-from+to;
+  url->params.b = url->params.b-from+to;
+  url->query.b = url->query.b-from+to;
+  url->fragment.b = url->fragment.b-from+to;
+}
+
+static void
+url_finalize(reliq_url *url, const bool reuse)
 {
   uchar path_exists=0,path_slash=0,path_dslash=0;
   if (url->params.s)
@@ -378,16 +409,42 @@ url_finalize(reliq_url *url)
     }
   }
 
-  const size_t s = url_finalize_size(url,path_exists,path_slash,path_dslash);
+  const uchar path_notabsolute = is_path_notabsolute(path_exists,path_slash),
+    path_hasnetloc = is_path_hasnetloc(&url->scheme,path_exists,path_slash,path_dslash);
+  const size_t s = finalize_size(url,path_notabsolute,path_hasnetloc);
   char *u = NULL;
+  if (reuse) {
+    u = url->url.b;
+  } else
+    url->allocated = s;
+
   if (!s)
     goto END;
 
-  char *t = u = malloc(s);
+  uchar resize = 0;
+  if (reuse) {
+    if (s > url->allocated) {
+      resize = 1;
+      url->allocated = s;
+    }
+    u = alloca(s);
+  } else
+    u = malloc(s);
 
-  t = url_finalize_copy_before(url,t,path_exists,path_slash,path_dslash);
+  char *t = u;
+
+  t = finalize_copy_before(url,t,path_notabsolute,path_hasnetloc);
   append_finalize(&t,&url->path);
-  t = url_finalize_copy_after(url,t);
+  t = finalize_copy_after(url,t);
+
+  if (reuse) {
+    char *to = url->url.b;
+    if (resize)
+      to = url_realloc(url,s);
+    url_change_base(url,u,to);
+    memcpy(to,u,s);
+    u = to;
+  }
 
   END: ;
   url->url = (reliq_str){
@@ -397,7 +454,7 @@ url_finalize(reliq_url *url)
 }
 
 static size_t
-url_finalize_path_size(const struct urldir *dirs, const size_t dirs_size)
+finalize_path_size(const struct urldir *dirs, const size_t dirs_size)
 {
   if (!dirs_size)
     return 0;
@@ -408,18 +465,35 @@ url_finalize_path_size(const struct urldir *dirs, const size_t dirs_size)
 }
 
 static void
-url_finalize_path(reliq_url *url, const struct urldir *dirs, const size_t dirs_size, const uchar first_slash, const uchar last_slash)
+url_finalize_path(reliq_url *url, const struct urldir *dirs, const size_t dirs_size, const uchar first_slash, const uchar last_slash, const uchar reuse)
 {
-  url->path.s = url_finalize_path_size(dirs,dirs_size)+first_slash+last_slash;
-  uchar path_exists = (dirs_size || url->params.s);
-  const size_t s = url_finalize_size(url,path_exists,first_slash,0);
+  url->path.s = finalize_path_size(dirs,dirs_size)+first_slash+last_slash;
+  const uchar path_exists = (dirs_size || url->params.s);
+  const uchar path_notabsolute = is_path_notabsolute(path_exists,first_slash),
+    path_hasnetloc = is_path_hasnetloc(&url->scheme,path_exists,first_slash,0);
+  const size_t s = finalize_size(url,path_notabsolute,path_hasnetloc);
   char *u = NULL;
+  if (reuse) {
+    u = url->url.b;
+  } else
+    url->allocated = s;
+
   if (!s)
     goto END;
 
-  char *t = u = malloc(s);
+  uchar resize = 0;
+  if (reuse) {
+    if (s > url->allocated) {
+      resize = 1;
+      url->allocated = s;
+    }
+    u = alloca(s);
+  } else
+    u = malloc(s);
 
-  t = url_finalize_copy_before(url,t,path_exists,first_slash,0);
+  char *t = u;
+
+  t = finalize_copy_before(url,t,path_notabsolute,path_hasnetloc);
 
   url->path.b = t;
   if (first_slash)
@@ -437,7 +511,16 @@ url_finalize_path(reliq_url *url, const struct urldir *dirs, const size_t dirs_s
   if (last_slash)
     append_c_to(&t,'/');
 
-  t = url_finalize_copy_after(url,t);
+  t = finalize_copy_after(url,t);
+
+  if (reuse) {
+    char *to = url->url.b;
+    if (resize)
+      to = url_realloc(url,s);
+    url_change_base(url,u,to);
+    memcpy(to,u,s);
+    u = to;
+  }
 
   END: ;
   url->url = (reliq_str){
@@ -449,14 +532,31 @@ url_finalize_path(reliq_url *url, const struct urldir *dirs, const size_t dirs_s
 void
 reliq_url_free(reliq_url *url)
 {
-  free(url->url.b);
+  if (url->allocated)
+    free(url->url.b);
+}
+
+static inline void
+url_zero(reliq_url *url, const bool reuse)
+{
+  reliq_str url_t;
+  size_t allocated_t;
+  if (reuse) {
+    url_t = url->url;
+    allocated_t = url->allocated;
+  }
+  *url = (reliq_url){0};
+  if (reuse) {
+    url->url = url_t;
+    url->allocated = allocated_t;
+  }
 }
 
 void
-reliq_url_parse(const char *url, const size_t urll, const char *scheme, size_t schemel, reliq_url *dest)
+reliq_url_parse(const char *url, const size_t urll, const char *scheme, const size_t schemel, reliq_url *dest, const bool reuse)
 {
   if (!urll || !url) {
-    memset(dest,0,sizeof(reliq_url));
+    url_zero(dest,reuse);
     return;
   }
 
@@ -475,7 +575,7 @@ reliq_url_parse(const char *url, const size_t urll, const char *scheme, size_t s
   get_by_delim((reliq_cstr*)&u,&dest->fragment,'#');
   get_by_delim((reliq_cstr*)&u,&dest->query,'?');
 
-  url_finalize(dest);
+  url_finalize(dest,reuse);
 }
 
 static inline void
@@ -563,11 +663,19 @@ void
 reliq_url_join(const reliq_url *ref, const reliq_url *url, reliq_url *dest)
 {
   reliq_url u;
+  bool reuse = (url == dest);
+
   if (!url->url.s) {
-    memcpy(&u,ref,sizeof(reliq_url));
+    u = *ref;
+    if (reuse) {
+      u.url = url->url;
+      u.allocated = url->allocated;
+    }
+
+    reuse = false;
     goto END_PRE;
   }
-  memcpy(&u,url,sizeof(reliq_url));
+  u = *url;
 
   if (!ref->url.s)
     goto END_PRE;
@@ -579,14 +687,14 @@ reliq_url_join(const reliq_url *ref, const reliq_url *url, reliq_url *dest)
   if (u.scheme.s == 0 || scheme_in(&u.scheme,scheme_uses_netloc)) {
     if (u.netloc.s)
       goto END_PRE;
-    memcpy(&u.netloc,&ref->netloc,sizeof(reliq_cstr));
+    u.netloc = ref->netloc;
   }
 
   if (!u.path.s && !u.params.s) {
-    memcpy(&u.path,&ref->path,sizeof(reliq_cstr));
-    memcpy(&u.params,&ref->params,sizeof(reliq_cstr));
+    u.path = ref->path;
+    u.params = ref->params;
     if (!u.query.s)
-      memcpy(&u.query,&ref->query,sizeof(reliq_cstr));
+      u.query = ref->query;
 
     goto END_PRE;
   }
@@ -598,11 +706,11 @@ reliq_url_join(const reliq_url *ref, const reliq_url *url, reliq_url *dest)
 
   if (!dirs_size && first_slash && last_slash)
     last_slash = 0;
-  url_finalize_path(&u,dirs,dirs_size,first_slash,last_slash);
-  memcpy(dest,&u,sizeof(reliq_url));
+  url_finalize_path(&u,dirs,dirs_size,first_slash,last_slash,reuse);
+  *dest = u;
   return;
 
   END_PRE: ;
-  url_finalize(&u);
-  memcpy(dest,&u,sizeof(reliq_url));
+  url_finalize(&u,reuse);
+  *dest = u;
 }

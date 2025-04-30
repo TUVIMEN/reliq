@@ -175,7 +175,7 @@ sort_cmp(const reliq_cstr *s1, const reliq_cstr *s2)
     return -1;
   if (!s2->s)
     return 1;
-  const size_t s = (s1->s > s2->s) ? s2->s : s1->s;
+  const size_t s = MIN(s1->s,s2->s);
   return memcmp(s1->b,s2->b,s);
 }
 
@@ -517,7 +517,7 @@ tac_edit(const char *src, const size_t size, SINK *output, const void *arg[4], c
     line = edit_cstr_get_line(src,size,&saveptr,delim);
     if (!line.b)
       break;
-    memcpy(flexarr_inc(lines),&line,sizeof(reliq_cstr));
+    *(reliq_cstr*)flexarr_inc(lines) = line;
   }
 
   reliq_cstr *linesv = lines->v;

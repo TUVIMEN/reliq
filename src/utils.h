@@ -23,7 +23,10 @@
 #include "sink.h"
 #include "types.h"
 
-#define REGEX_PATTERN_SIZE (1<<9)
+#define MIN(x,y) ( ((x) < (y)) ? (x) : (y) )
+#define MAX(x,y) ( ((x) < (y)) ? (y) : (x) )
+
+#define REGEX_PATTERN_SIZE (1<<10)
 
 #define RELIQ_DEBUG_SECTION_HEADER(x) \
     ( fputs("\033[34;2m//\033[0m\033[32;6m",stderr), \
