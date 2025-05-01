@@ -45,6 +45,7 @@
 #define EXPR_ALL 0x80 // ^ succeed if everything succeedes. If not set, succeed if anything succeedes
 #define EXPR_CONDITION (EXPR_CONDITION_EXPR|EXPR_AND|EXPR_AND_BLANK|EXPR_OR|EXPR_ALL)
 
+#include "fields.h"
 #include "output.h"
 
 struct reliq_expr {
