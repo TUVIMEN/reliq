@@ -578,7 +578,7 @@ sed_comp_check_labels(flexarr *script) //script: struct sed_expression
       uchar found = 0;
       for (size_t j = 0; j < size; j++) {
         if (scriptv[j].name == ':' &&
-          strcomp(scriptv[i].arg,scriptv[j].arg)) {
+          streq(scriptv[i].arg,scriptv[j].arg)) {
           found = 1;
           break;
         }
@@ -865,7 +865,7 @@ sed_pre_edit(const char *src, const size_t size, SINK *output, char *buffers[3],
             goto NEXT;
           }
           for (size_t i = 0; i < scriptsize; i++)
-            if (scriptv[i].name == ':' && strcomp(scriptv[cycle].arg,scriptv[i].arg))
+            if (scriptv[i].name == ':' && streq(scriptv[cycle].arg,scriptv[i].arg))
               cycle = i;
           break;
         case 'y':

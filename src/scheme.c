@@ -1,0 +1,210 @@
+/*
+    reliq - html searching tool
+    Copyright (C) 2020-2025 Dominik Stanisław Suchora <suchora.dominik7@gmail.com>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
+#include "ext.h"
+
+#include "output.h"
+#include "reliq.h"
+#include "exprs.h"
+#include "utils.h"
+
+#include <stdlib.h>
+#include <string.h>
+
+#define SCHEME_INCR 64
+
+static inline void
+scheme_field_type(const reliq_output_field_type *ftype, uchar *type, uchar *isarray)
+{
+  if (ftype->type == 'a') {
+    *isarray = 1;
+    ftype = ftype->subtype;
+    *type = 'N';
+    if (!ftype)
+      return;
+  }
+
+  switch (ftype->type) {
+    case 's':
+      *type = RELIQ_SCHEME_TYPE_STRING;
+      break;
+    case 'u':
+      *type = RELIQ_SCHEME_TYPE_UNSIGNED;
+      break;
+    case 'i':
+      *type = RELIQ_SCHEME_TYPE_INT;
+      break;
+    case 'n':
+      *type = RELIQ_SCHEME_TYPE_NUM;
+      break;
+    case 'b':
+      *type = RELIQ_SCHEME_TYPE_BOOL;
+      break;
+    case 'd':
+      *type = RELIQ_SCHEME_TYPE_DATE;
+      break;
+    case 'U':
+      *type = RELIQ_SCHEME_TYPE_URL;
+      break;
+    default:
+      *type = RELIQ_SCHEME_TYPE_NULL;
+      break;
+  }
+}
+
+static const reliq_expr *
+scheme_last_chainlink(const reliq_expr *expr)
+{
+  if (!EXPR_TYPE_IS(expr->flags,EXPR_CHAIN))
+    return NULL;
+
+  const flexarr *exprs = (flexarr*)expr->e;
+  const size_t exprsl = exprs->size;
+  if (!exprsl)
+    return NULL;
+
+  return ((reliq_expr*)exprs->v)+exprsl-1;
+}
+
+static void
+scheme_add_field(flexarr *fields, const reliq_expr *expr, const uint16_t lvl)
+{
+  uchar type=0,isarray=0;
+  const reliq_output_field *field = &expr->outfield;
+
+  if (EXPR_TYPE_IS(expr->flags,EXPR_CHAIN)) {
+    const reliq_expr *lastlink = scheme_last_chainlink(expr);
+    if (lastlink && EXPR_TYPE_IS(lastlink->flags,EXPR_SINGULAR))
+      isarray = 1;
+  }
+
+  if (expr->childfields > 1) {
+    type = RELIQ_SCHEME_TYPE_OBJECT;
+  } else
+    scheme_field_type(&field->type,&type,&isarray);
+
+  struct reliq_scheme_field *f = flexarr_inc(fields);
+  *f = (struct reliq_scheme_field){
+    .lvl = lvl,
+    .name = reliq_str_to_cstr(field->name),
+    .annotation = reliq_str_to_cstr(field->annotation),
+    .type = type,
+    .isarray = isarray
+  };
+}
+
+static uchar
+scheme_is_repeating(flexarr *fields, const size_t index, uint16_t lvl)
+{
+  const size_t fieldsl = fields->size;
+  struct reliq_scheme_field *fieldsv = fields->v;
+
+  for (size_t i = index; i < fieldsl && fieldsv[i].lvl >= lvl; i++) {
+    if (fieldsv[i].lvl != lvl)
+      continue;
+
+    const char *name = fieldsv[i].name.b;
+    const size_t namel = fieldsv[i].name.s;
+
+    for (size_t j = i+1; j < fieldsl && fieldsv[j].lvl >= lvl; j++) {
+      if (fieldsv[j].lvl != lvl)
+        continue;
+
+      if (memeq(name,fieldsv[j].name.b,namel,fieldsv[j].name.s))
+        return 1;
+    }
+  }
+
+  return 0;
+}
+
+static void reliq_json_scheme_r(const reliq_expr *expr, flexarr *fields, uchar *leaking, uchar *repeating, uint16_t lvl);
+
+static void
+scheme_search_block(flexarr *exprs, flexarr *fields, uchar *leaking, uchar *repeating, const uint16_t lvl) //exprs: reliq_expr, fields: struct reliq_scheme_field
+{
+  const reliq_expr *exprsv = exprs->v;
+  const size_t exprsl = exprs->size;
+  size_t index = fields->size;
+
+  for (size_t i = 0; i < exprsl; i++)
+    reliq_json_scheme_r(exprsv+i,fields,leaking,repeating,lvl);
+  if (!*repeating)
+    *repeating = scheme_is_repeating(fields,index+1,lvl+1);
+}
+
+static void
+reliq_json_scheme_r(const reliq_expr *expr, flexarr *fields, uchar *leaking, uchar *repeating, uint16_t lvl) //fields: struct reliq_scheme_field
+{
+  if (!expr)
+    return;
+  if (expr->outfield.isset) {
+    if (!expr->outfield.name.b) {
+      *leaking = 1;
+      return;
+    }
+
+    scheme_add_field(fields,expr,lvl);
+    lvl++;
+  } else if (expr->childfields == 0) {
+    *leaking = 1;
+    return;
+  }
+
+  uchar type = expr->flags&EXPR_TYPE;
+  if (type == EXPR_NPATTERN || type == EXPR_BLOCK_CONDITION)
+    return;
+
+  const reliq_expr *lastlink = scheme_last_chainlink(expr);
+  if (lastlink) {
+    if (expr->childfields == 1)
+      return;
+    reliq_json_scheme_r(lastlink,fields,leaking,repeating,lvl);
+    return;
+  }
+
+  scheme_search_block((flexarr*)expr->e,fields,leaking,repeating,lvl);
+}
+
+void
+reliq_json_scheme(const reliq_expr *expr, reliq_scheme *scheme)
+{
+  flexarr *fields_arr = flexarr_init(sizeof(struct reliq_scheme_field),SCHEME_INCR);
+  uchar leaking=0,repeating=0;
+
+  scheme_search_block((flexarr*)expr->e,fields_arr,&leaking,&repeating,0);
+  if (!repeating)
+    repeating = scheme_is_repeating(fields_arr,0,0);
+
+  struct reliq_scheme_field *fields;
+  size_t fieldsl;
+  flexarr_conv(fields_arr,(void**)&fields,&fieldsl);
+
+  *scheme = (reliq_scheme){
+    .fields = fields,
+    .fieldsl = fieldsl,
+    .leaking = (leaking > 0),
+    .repeating = (repeating > 0)
+  };
+}
+
+void
+reliq_json_scheme_free(reliq_scheme *scheme)
+{
+  free(scheme->fields);
+}

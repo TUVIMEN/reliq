@@ -159,7 +159,7 @@ uniq_edit(const char *src, const size_t size, SINK *output, const void *arg[4], 
       break;
     }
 
-    if (strcomp(line,previous))
+    if (streq(line,previous))
       goto REPEAT;
     sink_write(output,previous.b,previous.s);
     sink_put(output,delim);
@@ -236,7 +236,7 @@ sort_edit(const char *src, const size_t size, SINK *output, const void *arg[4], 
     REPEAT: ;
     if (++i >= lines->size)
       break;
-    if (unique && strcomp(previous,linesv[i]))
+    if (unique && streq(previous,linesv[i]))
       goto REPEAT;
     sink_write(output,previous.b,previous.s);
     sink_put(output,delim);

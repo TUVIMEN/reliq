@@ -33,6 +33,8 @@
 #include "exprs.h"
 #include "node_exec.h"
 
+/*#define SCHEME_DEBUG*/
+
 #define PASSED_INC (1<<8) //!! if increased causes huge allocation see val_mem1 file
 #define NCOLLECTOR_INC (1<<8)
 #define FCOLLECTOR_INC (1<<5)
@@ -486,6 +488,99 @@ reliq_exec_r(reliq *rq, const reliq_chnode *parent, SINK *output, reliq_compress
   return err;
 }
 
+#ifdef SCHEME_DEBUG
+
+static const char *
+scheme_print_type(const uchar c)
+{
+  switch (c) {
+    case RELIQ_SCHEME_TYPE_STRING:
+      return "str";
+    case RELIQ_SCHEME_TYPE_UNSIGNED:
+      return "unsigned";
+    case RELIQ_SCHEME_TYPE_INT:
+      return "int";
+    case RELIQ_SCHEME_TYPE_BOOL:
+      return "bool";
+    case RELIQ_SCHEME_TYPE_NUM:
+      return "num";
+    case RELIQ_SCHEME_TYPE_DATE:
+      return "date";
+    case RELIQ_SCHEME_TYPE_URL:
+      return "url";
+    case RELIQ_SCHEME_TYPE_OBJECT:
+      return "object";
+    case RELIQ_SCHEME_TYPE_NULL:
+    default:
+      return "null";
+  }
+}
+
+static void
+scheme_print_tabs(const uint16_t lvl)
+{
+  for (size_t i = 0; i < lvl; i++)
+    fputs("  ",stderr);
+}
+
+static size_t
+scheme_print_r(const reliq_scheme *scheme, const size_t index, uint16_t minlvl)
+{
+  const size_t fieldsl = scheme->fieldsl;
+  const struct reliq_scheme_field *fields = scheme->fields;
+
+  for (size_t i = index; i < fieldsl; i++) {
+    const struct reliq_scheme_field *f = fields+i;
+    if (f->lvl < minlvl)
+      return i;
+
+    scheme_print_tabs(f->lvl);
+    fprintf(stderr,"\033[34m%.*s\033[0m",f->name.s,f->name.b);
+
+    const uchar isobj = (f->type == RELIQ_SCHEME_TYPE_OBJECT);
+
+    fprintf(stderr,"%c\033[0m\033[32m%s\033[0m",(f->isarray && !isobj) ? '[' : '.',scheme_print_type(f->type));
+    if (f->isarray && !isobj)
+      fputc(']',stderr);
+
+    if (f->annotation.s)
+      fprintf(stderr," \033[32m%.*s\033[0m",f->annotation.s,f->annotation.b);
+
+    if (isobj) {
+      if (f->isarray) {
+        fputs(" \033[31;1m[\033[0m\n",stderr);
+      } else
+        fputs(" \033[32;1m{\033[0m\n",stderr);
+
+      i = scheme_print_r(scheme,i+1,f->lvl+1)-1;
+
+      scheme_print_tabs(f->lvl);
+      if (f->isarray) {
+        fputs("\033[31;1m]\033[0m",stderr);
+      } else
+        fputs("\033[32;1m}\033[0m",stderr);
+    }
+
+    fputc('\n',stderr);
+  }
+  return fieldsl;
+}
+
+static void
+scheme_print(const reliq_scheme *scheme)
+{
+  RELIQ_DEBUG_SECTION_HEADER("SCHEME");
+
+  if (scheme->leaking)
+    fprintf(stderr,"\033[31;1m------ LEAKING ------\033[0m\n");
+  if (scheme->repeating)
+    fprintf(stderr,"\033[31;1m------ REPEATING ------\033[0m\n");
+
+  scheme_print_r(scheme,0,0);
+}
+
+#endif //SCHEME_DEBUG
+
 reliq_error *
 reliq_exec(reliq *rq, reliq_compressed **nodes, size_t *nodesl, const reliq_expr *expr)
 {
@@ -497,6 +592,17 @@ reliq_exec_file(reliq *rq, FILE *output, const reliq_expr *expr)
 {
   if (!expr)
     return NULL;
+
+  #ifdef SCHEME_DEBUG
+
+  reliq_scheme sch;
+  reliq_json_scheme(expr,&sch);
+  scheme_print(&sch);
+  reliq_json_scheme_free(&sch);
+
+  #endif //SCHEME_DEBUG
+
+
   SINK *out = sink_from_file(output);
   reliq_error *err = reliq_exec_r(rq,NULL,out,NULL,NULL,expr);
   sink_close(out);

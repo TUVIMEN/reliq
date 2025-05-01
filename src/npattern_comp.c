@@ -350,7 +350,7 @@ find_hook(const char *name, const size_t namel, const uint8_t type, size_t *pos)
     uint16_t flags = hooks_list[i].flags;
     if (!(flags&hmask))
       continue;
-    if (memcomp(hooks_list[i].name.b,name,hooks_list[i].name.s,namel)) {
+    if (memeq(hooks_list[i].name.b,name,hooks_list[i].name.s,namel)) {
       *pos = i;
       return 1;
     }

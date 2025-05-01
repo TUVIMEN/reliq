@@ -680,7 +680,7 @@ reliq_url_join(const reliq_url *ref, const reliq_url *url, reliq_url *dest)
   if (!ref->url.s)
     goto END_PRE;
 
-  if (!memcasecomp(ref->scheme.b,u.scheme.b,ref->scheme.s,u.scheme.s)
+  if (!memcaseeq(ref->scheme.b,u.scheme.b,ref->scheme.s,u.scheme.s)
     || (u.scheme.s != 0 && !scheme_in(&u.scheme,scheme_uses_relative)))
       goto END_PRE;
 

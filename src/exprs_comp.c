@@ -630,19 +630,25 @@ tokenize(const char *src, const size_t size, token **tokens, size_t *tokensl) //
   #undef token_found
 }
 
+static inline uchar
+is_empty_node(reliq_expr *node)
+{
+  return (!node->outfield.name.b && !node->nodefl && !node->exprfl);
+}
+
 static reliq_error *
 add_chainlink(flexarr *exprs, reliq_expr *cl, const uchar noerr) //exprs: reliq_expr
 {
   reliq_error *err = NULL;
 
-  if (!cl->e && !cl->outfield.name.b && !cl->nodefl && !cl->exprfl)
-    goto END;
+  if (!cl->e && is_empty_node(cl))
+    goto EMPTY;
 
   if (!noerr && exprs->size) {
     if (((reliq_expr*)exprs->v)[exprs->size-1].childfields)
-      goto_script_seterr(ERR,"expression: chains cannot have fields in the middle passed to other expression");
+      goto_script_seterr(END,"expression: chains cannot have fields in the middle passed to other expression");
     if (((reliq_expr*)exprs->v)[exprs->size-1].childformats)
-      goto_script_seterr(ERR,"expression: chains cannot have string type in the middle passed to other expression");
+      goto_script_seterr(END,"expression: chains cannot have string type in the middle passed to other expression");
   }
 
   if (cl->e == NULL) {
@@ -651,10 +657,10 @@ add_chainlink(flexarr *exprs, reliq_expr *cl, const uchar noerr) //exprs: reliq_
     assert(reliq_ncomp(NULL,0,cl->e) == NULL);
   }
 
-  ERR: ;
+  END: ;
   *(reliq_expr*)flexarr_inc(exprs) = *cl;
 
-  END: ;
+  EMPTY: ;
   *cl = (reliq_expr){0};
   return err;
 }
@@ -874,7 +880,7 @@ tcomp_text(size_t *pos, tcomp_state *st)
     if ((err = reliq_output_field_comp(start,&g,len,&current->outfield))) //&current->outfield
       return err;
     if (current->outfield.name.b) {
-      /*if the above condition is removed protected fields fill work as normal fields
+      /*if the above condition is removed protected fields will work as normal fields
         i.e. '{ .li }; li' will be impossible but '{ . li } / line [1]' will also be,
         and it will break it's functionality*/
       st->childfields++;
@@ -1013,6 +1019,25 @@ tcomp_tokenName(size_t *pos, const enum tokenName name, tcomp_state *st)
   return NULL;
 }
 
+static void
+remove_empty_nodes(flexarr *nodes)
+{
+  reliq_expr *nodesv = nodes->v;
+  for (size_t i = 0; i < nodes->size;) {
+    if ((nodesv[i].e && ((flexarr*)nodesv[i].e)->size) || !is_empty_node(nodesv+i)) {
+      i++;
+      continue;
+    }
+
+    if (nodes->size > 1) {
+      reliq_efree_intr(nodesv+i);
+      memmove(nodesv+i,nodesv+i+1,nodes->size-i-1);
+    }
+
+    flexarr_dec(nodes);
+  }
+}
+
 static reliq_error *
 from_token_comp(size_t *pos, tcomp_state *st)
 {
@@ -1049,8 +1074,10 @@ from_token_comp(size_t *pos, tcomp_state *st)
   } else
     err = add_chainlink(st->current->e,&expr,0);
 
-  if (!err)
+  if (!err) {
+    remove_empty_nodes(st->ret);
     flexarr_clearb(st->ret);
+  }
   st->expr = NULL;
   return err;
 }

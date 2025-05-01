@@ -45,7 +45,7 @@ const struct { char *name; size_t namel; const char *arr; } tr_ctypes[] = {
 static char const *
 tr_match_ctypes(const char *name, const size_t namel) {
   for (size_t i = 0; i < LENGTH(tr_ctypes); i++)
-    if (memcomp(tr_ctypes[i].name,name,tr_ctypes[i].namel,namel))
+    if (memeq(tr_ctypes[i].name,name,tr_ctypes[i].namel,namel))
       return tr_ctypes[i].arr;
   return NULL;
 }

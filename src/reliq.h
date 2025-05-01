@@ -223,6 +223,37 @@ reliq_error *reliq_exec(reliq *rq, reliq_compressed **nodes, size_t *nodesl, con
 
 void reliq_efree(reliq_expr *expr);
 
+#define RELIQ_SCHEME_TYPE_NULL 1
+#define RELIQ_SCHEME_TYPE_STRING 2
+#define RELIQ_SCHEME_TYPE_UNSIGNED 3
+#define RELIQ_SCHEME_TYPE_INT 4
+#define RELIQ_SCHEME_TYPE_NUM 5
+#define RELIQ_SCHEME_TYPE_BOOL 6
+#define RELIQ_SCHEME_TYPE_DATE 7
+#define RELIQ_SCHEME_TYPE_URL 8
+#define RELIQ_SCHEME_TYPE_OBJECT 9
+
+struct reliq_scheme_field {
+  reliq_cstr name;
+  reliq_cstr annotation;
+  uint16_t lvl;
+  unsigned char type : 4;
+  unsigned char isarray : 1;
+};
+
+typedef struct {
+  struct reliq_scheme_field *fields;
+  size_t fieldsl;
+
+  //is set to 1 if some output isn't guarded by a field which creates incorrect json
+  unsigned char leaking : 1;
+  //field name repeats in the same block which creates incorrect json
+  unsigned char repeating : 1;
+} reliq_scheme;
+
+void reliq_json_scheme(const reliq_expr *expr, reliq_scheme *scheme);
+void reliq_json_scheme_free(reliq_scheme *scheme);
+
 reliq_error *reliq_set_error(const int code, const char *fmt, ...);
 
 //if no_nbsp is set then &nbsp; entity will be converted to space instead of \u00a0, this is desirable unless you're a browser

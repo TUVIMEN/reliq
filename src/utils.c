@@ -591,3 +591,12 @@ splchars_conv_sink(const char *src, const size_t size, SINK *sn)
     i += traversed;
   }
 }
+
+reliq_cstr
+reliq_str_to_cstr(reliq_str str)
+{
+  return (reliq_cstr){
+    .b = str.b,
+    .s = str.s
+  };
+}

@@ -43,10 +43,10 @@
 #define goto_script_seterr(x,...) goto_seterr(x,RELIQ_ERROR_SCRIPT,__VA_ARGS__)
 #define goto_script_seterr_p(x,...)  goto_seterr_p(x,RELIQ_ERROR_SCRIPT,__VA_ARGS__)
 
-#define memcomp(w,x,y,z) ((y) == (z) && memcmp(w,x,y) == 0)
-#define memcasecomp(w,x,y,z) ((y) == (z) && memcasecmp(w,x,y) == 0)
-#define strcomp(x,y) memcomp(x.b,y.b,x.s,y.s)
-#define strcasecomp(x,y) memcasecomp(x.b,y.b,x.s,y.s)
+#define memeq(w,x,y,z) ((y) == (z) && memcmp(w,x,y) == 0)
+#define memcaseeq(w,x,y,z) ((y) == (z) && memcasecmp(w,x,y) == 0)
+#define streq(x,y) memeq(x.b,y.b,x.s,y.s)
+#define strcaseeq(x,y) memcaseeq(x.b,y.b,x.s,y.s)
 
 void print_uint(unsigned long num, SINK *outfile);
 void print_int(long num, SINK *outfile);
@@ -76,5 +76,6 @@ reliq_error *skip_quotes(const char *src, size_t *pos, const size_t size);
 reliq_error *get_quoted(const char *src, size_t *pos, const size_t size, const char delim, char **result, size_t *resultl);
 void splchars_conv(char *src, size_t *size);
 void splchars_conv_sink(const char *src, const size_t size, SINK *sn);
+reliq_cstr reliq_str_to_cstr(reliq_str str);
 
 #endif

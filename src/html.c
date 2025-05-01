@@ -270,7 +270,7 @@ static uchar
 isinescapable(reliq_cstr str)
 {
   for (size_t g = 0; g < LENGTH(inescapable_s); g++)
-    if (strcasecomp(str,inescapable_s[g]))
+    if (strcaseeq(str,inescapable_s[g]))
       return 1;
   return 0;
 }
@@ -353,7 +353,7 @@ autocloses(const char *f, size_t pos, const size_t s, const uchar autoclosing)
     return 0;
 
   for (uchar j = 1; arr[j].b; j++)
-    if (strcasecomp(arr[j],name))
+    if (strcaseeq(arr[j],name))
       return 1;
 
   return 0;
@@ -371,7 +371,7 @@ ancestor_ending(const char *f, size_t *pos, reliq_cstr endname, const reliq_chno
       continue;
     }
     reliq_cstr tag = { .b = f+nodesv[j].all+nodesv[j].tag, .s = nodesv[j].tagl };
-    if (strcasecomp(tag,endname)) {
+    if (strcaseeq(tag,endname)) {
       *pos = tagend;
       hnode->endtag = *pos-base;
       *fallback = lvl-nodesv[j].lvl;
@@ -406,7 +406,7 @@ handle_ending(html_state *st, size_t *pos, reliq_cstr tagname, const size_t hnin
     goto END;
   }
 
-  if (strcasecomp(tagname,endname)) {
+  if (strcaseeq(tagname,endname)) {
     hnode->endtag = tagend-base;
     while (i < s && f[i] != '>')
       i++;
@@ -591,7 +591,7 @@ static uchar
 find_tag_info(reliq_cstr tagname, struct tag_info *info)
 {
   #define search_array(x,y) for (uchar _j = 0; _j < (uchar)LENGTH(x); _j++) \
-    if (strcasecomp(x[_j],y))
+    if (strcaseeq(x[_j],y))
 
   search_array(selfclosing_s,tagname)
     return 1;
@@ -606,7 +606,7 @@ find_tag_info(reliq_cstr tagname, struct tag_info *info)
   #ifdef RELIQ_AUTOCLOSING
   info->autoclosing = -1;
   for (uchar j = 0; j < (uchar)LENGTH(autoclosing_s); j++) {
-    if (strcasecomp(autoclosing_s[j][0],tagname)) {
+    if (strcaseeq(autoclosing_s[j][0],tagname)) {
       info->autoclosing = j;
       return 0;
     }

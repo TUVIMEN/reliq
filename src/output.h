@@ -63,7 +63,7 @@ typedef struct {
   reliq_output_field_type type;
   reliq_str name;
   reliq_str annotation;
-  unsigned char isset;
+  unsigned char isset; //signifies that compilation was successful, if set to 0 field should be ignored
 } reliq_output_field;
 
 reliq_error *reliq_output_field_comp(const char *src, size_t *pos, const size_t s, reliq_output_field *outfield);

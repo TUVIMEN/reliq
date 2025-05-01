@@ -218,13 +218,15 @@ outfield_type_get(const char *src, size_t *pos, const size_t size, reliq_output_
       goto END;
   }
 
-  if (*name == 'a' && i < size && src[i] == '.') {
-    i++;
+  if (*name == 'a') {
     type->subtype = calloc(1,sizeof(reliq_output_field_type));
     type->subtype->type = 's';
 
-    if ((err = outfield_type_get(src,&i,size,type->subtype,1)))
-      goto END;
+    if (i < size && src[i] == '.') {
+      i++;
+      if ((err = outfield_type_get(src,&i,size,type->subtype,1)))
+        goto END;
+    }
   }
 
   END:
@@ -551,10 +553,10 @@ outfields_array_print(const reliq *rq, SINK *out, const reliq_output_field_type 
   sink_put(out,'[');
 
   char const *start=value,*end,*last=value+valuel;
-  reliq_output_field_type sub = { .type = 's' };
+  reliq_output_field_type sub = {
+    .type = type->subtype->type
+  };
   char delim = '\n';
-  if (type->subtype)
-    sub.type = type->subtype->type;
   if (type->argsl)
     delim = *type->args[0].b;
 

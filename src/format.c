@@ -264,7 +264,7 @@ format_get_funcs(flexarr *format, const char *src, size_t *pos, const size_t siz
       char found = 0;
       size_t i = 0;
       for (; i < LENGTH(format_functions); i++) {
-        if (memcomp(format_functions[i].name.b,fname,format_functions[i].name.s,fnamel)) {
+        if (memeq(format_functions[i].name.b,fname,format_functions[i].name.s,fnamel)) {
           found = 1;
           break;
         }
