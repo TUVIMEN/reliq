@@ -37,16 +37,14 @@ trim_url(reliq_cstr *url)
 {
   size_t i = 0;
 
-  size_t urll = url->s;
+  const size_t urll = url->s;
   const char *urlb = url->b;
 
-  while (i < urll && urlb[i] <= ' ') {
+  while (i < urll && urlb[i] <= ' ')
     i++;
-    urlb++;
-  }
 
-  url->b = urlb;
-  url->s = urll;
+  url->b += i;
+  url->s -= i;
 }
 
 static inline uchar
@@ -64,11 +62,12 @@ remove_unsafe(reliq_str *url)
   size_t i=0,j=0;
   for (; i < urll; i++) {
     char c = urlb[i];
-    if (char_unsafe(c))
+    if (char_unsafe(c)) {
+      url->s--;
       continue;
+    }
     urlb[j++] = c;
   }
-  url->s = j;
 }
 
 static inline uchar
