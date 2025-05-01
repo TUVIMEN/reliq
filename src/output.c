@@ -62,13 +62,7 @@ typedef struct {
     uchar field_ended;
 } nodes_output_state;
 
-static void outfields_value_print(const reliq *rq, SINK *out, const reliq_output_field_type *type, const char *value, const size_t valuel);
-
-static inline reliq_error *
-node_output(const reliq_chnode *hnode, const reliq_chnode *parent, const reliq_format_func *format, const size_t formatl, SINK *output, const reliq *rq)
-{
-  return format_exec(NULL,0,output,hnode,parent,format,formatl,rq);
-}
+static void outfields_value_print(const reliq *rq, SINK *out, const reliq_output_field_type *type, const char *value, const size_t valuel, const uchar notempty);
 
 static void
 outfield_type_name_get(const char *src, size_t *pos, const size_t s, char const **type, size_t *typel)
@@ -307,7 +301,24 @@ struct outfield {
   reliq_output_field const *o;
   uint16_t lvl;
   uchar code;
+
+  //set when something attempted to write, and if not set
+  //  tells field types that expression didn't find any hnodes
+  uchar notempty : 1;
 };
+
+static void
+outfield_notempty(SINK *out, nodes_output_state *st)
+{
+  if (!out || !st->out_field || *st->out_field != out)
+    return;
+  flexarr *f = st->outfields;
+  if (!f->size)
+    return;
+  struct outfield **fv = f->v;
+  fv[f->size-1]->notempty = 1;
+  /*fprintf(stderr,"SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSa %u %u\n",f->size,out == fv[f->size-1]->o);*/
+}
 
 static void
 fcollector_rearrange_pre(struct fcollector *fcols, size_t start, size_t end, const uint16_t lvl)
@@ -339,8 +350,20 @@ fcollector_rearrange(flexarr *fcollector) //fcollector: struct fcollector
 }
 
 static reliq_error *
-fcollector_out_end(flexarr *outs, const size_t ncurrent, const struct fcollector *fcols, const reliq *rq, SINK *out, SINK **out_fcol) //outs: struct fcollector_out*
+fcollector_out_end(nodes_output_state *st)
 {
+  /*
+     if output for field is not NULL, it means that this ncollector
+     is a child of it and its outputs, if there isn't one then
+     fallback to the original output
+  */
+  SINK *out_default = st->out_field ? *st->out_field : st->out_origin;
+
+  flexarr *outs = st->fcol_outs; //outs: struct fcollector_out*
+  const size_t ncurrent = st->ncols_i;
+  const struct fcollector *fcols = st->fcols;
+  const reliq *rq = st->rq;
+
   reliq_error *err = NULL;
   while (1) {
     if (!outs->size)
@@ -362,11 +385,12 @@ fcollector_out_end(flexarr *outs, const size_t ncurrent, const struct fcollector
     }
     SINK *out_t;
     if (ecurrent->lvl == 0) {
-      out_t =  out;
-      *out_fcol = NULL;
+      out_t =  out_default;
+      st->out_fcol = NULL;
+      outfield_notempty(out_t,st);
     } else {
       out_t = ((struct fcollector_out**)outs->v)[outs->size-2]->f;
-      *out_fcol = out_t;
+      st->out_fcol = out_t;
     }
 
     sink_close(fcol_out_last->f);
@@ -400,8 +424,13 @@ fcollector_outs_free(flexarr *outs) //outs: struct fcollector_out*
 #define OUTFIELDS_NUM_UNSIGNED 4
 
 static void
-outfields_num_print(SINK *out, const char *value, const size_t valuel, const uint8_t flags)
+outfields_num_print(SINK *out, const char *value, const size_t valuel, const uchar notempty, const uint8_t flags)
 {
+  if (!notempty) {
+    sink_put(out,'0');
+    return;
+  }
+
   char const *start = value;
   size_t end = 0;
   uchar isminus=0,haspoint=0,pointcount=0;
@@ -465,8 +494,13 @@ outfields_num_print(SINK *out, const char *value, const size_t valuel, const uin
 }
 
 static void
-outfields_bool_print(SINK *out, const char *value, const size_t valuel)
+outfields_bool_print(SINK *out, const char *value, const size_t valuel, const uchar notempty)
 {
+  if (!notempty) {
+    sink_write(out,"false",5);
+    return;
+  }
+
   int ret = 0;
 
   if (!valuel || (*value == '-' && valuel > 1 && isdigit(value[1])))
@@ -508,8 +542,13 @@ outfields_unicode_print(SINK *out, uint16_t character)
 }
 
 static void
-outfields_str_print(SINK *out, const char *value, const size_t valuel)
+outfields_str_print(SINK *out, const char *value, const size_t valuel, const uchar notempty)
 {
+  if (!notempty) {
+    sink_write(out,"\"\"",2);
+    return;
+  }
+
   const uchar sub[256] = {
     128,129,130,131,132,133,134,135,'b','t','n',139,'f','r',142,143,144,145,146,147,148,149,150,
     151,152,153,154,155,156,157,158,159,0,0,34,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -548,8 +587,13 @@ outfields_str_print(SINK *out, const char *value, const size_t valuel)
 }
 
 static void
-outfields_array_print(const reliq *rq, SINK *out, const reliq_output_field_type *type, const char *value, const size_t valuel)
+outfields_array_print(const reliq *rq, SINK *out, const reliq_output_field_type *type, const char *value, const size_t valuel, const uchar notempty)
 {
+  if (!notempty) {
+    sink_write(out,"[]",2);
+    return;
+  }
+
   sink_put(out,'[');
 
   char const *start=value,*end,*last=value+valuel;
@@ -568,7 +612,7 @@ outfields_array_print(const reliq *rq, SINK *out, const reliq_output_field_type 
     if (start != value)
       sink_put(out,',');
 
-    outfields_value_print(rq,out,&sub,start,end-start);
+    outfields_value_print(rq,out,&sub,start,end-start,notempty);
     start = end+1;
   }
 
@@ -619,11 +663,16 @@ outfields_date_match(const reliq_str *args, const size_t argsl, char *matched, s
 }
 
 static void
-outfields_date_print(SINK *out, const reliq_output_field_type *type, const char *value, const size_t valuel)
+outfields_date_print(SINK *out, const reliq_output_field_type *type, const char *value, const size_t valuel, const uchar notempty)
 {
+  if (!notempty) {
+    sink_write(out,"\"\"",2);
+    return;
+  }
+
   if (!valuel || !type->argsl) {
     PRINT_SAME: ;
-    outfields_str_print(out,value,valuel);
+    outfields_str_print(out,value,valuel,notempty);
     return;
   }
 
@@ -634,7 +683,7 @@ outfields_date_print(SINK *out, const reliq_output_field_type *type, const char 
   uchar r = outfields_date_match(type->args,type->argsl,buf,&date);
   if (r) {
     assert(strftime(buf,max_iso_format_size+1,"%FT%T%z",&date) == 24);
-    outfields_str_print(out,buf,max_iso_format_size);
+    outfields_str_print(out,buf,max_iso_format_size,notempty);
   }
 
   free(buf);
@@ -643,8 +692,13 @@ outfields_date_print(SINK *out, const reliq_output_field_type *type, const char 
 }
 
 static void
-outfields_url_print(const reliq *rq, SINK *out, const reliq_output_field_type *type, const char *value, const size_t valuel)
+outfields_url_print(const reliq *rq, SINK *out, const reliq_output_field_type *type, const char *value, const size_t valuel, const uchar notempty)
 {
+  if (!notempty) {
+    sink_write(out,"\"\"",2);
+    return;
+  }
+
   const reliq_url *ref = &rq->url;
   reliq_url ref_buf;
   uchar uses_arg = type->argsl > 0;
@@ -659,7 +713,7 @@ outfields_url_print(const reliq *rq, SINK *out, const reliq_output_field_type *t
   reliq_url_parse(value,valuel,ref->scheme.b,ref->scheme.s,&url,false);
   reliq_url_join(ref,&url,&url);
 
-  outfields_str_print(out,url.url.b,url.url.s);
+  outfields_str_print(out,url.url.b,url.url.s,notempty);
 
   reliq_url_free(&url);
   if (uses_arg)
@@ -667,32 +721,32 @@ outfields_url_print(const reliq *rq, SINK *out, const reliq_output_field_type *t
 }
 
 static void
-outfields_value_print(const reliq *rq, SINK *out, const reliq_output_field_type *type, const char *value, const size_t valuel)
+outfields_value_print(const reliq *rq, SINK *out, const reliq_output_field_type *type, const char *value, const size_t valuel, const uchar notempty)
 {
   switch (type->type) {
     case 's':
-      outfields_str_print(out,value,valuel);
+      outfields_str_print(out,value,valuel,notempty);
       break;
     case 'n':
-      outfields_num_print(out,value,valuel,OUTFIELDS_NUM_FLOAT);
+      outfields_num_print(out,value,valuel,notempty,OUTFIELDS_NUM_FLOAT);
       break;
     case 'i':
-      outfields_num_print(out,value,valuel,OUTFIELDS_NUM_INT);
+      outfields_num_print(out,value,valuel,notempty,OUTFIELDS_NUM_INT);
       break;
     case 'u':
-      outfields_num_print(out,value,valuel,OUTFIELDS_NUM_UNSIGNED);
+      outfields_num_print(out,value,valuel,notempty,OUTFIELDS_NUM_UNSIGNED);
       break;
     case 'b':
-      outfields_bool_print(out,value,valuel);
+      outfields_bool_print(out,value,valuel,notempty);
       break;
     case 'd':
-      outfields_date_print(out,type,value,valuel);
+      outfields_date_print(out,type,value,valuel,notempty);
       break;
     case 'U':
-      outfields_url_print(rq,out,type,value,valuel);
+      outfields_url_print(rq,out,type,value,valuel,notempty);
       break;
     case 'a':
-      outfields_array_print(rq,out,type,value,valuel);
+      outfields_array_print(rq,out,type,value,valuel,notempty);
       break;
     default:
       sink_write(out,"null",4);
@@ -723,8 +777,10 @@ outfields_print_pre(const reliq *rq, struct outfield **fields, size_t *pos, cons
         sink_close(field->f);
       field->f = NULL;
 
-      if (field->o)
-        outfields_value_print(rq,out,&field->o->type,field->v,field->s);
+      if (field->o) {
+        /*fprintf(stderr,"value %p %lu %u %lu\n",field->v,field->s,field->notempty,size);*/
+        outfields_value_print(rq,out,&field->o->type,field->v,field->s,field->notempty);
+      }
       if (field->v)
         free(field->v);
       field->s = 0;
@@ -876,6 +932,7 @@ ncollector_end(nodes_output_state *st)
     st->out_ncol = NULL;
 
     SINK *out_default = output_default(st);
+    outfield_notempty(out_default,st);
     err = format_exec(st->ncol_ptr,st->ncol_ptrl,out_default,NULL,NULL,
       (ncol->e)->exprf,
       (ncol->e)->exprfl,st->rq);
@@ -884,13 +941,7 @@ ncollector_end(nodes_output_state *st)
       goto END;
   }
 
-  /*
-     if output for field is not NULL, it means that this ncollector
-     is a child of it and its outputs, if there isn't one then
-     fallback to the original output
-  */
-  SINK *out_default = st->out_field ? *st->out_field : st->out_origin;
-  if ((err = fcollector_out_end(st->fcol_outs,st->ncols_i,st->fcols,st->rq,out_default,&st->out_fcol)))
+  if ((err = fcollector_out_end(st)))
     goto END;
 
   st->amount_i = 0;
@@ -913,6 +964,7 @@ outfields_inc(enum outfieldCode code, uint16_t lvl, reliq_output_field const *fi
 
   field->s = 0;
   field->f = NULL;
+  field->notempty = 0;
   field->lvl = lvl;
   field->code = (uchar)code;
 
@@ -1017,11 +1069,13 @@ nodes_output_r(const flexarr *comp_nodes, nodes_output_state *st) //comp_nodes: 
       if (nodes_output_code_handle(code,prevcode_r,diff,out_default,compn,st))
         continue;
     } else if (ncol && ncol->e) {
+      outfield_notempty(out_default,st);
+
       const reliq_expr *e = (const reliq_expr*)ncol->e;
-      if ((err = node_output(compn->hnode+st->rq->nodes,
-        (compn->parent == (uint32_t)-1) ? NULL : compn->parent+st->rq->nodes,
-        e->nodef,
-        e->nodefl,out_default,st->rq)))
+      const reliq_chnode *parent = (compn->parent == (uint32_t)-1) ? NULL : compn->parent+st->rq->nodes,
+        *node = compn->hnode+st->rq->nodes;
+      if ((err = format_exec(NULL,0, out_default,node, parent,
+          e->nodef,e->nodefl,st->rq)))
         break;
     }
 
