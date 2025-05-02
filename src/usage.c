@@ -170,7 +170,7 @@ usage(const char *argv0, FILE *o)
   color(COLOR_ARG,"stderr");
   fputc('\n',o);
 
-  fputs("\nFollowing options can be threated as subcommands that change mode of operation,\nuse of suboption that is unique to subcommand will implicitly change mode.\n",o);
+  fputs("\nFollowing options can be treated as subcommands that change mode of operation,\nuse of suboption that is unique to subcommand will implicitly change mode.\n",o);
 
   fputs("\n--",o);
   color(COLOR_SECTION,"html");

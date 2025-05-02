@@ -86,10 +86,9 @@ reliq_error *
 edit_arg_range(const edit_args *args, const char *argv0, const uchar num, reliq_range const **dest)
 {
   const void *arg = args->arg[num];
-  if (!arg) {
-    *dest = NULL;
+  *dest = NULL;
+  if (!arg)
     return NULL;
-  }
   const uint8_t flags = args->flags;
   if (flags&(FORMAT_ARG0_ISSTR<<num))
     return script_err("%s: arg %d: incorrect type of argument, expected range",argv0,num+1);
@@ -297,7 +296,7 @@ line_edit(const reliq_cstr *src, SINK *output, const edit_args *args)
   char delim = '\n';
   const char argv0[] = "line";
 
-  const reliq_range *range = NULL;
+  const reliq_range *range;
   reliq_error *err;
   if ((err = edit_arg_range(args,argv0,0,&range)))
     return err;
@@ -348,6 +347,9 @@ cut_edit(const reliq_cstr *src, SINK *output, const edit_args *args)
   if ((err = edit_arg_range(args,argv0,0,&range)))
     return err;
 
+  if (!range)
+    return edit_missing_arg(argv0);
+
   reliq_cstr *f_delim;
   if ((err = edit_arg_str(args,argv0,1,&f_delim)))
     return err;
@@ -374,9 +376,6 @@ cut_edit(const reliq_cstr *src, SINK *output, const edit_args *args)
 
   if ((err = edit_arg_delim(args,argv0,3,&linedelim,NULL)))
     return err;
-
-  if (!range)
-    return edit_missing_arg(argv0);
 
   reliq_cstr line;
   size_t saveptr = 0;
