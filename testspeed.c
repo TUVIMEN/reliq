@@ -14,8 +14,6 @@
 
 #define LENGTH(x) (sizeof(x)/sizeof(*x))
 
-#define LAPS 10
-
 struct test {
     char *expr;
     char *exprs;
@@ -599,13 +597,8 @@ measuretime(const size_t repeats, size_t (*func)(void), void (*freefunc)(void))
 void
 measuretest(const char *name, const size_t repeats, size_t (*func)(void), void (*freefunc)(void))
 {
-    const size_t laps = LAPS;
-    double sum = 0;
-
-    for (size_t i = 0; i < laps; i++)
-        sum += measuretime(repeats,func,freefunc);
-
-    fprintf(stderr,"%s amount(%lu*%lu) laps(%lu) %f\n",name,repeats,testcasesrun,laps,sum/laps);
+    double t = measuretime(repeats,func,freefunc);
+    fprintf(stderr,"%s amount(%lu*%lu) %f\n",name,repeats,testcasesrun,t);
 }
 
 int
@@ -620,9 +613,9 @@ main(int argc, char *argv[])
             loadfile(tests[i].files[j],&tests[i].contents[j],&tests[i].contentsl[j]);
     }
 
-    measuretest("exprs",500,expr_comp_test,free_exprs);
-    measuretest("html",12,html_parse_test,free_rqs);
-    measuretest("exec",1,exec_test,NULL);
+    measuretest("exprs",500*12,expr_comp_test,free_exprs);
+    measuretest("html",18*12,html_parse_test,free_rqs);
+    measuretest("exec",1*12,exec_test,NULL);
 
     free_exprs();
     free_rqs();
