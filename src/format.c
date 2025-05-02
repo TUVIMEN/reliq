@@ -26,9 +26,11 @@
 #include "utils.h"
 #include "format.h"
 
+#include <assert.h>
+
 #define FORMAT_INC 8
 
-typedef reliq_error *(*reliq_format_function_t)(reliq_cstr*,SINK*,const reliq_format_func*);
+typedef reliq_error *(*reliq_format_function_t)(reliq_str*,SINK*,const reliq_format_func*);
 
 struct {
   cstr8 name;
@@ -52,139 +54,73 @@ struct {
 reliq_error *
 format_exec(char *input, size_t inputl, SINK *output, const reliq_chnode *hnode, const reliq_chnode *parent, const reliq_format_func *format, const size_t formatl, const reliq *rq)
 {
-  if (hnode && (!formatl || (formatl == 1 && (format[0].flags&FORMAT_FUNC) == 0 && (!format[0].arg[0] || !((reliq_cstr*)format[0].arg[0])->b)))) {
-    chnode_print(output,hnode,rq);
-    return NULL;
-  }
-  if (hnode && formatl == 1 && (format[0].flags&FORMAT_FUNC) == 0 && format[0].arg[0] && ((reliq_cstr*)format[0].arg[0])->b) {
-    chnode_printf(output,((reliq_cstr*)format[0].arg[0])->b,((reliq_cstr*)format[0].arg[0])->s,hnode,parent,rq);
-    return NULL;
-  }
-
+  reliq_error *err = NULL;
   SINK *out;
   char *ptr[2];
   ptr[1] = NULL;
   size_t fsize[2];
-
-  for (size_t i = 0; i < formatl; i++) {
-    out = (i == formatl-1) ? output : sink_open(&ptr[1],&fsize[1]);
-
-    if (hnode && i == 0 && (format[i].flags&FORMAT_FUNC) == 0) {
-      chnode_printf(out,((reliq_cstr*)format[i].arg[0])->b,((reliq_cstr*)format[i].arg[0])->s,hnode,parent,rq);
-    } else {
-      if (i == 0) {
-        if (hnode) {
-          SINK *t = sink_open(&ptr[0],&fsize[0]);
-          chnode_print(t,hnode,rq);
-          sink_close(t);
-        } else {
-          ptr[0] = input;
-          fsize[0] = inputl;
-        }
-      }
-      if (format[i].flags&FORMAT_FUNC) {
-        reliq_str input = (reliq_str){
-          .b = ptr[0],
-          .s = fsize[0]
-        };
-        reliq_error *err = format_functions[(format[i].flags&FORMAT_FUNC)-1].func((reliq_cstr*)&input,out,format+i);
-        if (err) {
-          if (i == 0 && hnode)
-            free(ptr[0]);
-          return err;
-        }
-      }
-    }
-
-    if (i != formatl-1)
-      sink_close(out);
-    if (i != 0 || (hnode && (format[i].flags&FORMAT_FUNC) != 0))
-      free(ptr[0]);
-    ptr[0] = ptr[1];
-    fsize[0] = fsize[1];
-  }
-
-  return NULL;
-}
-
-//!!
-/*
-  This is a memory optimized implementation of the above. Instead of openinig new SINK for every
-  function it reuses it's last SINK.
-
-  However testing it on 64MB sample revealed that it's consistently slower by 200ms, even though
-  it allocates 189.49MB less memory using 18502 less allocations.
-
-     time ./reliq -f speed.reliq sp2
-
-  Tests on the same sample concatenated to 444MB showed around 800ms difference.
-
-  Because of that it's not used and is saved for future. Weird are the ways of operating systems.
-*/
-
-/*reliq_error *
-format_exec(char *input, size_t inputl, SINK *output, const reliq_chnode *hnode, const reliq_chnode *parent, const reliq_format_func *format, const size_t formatl, const reliq *rq)
-{
-  if (hnode && (!formatl || (formatl == 1 && (format[0].flags&FORMAT_FUNC) == 0 && (!format[0].arg[0] || !((reliq_cstr*)format[0].arg[0])->b)))) {
-    chnode_print(output,hnode,rq);
-    return NULL;
-  }
-  if (hnode && formatl == 1 && (format[0].flags&FORMAT_FUNC) == 0 && format[0].arg[0] && ((reliq_cstr*)format[0].arg[0])->b) {
-    chnode_printf(output,((reliq_cstr*)format[0].arg[0])->b,((reliq_cstr*)format[0].arg[0])->s,hnode,parent,rq);
-    return NULL;
-  }
-
-  reliq_error *err = NULL;
-  SINK *out;
-  char *ptr[2];
-  size_t fsize[2];
   SINK *sn[2] = {0};
-  if (formatl > 1 || !hnode || (format[0].flags&FORMAT_FUNC) == 0)
-    sn[0] = sink_open(&ptr[0],&fsize[0]);
-  if (formatl > 1)
-    sn[1] = sink_open(&ptr[1],&fsize[1]);
+  size_t i = 0;
 
-  for (size_t i = 0; i < formatl; i++) {
-    out = (i == formatl-1) ? output : sn[1];
-    if (hnode && i == 0 && (format[i].flags&FORMAT_FUNC) == 0) {
-      chnode_printf(out,((reliq_cstr*)format[i].arg[0])->b,((reliq_cstr*)format[i].arg[0])->s,hnode,parent,rq);
+  if (hnode) {
+    out = output;
+    if (formatl && (format[0].flags&FORMAT_FUNC) == 0) {
+      if (formatl > 1)
+        out = sn[0] = sink_open(&ptr[0],&fsize[0]);
+
+      chnode_printf(out,((reliq_cstr*)format[0].arg[0])->b,((reliq_cstr*)format[0].arg[0])->s,hnode,parent,rq);
+      i++;
     } else {
-      if (i == 0) {
-        if (hnode) {
-          chnode_print(sn[0],hnode,rq);
-          sink_flush(sn[0]);
-        } else {
-          ptr[0] = input;
-          fsize[0] = inputl;
-        }
-      }
-      if (format[i].flags&FORMAT_FUNC) {
-        err = format_functions[(format[i].flags&FORMAT_FUNC)-1].func(ptr[0],fsize[0],out,(const void**)format[i].arg,format[i].flags);
-        if (err)
-          goto ERR;
-      }
+      if (formatl)
+        out = sn[0] = sink_open(&ptr[0],&fsize[0]);
+
+      chnode_print(out,hnode,rq);
     }
 
     if (out != output) {
-      sink_flush(out);
+      sink_flush(sn[0]);
+      input = ptr[0];
+      inputl = fsize[0];
+    }
+  }
+  if (formatl-i > 1) {
+    if (!sn[0])
+      sn[0] = sink_open(&ptr[0],&fsize[0]);
+    sn[1] = sink_open(&ptr[1],&fsize[1]);
+  }
+
+  for (; i < formatl; i++) {
+    assert(format[i].flags&FORMAT_FUNC);
+    out = (i == formatl-1) ? output : sn[1];
+
+    reliq_str str = (reliq_str){
+      .b = input,
+      .s = inputl
+    };
+    if ((err = format_functions[(format[i].flags&FORMAT_FUNC)-1].func((reliq_str*)&str,out,format+i)))
+      break;
+
+    if (out != output) {
+      sink_flush(sn[1]);
       sink_change(sn[1],&ptr[0],&fsize[0],fsize[1]);
       sink_change(sn[0],&ptr[1],&fsize[1],0);
 
       SINK *t = sn[1];
       sn[1] = sn[0];
       sn[0] = t;
+
+      input = ptr[0];
+      inputl = fsize[0];
     }
   }
 
-  ERR: ;
   if (sn[0])
     sink_destroy(sn[0]);
   if (sn[1])
     sink_destroy(sn[1]);
 
-  return NULL;
-}*/
-
+  return err;
+}
 
 static reliq_error *
 format_get_func_args(reliq_format_func *f, const char *src, size_t *pos, const size_t size, size_t *argcount)
