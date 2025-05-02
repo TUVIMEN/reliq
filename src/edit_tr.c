@@ -251,56 +251,46 @@ tr_strrange(const char *src1, const size_t size1, const char *src2, const size_t
 }
 
 reliq_error *
-tr_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag)
+tr_edit(const reliq_cstr *src, SINK *output, const edit_args *args)
 {
   uchar array[256] = {0};
-  reliq_str *string[2] = {NULL};
+  reliq_cstr *string[2] = {NULL};
   uchar complement=0,squeeze=0;
   const char argv0[] = "tr";
   reliq_error *err;
 
-  if (arg[0]) {
-    if (flag&FORMAT_ARG0_ISSTR) {
-      if (((reliq_str*)arg[0])->b && ((reliq_str*)arg[0])->s)
-        string[0] = (reliq_str*)arg[0];
-    } else
-      return script_err("%s: arg %d: incorrect type of argument, expected string",argv0,1);
-  }
-  if (arg[1]) {
-    if (flag&FORMAT_ARG1_ISSTR) {
-      if (((reliq_str*)arg[1])->b && ((reliq_str*)arg[1])->s)
-        string[1] = (reliq_str*)arg[1];
-    } else
-      return script_err("%s: arg %d: incorrect type of argument, expected string",argv0,2);
-  }
-  if (arg[2]) {
-    if (flag&FORMAT_ARG2_ISSTR) {
-      if (((reliq_str*)arg[2])->b) {
-        reliq_str *str = (reliq_str*)arg[2];
-        for (size_t i = 0; i < str->s; i++) {
-            if (str->b[i] == 's') {
-              squeeze = 1;
-            } else if (str->b[i] == 'c')
-              complement = 1;
-        }
-      }
-    } else
-      return script_err("%s: arg %d: incorrect type of argument, expected string",argv0,3);
+  if ((err = edit_arg_str(args,argv0,0,&string[0])))
+    return err;
+  if ((err = edit_arg_str(args,argv0,1,&string[1])))
+    return err;
+
+  reliq_cstr *flags;
+  if ((err = edit_arg_str(args,argv0,2,&flags)))
+    return err;
+  if (flags) {
+    for (size_t i = 0; i < flags->s; i++) {
+      if (flags->b[i] == 's') {
+        squeeze = 1;
+      } else if (flags->b[i] == 'c')
+        complement = 1;
+    }
   }
 
   if (!string[0])
-    return script_err("%s: missing arguments",argv0);
+    return edit_missing_arg(argv0);
 
   const size_t bufsize = 8192;
   char buf[bufsize];
   size_t bufcurrent = 0;
+  const char *str = src->b;
+  const size_t strl = src->s;
 
   if (string[0] && !string[1]) {
     if ((err = tr_strrange(string[0]->b,string[0]->s,NULL,0,array,NULL,complement)))
       return err;
-    for (size_t i = 0; i < size; i++) {
-      if (!array[(uchar)src[i]]) {
-        buf[bufcurrent++] = src[i];
+    for (size_t i = 0; i < strl; i++) {
+      if (!array[(uchar)str[i]]) {
+        buf[bufcurrent++] = str[i];
         if (bufcurrent == bufsize) {
           sink_write(output,buf,bufcurrent);
           bufcurrent = 0;
@@ -316,15 +306,15 @@ tr_edit(const char *src, const size_t size, SINK *output, const void *arg[4], co
   if ((err = tr_strrange(string[0]->b,string[0]->s,string[1]->b,string[1]->s,array,array_enabled,complement)))
     return err;
 
-  for (size_t i = 0; i < size; i++) {
-    buf[bufcurrent++] = (array_enabled[(uchar)src[i]]) ? array[(uchar)src[i]] : src[i];
+  for (size_t i = 0; i < strl; i++) {
+    buf[bufcurrent++] = (array_enabled[(uchar)str[i]]) ? array[(uchar)str[i]] : str[i];
     if (bufcurrent == bufsize) {
       sink_write(output,buf,bufcurrent);
       bufcurrent = 0;
     }
     if (squeeze) {
-      char previous = src[i];
-      while (i+1 < size && src[i+1] == previous)
+      char previous = str[i];
+      while (i+1 < strl && str[i+1] == previous)
         i++;
     }
   }

@@ -998,7 +998,7 @@ sed_pre_edit(const char *src, const size_t size, SINK *output, char *buffers[3],
 }
 
 reliq_error *
-sed_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag)
+sed_edit(const reliq_cstr *src, SINK *output, const edit_args *args)
 {
   reliq_error *err;
   const char argv0[] = "sed";
@@ -1007,44 +1007,40 @@ sed_edit(const char *src, const size_t size, SINK *output, const void *arg[4], c
 
   char linedelim = '\n';
 
-  if (arg[1]) {
-    if (flag&FORMAT_ARG1_ISSTR) {
-      if (((reliq_str*)arg[1])->b && ((reliq_str*)arg[1])->s) {
-        reliq_str *str = (reliq_str*)arg[1];
-        for (size_t i = 0; i < str->s; i++) {
-          if (str->b[i] == 'E') {
-            extendedregex = 1;
-          } else if (str->b[i] == 'z') {
-            linedelim = '\0';
-          } else if (str->b[i] == 'n')
-            silent = 1;
-        }
-      }
-    } else
-      return script_err("%s: arg %d: incorrect type of argument, expected string",argv0,2);
+  reliq_cstr *flags;
+  if ((err = edit_arg_str(args,argv0,1,&flags)))
+    return err;
+
+  if (flags) {
+    for (size_t i = 0; i < flags->s; i++) {
+      if (flags->b[i] == 'E') {
+        extendedregex = 1;
+      } else if (flags->b[i] == 'z') {
+        linedelim = '\0';
+      } else if (flags->b[i] == 'n')
+        silent = 1;
+    }
   }
 
-  if (edit_get_arg_delim(arg,2,flag,&linedelim) == -1)
-    return script_err("%s: arg %d: incorrect type of argument, expected string",argv0,3);
+  if ((err = edit_arg_delim(args,argv0,2,&linedelim,NULL)))
+    return err;
 
-  if (arg[0]) {
-    if (flag&FORMAT_ARG0_ISSTR) {
-      if (((reliq_str*)arg[0])->b && ((reliq_str*)arg[0])->s) {
-        reliq_str *str = (reliq_str*)arg[0];
-        if ((err = sed_script_comp(str->b,str->s,extendedregex ? REG_EXTENDED : 0,&script)))
-          return err;
-      }
-    } else
-      return script_err("%s: arg %d: incorrect type of argument, expected string",argv0,1);
-  }
+  reliq_cstr *scr;
+  if ((err = edit_arg_str(args,argv0,0,&scr)))
+    return err;
+
+  if (scr && scr->s)
+    if ((err = sed_script_comp(scr->b,scr->s,extendedregex ? REG_EXTENDED : 0,&script)))
+      return err;
+
   if (script == NULL)
-    return script_err("%s: missing script argument",argv0);
+    return edit_missing_arg(argv0);
 
   char *buffers[3];
   for (size_t i = 0; i < 3; i++)
     buffers[i] = malloc(SED_MAX_PATTERN_SPACE);
 
-  err = sed_pre_edit(src,size,output,buffers,script,linedelim,silent);
+  err = sed_pre_edit(src->b,src->s,output,buffers,script,linedelim,silent);
 
   for (size_t i = 0; i < 3; i++)
     free(buffers[i]);

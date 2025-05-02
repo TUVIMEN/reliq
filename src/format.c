@@ -28,14 +28,12 @@
 
 #define FORMAT_INC 8
 
-typedef reliq_error *(*reliq_format_function_t)(char*,size_t,SINK*,const void*[4],const uint8_t);
+typedef reliq_error *(*reliq_format_function_t)(reliq_cstr*,SINK*,const reliq_format_func*);
 
-struct reliq_format_function {
+struct {
   cstr8 name;
   reliq_format_function_t func;
-};
-
-const struct reliq_format_function format_functions[] = {
+} const format_functions[] = {
   {{"sed",3},(reliq_format_function_t)sed_edit},
   {{"trim",4},(reliq_format_function_t)trim_edit},
   {{"tr",2},(reliq_format_function_t)tr_edit},
@@ -70,6 +68,7 @@ format_exec(char *input, size_t inputl, SINK *output, const reliq_chnode *hnode,
 
   for (size_t i = 0; i < formatl; i++) {
     out = (i == formatl-1) ? output : sink_open(&ptr[1],&fsize[1]);
+
     if (hnode && i == 0 && (format[i].flags&FORMAT_FUNC) == 0) {
       chnode_printf(out,((reliq_cstr*)format[i].arg[0])->b,((reliq_cstr*)format[i].arg[0])->s,hnode,parent,rq);
     } else {
@@ -84,7 +83,11 @@ format_exec(char *input, size_t inputl, SINK *output, const reliq_chnode *hnode,
         }
       }
       if (format[i].flags&FORMAT_FUNC) {
-        reliq_error *err = format_functions[(format[i].flags&FORMAT_FUNC)-1].func(ptr[0],fsize[0],out,(const void**)format[i].arg,format[i].flags);
+        reliq_str input = (reliq_str){
+          .b = ptr[0],
+          .s = fsize[0]
+        };
+        reliq_error *err = format_functions[(format[i].flags&FORMAT_FUNC)-1].func((reliq_cstr*)&input,out,format+i);
         if (err) {
           if (i == 0 && hnode)
             free(ptr[0]);

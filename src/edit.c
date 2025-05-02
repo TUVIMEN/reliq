@@ -30,18 +30,45 @@
 
 #define LINE_EDIT_INC (1<<8)
 
-int
-edit_get_arg_delim(const void *args[4], const int num, const uint8_t flag, char *delim)
+reliq_error *
+edit_missing_arg(const char *argv0)
 {
-  const void *arg = args[num];
-  if (!arg)
-    return 0;
-  if (!(flag&(FORMAT_ARG0_ISSTR<<num)))
-    return -1;
+  return script_err("%s: missing arguments",argv0);
+}
 
-  reliq_str *str = (reliq_str*)arg;
-  if (!str->b || !str->s)
-    return 0;
+reliq_error *
+edit_arg_str(const edit_args *args, const char *argv0, const uchar num, reliq_cstr **dest)
+{
+  const void *arg = args->arg[num];
+  *dest = NULL;
+  if (!arg)
+    return NULL;
+
+  const uint8_t flags = args->flags;
+  if (flags&(FORMAT_ARG0_ISSTR<<num)) {
+    reliq_cstr *str = (reliq_cstr*)arg;
+    if (str->b) {
+      *dest = str;
+    }
+    return NULL;
+  } else
+    return script_err("%s: arg %d: incorrect type of argument, expected string",argv0,num+1);
+}
+
+reliq_error *
+edit_arg_delim(const edit_args *args, const char *argv0, const uchar num, char *delim, uchar *found)
+{
+  reliq_error *err = NULL;
+
+  reliq_cstr *str;
+  if ((err = edit_arg_str(args,argv0,num,&str)))
+    return err;
+
+  if (!str || str->s == 0) {
+    if (found)
+      *found = 0;
+    return err;
+  }
 
   char d = *str->b;
   if (d == '\\' && str->s > 1) {
@@ -50,7 +77,25 @@ edit_get_arg_delim(const void *args[4], const int num, const uint8_t flag, char 
       d = '\\';
   }
   *delim = d;
-  return 1;
+  if (found)
+    *found = 1;
+  return err;
+}
+
+reliq_error *
+edit_arg_range(const edit_args *args, const char *argv0, const uchar num, reliq_range const **dest)
+{
+  const void *arg = args->arg[num];
+  if (!arg) {
+    *dest = NULL;
+    return NULL;
+  }
+  const uint8_t flags = args->flags;
+  if (flags&(FORMAT_ARG0_ISSTR<<num))
+    return script_err("%s: arg %d: incorrect type of argument, expected range",argv0,num+1);
+
+  *dest = (const reliq_range*)arg;
+  return NULL;
 }
 
 reliq_cstr
@@ -80,7 +125,7 @@ cstr_get_line_d(const char *src, const size_t size, size_t *saveptr, const char 
 }
 
 static void
-echo_edit_print(reliq_str *str, SINK *output)
+echo_edit_print(reliq_cstr *str, SINK *output)
 {
   const char *b = str->b;
   const size_t size = str->s;
@@ -102,32 +147,23 @@ echo_edit_print(reliq_str *str, SINK *output)
 }
 
 reliq_error *
-echo_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag)
+echo_edit(const reliq_cstr *src, SINK *output, const edit_args *args)
 {
-  reliq_str *str[2] = {NULL};
+  reliq_cstr *str[2] = {NULL};
   const char argv0[] = "echo";
 
-  if (arg[0]) {
-    if (flag&FORMAT_ARG0_ISSTR) {
-      if (((reliq_str*)arg[0])->b && ((reliq_str*)arg[0])->s)
-        str[0] = (reliq_str*)arg[0];
-    } else
-      return script_err("%s: arg %d: incorrect type of argument, expected string",argv0,1);
-  }
-  if (arg[1]) {
-    if (flag&FORMAT_ARG1_ISSTR) {
-      if (((reliq_str*)arg[1])->b && ((reliq_str*)arg[1])->s)
-        str[1] = (reliq_str*)arg[1];
-    } else
-      return script_err("%s: arg %d: incorrect type of argument, expected string",argv0,2);
-  }
+  reliq_error *err;
+  if ((err = edit_arg_str(args,argv0,0,&str[0])))
+    return err;
+  if ((err = edit_arg_str(args,argv0,1,&str[1])))
+    return err;
 
   if (!str[0] && !str[1])
-    return script_err("%s: missing arguments",argv0);
+    return edit_missing_arg(argv0);
 
   if (str[0] && str[0]->s)
     echo_edit_print(str[0],output);
-  sink_write(output,src,size);
+  sink_write(output,src->b,src->s);
   if (str[1] && str[1]->s)
     echo_edit_print(str[1],output);
 
@@ -135,24 +171,27 @@ echo_edit(const char *src, const size_t size, SINK *output, const void *arg[4], 
 }
 
 reliq_error *
-uniq_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag)
+uniq_edit(const reliq_cstr *src, SINK *output, const edit_args *args)
 {
   char delim = '\n';
   const char argv0[] = "uniq";
 
-  if (edit_get_arg_delim(arg,0,flag,&delim) == -1)
-    return script_err("%s: arg %d: incorrect type of argument, expected string",argv0,1);
+  reliq_error *err;
+  if ((err = edit_arg_delim(args,argv0,0,&delim,NULL)))
+    return err;
 
+  const char *str = src->b;
+  const size_t strl = src->s;
   reliq_cstr line,previous;
   size_t saveptr = 0;
 
-  previous = cstr_get_line_d(src,size,&saveptr,delim);
+  previous = cstr_get_line_d(str,strl,&saveptr,delim);
   if (!previous.b)
     return NULL;
 
   while (1) {
     REPEAT: ;
-    line = cstr_get_line_d(src,size,&saveptr,delim);
+    line = cstr_get_line_d(str,strl,&saveptr,delim);
     if (!line.b) {
       sink_write(output,previous.b,previous.s);
       sink_put(output,delim);
@@ -180,38 +219,40 @@ sort_cmp(const reliq_cstr *s1, const reliq_cstr *s2)
 }
 
 reliq_error *
-sort_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag)
+sort_edit(const reliq_cstr *src, SINK *output, const edit_args *args)
 {
   char delim = '\n';
   uchar reverse=0,unique=0; //,natural=0,icase=0;
   const char argv0[] = "sort";
 
-  if (arg[0]) {
-    if (flag&FORMAT_ARG0_ISSTR && ((reliq_str*)arg[0])->b) {
-      reliq_str *str = (reliq_str*)arg[0];
-      for (size_t i = 0; i < str->s; i++) {
-        if (str->b[i] == 'r') {
-          reverse = 1;
-        } /* else if (str->b[i] == 'n') {
-          natural = 1;
-        } else if (str->b[i] == 'i') {
-          icase = 1;
-        } */ else if (str->b[i] == 'u')
-          unique = 1;
-      }
-    } else
-      return script_err("%s: arg %d: incorrect type of argument, expected string",argv0,1);
+  reliq_error *err;
+  reliq_cstr *flags;
+  if ((err = edit_arg_str(args,argv0,0,&flags)))
+    return err;
+  if (flags) {
+    for (size_t i = 0; i < flags->s; i++) {
+      if (flags->b[i] == 'r') {
+        reverse = 1;
+      } /* else if (flags->b[i] == 'n') {
+        natural = 1;
+      } else if (flags->b[i] == 'i') {
+        icase = 1;
+      } */ else if (flags->b[i] == 'u')
+        unique = 1;
+    }
   }
 
-  if (edit_get_arg_delim(arg,1,flag,&delim) == -1)
-    return script_err("%s: arg %d: incorrect type of argument, expected string",argv0,2);
+  if ((err = edit_arg_delim(args,argv0,1,&delim,NULL)))
+    return err;
 
   flexarr *lines = flexarr_init(sizeof(reliq_cstr),LINE_EDIT_INC);
   reliq_cstr line,previous;
   size_t saveptr = 0;
+  const char *str = src->b;
+  const size_t strl = src->s;
 
   while (1) {
-    line = cstr_get_line_d(src,size,&saveptr,delim);
+    line = cstr_get_line_d(str,strl,&saveptr,delim);
     if (!line.b)
       break;
     *(reliq_cstr*)flexarr_inc(lines) = line;
@@ -251,29 +292,29 @@ sort_edit(const char *src, const size_t size, SINK *output, const void *arg[4], 
 }
 
 reliq_error *
-line_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag)
+line_edit(const reliq_cstr *src, SINK *output, const edit_args *args)
 {
   char delim = '\n';
-  reliq_range *range = NULL;
   const char argv0[] = "line";
 
-  if (arg[0]) {
-    if (flag&FORMAT_ARG0_ISSTR)
-      return script_err("%s: arg %d: incorrect type of argument, expected range",argv0,1);
-    range = (reliq_range*)arg[0];
-  }
+  const reliq_range *range = NULL;
+  reliq_error *err;
+  if ((err = edit_arg_range(args,argv0,0,&range)))
+    return err;
 
-  if (edit_get_arg_delim(arg,1,flag,&delim) == -1)
-    return script_err("%s: arg %d: incorrect type of argument, expected string",argv0,2);
+  if ((err = edit_arg_delim(args,argv0,1,&delim,NULL)))
+    return err;
 
   if (!range)
-    return script_err("%s: missing arguments",argv0);
+    return edit_missing_arg(argv0);
 
   size_t saveptr=0,linecount=0,currentline=0;
   reliq_cstr line;
+  const char *str = src->b;
+  const size_t strl = src->s;
 
   while (1) {
-    line = edit_cstr_get_line(src,size,&saveptr,delim);
+    line = edit_cstr_get_line(str,strl,&saveptr,delim);
     if (!line.b)
       break;
     linecount++;
@@ -284,7 +325,7 @@ line_edit(const char *src, const size_t size, SINK *output, const void *arg[4], 
 
   saveptr = 0;
   while (1) {
-    line = edit_cstr_get_line(src,size,&saveptr,delim);
+    line = edit_cstr_get_line(str,strl,&saveptr,delim);
     if (!line.b)
       break;
     if (range_match(currentline,range,linecount))
@@ -295,7 +336,7 @@ line_edit(const char *src, const size_t size, SINK *output, const void *arg[4], 
 }
 
 reliq_error *
-cut_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag)
+cut_edit(const reliq_cstr *src, SINK *output, const edit_args *args)
 {
   uchar delim[256]={0};
   uchar complement=0,onlydelimited=0,delimited=0;
@@ -303,47 +344,39 @@ cut_edit(const char *src, const size_t size, SINK *output, const void *arg[4], c
   const char argv0[] = "cut";
   reliq_error *err;
 
-  reliq_range *range = NULL;
+  const reliq_range *range;
+  if ((err = edit_arg_range(args,argv0,0,&range)))
+    return err;
 
-  if (arg[0]) {
-    if (flag&FORMAT_ARG0_ISSTR)
-      script_err("%s: arg %d: incorrect type of argument, expected range",argv0,1);
-    range = (reliq_range*)arg[0];
+  reliq_cstr *f_delim;
+  if ((err = edit_arg_str(args,argv0,1,&f_delim)))
+    return err;
+
+  if (f_delim && f_delim->b && f_delim->s) {
+    if ((err = tr_strrange(f_delim->b,f_delim->s,NULL,0,delim,NULL,0)))
+      return err;
+    delimited = 1;
   }
 
-  if (arg[1]) {
-    if (flag&FORMAT_ARG1_ISSTR) {
-      if (((reliq_str*)arg[1])->b && ((reliq_str*)arg[1])->s) {
-        reliq_str *str = (reliq_str*)arg[1];
-        if ((err = tr_strrange(str->b,str->s,NULL,0,delim,NULL,0)))
-          return err;
-        delimited = 1;
-      }
-    } else
-      return script_err("%s: arg %d: incorrect type of argument, expected string",argv0,2);
-  }
-  if (arg[2]) {
-    if (flag&FORMAT_ARG2_ISSTR) {
-      if (((reliq_str*)arg[2])->b) {
-        reliq_str *str = (reliq_str*)arg[2];
-        for (size_t i = 0; i < str->s; i++) {
-          if (str->b[i] == 's') {
-            onlydelimited = 1;
-          } else if (str->b[i] == 'c') {
-            complement = 1;
-          } else if (str->b[i] == 'z')
-            linedelim = '\0';
-        }
-      }
-    } else
-      return script_err("%s: arg %d: incorrect type of argument, expected string",argv0,3);
+  reliq_cstr *flags;
+  if ((err = edit_arg_str(args,argv0,2,&flags)))
+    return err;
+  if (flags) {
+    for (size_t i = 0; i < flags->s; i++) {
+      if (flags->b[i] == 's') {
+        onlydelimited = 1;
+      } else if (flags->b[i] == 'c') {
+        complement = 1;
+      } else if (flags->b[i] == 'z')
+        linedelim = '\0';
+    }
   }
 
-  if (edit_get_arg_delim(arg,3,flag,&linedelim) == -1)
-    return script_err("%s: arg %d: incorrect type of argument, expected string",argv0,4);
+  if ((err = edit_arg_delim(args,argv0,3,&linedelim,NULL)))
+    return err;
 
   if (!range)
-    return script_err("%s: missing range argument",argv0);
+    return edit_missing_arg(argv0);
 
   reliq_cstr line;
   size_t saveptr = 0;
@@ -352,13 +385,16 @@ cut_edit(const char *src, const size_t size, SINK *output, const void *arg[4], c
   size_t bufcurrent = 0;
   uchar printlinedelim;
 
+  const char *str = src->b;
+  const size_t strl = src->s;
+
   while (1) {
-    line = cstr_get_line_d(src,size,&saveptr,linedelim);
+    line = cstr_get_line_d(str,strl,&saveptr,linedelim);
     if (!line.b)
       return NULL;
 
     printlinedelim = 1;
-    size_t start=line.b-src,end=(line.b-src)+line.s;
+    size_t start=line.b-str,end=(line.b-str)+line.s;
     if (delimited) {
       size_t dstart,dend,dlength,dcount=0,dprevend=start,dprevendlength=0;
       if (onlydelimited)
@@ -366,24 +402,24 @@ cut_edit(const char *src, const size_t size, SINK *output, const void *arg[4], c
       while (1) {
         dstart = start;
         dend = dstart;
-        while (!delim[(uchar)src[dend]] && dend < end)
+        while (!delim[(uchar)str[dend]] && dend < end)
           dend++;
         dlength = dend-dstart;
-        if (delim[(uchar)src[dend]] && dend < end)
+        if (delim[(uchar)str[dend]] && dend < end)
           dend++;
         if (dlength != dend-dstart) {
           printlinedelim = 1;
-        } else if (!onlydelimited && start == (size_t)(line.b-src)) {
-          sink_write(output,src+dstart,dlength);
+        } else if (!onlydelimited && start == (size_t)(line.b-str)) {
+          sink_write(output,str+dstart,dlength);
           goto PRINT;
         }
 
         start = dend;
         if (range_match(dcount,range,RANGE_UNSIGNED)^complement) {
           if (dprevendlength)
-            sink_write(output,src+dprevend,1);
+            sink_write(output,str+dprevend,1);
           if (dlength)
-            sink_write(output,src+dstart,dlength);
+            sink_write(output,str+dstart,dlength);
           dprevendlength = 1;
         }
         dprevend = dstart+dlength;
@@ -394,7 +430,7 @@ cut_edit(const char *src, const size_t size, SINK *output, const void *arg[4], c
     } else {
       for (size_t i = start; i < end; i++) {
         if (range_match(i-start,range,end-start-1)^complement) {
-          buf[bufcurrent++] = src[i];
+          buf[bufcurrent++] = str[i];
           if (bufcurrent == bufsize) {
             sink_write(output,buf,bufcurrent);
             bufcurrent = 0;
@@ -410,7 +446,7 @@ cut_edit(const char *src, const size_t size, SINK *output, const void *arg[4], c
     size_t n = 0;
     if (line.b[line.s] == linedelim)
       n = 1;
-    while (saveptr < size && src[saveptr] == linedelim) {
+    while (saveptr < strl && str[saveptr] == linedelim) {
       saveptr++;
       n++;
     }
@@ -426,37 +462,37 @@ cut_edit(const char *src, const size_t size, SINK *output, const void *arg[4], c
 }
 
 reliq_error *
-trim_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag)
+trim_edit(const reliq_cstr *src, SINK *output, const edit_args *args)
 {
   char delim = '\0';
   const char argv0[] = "trim";
   uchar hasdelim = 0;
 
-  int r = edit_get_arg_delim(arg,0,flag,&delim);
-  if (r == -1)
-    return script_err("%s: arg %d: incorrect type of argument, expected string",argv0,1);
-  if (r == 1)
-    hasdelim = 1;
+  reliq_error *err;
+  if ((err = edit_arg_delim(args,argv0,0,&delim,&hasdelim)))
+    return err;
 
   size_t line=0,delimstart,lineend;
+  const char *str = src->b;
+  const size_t strl = src->s;
 
-  while (line < size) {
+  while (line < strl) {
     if (hasdelim) {
         delimstart = line;
-        while (line < size && src[line] == delim)
+        while (line < strl && str[line] == delim)
           line++;
         if (line-delimstart)
-          sink_write(output,src+delimstart,line-delimstart);
+          sink_write(output,str+delimstart,line-delimstart);
         lineend = line;
-        while (lineend < size && src[lineend] != delim)
+        while (lineend < strl && str[lineend] != delim)
           lineend++;
     } else
-      lineend = size;
+      lineend = strl;
 
     if (lineend-line) {
       char const *trimmed;
       size_t trimmedl = 0;
-      memtrim(&trimmed,&trimmedl,src+line,lineend-line);
+      memtrim(&trimmed,&trimmedl,str+line,lineend-line);
       if (trimmedl)
         sink_write(output,trimmed,trimmedl);
     }
@@ -468,30 +504,33 @@ trim_edit(const char *src, const size_t size, SINK *output, const void *arg[4], 
 }
 
 reliq_error *
-rev_edit(char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag)
+rev_edit(const reliq_str *src, SINK *output, const edit_args *args)
 {
   char delim = '\n';
   const char argv0[] = "rev";
 
-  if (edit_get_arg_delim(arg,0,flag,&delim) == -1)
-    return script_err("%s: arg %d: incorrect type of argument, expected string",argv0,1);
+  reliq_error *err;
+  if ((err = edit_arg_delim(args,argv0,0,&delim,NULL)))
+    return err;
 
   size_t line=0,delimstart,lineend;
+  char *str = src->b;
+  size_t strl = src->s;
 
-  while (line < size) {
+  while (line < strl) {
     delimstart = line;
-    while (line < size && src[line] == delim)
+    while (line < strl && str[line] == delim)
       line++;
     if (line-delimstart)
-      sink_write(output,src+delimstart,line-delimstart);
+      sink_write(output,str+delimstart,line-delimstart);
     lineend = line;
-    while (lineend < size && src[lineend] != delim)
+    while (lineend < strl && str[lineend] != delim)
       lineend++;
 
     size_t linel = lineend-line;
     if (linel) {
-      strnrev(src+line,linel);
-      sink_write(output,src+line,linel);
+      strnrev(str+line,linel);
+      sink_write(output,str+line,linel);
     }
 
     line = lineend;
@@ -501,20 +540,23 @@ rev_edit(char *src, const size_t size, SINK *output, const void *arg[4], const u
 }
 
 reliq_error *
-tac_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag)
+tac_edit(const reliq_cstr *src, SINK *output, const edit_args *args)
 {
   char delim = '\n';
   const char argv0[] = "tac";
 
-  if (edit_get_arg_delim(arg,0,flag,&delim) == -1)
-    return script_err("%s: arg %d: incorrect type of argument, expected string",argv0,1);
+  reliq_error *err;
+  if ((err = edit_arg_delim(args,argv0,0,&delim,NULL)))
+    return err;
 
   size_t saveptr=0;
   flexarr *lines = flexarr_init(sizeof(reliq_cstr),LINE_EDIT_INC);
   reliq_cstr line;
+  const char *str = src->b;
+  const size_t strl = src->s;
 
   while (1) {
-    line = edit_cstr_get_line(src,size,&saveptr,delim);
+    line = edit_cstr_get_line(str,strl,&saveptr,delim);
     if (!line.b)
       break;
     *(reliq_cstr*)flexarr_inc(lines) = line;
@@ -530,43 +572,43 @@ tac_edit(const char *src, const size_t size, SINK *output, const void *arg[4], c
 }
 
 reliq_error *
-decode_edit(const char *src, const size_t size, SINK *output, const void UNUSED *arg[4], const uint8_t UNUSED flag)
+decode_edit(const reliq_cstr *src, SINK *output, const edit_args *args)
 {
   const char argv0[] = "decode";
   bool exact = false;
 
-  if (arg[0]) {
-    if (flag&FORMAT_ARG0_ISSTR && ((reliq_str*)arg[0])->b) {
-      reliq_str *str = (reliq_str*)arg[0];
-      for (size_t i = 0; i < str->s; i++) {
-        if (str->b[i] == 'e')
-          exact = true;
-      }
-    } else
-      return script_err("%s: arg %d: incorrect type of argument, expected string",argv0,1);
+  reliq_error *err;
+  reliq_cstr *flags;
+  if ((err = edit_arg_str(args,argv0,0,&flags)))
+    return err;
+  if (flags) {
+    for (size_t i = 0; i < flags->s; i++) {
+      if (flags->b[i] == 'e')
+        exact = true;
+    }
   }
 
-  reliq_decode_entities_sink(src,size,output,!exact);
+  reliq_decode_entities_sink(src->b,src->s,output,!exact);
   return NULL;
 }
 
 reliq_error *
-encode_edit(const char *src, const size_t size, SINK *output, const void UNUSED *arg[4], const uint8_t UNUSED flag)
+encode_edit(const reliq_cstr *src, SINK *output, const edit_args *args)
 {
   const char argv0[] = "encode";
   bool full = false;
 
-  if (arg[0]) {
-    if (flag&FORMAT_ARG0_ISSTR && ((reliq_str*)arg[0])->b) {
-      reliq_str *str = (reliq_str*)arg[0];
-      for (size_t i = 0; i < str->s; i++) {
-        if (str->b[i] == 'f')
-          full = true;
-      }
-    } else
-      return script_err("%s: arg %d: incorrect type of argument, expected string",argv0,1);
+  reliq_error *err;
+  reliq_cstr *flags;
+  if ((err = edit_arg_str(args,argv0,0,&flags)))
+    return err;
+  if (flags) {
+    for (size_t i = 0; i < flags->s; i++) {
+      if (flags->b[i] == 'f')
+        full = true;
+    }
   }
 
-  reliq_encode_entities_sink(src,size,output,full);
+  reliq_encode_entities_sink(src->b,src->s,output,full);
   return NULL;
 }

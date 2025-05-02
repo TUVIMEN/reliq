@@ -28,7 +28,7 @@
 #include "edit.h"
 
 reliq_error *
-wc_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag)
+wc_edit(const reliq_cstr *src, SINK *output, const edit_args *args)
 {
   char delim = '\n';
   const char argv0[] = "wc";
@@ -38,29 +38,27 @@ wc_edit(const char *src, const size_t size, SINK *output, const void *arg[4], co
   v[2] = 2; //characters
   v[3] = 0; //maxline
   size_t r[4] = {0};
-  r[2] = size;
+  r[2] = src->s;
 
-  if (arg[0]) {
-    if (flag&FORMAT_ARG0_ISSTR) {
-      if (((reliq_str*)arg[0])->b) {
-        reliq_str *str = (reliq_str*)arg[0];
-        for (size_t i = 0; i < str->s; i++) {
-          if (str->b[i] == 'c') {
-            v[2] = 1;
-          } else if (str->b[i] == 'l') {
-            v[0] = 1;
-          } else if (str->b[i] == 'L') {
-            v[3] = 1;
-          } else if (str->b[i] == 'w')
-            v[1] = 1;
-        }
-      }
-    } else
-      return script_err("%s: arg %d: incorrect type of argument, expected string",argv0,1);
+  reliq_cstr *flags;
+  reliq_error *err;
+  if ((err = edit_arg_str(args,argv0,0,&flags)))
+    return err;
+  if (flags) {
+    for (size_t i = 0; i < flags->s; i++) {
+      if (flags->b[i] == 'c') {
+        v[2] = 1;
+      } else if (flags->b[i] == 'l') {
+        v[0] = 1;
+      } else if (flags->b[i] == 'L') {
+        v[3] = 1;
+      } else if (flags->b[i] == 'w')
+        v[1] = 1;
+    }
   }
 
-  if (edit_get_arg_delim(arg,1,flag,&delim) == -1)
-    return script_err("%s: arg %d: incorrect type of argument, expected string",argv0,2);
+  if ((err = edit_arg_delim(args,argv0,1,&delim,NULL)))
+    return err;
 
   if (v[0] == 1 || v[1] == 1 || v[2] == 1 || v[3] == 1)
     for (uchar i = 0; i < 4; i++)
@@ -72,7 +70,7 @@ wc_edit(const char *src, const size_t size, SINK *output, const void *arg[4], co
     reliq_cstr line;
 
     while (1) {
-      line = edit_cstr_get_line(src,size,&saveptr,delim);
+      line = edit_cstr_get_line(src->b,src->s,&saveptr,delim);
       if (!line.b)
         break;
       r[0]++;

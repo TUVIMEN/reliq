@@ -22,26 +22,33 @@
 #include "flexarr.h"
 #include "sink.h"
 #include "types.h"
+#include "format.h"
+#include "range.h"
 
-int edit_get_arg_delim(const void *args[4], const int num, const uint8_t flag, char *delim);
+typedef reliq_format_func edit_args;
+
+reliq_error *edit_arg_str(const edit_args *args, const char *argv0, const uchar num, reliq_cstr **dest);
+reliq_error *edit_arg_delim(const edit_args *args, const char *argv0, const uchar num, char *delim, uchar *found);
+reliq_error *edit_arg_range(const edit_args *args, const char *argv0, const uchar num, reliq_range const **dest);
+reliq_error *edit_missing_arg(const char *argv0);
+
 reliq_cstr edit_cstr_get_line(const char *src, const size_t size, size_t *saveptr, const char delim);
 
 reliq_error *tr_strrange(const char *src1, const size_t size1, const char *src2, const size_t size2, unsigned char arr[256], unsigned char arr_enabled[256], unsigned char complement);
 
-reliq_error *sed_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag);
-reliq_error *cut_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag);
-reliq_error *decode_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag);
-reliq_error *encode_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag);
+reliq_error *sed_edit(const reliq_cstr *src, SINK *output, const edit_args *args);
+reliq_error *decode_edit(const reliq_cstr *src, SINK *output, const edit_args *args);
+reliq_error *encode_edit(const reliq_cstr *src, SINK *output, const edit_args *args);
+reliq_error *wc_edit(const reliq_cstr *src, SINK *output, const edit_args *args);
 
-reliq_error *wc_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag);
-
-reliq_error *tr_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag);
-reliq_error *trim_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag);
-reliq_error *line_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag);
-reliq_error *sort_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag);
-reliq_error *uniq_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag);
-reliq_error *echo_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag);
-reliq_error *rev_edit(char *src, size_t size, SINK *output, const void *arg[4], const uint8_t flag);
-reliq_error *tac_edit(const char *src, const size_t size, SINK *output, const void *arg[4], const uint8_t flag);
+reliq_error *tr_edit(const reliq_cstr *src, SINK *output, const edit_args *args);
+reliq_error *cut_edit(const reliq_cstr *src, SINK *output, const edit_args *args);
+reliq_error *trim_edit(const reliq_cstr *src, SINK *output, const edit_args *args);
+reliq_error *line_edit(const reliq_cstr *src, SINK *output, const edit_args *args);
+reliq_error *sort_edit(const reliq_cstr *src, SINK *output, const edit_args *args);
+reliq_error *uniq_edit(const reliq_cstr *src, SINK *output, const edit_args *args);
+reliq_error *echo_edit(const reliq_cstr *src, SINK *output, const edit_args *args);
+reliq_error *rev_edit(const reliq_str *src, SINK *output, const edit_args *args);
+reliq_error *tac_edit(const reliq_cstr *src, SINK *output, const edit_args *args);
 
 #endif
