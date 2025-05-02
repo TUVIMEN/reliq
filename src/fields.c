@@ -455,15 +455,6 @@ outfields_array_print(const reliq *rq, SINK *out, const reliq_output_field_type 
   return 0;
 }
 
-static char *
-fuck_libc(const char *str, const size_t strl, const size_t minsize)
-{
-  const size_t s = MAX(minsize+1,strl+1);
-  char *r = memcpy(malloc(s),str,strl);
-  r[strl] = '\0';
-  return r;
-}
-
 static size_t
 outfields_date_maxsize(const reliq_str *args, const size_t argsl)
 {
@@ -481,7 +472,7 @@ outfields_date_match(const reliq_str *args, const size_t argsl, char *matched, s
   uchar found = 0;
   if (!max_sz)
     return found;
-  char *format = malloc(max_sz+1);
+  char *format = alloca(max_sz+1);
 
   *date = (struct tm){0};
   for (size_t i = 0; i < argsl; i++) {
@@ -494,7 +485,6 @@ outfields_date_match(const reliq_str *args, const size_t argsl, char *matched, s
       break;
     }
   }
-  free(format);
   return found;
 }
 
@@ -505,18 +495,16 @@ outfields_date_print(SINK *out, const reliq_output_field_type *type, const char 
     return 1;
 
   const size_t max_iso_format_size = 24;
-  char *buf = fuck_libc(value,valuel,max_iso_format_size);
+  size_t buf_size = MAX(max_iso_format_size+1,valuel+1);
+  char *buf = memcpy(alloca(buf_size),value,valuel);
+  buf[valuel] = '\0';
 
   struct tm date;
-  uchar r = outfields_date_match(type->args,type->argsl,buf,&date);
-  if (r) {
-    assert(strftime(buf,max_iso_format_size+1,"%FT%T%z",&date) == 24);
-    outfields_str_print(out,buf,max_iso_format_size);
-  }
-
-  free(buf);
-  if (!r)
+  if (!outfields_date_match(type->args,type->argsl,buf,&date))
     return 1;
+
+  assert(strftime(buf,max_iso_format_size+1,"%FT%T%z",&date) == 24);
+  outfields_str_print(out,buf,max_iso_format_size);
   return 0;
 }
 
