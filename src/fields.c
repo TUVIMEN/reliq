@@ -256,13 +256,11 @@ reliq_output_field_comp(const char *src, size_t *pos, const size_t s, reliq_outp
 #define OUTFIELDS_NUM_INT 2
 #define OUTFIELDS_NUM_UNSIGNED 4
 
-static void
-outfields_num_print(SINK *out, const char *value, const size_t valuel, const uchar notempty, const uint8_t flags)
+static uchar
+outfields_num_print(SINK *out, const char *value, const size_t valuel, const uint8_t flags)
 {
-  if (!notempty) {
-    sink_put(out,'0');
-    return;
-  }
+  if (!valuel)
+    return 1;
 
   char const *start = value;
   size_t end = 0;
@@ -299,6 +297,8 @@ outfields_num_print(SINK *out, const char *value, const size_t valuel, const uch
     }
 
   GET_NUMBER: ;
+  if ((size_t)(start-value) >= valuel || !isdigit(*start))
+    return 1;
 
   while ((size_t)(start-value)+end < valuel && isdigit(start[end]))
     end++;
@@ -324,27 +324,31 @@ outfields_num_print(SINK *out, const char *value, const size_t valuel, const uch
     sink_put(out,'.');
     goto GET_NUMBER;
   }
+
+  return 0;
 }
 
-static void
-outfields_bool_print(SINK *out, const char *value, const size_t valuel, const uchar notempty)
+static uchar
+outfields_bool_print(SINK *out, const char *value, const size_t valuel)
 {
-  if (!notempty) {
-    sink_write(out,"false",5);
-    return;
-  }
+  char const *start = value;
+
+  while ((size_t)(start-value) < valuel && isspace(*start))
+    start++;
+
+  if ((size_t)(start-value) >= valuel)
+    return 1;
 
   int ret = 0;
 
-  if (!valuel || (*value == '-' && valuel > 1 && isdigit(value[1])))
-    goto END;
-
-  if (*value == 'y' || *value == 'Y' || *value == 't' || *value == 'T') {
+  if (*start == 'y' || *start == 'Y' || *start == 't' || *start == 'T') {
     ret = 1;
     goto END;
   }
 
-  char const *start = value;
+  if ((size_t)(start-value+1) < valuel && *start == '-' && isdigit(start[1]))
+    goto END;
+
   while ((size_t)(start-value) < valuel && *start == '0')
     start++;
   if ((size_t)(start-value) >= valuel || (start != value && !isdigit(*start)))
@@ -358,6 +362,8 @@ outfields_bool_print(SINK *out, const char *value, const size_t valuel, const uc
     sink_write(out,"true",4);
   } else
     sink_write(out,"false",5);
+
+  return 0;
 }
 
 static void
@@ -374,14 +380,9 @@ outfields_unicode_print(SINK *out, uint16_t character)
   sink_write(out,val,vall);
 }
 
-static void
-outfields_str_print(SINK *out, const char *value, const size_t valuel, const uchar notempty)
+static uchar
+outfields_str_print(SINK *out, const char *value, const size_t valuel)
 {
-  if (!notempty) {
-    sink_write(out,"\"\"",2);
-    return;
-  }
-
   const uchar sub[256] = {
     128,129,130,131,132,133,134,135,'b','t','n',139,'f','r',142,143,144,145,146,147,148,149,150,
     151,152,153,154,155,156,157,158,159,0,0,34,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -417,15 +418,15 @@ outfields_str_print(SINK *out, const char *value, const size_t valuel, const uch
   if (end)
     sink_write(out,start,end);
   sink_put(out,'"');
+
+  return 0;
 }
 
-static void
-outfields_array_print(const reliq *rq, SINK *out, const reliq_output_field_type *type, const char *value, const size_t valuel, const uchar notempty)
+static uchar
+outfields_array_print(const reliq *rq, SINK *out, const reliq_output_field_type *type, const char *value, const size_t valuel)
 {
-  if (!notempty) {
-    sink_write(out,"[]",2);
-    return;
-  }
+  if (!valuel)
+    return 1;
 
   sink_put(out,'[');
 
@@ -445,11 +446,13 @@ outfields_array_print(const reliq *rq, SINK *out, const reliq_output_field_type 
     if (start != value)
       sink_put(out,',');
 
-    outfields_value_print(rq,out,&sub,start,end-start,notempty);
+    outfields_value_print(rq,out,&sub,start,end-start,1);
     start = end+1;
   }
 
   sink_put(out,']');
+
+  return 0;
 }
 
 static char *
@@ -495,19 +498,11 @@ outfields_date_match(const reliq_str *args, const size_t argsl, char *matched, s
   return found;
 }
 
-static void
-outfields_date_print(SINK *out, const reliq_output_field_type *type, const char *value, const size_t valuel, const uchar notempty)
+static uchar
+outfields_date_print(SINK *out, const reliq_output_field_type *type, const char *value, const size_t valuel)
 {
-  if (!notempty) {
-    sink_write(out,"\"\"",2);
-    return;
-  }
-
-  if (!valuel || !type->argsl) {
-    PRINT_SAME: ;
-    outfields_str_print(out,value,valuel,notempty);
-    return;
-  }
+  if (!type->argsl)
+    return 1;
 
   const size_t max_iso_format_size = 24;
   char *buf = fuck_libc(value,valuel,max_iso_format_size);
@@ -516,22 +511,18 @@ outfields_date_print(SINK *out, const reliq_output_field_type *type, const char 
   uchar r = outfields_date_match(type->args,type->argsl,buf,&date);
   if (r) {
     assert(strftime(buf,max_iso_format_size+1,"%FT%T%z",&date) == 24);
-    outfields_str_print(out,buf,max_iso_format_size,notempty);
+    outfields_str_print(out,buf,max_iso_format_size);
   }
 
   free(buf);
   if (!r)
-    goto PRINT_SAME;
+    return 1;
+  return 0;
 }
 
-static void
-outfields_url_print(const reliq *rq, SINK *out, const reliq_output_field_type *type, const char *value, const size_t valuel, const uchar notempty)
+static uchar
+outfields_url_print(const reliq *rq, SINK *out, const reliq_output_field_type *type, const char *value, const size_t valuel)
 {
-  if (!notempty) {
-    sink_write(out,"\"\"",2);
-    return;
-  }
-
   const reliq_url *ref = &rq->url;
   reliq_url ref_buf;
   uchar uses_arg = type->argsl > 0;
@@ -546,45 +537,91 @@ outfields_url_print(const reliq *rq, SINK *out, const reliq_output_field_type *t
   reliq_url_parse(value,valuel,ref->scheme.b,ref->scheme.s,&url,false);
   reliq_url_join(ref,&url,&url);
 
-  outfields_str_print(out,url.url.b,url.url.s,notempty);
+  outfields_str_print(out,url.url.b,url.url.s);
 
   reliq_url_free(&url);
   if (uses_arg)
     reliq_url_free(&ref_buf);
+
+  return 0;
 }
 
 static void
-outfields_value_print(const reliq *rq, SINK *out, const reliq_output_field_type *type, const char *value, const size_t valuel, const uchar notempty)
+outfields_value_print_default(char type, SINK *out, const char *value, const size_t valuel)
 {
-  switch (type->type) {
+  switch (type) {
     case 's':
-      outfields_str_print(out,value,valuel,notempty);
+      sink_write(out,"\"\"",2);
       break;
     case 'n':
-      outfields_num_print(out,value,valuel,notempty,OUTFIELDS_NUM_FLOAT);
+      sink_put(out,'0');
       break;
     case 'i':
-      outfields_num_print(out,value,valuel,notempty,OUTFIELDS_NUM_INT);
+      sink_put(out,'0');
       break;
     case 'u':
-      outfields_num_print(out,value,valuel,notempty,OUTFIELDS_NUM_UNSIGNED);
+      sink_put(out,'0');
       break;
     case 'b':
-      outfields_bool_print(out,value,valuel,notempty);
+      sink_write(out,"false",5);
       break;
     case 'd':
-      outfields_date_print(out,type,value,valuel,notempty);
+      outfields_str_print(out,value,valuel);
       break;
     case 'U':
-      outfields_url_print(rq,out,type,value,valuel,notempty);
+      sink_write(out,"\"\"",2);
       break;
     case 'a':
-      outfields_array_print(rq,out,type,value,valuel,notempty);
+      sink_write(out,"[]",2);
       break;
     default:
       sink_write(out,"null",4);
       break;
   }
+}
+
+static void
+outfields_value_print(const reliq *rq, SINK *out, const reliq_output_field_type *type, const char *value, const size_t valuel, const uchar notempty)
+{
+  uchar def = 0;
+
+  if (!notempty) {
+    outfields_value_print_default(type->type,out,value,valuel);
+    return;
+  }
+
+  switch (type->type) {
+    case 's':
+      def = outfields_str_print(out,value,valuel);
+      break;
+    case 'n':
+      def = outfields_num_print(out,value,valuel,OUTFIELDS_NUM_FLOAT);
+      break;
+    case 'i':
+      def = outfields_num_print(out,value,valuel,OUTFIELDS_NUM_INT);
+      break;
+    case 'u':
+      def = outfields_num_print(out,value,valuel,OUTFIELDS_NUM_UNSIGNED);
+      break;
+    case 'b':
+      def = outfields_bool_print(out,value,valuel);
+      break;
+    case 'd':
+      def = outfields_date_print(out,type,value,valuel);
+      break;
+    case 'U':
+      def = outfields_url_print(rq,out,type,value,valuel);
+      break;
+    case 'a':
+      def = outfields_array_print(rq,out,type,value,valuel);
+      break;
+    default:
+      sink_write(out,"null",4);
+      break;
+  }
+
+  if (def)
+    outfields_value_print_default(type->type,out,value,valuel);
 }
 
 static void
