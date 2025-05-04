@@ -595,8 +595,7 @@ reliq_exec_file(reliq *rq, FILE *output, const reliq_expr *expr)
 
   #ifdef SCHEME_DEBUG
 
-  reliq_scheme sch;
-  reliq_json_scheme(expr,&sch);
+  reliq_scheme sch = reliq_json_scheme(expr);
   scheme_print(&sch);
   reliq_json_scheme_free(&sch);
 

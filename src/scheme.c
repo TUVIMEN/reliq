@@ -181,8 +181,8 @@ reliq_json_scheme_r(const reliq_expr *expr, flexarr *fields, uchar *leaking, uch
   scheme_search_block((flexarr*)expr->e,fields,leaking,repeating,lvl);
 }
 
-void
-reliq_json_scheme(const reliq_expr *expr, reliq_scheme *scheme)
+reliq_scheme
+reliq_json_scheme(const reliq_expr *expr)
 {
   flexarr *fields_arr = flexarr_init(sizeof(struct reliq_scheme_field),SCHEME_INCR);
   uchar leaking=0,repeating=0;
@@ -195,7 +195,7 @@ reliq_json_scheme(const reliq_expr *expr, reliq_scheme *scheme)
   size_t fieldsl;
   flexarr_conv(fields_arr,(void**)&fields,&fieldsl);
 
-  *scheme = (reliq_scheme){
+  return (reliq_scheme){
     .fields = fields,
     .fieldsl = fieldsl,
     .leaking = (leaking > 0),

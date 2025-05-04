@@ -212,7 +212,9 @@ const char *reliq_hnode_endtag_strip(const reliq_hnode *hn, size_t *len);
 void reliq_chnode_conv(const reliq *rq, const reliq_chnode *c, reliq_hnode *d);
 void reliq_cattrib_conv(const reliq *rq, const reliq_cattrib *c, reliq_attrib *d);
 
+// creates reliq with independent reliq.nodes
 reliq reliq_from_compressed(const reliq_compressed *compressed, const size_t compressedl, const reliq *rq);
+//creates reliq with independent reliq.nodes and reliq.data
 reliq reliq_from_compressed_independent(const reliq_compressed *compressed, const size_t compressedl, const reliq *rq);
 
 reliq_error *reliq_ecomp(const char *script, const size_t size, reliq_expr **expr);
@@ -251,7 +253,7 @@ typedef struct {
   unsigned char repeating : 1;
 } reliq_scheme;
 
-void reliq_json_scheme(const reliq_expr *expr, reliq_scheme *scheme);
+reliq_scheme reliq_json_scheme(const reliq_expr *expr);
 void reliq_json_scheme_free(reliq_scheme *scheme);
 
 reliq_error *reliq_set_error(const int code, const char *fmt, ...);
