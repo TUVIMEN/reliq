@@ -139,29 +139,6 @@ fcollector_add(const size_t lastn, const uchar isnodef, const reliq_expr *expr, 
   *(struct fcollector*)flexarr_inc(fcollector) = (struct fcollector){expr,lastn,ncollector->size-1,0,isnodef};
 }
 
-/*static reliq_error *
-exec_chainlink(const reliq *rq, const reliq_chnode *parent, SINK *output, const reliq_expr *expr, const flexarr *source, flexarr *dest, flexarr **out, uchar noncol, uchar isempty, flexarr *ncollector, flexarr *fcollector //struct fcollector)   //source: reliq_compressed, dest: reliq_compressed, out: reliq_compressed, ncollector: struct ncollector
-{
-  if (current->e) {
-    lastnode = current;
-    reliq_npattern *nodep = (reliq_npattern*)current->e;
-    if (outnamed)
-      add_compressed_blank(buf[1],ofNamed,outnamed);
-
-    if (!isempty)
-      node_exec(rq,parent,nodep,src,buf[1]);
-
-    if (outnamed)
-      add_compressed_blank(buf[1],ofBlockEnd,NULL);
-
-    if (!noncol && outprotected && buf[1]->size == 0) {
-      add_compressed_blank(buf[1],ofUnnamed,NULL);
-      ncollector_add(ncollector,buf[2],buf[1],startn,lastn,NULL,current->flags,0,0,noncol);
-      break;
-    }
-  }
-}*/
-
 static reliq_error *
 exec_block_conditional(const reliq_expr *expr, const flexarr *source, flexarr *dest, exec_state *st) //source: reliq_compressed, dest: reliq_compressed
 {
@@ -285,6 +262,37 @@ exec_block(const reliq_expr *expr, const flexarr *source, flexarr *dest, exec_st
 }
 
 static reliq_error *
+exec_singular(const reliq_expr *expr, const reliq_output_field *named, const flexarr *source, flexarr *dest, exec_state *st)
+{
+  reliq_error *err = NULL;
+  if (!source->size)
+    return err;
+
+  flexarr *in = flexarr_init(sizeof(reliq_compressed),1);
+  reliq_compressed *inv = (reliq_compressed*)flexarr_inc(in);
+  const reliq_compressed *sourcev = (reliq_compressed*)source->v;
+
+  const size_t size = source->size;
+  for (size_t i = 0; i < size; i++) {
+    *inv = sourcev[i];
+    if (OUTFIELDCODE(inv->hnode))
+      continue;
+    size_t lastn = st->ncollector->size;
+    if (named && expr->childfields)
+      add_compressed_blank(dest,ofBlock,NULL);
+    if ((err = exec_block(expr,in,dest,st)))
+      break;
+    if (named && expr->childfields)
+      add_compressed_blank(dest,ofBlockEnd,NULL);
+    if (!st->noncol && st->ncollector->size-lastn && expr->nodefl)
+      fcollector_add(lastn,1,expr,st->ncollector,st->fcollector);
+  }
+
+  flexarr_free(in);
+  return err;
+}
+
+static reliq_error *
 exec_table(const reliq_expr *expr, const reliq_output_field *named, const flexarr *source, flexarr *dest, exec_state *st) //source: reliq_compressed, dest: reliq_compressed, out: reliq_compressed, ncollector: struct ncollector
 {
   reliq_error *err = NULL;
@@ -293,41 +301,16 @@ exec_table(const reliq_expr *expr, const reliq_output_field *named, const flexar
     if (named) {
       add_compressed_blank(dest,expr->childfields ? ofArray : ofNoFieldsBlock,named);
     } else if (expr->childfields)
-      goto_script_seterr(END,"output field: array with child fields is not assigned to any name");
+      return script_err("output field: array with child fields is not assigned to any name");
 
-    if (!source->size)
-      goto END;
+    err = exec_singular(expr,named,source,dest,st);
+  } else {
+    if (named)
+      add_compressed_blank(dest,expr->childfields ? ofBlock : ofNoFieldsBlock,named);
 
-    flexarr *in = flexarr_init(sizeof(reliq_compressed),1);
-    reliq_compressed *inv = (reliq_compressed*)flexarr_inc(in);
-    const reliq_compressed *sourcev = (reliq_compressed*)source->v;
-
-    const size_t size = source->size;
-    for (size_t i = 0; i < size; i++) {
-      *inv = sourcev[i];
-      if (OUTFIELDCODE(inv->hnode))
-        continue;
-      size_t lastn = st->ncollector->size;
-      if (named && expr->childfields)
-        add_compressed_blank(dest,ofBlock,NULL);
-      if ((err = exec_block(expr,in,dest,st)))
-        break;
-      if (named && expr->childfields)
-        add_compressed_blank(dest,ofBlockEnd,NULL);
-      if (!st->noncol && st->ncollector->size-lastn && expr->nodefl)
-        fcollector_add(lastn,1,expr,st->ncollector,st->fcollector);
-    }
-
-    flexarr_free(in);
-    goto END;
+    err = exec_block(expr,source,dest,st);
   }
 
-  if (named)
-    add_compressed_blank(dest,expr->childfields ? ofBlock : ofNoFieldsBlock,named);
-
-  err = exec_block(expr,source,dest,st);
-
-  END: ;
   if (named)
     add_compressed_blank(dest,ofBlockEnd,NULL);
   return err;
