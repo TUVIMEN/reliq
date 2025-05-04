@@ -115,8 +115,10 @@ ncollector_add(flexarr *ncollector, flexarr *dest, flexarr *source, size_t start
   if (EXPR_IS_TABLE(flags) && !isempty) {
     if (startn != lastn) { //truncate previously added, now useless ncollector
       const size_t size = ncollector->size;
-      for (size_t i = lastn; i < size; i++)
-        ((struct ncollector*)ncollector->v)[startn+i] = ((struct ncollector*)ncollector->v)[i];
+      if (lastn < size) {
+        struct ncollector *nv = ncollector->v;
+        memmove(nv+startn,nv+lastn,size-lastn);
+      }
       ncollector->size -= lastn-startn;
     }
   } else {
