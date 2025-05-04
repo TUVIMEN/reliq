@@ -165,13 +165,13 @@ typedef struct {
 //if reuse is set then dest structure will be reused, but it has to be
 //  initiated either by setting it to zero or calling reliq_url_parse
 //  without reuse set
-void reliq_url_parse(const char *url, const size_t urll, const char *scheme, const size_t schemel, reliq_url *dest, const bool reuse);
+void reliq_url_parse(const char *url, const size_t urll, const char *scheme, const size_t schemel, const bool reuse, reliq_url *dest);
 
 //if url and dest point to the same location url will be reused
 //url should be initialized by passing scheme and schemel from ref e.g.
 //  void urljoin(const reliq_url *ref, const char *url, const size_t urll, reliq_url *dest) {
 //    reliq_url u;
-//    reliq_url_parse(url,urll,ref->scheme,ref->schemel,&u,false);
+//    reliq_url_parse(url,urll,ref->scheme,ref->schemel,false,&u);
 //    reliq_url_join(ref,&u,dest);
 //  }
 void reliq_url_join(const reliq_url *ref, const reliq_url *url, reliq_url *dest);
@@ -219,9 +219,9 @@ reliq reliq_from_compressed_independent(const reliq_compressed *compressed, cons
 
 reliq_error *reliq_ecomp(const char *script, const size_t size, reliq_expr **expr);
 
-reliq_error *reliq_exec_file(reliq *rq, FILE *output, const reliq_expr *expr);
-reliq_error *reliq_exec_str(reliq *rq, char **str, size_t *strl, const reliq_expr *expr);
-reliq_error *reliq_exec(reliq *rq, reliq_compressed **nodes, size_t *nodesl, const reliq_expr *expr);
+reliq_error *reliq_exec_file(const reliq *rq, const reliq_expr *expr, FILE *output);
+reliq_error *reliq_exec_str(const reliq *rq, const reliq_expr *expr, char **str, size_t *strl);
+reliq_error *reliq_exec(const reliq *rq, const reliq_expr *expr, reliq_compressed **nodes, size_t *nodesl);
 
 void reliq_efree(reliq_expr *expr);
 

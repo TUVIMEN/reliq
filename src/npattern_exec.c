@@ -34,8 +34,6 @@ typedef struct  {
   const reliq_hnode *hnode;
 } nmatcher_state;
 
-reliq_error *reliq_exec_r(reliq *rq, const reliq_chnode *parent, SINK *output, reliq_compressed **outnodes, size_t *outnodesl, const reliq_expr *expr);
-
 static int
 pattrib_match(const reliq *rq, const reliq_hnode *hnode, const struct pattrib *attrib)
 {
@@ -80,7 +78,7 @@ exprs_match(const reliq *rq, const reliq_chnode *chnode, const reliq_hook *hook)
   r.attribsl = last->attribs+reliq_chnode_attribsl(rq,last);
 
   size_t compressedl = 0;
-  reliq_error *err = reliq_exec_r(&r,chnode,NULL,NULL,&compressedl,&hook->match.expr);
+  reliq_error *err = reliq_exec_r(&r,&hook->match.expr,chnode,NULL,NULL,&compressedl);
   if (err)
     free(err);
   if (err || !compressedl)

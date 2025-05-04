@@ -517,12 +517,12 @@ outfields_url_print(const reliq *rq, SINK *out, const reliq_output_field_type *t
 
   if (uses_arg) {
     reliq_str *s = &type->args[0];
-    reliq_url_parse(s->b,s->s,NULL,0,&ref_buf,false);
+    reliq_url_parse(s->b,s->s,NULL,0,false,&ref_buf);
     ref = &ref_buf;
   }
 
   reliq_url url;
-  reliq_url_parse(value,valuel,ref->scheme.b,ref->scheme.s,&url,false);
+  reliq_url_parse(value,valuel,ref->scheme.b,ref->scheme.s,false,&url);
   reliq_url_join(ref,&url,&url);
 
   outfields_str_print(out,url.url.b,url.url.s);

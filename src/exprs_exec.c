@@ -53,7 +53,6 @@ typedef struct {
 } exec_state;
 
 static reliq_error *exec_chain(const reliq_expr *expr, const flexarr *source, flexarr *dest, exec_state *st); //source: reliq_compressed, dest: reliq_compressed
-reliq_error *reliq_exec_r(reliq *rq, const reliq_chnode *parent, SINK *output, reliq_compressed **outnodes, size_t *outnodesl, const reliq_expr *expr);
 
 static inline void
 add_compressed_blank(flexarr *dest, const enum outfieldCode val1, const void *val2) //dest: reliq_compressed
@@ -454,7 +453,7 @@ exec_chain(const reliq_expr *expr, const flexarr *source, flexarr *dest, exec_st
 }
 
 reliq_error *
-reliq_exec_r(reliq *rq, const reliq_chnode *parent, SINK *output, reliq_compressed **outnodes, size_t *outnodesl, const reliq_expr *expr)
+reliq_exec_r(const reliq *rq, const reliq_expr *expr, const reliq_chnode *parent, SINK *output, reliq_compressed **outnodes, size_t *outnodesl)
 {
   if (!expr)
     return NULL;
@@ -582,13 +581,13 @@ scheme_print(const reliq_scheme *scheme)
 #endif //SCHEME_DEBUG
 
 reliq_error *
-reliq_exec(reliq *rq, reliq_compressed **nodes, size_t *nodesl, const reliq_expr *expr)
+reliq_exec(const reliq *rq, const reliq_expr *expr, reliq_compressed **nodes, size_t *nodesl)
 {
-  return reliq_exec_r(rq,NULL,NULL,nodes,nodesl,expr);
+  return reliq_exec_r(rq,expr,NULL,NULL,nodes,nodesl);
 }
 
 reliq_error *
-reliq_exec_file(reliq *rq, FILE *output, const reliq_expr *expr)
+reliq_exec_file(const reliq *rq, const reliq_expr *expr, FILE *output)
 {
   if (!expr)
     return NULL;
@@ -603,20 +602,20 @@ reliq_exec_file(reliq *rq, FILE *output, const reliq_expr *expr)
 
 
   SINK *out = sink_from_file(output);
-  reliq_error *err = reliq_exec_r(rq,NULL,out,NULL,NULL,expr);
+  reliq_error *err = reliq_exec_r(rq,expr,NULL,out,NULL,NULL);
   sink_close(out);
   return err;
 }
 
 reliq_error *
-reliq_exec_str(reliq *rq, char **str, size_t *strl, const reliq_expr *expr)
+reliq_exec_str(const reliq *rq, const reliq_expr *expr, char **str, size_t *strl)
 {
   *str = NULL;
   *strl = 0;
   if (!expr)
     return NULL;
   SINK *output = sink_open(str,strl);
-  reliq_error *err = reliq_exec_r(rq,NULL,output,NULL,NULL,expr);
+  reliq_error *err = reliq_exec_r(rq,expr,NULL,output,NULL,NULL);
   sink_close(output);
   return err;
 }

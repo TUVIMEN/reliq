@@ -70,7 +70,7 @@ reliq_free(reliq *rq)
 void
 reliq_set_url(reliq *rq, const char *url, const size_t urll)
 {
-  reliq_url_parse(url,urll,NULL,0,&rq->url,true);
+  reliq_url_parse(url,urll,NULL,0,true,&rq->url);
 }
 
 static void

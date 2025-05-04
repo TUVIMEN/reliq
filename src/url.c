@@ -552,7 +552,7 @@ url_zero(reliq_url *url, const bool reuse)
 }
 
 void
-reliq_url_parse(const char *url, const size_t urll, const char *scheme, const size_t schemel, reliq_url *dest, const bool reuse)
+reliq_url_parse(const char *url, const size_t urll, const char *scheme, const size_t schemel, const bool reuse, reliq_url *dest)
 {
   if (!urll || !url) {
     url_zero(dest,reuse);

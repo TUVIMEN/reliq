@@ -60,6 +60,8 @@ struct reliq_expr {
   uint8_t flags; //EXPR_
 };
 
+reliq_error *reliq_exec_r(const reliq *rq, const reliq_expr *expr, const reliq_chnode *parent, SINK *output, reliq_compressed **outnodes, size_t *outnodesl);
+
 reliq_error *expr_check_chain(const reliq_expr *expr);
 
 void reliq_efree_intr(reliq_expr *expr);
