@@ -35,7 +35,7 @@
 
 /*#define SCHEME_DEBUG*/
 
-#define PASSED_INC (1<<8) //!! if increased causes huge allocation see val_mem1 file
+#define PASSED_INC (1<<8) //!! if increased causes huge allocation
 #define NCOLLECTOR_INC (1<<8)
 #define FCOLLECTOR_INC (1<<5)
 
@@ -217,7 +217,7 @@ exec_block(const reliq_expr *expr, const flexarr *source, flexarr *dest, exec_st
 {
   flexarr *expr_e = (flexarr*)expr->e;
   if (!expr_e)
-      return NULL;
+    return NULL;
   const reliq_expr *exprs = expr_e->v;
   const size_t exprsl = expr_e->size;
   reliq_error *err = NULL;
@@ -227,8 +227,6 @@ exec_block(const reliq_expr *expr, const flexarr *source, flexarr *dest, exec_st
 
   size_t startn = st->ncollector->size;
   size_t lastn;
-
-  reliq_expr const *lastnode = NULL;
 
   for (size_t i = 0; i < exprsl; i++) {
     reliq_expr const *current = &exprs[i];
@@ -244,7 +242,7 @@ exec_block(const reliq_expr *expr, const flexarr *source, flexarr *dest, exec_st
         goto END;
     }
 
-    ncollector_add(st->ncollector,destfinal,desttemp,startn,lastn,lastnode,current->flags,1,st->isempty,st->noncol);
+    ncollector_add(st->ncollector,destfinal,desttemp,startn,lastn,NULL,current->flags,1,st->isempty,st->noncol);
   }
 
   if (!dest) {
@@ -459,7 +457,7 @@ reliq_exec_r(const reliq *rq, const reliq_expr *expr, const reliq_chnode *parent
 
   err = exec_block(expr,NULL,NULL,&state);
 
-  if (compressed && !err && !output) {
+  if (compressed && !err && outnodesl) {
     *outnodesl = compressed->size;
     if (outnodes) {
       flexarr_conv(compressed,(void**)outnodes,outnodesl);
