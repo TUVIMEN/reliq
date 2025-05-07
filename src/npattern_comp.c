@@ -619,7 +619,8 @@ handle_nmatchers_group(size_t *pos, flexarr *result, struct nmatchers_state *st)
     goto ERR;
   }
 
-  groups_matches = flexarr_init(sizeof(nmatchers),NODE_MATCHES_INC);
+  flexarr f_groups_matches = flexarr_init(sizeof(nmatchers),NODE_MATCHES_INC);
+  groups_matches = &f_groups_matches;
   uchar wastag = 0;
 
   uint8_t type_acc = NM_DEFAULT;
@@ -978,7 +979,7 @@ handle_nmatchers(size_t *pos, struct nmatchers_state *st)
     st->err = script_err("node: %lu: reached %lu level of recursion",*pos,st->lvl);
     return;
   }
-  flexarr *result = flexarr_init(sizeof(nmatchers_node),NODE_MATCHES_INC);
+  flexarr result = flexarr_init(sizeof(nmatchers_node),NODE_MATCHES_INC);
   nmatchers *matches = st->matches;
   *matches = (nmatchers){ .type = st->prevtype };
   uint8_t *type = &matches->type;
@@ -999,7 +1000,7 @@ handle_nmatchers(size_t *pos, struct nmatchers_state *st)
     }
 
     if (src[i] == '(') {
-      if (handle_nmatchers_group(&i,result,st))
+      if (handle_nmatchers_group(&i,&result,st))
         break;
       continue;
     }
@@ -1021,7 +1022,7 @@ handle_nmatchers(size_t *pos, struct nmatchers_state *st)
       i++;
 
     if ((isalpha(src[i]) || src[i] == '@') &&
-      hook_check(&i,invert,result,st))
+      hook_check(&i,invert,&result,st))
       continue;
 
     if (i >= size || st->err)
@@ -1032,11 +1033,11 @@ handle_nmatchers(size_t *pos, struct nmatchers_state *st)
       break;
     }
 
-    if ((st->err = type_comp(src,&i,size,invert,hastag,result,type)))
+    if ((st->err = type_comp(src,&i,size,invert,hastag,&result,type)))
       break;
   }
 
-  flexarr_conv(result,(void**)&matches->list,&matches->size);
+  flexarr_conv(&result,(void**)&matches->list,&matches->size);
   *pos = i;
 }
 

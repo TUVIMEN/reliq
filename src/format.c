@@ -250,9 +250,9 @@ format_comp(const char *src, size_t *pos, const size_t size, reliq_format_func *
   if (i >= size || !src)
     goto END;
 
-  flexarr *f = flexarr_init(sizeof(reliq_format_func),FORMAT_INC);
-  err = format_get_funcs(f,src,&i,size);
-  flexarr_conv(f,(void**)format,formatl);
+  flexarr f = flexarr_init(sizeof(reliq_format_func),FORMAT_INC);
+  err = format_get_funcs(&f,src,&i,size);
+  flexarr_conv(&f,(void**)format,formatl);
 
   END: ;
   *pos = i;

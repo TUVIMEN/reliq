@@ -184,16 +184,16 @@ reliq_json_scheme_r(const reliq_expr *expr, flexarr *fields, uchar *leaking, uch
 reliq_scheme
 reliq_json_scheme(const reliq_expr *expr)
 {
-  flexarr *fields_arr = flexarr_init(sizeof(struct reliq_scheme_field),SCHEME_INCR);
+  flexarr fields_arr = flexarr_init(sizeof(struct reliq_scheme_field),SCHEME_INCR);
   uchar leaking=0,repeating=0;
 
-  scheme_search_block((flexarr*)expr->e,fields_arr,&leaking,&repeating,0);
+  scheme_search_block((flexarr*)expr->e,&fields_arr,&leaking,&repeating,0);
   if (!repeating)
-    repeating = scheme_is_repeating(fields_arr,0,0);
+    repeating = scheme_is_repeating(&fields_arr,0,0);
 
   struct reliq_scheme_field *fields;
   size_t fieldsl;
-  flexarr_conv(fields_arr,(void**)&fields,&fieldsl);
+  flexarr_conv(&fields_arr,(void**)&fields,&fieldsl);
 
   return (reliq_scheme){
     .fields = fields,

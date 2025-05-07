@@ -49,6 +49,7 @@ reliq_expr_free_pre(flexarr *exprs) //exprs: reliq_expr
   for (size_t i = 0; i < size; i++)
     reliq_efree_intr(&e[i]);
   flexarr_free(exprs);
+  free(exprs);
 }
 
 void
@@ -362,7 +363,7 @@ skip_comment(const char *src, size_t *pos, const size_t s)
 static void
 token_text(flexarr *tokens, const char *src, const size_t size) //tokens: token
 {
-  flexarr *str = flexarr_init(sizeof(char),1<<7);
+  flexarr str = flexarr_init(sizeof(char),1<<7);
   token t;
   t.name = tText;
 
@@ -375,16 +376,16 @@ token_text(flexarr *tokens, const char *src, const size_t size) //tokens: token
         size_t i_prev = i;
         assert(!skip_quotes(src,&i,size));
         for (size_t j = i_prev; j < i; j++)
-          *(char*)flexarr_inc(str) = src[j];
+          *(char*)flexarr_inc(&str) = src[j];
         continue;
       } else if (i && isspace(src[i-1]) && skip_comment(src,&i,size))
         continue;
     }
 
-    *(char*)flexarr_inc(str) = src[i++];
+    *(char*)flexarr_inc(&str) = src[i++];
   }
 
-  flexarr_conv(str,(void**)&t.start,&t.size);
+  flexarr_conv(&str,(void**)&t.start,&t.size);
   if (t.size)
     *(token*)flexarr_inc(tokens) = t;
 }
@@ -535,7 +536,7 @@ tokenize(const char *src, const size_t size, token **tokens, size_t *tokensl) //
 {
   #define token_found(x,y) { tokenstart=src+i; name=(x); tokensize=(y); goto FOUND; }
   reliq_error *err = NULL;
-  flexarr *ret = flexarr_init(sizeof(token),1<<5);
+  flexarr ret = flexarr_init(sizeof(token),1<<5);
   char const *textstart = NULL;
   enum tokenName name;
   size_t tokensize;
@@ -607,24 +608,24 @@ tokenize(const char *src, const size_t size, token **tokens, size_t *tokensl) //
     if (0) {
       FOUND: ;
       if (textstart) {
-        token_text(ret,textstart,src+i-textstart);
+        token_text(&ret,textstart,src+i-textstart);
         textstart = NULL;
       }
-      *(token*)flexarr_inc(ret) = (token){tokenstart,tokensize,name};
+      *(token*)flexarr_inc(&ret) = (token){tokenstart,tokensize,name};
       i += tokensize-1;
     }
   }
 
   if (textstart)
-    token_text(ret,textstart,src+size-textstart);
+    token_text(&ret,textstart,src+size-textstart);
 
   END: ;
   if (err) {
-    flexarr_free(ret);
+    flexarr_free(&ret);
     *tokens = NULL;
     *tokensl = 0;
   } else {
-    flexarr_conv(ret,(void**)tokens,tokensl);
+    flexarr_conv(&ret,(void**)tokens,tokensl);
   }
   return err;
   #undef token_found
@@ -943,7 +944,8 @@ tcomp_nextnode(tcomp_state *st)
 
   if (((flexarr*)current->e)->size) {
     current = st->current = (reliq_expr*)flexarr_incz(st->ret);
-    current->e = flexarr_init(sizeof(reliq_expr),PATTERN_SIZE_INC);
+    flexarr f = flexarr_init(sizeof(reliq_expr),PATTERN_SIZE_INC);
+    current->e = memdup(&f,sizeof(flexarr));
     EXPR_TYPE_SET(st->current->flags,EXPR_CHAIN);
   }
   return NULL;
@@ -982,7 +984,8 @@ tcomp_conditional(size_t *pos, const enum tokenName name, tcomp_state *st)
     t.outfield = (reliq_output_field){0};
 
     *current = (reliq_expr){0};
-    current->e = flexarr_init(sizeof(reliq_expr),PATTERN_SIZE_INC);
+    flexarr f = flexarr_init(sizeof(reliq_expr),PATTERN_SIZE_INC);
+    current->e = memdup(&f,sizeof(flexarr));
     *(reliq_expr*)flexarr_inc(current->e) = t;
 
     EXPR_TYPE_SET(current->flags,EXPR_BLOCK_CONDITION);
@@ -990,7 +993,8 @@ tcomp_conditional(size_t *pos, const enum tokenName name, tcomp_state *st)
   }
 
   current = st->current = (reliq_expr*)flexarr_incz(lastret->e);
-  current->e = flexarr_init(sizeof(reliq_expr),PATTERN_SIZE_INC);
+  flexarr f = flexarr_init(sizeof(reliq_expr),PATTERN_SIZE_INC);
+  current->e = memdup(&f,sizeof(flexarr));
   EXPR_TYPE_SET(current->flags,EXPR_CHAIN);
   current->flags |= EXPR_CONDITION_EXPR;
   return NULL;
@@ -1054,9 +1058,14 @@ from_token_comp(size_t *pos, tcomp_state *st)
     return NULL;
 
   reliq_expr expr = (reliq_expr){0};
-  st->ret = flexarr_init(sizeof(reliq_expr),PATTERN_SIZE_INC);
+
+  flexarr f_ret = flexarr_init(sizeof(reliq_expr),PATTERN_SIZE_INC);
+  st->ret = memdup(&f_ret,sizeof(flexarr));
+
   st->current = flexarr_incz(st->ret);
-  st->current->e = flexarr_init(sizeof(reliq_expr),PATTERN_SIZE_INC);
+  flexarr f_e = flexarr_init(sizeof(reliq_expr),PATTERN_SIZE_INC);
+  st->current->e = memdup(&f_e,sizeof(flexarr));
+
   EXPR_TYPE_SET(st->current->flags,EXPR_CHAIN);
 
   st->expr = &expr;

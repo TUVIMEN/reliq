@@ -728,13 +728,13 @@ html_struct_handle(size_t *pos, const uint16_t lvl, html_state *st)
 reliq_error *
 html_handle(const char *data, const size_t size, reliq_chnode **nodes, size_t *nodesl, reliq_cattrib **attribs, size_t *attribsl)
 {
-  flexarr *nodes_buffer = flexarr_init(sizeof(reliq_chnode),NODES_INC);
-  flexarr *attribs_buffer = (void*)flexarr_init(sizeof(reliq_cattrib),ATTRIB_INC);
+  flexarr nodes_buffer = flexarr_init(sizeof(reliq_chnode),NODES_INC);
+  flexarr attribs_buffer = flexarr_init(sizeof(reliq_cattrib),ATTRIB_INC);
   html_state st = {
     .f = data,
     .s = size,
-    .nodes = nodes_buffer,
-    .attribs = attribs_buffer,
+    .nodes = &nodes_buffer,
+    .attribs = &attribs_buffer,
   };
   uint32_t htmlerr = 0;
 
@@ -762,7 +762,7 @@ html_handle(const char *data, const size_t size, reliq_chnode **nodes, size_t *n
     }
 
     if (tnindex != (size_t)-1)
-      text_finish(&tnindex,nodes_buffer,textstart,textend,&htmlerr,data);
+      text_finish(&tnindex,&nodes_buffer,textstart,textend,&htmlerr,data);
     if (st.err)
       break;
 
@@ -770,16 +770,16 @@ html_handle(const char *data, const size_t size, reliq_chnode **nodes, size_t *n
   }
 
   if (st.err) {
-    flexarr_free(nodes_buffer);
-    flexarr_free(attribs_buffer);
+    flexarr_free(&nodes_buffer);
+    flexarr_free(&attribs_buffer);
 
     *nodes = NULL;
     *nodesl = 0;
     *attribs = NULL;
     *attribsl = 0;
   } else {
-    flexarr_conv(nodes_buffer,(void**)nodes,nodesl);
-    flexarr_conv(attribs_buffer,(void**)attribs,attribsl);
+    flexarr_conv(&nodes_buffer,(void**)nodes,nodesl);
+    flexarr_conv(&attribs_buffer,(void**)attribs,attribsl);
   }
   return st.err;
 }

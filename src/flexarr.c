@@ -22,13 +22,13 @@
 #include "builtin.h"
 #include "flexarr.h"
 
-flexarr * ATTR_MALLOC
-flexarr_init(const size_t elsize, const size_t inc_r)
+flexarr
+flexarr_init(const uint32_t elsize, const uint32_t inc_r)
 {
-  flexarr *ret = calloc(1,sizeof(flexarr));
-  ret->inc_r = inc_r;
-  ret->elsize = elsize;
-  return ret;
+  return (flexarr){
+    .inc_r = inc_r,
+    .elsize = elsize
+  };
 }
 
 static inline void * ATTR_MALLOC
@@ -136,7 +136,6 @@ flexarr_conv(flexarr *f, void **v, size_t *s) //convert from flexarr to normal a
   flexarr_clearb(f);
   *s = f->size;
   *v = f->v;
-  free(f);
 }
 
 void
@@ -147,5 +146,4 @@ flexarr_free(flexarr *f)
   f->v = NULL;
   f->size = 0;
   f->asize = 0;
-  free(f);
 }

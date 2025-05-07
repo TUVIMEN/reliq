@@ -50,7 +50,7 @@ sink_set(SINK *sn, const size_t size) //makes sure that SINK has at least size b
   if (!size || sn->type != SINK_TYPE_FLEXARR)
     return;
 
-  flexarr *fl = sn->v.sf.fl;
+  flexarr *fl = &sn->v.sf.fl;
   if (fl->asize*fl->elsize < size)
     flexarr_set(fl,size);
 }
@@ -62,7 +62,7 @@ sink_write(SINK *sn, const char *src, const size_t size)
     return;
 
   if (sn->type == SINK_TYPE_FLEXARR) {
-    flexarr_append(sn->v.sf.fl,src,size);
+    flexarr_append(&sn->v.sf.fl,src,size);
   } else
     fwrite(src,1,size,sn->v.file);
 }
@@ -71,7 +71,7 @@ void
 sink_put(SINK *sn, const char c)
 {
   if (sn->type == SINK_TYPE_FLEXARR) {
-    *(char*)flexarr_inc(sn->v.sf.fl) = c;
+    *(char*)flexarr_inc(&sn->v.sf.fl) = c;
   } else
     fputc(c,sn->v.file);
 }
@@ -79,8 +79,8 @@ sink_put(SINK *sn, const char c)
 static inline void
 sink_flexarr_flush(SINK *sn)
 {
-  *sn->v.sf.ptr = sn->v.sf.fl->v;
-  *sn->v.sf.ptrl = sn->v.sf.fl->size;
+  *sn->v.sf.ptr = sn->v.sf.fl.v;
+  *sn->v.sf.ptrl = sn->v.sf.fl.size;
 }
 
 void
@@ -97,7 +97,7 @@ sink_change(SINK *sn, char **ptr, size_t *ptrl, const size_t size)
 {
   if (sn->type != SINK_TYPE_FLEXARR)
     return sn;
-  flexarr *fl = sn->v.sf.fl;
+  flexarr *fl = &sn->v.sf.fl;
   fl->size = size*fl->elsize;
   sn->v.sf.ptr = ptr;
   sn->v.sf.ptrl = ptrl;
@@ -111,7 +111,7 @@ sink_zero(SINK *sn)
   if (sn->type != SINK_TYPE_FLEXARR)
     return -1;
 
-  sn->v.sf.fl->size = 0;
+  sn->v.sf.fl.size = 0;
   return 0;
 }
 
@@ -122,7 +122,7 @@ sink_close(SINK *sn)
     return;
 
   if (sn->type == SINK_TYPE_FLEXARR) {
-    flexarr_conv(sn->v.sf.fl,(void**)sn->v.sf.ptr,sn->v.sf.ptrl);
+    flexarr_conv(&sn->v.sf.fl,(void**)sn->v.sf.ptr,sn->v.sf.ptrl);
   } else
     fflush(sn->v.file);
 
@@ -136,7 +136,7 @@ sink_destroy(SINK *sn)
     return;
 
   if (sn->type == SINK_TYPE_FLEXARR) {
-    flexarr_free(sn->v.sf.fl);
+    flexarr_free(&sn->v.sf.fl);
   } else
     fclose(sn->v.file);
   free(sn);

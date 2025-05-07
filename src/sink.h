@@ -39,7 +39,7 @@
 #define SINK_FLEXARR_INC (1<<15)
 
 struct sink_flexarr_t {
-  flexarr *fl; //char*
+  flexarr fl; //char*
   char **ptr;
   size_t *ptrl;
 };

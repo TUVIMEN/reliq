@@ -20,16 +20,17 @@
 #define RELIQ_FLEXARR_H
 
 #include <stddef.h>
+#include <stdint.h>
 
 typedef struct {
   void *v;
   size_t asize; //allocated size
   size_t size; //used size
-  size_t elsize; //size of a single element
-  size_t inc_r; //increase rate
+  uint32_t elsize; //size of a single element
+  uint32_t inc_r; //increase rate
 } flexarr;
 
-flexarr *flexarr_init(const size_t elsize, const size_t inc_r);
+flexarr flexarr_init(const uint32_t elsize, const uint32_t inc_r);
 
 void *flexarr_inc(flexarr *f);
 void *flexarr_incz(flexarr *f); //same as above but zeroes the memory

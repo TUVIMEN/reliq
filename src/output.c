@@ -494,9 +494,12 @@ nodes_output(const reliq *rq, SINK *output, const flexarr *compressed_nodes, con
   fcollector_print(fcollector);
   #endif
 
+  flexarr outfields = flexarr_init(sizeof(struct outfield*),OUTFIELDS_INC);
+  flexarr fcol_outs = flexarr_init(sizeof(struct fcollector_out*),FCOLLECTOR_OUT_INC);
+
   nodes_output_state st = {
-    .outfields = flexarr_init(sizeof(struct outfield*),OUTFIELDS_INC),
-    .fcol_outs = flexarr_init(sizeof(struct fcollector_out*),FCOLLECTOR_OUT_INC),
+    .outfields = &outfields,
+    .fcol_outs = &fcol_outs,
 
     .rq = rq,
     .out_origin = output,

@@ -245,15 +245,15 @@ range_comp(const char *src, size_t *pos, const size_t size, reliq_range *range)
   if (!range)
     return NULL;
   reliq_error *err;
-  flexarr *r = flexarr_init(sizeof(struct reliq_range_node),RANGES_INC);
+  flexarr r = flexarr_init(sizeof(struct reliq_range_node),RANGES_INC);
 
-  err = range_comp_pre(src,pos,size,r);
+  err = range_comp_pre(src,pos,size,&r);
   if (err) {
-    flexarr_free(r);
+    flexarr_free(&r);
     return err;
   }
 
-  flexarr_conv(r,(void**)&range->b,&range->s);
+  flexarr_conv(&r,(void**)&range->b,&range->s);
   /*range->max = predict_range_max(range); //new field
   if (range->max == (uint32_t)-1)
     return script_err("range: conditions impossible to fullfill")*/ //future warning

@@ -118,8 +118,8 @@ convert_from_compressed(const reliq_compressed *compressed, const size_t compres
   SINK *out = NULL;
   if (independent)
     out = sink_open(&ptr,&size);
-  flexarr *nodes = flexarr_init(sizeof(reliq_chnode),FROM_COMPRESSED_NODES_INC);
-  flexarr *attribs = flexarr_init(sizeof(reliq_cattrib),FROM_COMPRESSED_ATTRIBS_INC);
+  flexarr nodes = flexarr_init(sizeof(reliq_chnode),FROM_COMPRESSED_NODES_INC);
+  flexarr attribs = flexarr_init(sizeof(reliq_cattrib),FROM_COMPRESSED_ATTRIBS_INC);
   reliq_chnode *hnodes = rq->nodes;
 
   for (size_t i = 0; i < compressedl; i++) {
@@ -128,7 +128,7 @@ convert_from_compressed(const reliq_compressed *compressed, const size_t compres
       continue;
     const reliq_chnode *hn = hnodes+current;
 
-    convert_from_compressed_add_descendants(rq,hn,nodes,attribs,pos,independent);
+    convert_from_compressed_add_descendants(rq,hn,&nodes,&attribs,pos,independent);
 
     if (independent) {
       sink_write(out,rq->data+hn->all,hn->all_len);
@@ -136,8 +136,8 @@ convert_from_compressed(const reliq_compressed *compressed, const size_t compres
     }
   }
 
-  flexarr_conv(nodes,(void**)&ret.nodes,&ret.nodesl);
-  flexarr_conv(attribs,(void**)&ret.attribs,&ret.attribsl);
+  flexarr_conv(&nodes,(void**)&ret.nodes,&ret.nodesl);
+  flexarr_conv(&attribs,(void**)&ret.attribs,&ret.attribsl);
 
   if (independent) {
     ret.freedata = reliq_std_free;

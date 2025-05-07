@@ -65,9 +65,7 @@ outfield_type_get_args(const char *src, size_t *pos, const size_t size, reliq_st
   size_t i = *pos;
   *args = NULL;
   *argsl = 0;
-  flexarr *a = NULL;
-
-  a = flexarr_init(sizeof(reliq_str),8);
+  flexarr a = flexarr_init(sizeof(reliq_str),8);
   char *arg;
   size_t argl;
   SINK *buf = sink_open(&arg,&argl);
@@ -93,7 +91,7 @@ outfield_type_get_args(const char *src, size_t *pos, const size_t size, reliq_st
     sink_zero(buf);
     splchars_conv_sink(src+qstart,qend-qstart,buf);
     sink_flush(buf);
-    *(reliq_str*)flexarr_inc(a) = (reliq_str){
+    *(reliq_str*)flexarr_inc(&a) = (reliq_str){
       .b = memdup(arg,argl),
       .s = argl
     };
@@ -117,13 +115,13 @@ outfield_type_get_args(const char *src, size_t *pos, const size_t size, reliq_st
 
   END: ;
   if (err) {
-    const size_t a_size = a->size;
-    reliq_str *av = a->v;
+    const size_t a_size = a.size;
+    reliq_str *av = a.v;
     for (size_t i = 0; i < a_size; i++)
       free(av[i].b);
-    flexarr_free(a);
+    flexarr_free(&a);
   } else
-    flexarr_conv(a,(void**)args,argsl);
+    flexarr_conv(&a,(void**)args,argsl);
 
   sink_destroy(buf);
 

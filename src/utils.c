@@ -530,27 +530,27 @@ get_quoted(const char *src, size_t *pos, const size_t size, const char delim, ch
 {
   size_t i=*pos;
   reliq_error *err = NULL;
-  flexarr *res = flexarr_init(sizeof(char),QUOTE_INCR);
+  flexarr res = flexarr_init(sizeof(char),QUOTE_INCR);
 
   for (; i < size && !isspace(src[i]) && src[i] != delim; i++) {
     if (i+1 < size && src[i] == '\\') {
       if (src[i+1] == '\\' || isspace(src[i+1]) || src[i+1] == delim)
         i++;
     } else if (src[i] == '"' || src[i] == '\'') {
-      char quote = get_quoted_skip(src,&i,size,res);
+      char quote = get_quoted_skip(src,&i,size,&res);
       if (quote)
         goto_script_seterr(END,"string: could not find the end of %c quote",quote);
       continue;
     }
-    *(char*)flexarr_inc(res) = src[i];
+    *(char*)flexarr_inc(&res) = src[i];
   }
   END: ;
   *pos = i;
   if (err) {
     *resultl = 0;
-    flexarr_free(res);
+    flexarr_free(&res);
   } else
-    flexarr_conv(res,(void**)result,resultl);
+    flexarr_conv(&res,(void**)result,resultl);
   return err;
 }
 

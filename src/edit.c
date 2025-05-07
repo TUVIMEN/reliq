@@ -244,7 +244,7 @@ sort_edit(const reliq_cstr *src, SINK *output, const edit_args *args)
   if ((err = edit_arg_delim(args,argv0,1,&delim,NULL)))
     return err;
 
-  flexarr *lines = flexarr_init(sizeof(reliq_cstr),LINE_EDIT_INC);
+  flexarr lines = flexarr_init(sizeof(reliq_cstr),LINE_EDIT_INC);
   reliq_cstr line,previous;
   size_t saveptr = 0;
   const char *str = src->b;
@@ -254,27 +254,27 @@ sort_edit(const reliq_cstr *src, SINK *output, const edit_args *args)
     line = cstr_get_line_d(str,strl,&saveptr,delim);
     if (!line.b)
       break;
-    *(reliq_cstr*)flexarr_inc(lines) = line;
+    *(reliq_cstr*)flexarr_inc(&lines) = line;
   }
-  qsort(lines->v,lines->size,sizeof(reliq_cstr),(int(*)(const void*,const void*))sort_cmp);
-  reliq_cstr *linesv = (reliq_cstr*)lines->v;
+  qsort(lines.v,lines.size,sizeof(reliq_cstr),(int(*)(const void*,const void*))sort_cmp);
+  reliq_cstr *linesv = (reliq_cstr*)lines.v;
 
   if (reverse) {
-    for (size_t i=0,j=lines->size-1; i < j; i++,j--) {
+    for (size_t i=0,j=lines.size-1; i < j; i++,j--) {
       line = linesv[i];
       linesv[i] = linesv[j];
       linesv[j] = line;
     }
   }
 
-  if (!lines->size)
+  if (!lines.size)
     goto END;
   size_t i = 0;
   previous = linesv[i];
 
   while (1) {
     REPEAT: ;
-    if (++i >= lines->size)
+    if (++i >= lines.size)
       break;
     if (unique && streq(previous,linesv[i]))
       goto REPEAT;
@@ -286,7 +286,7 @@ sort_edit(const reliq_cstr *src, SINK *output, const edit_args *args)
   sink_put(output,delim);
 
   END: ;
-  flexarr_free(lines);
+  flexarr_free(&lines);
   return NULL;
 }
 
@@ -549,7 +549,7 @@ tac_edit(const reliq_cstr *src, SINK *output, const edit_args *args)
     return err;
 
   size_t saveptr=0;
-  flexarr *lines = flexarr_init(sizeof(reliq_cstr),LINE_EDIT_INC);
+  flexarr lines = flexarr_init(sizeof(reliq_cstr),LINE_EDIT_INC);
   reliq_cstr line;
   const char *str = src->b;
   const size_t strl = src->s;
@@ -558,15 +558,15 @@ tac_edit(const reliq_cstr *src, SINK *output, const edit_args *args)
     line = edit_cstr_get_line(str,strl,&saveptr,delim);
     if (!line.b)
       break;
-    *(reliq_cstr*)flexarr_inc(lines) = line;
+    *(reliq_cstr*)flexarr_inc(&lines) = line;
   }
 
-  reliq_cstr *linesv = lines->v;
-  const size_t linessize = lines->size;
+  reliq_cstr *linesv = lines.v;
+  const size_t linessize = lines.size;
   for (size_t i = linessize; i; i--)
     sink_write(output,linesv[i-1].b,linesv[i-1].s);
 
-  flexarr_free(lines);
+  flexarr_free(&lines);
   return NULL;
 }
 

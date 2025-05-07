@@ -591,12 +591,11 @@ sed_comp_check_labels(flexarr *script) //script: struct sed_expression
 }
 
 static reliq_error *
-sed_script_comp_pre(const char *src, const size_t size, int eflags, flexarr **script) //script: struct sed_expression
+sed_script_comp_pre(const char *src, const size_t size, int eflags, flexarr *script) //script: struct sed_expression
 {
   reliq_error *err;
   size_t pos = 0;
-  *script = flexarr_init(sizeof(struct sed_expression),2<<4);
-  struct sed_expression *sedexpr = (struct sed_expression*)flexarr_inc(*script);
+  struct sed_expression *sedexpr = (struct sed_expression*)flexarr_inc(script);
   sedexpr->address.flags = 0;
   sedexpr->arg1 = NULL;
   sedexpr->arg2 = NULL;
@@ -632,7 +631,7 @@ sed_script_comp_pre(const char *src, const size_t size, int eflags, flexarr **sc
         lvl--;
       } else
         lvl++;
-      sedexpr = (struct sed_expression*)flexarr_inc(*script);
+      sedexpr = (struct sed_expression*)flexarr_inc(script);
       sedexpr->address.flags = 0;
       pos++;
       continue;
@@ -667,7 +666,7 @@ sed_script_comp_pre(const char *src, const size_t size, int eflags, flexarr **sc
           return sed_EXTRACHARS(pos);
       }
     }
-    sedexpr = (struct sed_expression*)flexarr_inc(*script);
+    sedexpr = (struct sed_expression*)flexarr_inc(script);
     sedexpr->address.flags = 0;
     sedexpr->arg1 = NULL;
     sedexpr->arg2 = NULL;
@@ -683,19 +682,18 @@ sed_script_comp_pre(const char *src, const size_t size, int eflags, flexarr **sc
     sed_expression_free(sedexpr);*/
   if (lvl)
     return script_err("sed: char %lu: unmatched `{'",pos);
-  flexarr_dec(*script);
+  flexarr_dec(script);
 
-  return sed_comp_check_labels(*script);
+  return sed_comp_check_labels(script);
 }
 
 static reliq_error *
-sed_script_comp(const char *src, const size_t size, int eflags, flexarr **script) //script: script: struct sed_expression
+sed_script_comp(const char *src, const size_t size, int eflags, flexarr *script) //script: script: struct sed_expression
 {
   reliq_error *err = NULL;
-  if ((err = sed_script_comp_pre(src,size,eflags,script))) {
-    sed_script_free(*script);
-    *script = NULL;
-  }
+  *script = flexarr_init(sizeof(struct sed_expression),2<<4);
+  if ((err = sed_script_comp_pre(src,size,eflags,script)))
+    sed_script_free(script);
   return err;
 }
 
@@ -1003,7 +1001,6 @@ sed_edit(const reliq_cstr *src, SINK *output, const edit_args *args)
   reliq_error *err;
   const char argv0[] = "sed";
   uchar extendedregex=0,silent=0;
-  flexarr *script = NULL; //struct sed_expression
 
   char linedelim = '\n';
 
@@ -1029,21 +1026,21 @@ sed_edit(const reliq_cstr *src, SINK *output, const edit_args *args)
   if ((err = edit_arg_str(args,argv0,0,&scr)))
     return err;
 
-  if (scr && scr->s)
+  flexarr script;
+  if (scr && scr->s) {
     if ((err = sed_script_comp(scr->b,scr->s,extendedregex ? REG_EXTENDED : 0,&script)))
       return err;
-
-  if (script == NULL)
+  } else
     return edit_missing_arg(argv0);
 
   char *buffers[3];
   for (size_t i = 0; i < 3; i++)
     buffers[i] = malloc(SED_MAX_PATTERN_SPACE);
 
-  err = sed_pre_edit(src->b,src->s,output,buffers,script,linedelim,silent);
+  err = sed_pre_edit(src->b,src->s,output,buffers,&script,linedelim,silent);
 
   for (size_t i = 0; i < 3; i++)
     free(buffers[i]);
-  sed_script_free(script);
+  sed_script_free(&script);
   return err;
 }
