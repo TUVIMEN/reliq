@@ -90,7 +90,7 @@ outfield_type_get_args(const char *src, size_t *pos, const size_t size, reliq_st
       goto END;
     size_t qend = i-1;
 
-    sink_zero(&buf);
+    sink_size(&buf,0);
     splchars_conv_sink(src+qstart,qend-qstart,&buf);
     sink_flush(&buf);
     *(reliq_str*)flexarr_inc(&a) = (reliq_str){

@@ -48,7 +48,7 @@ sink_from_file(FILE *f)
 }
 
 void
-sink_set(SINK *sn, const size_t size) //makes sure that SINK has at least size bytes allocated
+sink_set(SINK *sn, const size_t size)
 {
   if (!size || sn->type != SINK_TYPE_FLEXARR)
     return;
@@ -109,12 +109,12 @@ sink_change(SINK *sn, char **ptr, size_t *ptrl, const size_t size)
 }
 
 int
-sink_zero(SINK *sn)
+sink_size(SINK *sn, const size_t size)
 {
   if (sn->type != SINK_TYPE_FLEXARR)
     return -1;
 
-  sn->v.sf.fl.size = 0;
+  sn->v.sf.fl.size = size;
   return 0;
 }
 

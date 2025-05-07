@@ -60,8 +60,9 @@ SINK sink_from_file(FILE *f);
 
 SINK *sink_change(SINK *sn, char **ptr, size_t *ptrl, const size_t size);
 
-void sink_set(SINK *sn, const size_t size);
-int sink_zero(SINK *sn); //sets size of flexarr to 0, doesn't work for FILE for which returns -1
+void sink_set(SINK *sn, const size_t size); //makes sure that SINK has at least size bytes allocated
+
+int sink_size(SINK *sn, const size_t size); //sets size of flexarr to size, doesn't work for FILE for which returns -1
 
 void sink_write(SINK *sn, const char *src, const size_t size);
 void sink_put(SINK *sn, const char c);

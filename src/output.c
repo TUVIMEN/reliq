@@ -243,7 +243,7 @@ ncollector_new(nodes_output_state *st)
   if (st->ncols_i >= st->ncolsl || !st->ncols[st->ncols_i].e || !((reliq_expr*)st->ncols[st->ncols_i].e)->exprfl)
     return;
   if (st->out_ncol) {
-    sink_zero(st->out_ncol);
+    sink_size(st->out_ncol,0);
   } else {
     SINK t = sink_open(&st->ncol_ptr,&st->ncol_ptrl);
     st->out_ncol = memdup(&t,sizeof(SINK));
