@@ -60,19 +60,24 @@ format_exec(char *input, size_t inputl, SINK *output, const reliq_chnode *hnode,
   ptr[1] = NULL;
   size_t fsize[2];
   SINK *sn[2] = {0};
+  SINK s_sn[2];
   size_t i = 0;
 
   if (hnode) {
     out = output;
     if (formatl && (format[0].flags&FORMAT_FUNC) == 0) {
-      if (formatl > 1)
-        out = sn[0] = sink_open(&ptr[0],&fsize[0]);
+      if (formatl > 1) {
+        s_sn[0] = sink_open(&ptr[0],&fsize[0]);
+        out = sn[0] = &s_sn[0];
+      }
 
       chnode_printf(out,((reliq_cstr*)format[0].arg[0])->b,((reliq_cstr*)format[0].arg[0])->s,hnode,parent,rq);
       i++;
     } else {
-      if (formatl)
-        out = sn[0] = sink_open(&ptr[0],&fsize[0]);
+      if (formatl) {
+        s_sn[0] = sink_open(&ptr[0],&fsize[0]);
+        out = sn[0] = &s_sn[0];
+      }
 
       chnode_print(out,hnode,rq);
     }
@@ -84,9 +89,13 @@ format_exec(char *input, size_t inputl, SINK *output, const reliq_chnode *hnode,
     }
   }
   if (formatl-i > 1) {
-    if (!sn[0])
-      sn[0] = sink_open(&ptr[0],&fsize[0]);
-    sn[1] = sink_open(&ptr[1],&fsize[1]);
+    if (!sn[0]) {
+      s_sn[0] = sink_open(&ptr[0],&fsize[0]);
+      sn[0] = &s_sn[0];
+    }
+
+    s_sn[1] = sink_open(&ptr[1],&fsize[1]);
+    sn[1] = &s_sn[1];
   }
 
   for (; i < formatl; i++) {

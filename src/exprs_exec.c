@@ -597,9 +597,9 @@ reliq_exec_file(const reliq *rq, const reliq_expr *expr, FILE *output)
   #endif //SCHEME_DEBUG
 
 
-  SINK *out = sink_from_file(output);
-  reliq_error *err = reliq_exec_r(rq,expr,NULL,out,NULL,NULL);
-  sink_close(out);
+  SINK out = sink_from_file(output);
+  reliq_error *err = reliq_exec_r(rq,expr,NULL,&out,NULL,NULL);
+  sink_close(&out);
   return err;
 }
 
@@ -610,8 +610,8 @@ reliq_exec_str(const reliq *rq, const reliq_expr *expr, char **str, size_t *strl
   *strl = 0;
   if (!expr)
     return NULL;
-  SINK *output = sink_open(str,strl);
-  reliq_error *err = reliq_exec_r(rq,expr,NULL,output,NULL,NULL);
-  sink_close(output);
+  SINK output = sink_open(str,strl);
+  reliq_error *err = reliq_exec_r(rq,expr,NULL,&output,NULL,NULL);
+  sink_close(&output);
   return err;
 }

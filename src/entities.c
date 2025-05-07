@@ -2414,17 +2414,17 @@ reliq_decode_entities_sink(const char *src, const size_t srcl, SINK *out, bool n
 void
 reliq_decode_entities_file(const char *src, const size_t srcl, FILE *out, bool no_nbsp)
 {
-  SINK *o = sink_from_file(out);
-  reliq_decode_entities_sink(src,srcl,o,no_nbsp);
-  sink_close(o);
+  SINK o = sink_from_file(out);
+  reliq_decode_entities_sink(src,srcl,&o,no_nbsp);
+  sink_close(&o);
 }
 
 void
 reliq_decode_entities_str(const char *src, const size_t srcl, char **str, size_t *strl, bool no_nbsp)
 {
-  SINK *o = sink_open(str,strl);
-  reliq_decode_entities_sink(src,srcl,o,no_nbsp);
-  sink_close(o);
+  SINK o = sink_open(str,strl);
+  reliq_decode_entities_sink(src,srcl,&o,no_nbsp);
+  sink_close(&o);
 }
 
 static void
@@ -2556,15 +2556,15 @@ reliq_encode_entities_sink(const char *src, const size_t srcl, SINK *out, bool f
 void
 reliq_encode_entities_file(const char *src, const size_t srcl, FILE *out, bool full)
 {
-  SINK *o = sink_from_file(out);
-  reliq_encode_entities_sink(src,srcl,o,full);
-  sink_close(o);
+  SINK o = sink_from_file(out);
+  reliq_encode_entities_sink(src,srcl,&o,full);
+  sink_close(&o);
 }
 
 void
 reliq_encode_entities_str(const char *src, const size_t srcl, char **str, size_t *strl, bool full)
 {
-  SINK *o = sink_open(str,strl);
-  reliq_encode_entities_sink(src,srcl,o,full);
-  sink_close(o);
+  SINK o = sink_open(str,strl);
+  reliq_encode_entities_sink(src,srcl,&o,full);
+  sink_close(&o);
 }

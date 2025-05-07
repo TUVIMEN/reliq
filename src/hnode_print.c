@@ -114,11 +114,14 @@ static void
 print_text(const reliq *rq, const reliq_chnode *hnode, uint8_t flags, SINK *outfile, uchar recursive)
 {
   SINK *out = outfile;
+  SINK t_out;
   const uchar trim = (flags&PC_UNTRIM) ? 0 : 1;
   char *ptr;
   size_t ptrl;
-  if (trim)
-    out = sink_open(&ptr,&ptrl);
+  if (trim) {
+    t_out = sink_open(&ptr,&ptrl);
+    out = &t_out;
+  }
 
   print_text_r(rq,hnode,flags|PC_UNTRIM,out,recursive);
 

@@ -20,28 +20,31 @@
 
 #include <stdlib.h>
 #include <string.h>
+
 #include "sink.h"
 
-SINK *
+SINK
 sink_open(char **ptr, size_t *ptrl)
 {
-  SINK *sn = malloc(sizeof(SINK));
-  sn->type = SINK_TYPE_FLEXARR;
-  sn->v.sf.fl = flexarr_init(sizeof(char),SINK_FLEXARR_INC);
   *ptr = NULL;
   *ptrl = 0;
-  sn->v.sf.ptr = ptr;
-  sn->v.sf.ptrl = ptrl;
-  return sn;
+  return (SINK){
+    .type = SINK_TYPE_FLEXARR,
+    .v.sf = (struct sink_flexarr_t){
+      .fl = flexarr_init(sizeof(char),SINK_FLEXARR_INC),
+      .ptr = ptr,
+      .ptrl = ptrl
+    }
+  };
 }
 
-SINK *
+SINK
 sink_from_file(FILE *f)
 {
-  SINK *sn = malloc(sizeof(SINK));
-  sn->type = SINK_TYPE_FILE;
-  sn->v.file = f;
-  return sn;
+  return (SINK){
+    .type = SINK_TYPE_FILE,
+    .v.file = f
+  };
 }
 
 void
@@ -118,26 +121,25 @@ sink_zero(SINK *sn)
 void
 sink_close(SINK *sn)
 {
-  if (!sn)
+  if (!sn || sn->type == SINK_TYPE_CLOSED)
     return;
 
   if (sn->type == SINK_TYPE_FLEXARR) {
     flexarr_conv(&sn->v.sf.fl,(void**)sn->v.sf.ptr,sn->v.sf.ptrl);
   } else
     fflush(sn->v.file);
-
-  free(sn);
+  sn->type = SINK_TYPE_CLOSED;
 }
 
 void
 sink_destroy(SINK *sn)
 {
-  if (!sn)
+  if (!sn || sn->type == SINK_TYPE_CLOSED)
     return;
 
   if (sn->type == SINK_TYPE_FLEXARR) {
     flexarr_free(&sn->v.sf.fl);
   } else
     fclose(sn->v.file);
-  free(sn);
+  sn->type = SINK_TYPE_CLOSED;
 }

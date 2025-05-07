@@ -46,7 +46,7 @@ typedef struct {
     SINK *out_origin;
     SINK *out_ncol;
     SINK *out_fcol;
-    SINK **out_field;
+    SINK *out_field;
 
     const size_t ncolsl;
     const size_t fcolsl;
@@ -61,7 +61,7 @@ typedef struct {
 } nodes_output_state;
 
 struct fcollector_out {
-  SINK *f;
+  SINK f;
   char *v;
   size_t s;
   size_t current;
@@ -70,14 +70,13 @@ struct fcollector_out {
 static void
 outfield_notempty(SINK *out, nodes_output_state *st)
 {
-  if (!out || !st->out_field || *st->out_field != out)
+  if (!out || st->out_field != out)
     return;
   flexarr *f = st->outfields;
   if (!f->size)
     return;
   struct outfield **fv = f->v;
   fv[f->size-1]->notempty = 1;
-  /*fprintf(stderr,"SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSa %u %u\n",f->size,out == fv[f->size-1]->o);*/
 }
 
 static void
@@ -117,7 +116,7 @@ fcollector_out_end(nodes_output_state *st)
      is a child of it and its outputs, if there isn't one then
      fallback to the original output
   */
-  SINK *out_default = st->out_field ? *st->out_field : st->out_origin;
+  SINK *out_default = st->out_field ? st->out_field : st->out_origin;
 
   flexarr *outs = st->fcol_outs; //outs: struct fcollector_out*
   const size_t ncurrent = st->ncols_i;
@@ -149,11 +148,11 @@ fcollector_out_end(nodes_output_state *st)
       st->out_fcol = NULL;
       outfield_notempty(out_t,st);
     } else {
-      out_t = ((struct fcollector_out**)outs->v)[outs->size-2]->f;
+      out_t = &((struct fcollector_out**)outs->v)[outs->size-2]->f;
       st->out_fcol = out_t;
     }
 
-    sink_close(fcol_out_last->f);
+    sink_close(&fcol_out_last->f);
     err = format_exec(fcol_out_last->v,fcol_out_last->s,out_t,NULL,NULL,format,formatl,rq);
     free(fcol_out_last->v);
 
@@ -171,7 +170,7 @@ fcollector_outs_free(flexarr *outs) //outs: struct fcollector_out*
   struct fcollector_out **outsv = (struct fcollector_out**)outs->v;
   size_t size = outs->size;
   for (size_t i = 0; i < size; i++) {
-    sink_close(outsv[i]->f);
+    sink_close(&outsv[i]->f);
     if (outsv[i]->s)
       free(outsv[i]->v);
     free(outsv[i]);
@@ -209,16 +208,15 @@ output_default(nodes_output_state *st)
   if (st->out_fcol)
     return st->out_fcol;
   if (st->out_field)
-    return *st->out_field;
+    return st->out_field;
   return st->out_origin;
 }
 
 static void
-field_ended_free(SINK ***out_field, uchar *field_ended)
+field_ended_free(SINK **out_field, uchar *field_ended)
 {
   if (*out_field) {
-    sink_close(**out_field);
-    **out_field = NULL;
+    sink_close(*out_field);
     *out_field = NULL;
   }
   *field_ended = 0;
@@ -235,7 +233,7 @@ fcollector_start(nodes_output_state *st)
     ff = *ff_r;
     ff->f = sink_open(&ff->v,&ff->s);
     ff->current = st->fcols_i++;
-    st->out_fcol = ff->f;
+    st->out_fcol = &ff->f;
   }
 }
 
@@ -245,10 +243,11 @@ ncollector_new(nodes_output_state *st)
   if (st->ncols_i >= st->ncolsl || !st->ncols[st->ncols_i].e || !((reliq_expr*)st->ncols[st->ncols_i].e)->exprfl)
     return;
   if (st->out_ncol) {
-    sink_close(st->out_ncol);
-    free(st->ncol_ptr);
+    sink_zero(st->out_ncol);
+  } else {
+    SINK t = sink_open(&st->ncol_ptr,&st->ncol_ptrl);
+    st->out_ncol = memdup(&t,sizeof(SINK));
   }
-  st->out_ncol = sink_open(&st->ncol_ptr,&st->ncol_ptrl);
 }
 
 static reliq_error *
@@ -258,6 +257,7 @@ ncollector_end(nodes_output_state *st)
   const struct ncollector *ncol = st->ncols+st->ncols_i;
   if (ncol->e && st->out_ncol) {
     sink_close(st->out_ncol);
+    free(st->out_ncol);
     st->out_ncol = NULL;
 
     SINK *out_default = output_default(st);
@@ -288,14 +288,12 @@ outfields_inc(enum outfieldCode code, uint16_t lvl, reliq_output_field const *fi
 {
   struct outfield *field,
       **field_pre = flexarr_inc(outfields);
-  *field_pre = malloc(sizeof(struct outfield));
-  field = *field_pre;
+  field = *field_pre = malloc(sizeof(struct outfield));
 
-  field->s = 0;
-  field->f = NULL;
-  field->notempty = 0;
-  field->lvl = lvl;
-  field->code = (uchar)code;
+  *field = (struct outfield){
+    .lvl = lvl,
+    .code = (uchar)code
+  };
 
   struct outfield **outfieldsv = (struct outfield**)outfields->v;
   if (outfields->size > 2 && fieldname == outfieldsv[outfields->size-2]->o) {

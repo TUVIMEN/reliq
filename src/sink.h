@@ -33,6 +33,7 @@
     After using sink_close() ptr has to be freed with free().
 */
 
+#define SINK_TYPE_CLOSED 0
 #define SINK_TYPE_FLEXARR 1
 #define SINK_TYPE_FILE 2
 
@@ -54,8 +55,9 @@ struct sink_t {
 
 typedef struct sink_t SINK;
 
-SINK *sink_open(char **ptr, size_t *ptrl);
-SINK *sink_from_file(FILE *f);
+SINK sink_open(char **ptr, size_t *ptrl);
+SINK sink_from_file(FILE *f);
+
 SINK *sink_change(SINK *sn, char **ptr, size_t *ptrl, const size_t size);
 
 void sink_set(SINK *sn, const size_t size);

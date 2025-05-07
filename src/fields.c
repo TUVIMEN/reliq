@@ -70,7 +70,7 @@ outfield_type_get_args(const char *src, size_t *pos, const size_t size, reliq_st
   flexarr a = flexarr_init(sizeof(reliq_str),OUTFIELD_ARGS_INC);
   char *arg;
   size_t argl;
-  SINK *buf = sink_open(&arg,&argl);
+  SINK buf = sink_open(&arg,&argl);
 
   while (i < size) {
     while_is(isspace,src,i,size);
@@ -90,9 +90,9 @@ outfield_type_get_args(const char *src, size_t *pos, const size_t size, reliq_st
       goto END;
     size_t qend = i-1;
 
-    sink_zero(buf);
-    splchars_conv_sink(src+qstart,qend-qstart,buf);
-    sink_flush(buf);
+    sink_zero(&buf);
+    splchars_conv_sink(src+qstart,qend-qstart,&buf);
+    sink_flush(&buf);
     *(reliq_str*)flexarr_inc(&a) = (reliq_str){
       .b = memdup(arg,argl),
       .s = argl
@@ -125,7 +125,7 @@ outfield_type_get_args(const char *src, size_t *pos, const size_t size, reliq_st
   } else
     flexarr_conv(&a,(void**)args,argsl);
 
-  sink_destroy(buf);
+  sink_destroy(&buf);
 
   *pos = i;
   return err;
@@ -631,14 +631,11 @@ outfields_print_pre(const reliq *rq, struct outfield **fields, size_t *pos, cons
     }
 
     if (field->code == ofNamed || field->code == ofNoFieldsBlock) {
-      if (field->f)
-        sink_close(field->f);
-      field->f = NULL;
+      if (field->f.type)
+        sink_close(&field->f);
 
-      if (field->o) {
-        /*fprintf(stderr,"value %p %lu %u %lu\n",field->v,field->s,field->notempty,size);*/
+      if (field->o)
         outfields_value_print(rq,out,&field->o->type,field->v,field->s,field->notempty);
-      }
       if (field->v)
         free(field->v);
       field->s = 0;
@@ -699,8 +696,8 @@ outfields_free(flexarr *outfields) //struct outfield*
   struct outfield **outfieldsv = (struct outfield**)outfields->v;
   const size_t size = outfields->size;
   for (size_t i = 0; i < size; i++) {
-    if (outfieldsv[i]->f)
-      sink_close(outfieldsv[i]->f);
+    if (outfieldsv[i]->f.type)
+      sink_close(&outfieldsv[i]->f);
     if (outfieldsv[i]->s)
       free(outfieldsv[i]->v);
     free(outfieldsv[i]);

@@ -38,7 +38,7 @@ typedef struct {
 } reliq_output_field;
 
 struct outfield {
-  SINK *f;
+  SINK f;
   char *v;
   size_t s;
   reliq_output_field const *o;
