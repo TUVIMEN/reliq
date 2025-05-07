@@ -27,6 +27,8 @@
 #include <time.h>
 #include <assert.h>
 
+#define OUTFIELD_ARGS_INC 8
+
 static void outfields_value_print(const reliq *rq, SINK *out, const reliq_output_field_type *type, const char *value, const size_t valuel, const uchar notempty);
 
 static void
@@ -65,7 +67,7 @@ outfield_type_get_args(const char *src, size_t *pos, const size_t size, reliq_st
   size_t i = *pos;
   *args = NULL;
   *argsl = 0;
-  flexarr a = flexarr_init(sizeof(reliq_str),8);
+  flexarr a = flexarr_init(sizeof(reliq_str),OUTFIELD_ARGS_INC);
   char *arg;
   size_t argl;
   SINK *buf = sink_open(&arg,&argl);

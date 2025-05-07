@@ -35,6 +35,8 @@
 /*#define EXPR_DEBUG*/
 /*#define TOKEN_DEBUG*/
 
+#define TOKEN_INC 1<<5
+#define TOKEN_TEXT_INC (1<<7)
 #define PATTERN_SIZE_INC (1<<5)
 
 void reliq_efree_intr(reliq_expr *expr);
@@ -363,7 +365,7 @@ skip_comment(const char *src, size_t *pos, const size_t s)
 static void
 token_text(flexarr *tokens, const char *src, const size_t size) //tokens: token
 {
-  flexarr str = flexarr_init(sizeof(char),1<<7);
+  flexarr str = flexarr_init(sizeof(char),TOKEN_TEXT_INC);
   token t;
   t.name = tText;
 
@@ -536,7 +538,7 @@ tokenize(const char *src, const size_t size, token **tokens, size_t *tokensl) //
 {
   #define token_found(x,y) { tokenstart=src+i; name=(x); tokensize=(y); goto FOUND; }
   reliq_error *err = NULL;
-  flexarr ret = flexarr_init(sizeof(token),1<<5);
+  flexarr ret = flexarr_init(sizeof(token),TOKEN_INC);
   char const *textstart = NULL;
   enum tokenName name;
   size_t tokensize;

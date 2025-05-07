@@ -29,6 +29,8 @@
 #include "format.h"
 #include "edit.h"
 
+#define SED_EXPRESSION_INC (1<<5)
+
 #define SED_MAX_PATTERN_SPACE (1<<20) //!! this causes huge memory allocation, should be replaced by reusing buffers for the whole expression when it's executed
 
 #define SED_A_EMPTY 0x0
@@ -691,7 +693,7 @@ static reliq_error *
 sed_script_comp(const char *src, const size_t size, int eflags, flexarr *script) //script: script: struct sed_expression
 {
   reliq_error *err = NULL;
-  *script = flexarr_init(sizeof(struct sed_expression),2<<4);
+  *script = flexarr_init(sizeof(struct sed_expression),SED_EXPRESSION_INC);
   if ((err = sed_script_comp_pre(src,size,eflags,script)))
     sed_script_free(script);
   return err;

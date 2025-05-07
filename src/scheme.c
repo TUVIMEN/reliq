@@ -26,7 +26,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define SCHEME_INCR 64
+#define SCHEME_INC 64
 
 static inline void
 scheme_field_type(const reliq_output_field_type *ftype, uchar *type, uchar *isarray)
@@ -184,7 +184,7 @@ reliq_json_scheme_r(const reliq_expr *expr, flexarr *fields, uchar *leaking, uch
 reliq_scheme
 reliq_json_scheme(const reliq_expr *expr)
 {
-  flexarr fields_arr = flexarr_init(sizeof(struct reliq_scheme_field),SCHEME_INCR);
+  flexarr fields_arr = flexarr_init(sizeof(struct reliq_scheme_field),SCHEME_INC);
   uchar leaking=0,repeating=0;
 
   scheme_search_block((flexarr*)expr->e,&fields_arr,&leaking,&repeating,0);

@@ -278,14 +278,18 @@ exec_singular(const reliq_expr *expr, const reliq_output_field *named, const fle
   if (!source->size)
     return err;
 
+  //function accepts flexarr type, but it doesn't grow
   flexarr in = flexarr_init(sizeof(reliq_compressed),1);
-  reliq_compressed *inv = (reliq_compressed*)flexarr_inc(&in);
+  in.size = 1;
+  reliq_compressed inv;
+  in.v = &inv;
+
   const reliq_compressed *sourcev = (reliq_compressed*)source->v;
 
   const size_t size = source->size;
   for (size_t i = 0; i < size; i++) {
-    *inv = sourcev[i];
-    if (OUTFIELDCODE(inv->hnode))
+    inv = sourcev[i];
+    if (OUTFIELDCODE(inv.hnode))
       continue;
     size_t lastn = st->ncollector->size;
     if (named && expr->childfields)
@@ -298,7 +302,6 @@ exec_singular(const reliq_expr *expr, const reliq_output_field *named, const fle
       fcollector_add(lastn,1,expr,st->ncollector,st->fcollector);
   }
 
-  flexarr_free(&in);
   return err;
 }
 

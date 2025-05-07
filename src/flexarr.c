@@ -49,7 +49,7 @@ flexarr_incz(flexarr *f)
 {
   void *v = flexarr_inc(f);
   if (unlikely(!v))
-      return v;
+    return v;
   return memset(v,0,f->elsize);
 }
 

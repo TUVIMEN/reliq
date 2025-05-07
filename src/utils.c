@@ -26,7 +26,7 @@
 #include "utils.h"
 
 #define UINT_TO_STR_MAX 32
-#define QUOTE_INCR 512
+#define QUOTE_INC 512
 
 void
 strnrev(char *v, const size_t size)
@@ -530,7 +530,7 @@ get_quoted(const char *src, size_t *pos, const size_t size, const char delim, ch
 {
   size_t i=*pos;
   reliq_error *err = NULL;
-  flexarr res = flexarr_init(sizeof(char),QUOTE_INCR);
+  flexarr res = flexarr_init(sizeof(char),QUOTE_INC);
 
   for (; i < size && !isspace(src[i]) && src[i] != delim; i++) {
     if (i+1 < size && src[i] == '\\') {
