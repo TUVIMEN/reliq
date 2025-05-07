@@ -22,15 +22,6 @@
 #include "builtin.h"
 #include "flexarr.h"
 
-flexarr
-flexarr_init(const uint32_t elsize, const uint32_t inc_r)
-{
-  return (flexarr){
-    .inc_r = inc_r,
-    .elsize = elsize
-  };
-}
-
 static inline void * ATTR_MALLOC
 flexarr_realloc(void *ptr, size_t size)
 {
@@ -91,7 +82,7 @@ flexarr_dec(flexarr *f)
 }
 
 void *
-flexarr_set(flexarr *f, const size_t s) //set number of allocated elements to s
+flexarr_set(flexarr *f, const size_t s)
 {
   if (f->size >= s || f->asize >= s)
     return NULL;
@@ -101,7 +92,7 @@ flexarr_set(flexarr *f, const size_t s) //set number of allocated elements to s
 }
 
 void *
-flexarr_alloc(flexarr *f, const size_t s) //allocate additional s amount of elements
+flexarr_alloc(flexarr *f, const size_t s)
 {
   if (unlikely(s == 0) || f->asize-f->size >= s)
     return f->v;
@@ -111,7 +102,7 @@ flexarr_alloc(flexarr *f, const size_t s) //allocate additional s amount of elem
 }
 
 void *
-flexarr_add(flexarr *dst, const flexarr *src) //append contents of src to dst
+flexarr_add(flexarr *dst, const flexarr *src)
 {
   if (dst->size+src->size > dst->asize &&
     unlikely(flexarr_alloc(dst,src->size) == NULL))
@@ -122,7 +113,7 @@ flexarr_add(flexarr *dst, const flexarr *src) //append contents of src to dst
 }
 
 void *
-flexarr_clearb(flexarr *f) //clear buffer
+flexarr_clearb(flexarr *f)
 {
   if (unlikely(f->size == f->asize || !f->v))
     return NULL;
@@ -131,7 +122,7 @@ flexarr_clearb(flexarr *f) //clear buffer
 }
 
 void
-flexarr_conv(flexarr *f, void **v, size_t *s) //convert from flexarr to normal array
+flexarr_conv(flexarr *f, void **v, size_t *s)
 {
   flexarr_clearb(f);
   *s = f->size;
