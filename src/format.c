@@ -30,25 +30,27 @@
 
 #define FORMAT_INC 8
 
-typedef reliq_error *(*reliq_format_function_t)(reliq_str*,SINK*,const reliq_format_func*);
+typedef reliq_error *(*ffunc_t)(reliq_str*,SINK*,const reliq_format_func*);
 
 struct {
   cstr8 name;
-  reliq_format_function_t func;
+  ffunc_t func;
 } const format_functions[] = {
-  {{"sed",3},(reliq_format_function_t)sed_edit},
-  {{"trim",4},(reliq_format_function_t)trim_edit},
-  {{"tr",2},(reliq_format_function_t)tr_edit},
-  {{"line",4},(reliq_format_function_t)line_edit},
-  {{"cut",3},(reliq_format_function_t)cut_edit},
-  {{"decode",6},(reliq_format_function_t)decode_edit},
-  {{"encode",6},(reliq_format_function_t)encode_edit},
-  {{"sort",4},(reliq_format_function_t)sort_edit},
-  {{"uniq",4},(reliq_format_function_t)uniq_edit},
-  {{"echo",4},(reliq_format_function_t)echo_edit},
-  {{"wc",2},(reliq_format_function_t)wc_edit},
-  {{"rev",3},(reliq_format_function_t)rev_edit},
-  {{"tac",3},(reliq_format_function_t)tac_edit},
+  {{"sed",3},(ffunc_t)sed_edit},
+  {{"trim",4},(ffunc_t)trim_edit},
+  {{"tr",2},(ffunc_t)tr_edit},
+  {{"upper",5},(ffunc_t)upper_edit},
+  {{"lower",5},(ffunc_t)lower_edit},
+  {{"line",4},(ffunc_t)line_edit},
+  {{"cut",3},(ffunc_t)cut_edit},
+  {{"decode",6},(ffunc_t)decode_edit},
+  {{"encode",6},(ffunc_t)encode_edit},
+  {{"sort",4},(ffunc_t)sort_edit},
+  {{"uniq",4},(ffunc_t)uniq_edit},
+  {{"echo",4},(ffunc_t)echo_edit},
+  {{"wc",2},(ffunc_t)wc_edit},
+  {{"rev",3},(ffunc_t)rev_edit},
+  {{"tac",3},(ffunc_t)tac_edit},
 };
 
 reliq_error *

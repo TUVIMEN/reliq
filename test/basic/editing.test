@@ -42,6 +42,10 @@ f985504302e981de152fff55f36d9d09,'a | "%(href)Uv\n" / cut [0:2] "/" "s"'
 67fdc25d8332a3b63203a027e9151d03,'a | "%(href)Uv\n" / cut [0:2] "/" "c"'
 ab02b2fa89a84c4c9f1eb9fd2cc88565,'a | "%(href)Uv\n" / cut [0:2] "/" "cs"'
 
+fb94ba2438d8e565613598c387c5f874,'li / upper'
+18cc328bebce2ce2bb73c5f071ac62c1,'li / lower'
+18cc328bebce2ce2bb73c5f071ac62c1,'li / lower upper lower'
+
 c8707abdc830b02913dd3046f6a83d52,'li; { li, img } | sed "s/^/jjj /" /sed "$d"'
 2f8a1b4180bc7016a7a28c63e01e9d48,'li; { li, img } | tr "\n" echo "nk\j\x72\U00000a0aan" "\n"'
 3fd87ba15ae3c3e4d03a9ccb0aa7c764,'li | "%i\n" / sed ":x;$!{N;s/\n/:/;N;s/\n/\t/g;bx}"'

@@ -42,6 +42,8 @@ reliq_error *encode_edit(const reliq_cstr *src, SINK *output, const edit_args *a
 reliq_error *wc_edit(const reliq_cstr *src, SINK *output, const edit_args *args);
 
 reliq_error *tr_edit(const reliq_cstr *src, SINK *output, const edit_args *args);
+reliq_error *lower_edit(const reliq_cstr *src, SINK *output, const edit_args *args);
+reliq_error *upper_edit(const reliq_cstr *src, SINK *output, const edit_args *args);
 reliq_error *cut_edit(const reliq_cstr *src, SINK *output, const edit_args *args);
 reliq_error *trim_edit(const reliq_cstr *src, SINK *output, const edit_args *args);
 reliq_error *line_edit(const reliq_cstr *src, SINK *output, const edit_args *args);

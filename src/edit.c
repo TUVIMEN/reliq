@@ -27,6 +27,7 @@
 #include "format.h"
 #include "edit.h"
 #include "entities.h"
+#include "ctype.h"
 
 #define LINE_EDIT_INC (1<<8)
 
@@ -609,5 +610,29 @@ encode_edit(const reliq_cstr *src, SINK *output, const edit_args *args)
   }
 
   reliq_encode_entities_sink(src->b,src->s,output,full);
+  return NULL;
+}
+
+reliq_error *
+lower_edit(const reliq_cstr *src, SINK *output, const UNUSED edit_args *args)
+{
+  const char *str = src->b;
+  const size_t strl = src->s;
+
+  for (size_t i = 0; i < strl; i++)
+    sink_put(output,tolower_inline(str[i]));
+
+  return NULL;
+}
+
+reliq_error *
+upper_edit(const reliq_cstr *src, SINK *output, const UNUSED edit_args *args)
+{
+  const char *str = src->b;
+  const size_t strl = src->s;
+
+  for (size_t i = 0; i < strl; i++)
+    sink_put(output,toupper_inline(str[i]));
+
   return NULL;
 }
