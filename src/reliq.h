@@ -219,9 +219,10 @@ reliq reliq_from_compressed_independent(const reliq_compressed *compressed, cons
 
 reliq_error *reliq_ecomp(const char *script, const size_t size, reliq_expr **expr);
 
-reliq_error *reliq_exec_file(const reliq *rq, const reliq_expr *expr, FILE *output);
-reliq_error *reliq_exec_str(const reliq *rq, const reliq_expr *expr, char **str, size_t *strl);
-reliq_error *reliq_exec(const reliq *rq, const reliq_expr *expr, reliq_compressed **nodes, size_t *nodesl);
+//input and inputl can be set to NULL and 0 if unused
+reliq_error *reliq_exec_file(const reliq *rq, const reliq_compressed *input, const size_t inputl, const reliq_expr *expr, FILE *output);
+reliq_error *reliq_exec_str(const reliq *rq, const reliq_compressed *input, const size_t inputl, const reliq_expr *expr, char **str, size_t *strl);
+reliq_error *reliq_exec(const reliq *rq, const reliq_compressed *input, const size_t inputl, const reliq_expr *expr, reliq_compressed **nodes, size_t *nodesl);
 
 void reliq_efree(reliq_expr *expr);
 

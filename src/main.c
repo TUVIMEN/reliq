@@ -173,7 +173,7 @@ expr_exec(char *f, size_t s, int (*freedata)(void*,size_t))
   if (url_ref)
     reliq_set_url(&rq,url_ref,url_refl);
 
-  err = reliq_exec_file(&rq,expr,outfile);
+  err = reliq_exec_file(&rq,NULL,0,expr,outfile);
 
   reliq_free(&rq);
   freedata(f,s);

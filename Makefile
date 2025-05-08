@@ -65,26 +65,26 @@ SRC = src/main.c src/usage.c ${LIB_SRC}
 ifeq ($(strip ${O_LIB}),1)
 	SRC = ${LIB_SRC}
 	LDFLAGS_R += -shared
-	CFLAGS_D += -fPIC
+	CFLAGS += -fPIC
 endif
 
 ifeq ($(strip ${O_LINKED}),1)
-	CFLAGS_D += -DLINKED
+	CFLAGS += -DLINKED
 	SRC = src/main.c
 	LDFLAGS_R += -lreliq
 endif
 
 ifeq ($(strip ${S}),1)
-	CFLAGS_D += -fsanitize=address
+	CFLAGS += -fsanitize=address
 	D = 1
 endif
 
 ifeq ($(strip ${D}),1)
-	CFLAGS_D += -DDEBUG -O0 -ggdb
+	CFLAGS += -DDEBUG -O0 -ggdb
 endif
 
 TEST_FLAGS=$(shell echo "${CFLAGS_D}" | sed -E 's/(^| )-D/\1/g; s/(^| )[a-zA-Z0-9_]+=("[^"]*")?[^ ]*( |$$)//')
-CFLAGS_ALL = ${CFLAGS} ${CFLAGS_D}
+CFLAGS_ALL = ${CFLAGS_D} ${CFLAGS}
 
 OBJ = ${SRC:.c=.o}
 

@@ -41,7 +41,6 @@
 
 typedef struct {
   const reliq *rq;
-  const reliq_chnode *parent;
   SINK *output;
   flexarr *ncollector; //struct ncollector
   flexarr *fcollector; //struct fcollector
@@ -400,7 +399,7 @@ exec_chain(const reliq_expr *expr, const flexarr *source, flexarr *dest, exec_st
 
       if (!st->isempty) {
         size_t prevsize = desttemp.size;
-        node_exec(st->rq,st->parent,nodep,src,&desttemp);
+        node_exec(st->rq,nodep,src,&desttemp);
         if (desttemp.size-prevsize == 0) {
           something_failed = 1;
         } else
@@ -449,7 +448,7 @@ exec_chain(const reliq_expr *expr, const flexarr *source, flexarr *dest, exec_st
 }
 
 reliq_error *
-reliq_exec_r(const reliq *rq, const reliq_expr *expr, const reliq_chnode *parent, SINK *output, reliq_compressed **outnodes, size_t *outnodesl)
+reliq_exec_r(const reliq *rq, const reliq_compressed *input, const size_t inputl, const reliq_expr *expr, SINK *output, reliq_compressed **outnodes, size_t *outnodesl)
 {
   if (!expr)
     return NULL;
@@ -461,14 +460,22 @@ reliq_exec_r(const reliq *rq, const reliq_expr *expr, const reliq_chnode *parent
 
   exec_state state = {
     .rq = rq,
-    .parent = parent,
     .output = output,
     .ncollector = &ncollector,
     .fcollector = &fcollector,
     .out = &compressed,
   };
 
-  err = exec_block(expr,NULL,NULL,&state);
+  flexarr *src = NULL;
+  flexarr f_src;
+  if (inputl) {
+    f_src = flexarr_init(sizeof(reliq_compressed),1);
+    f_src.v = (void*)input;
+    f_src.size = inputl;
+    src = &f_src;
+  }
+
+  err = exec_block(expr,src,NULL,&state);
 
   if (!err && outnodesl && compressed.size) {
     *outnodesl = compressed.size;
@@ -577,13 +584,13 @@ scheme_print(const reliq_scheme *scheme)
 #endif //SCHEME_DEBUG
 
 reliq_error *
-reliq_exec(const reliq *rq, const reliq_expr *expr, reliq_compressed **nodes, size_t *nodesl)
+reliq_exec(const reliq *rq, const reliq_compressed *input, const size_t inputl, const reliq_expr *expr, reliq_compressed **nodes, size_t *nodesl)
 {
-  return reliq_exec_r(rq,expr,NULL,NULL,nodes,nodesl);
+  return reliq_exec_r(rq,input,inputl,expr,NULL,nodes,nodesl);
 }
 
 reliq_error *
-reliq_exec_file(const reliq *rq, const reliq_expr *expr, FILE *output)
+reliq_exec_file(const reliq *rq, const reliq_compressed *input, const size_t inputl, const reliq_expr *expr, FILE *output)
 {
   if (!expr)
     return NULL;
@@ -598,20 +605,20 @@ reliq_exec_file(const reliq *rq, const reliq_expr *expr, FILE *output)
 
 
   SINK out = sink_from_file(output);
-  reliq_error *err = reliq_exec_r(rq,expr,NULL,&out,NULL,NULL);
+  reliq_error *err = reliq_exec_r(rq,input,inputl,expr,&out,NULL,NULL);
   sink_close(&out);
   return err;
 }
 
 reliq_error *
-reliq_exec_str(const reliq *rq, const reliq_expr *expr, char **str, size_t *strl)
+reliq_exec_str(const reliq *rq, const reliq_compressed *input, const size_t inputl, const reliq_expr *expr, char **str, size_t *strl)
 {
   *str = NULL;
   *strl = 0;
   if (!expr)
     return NULL;
   SINK output = sink_open(str,strl);
-  reliq_error *err = reliq_exec_r(rq,expr,NULL,&output,NULL,NULL);
+  reliq_error *err = reliq_exec_r(rq,input,inputl,expr,&output,NULL,NULL);
   sink_close(&output);
   return err;
 }

@@ -544,7 +544,7 @@ exec_test()
         for (size_t j = 0; tests[i].files[j]; j++) {
             char *f;
             size_t fl = 0;
-            assert(reliq_exec_str(&tests[i].rqs[j],tests[i].rexprs,&f,&fl) == NULL);
+            assert(reliq_exec_str(&tests[i].rqs[j],NULL,0,tests[i].rexprs,&f,&fl) == NULL);
             assert(f != NULL);
             assert(fl != 0);
             free(f);

@@ -368,19 +368,19 @@ dest_match_position(const reliq_range *range, flexarr *dest, size_t start, size_
 }
 
 static void
-node_exec_first(const reliq *rq, const reliq_chnode *parent, reliq_npattern *nodep, flexarr *dest, const uint32_t lasttofind) //dest: reliq_compressed
+node_exec_first(const reliq *rq, const reliq_npattern *nodep, flexarr *dest, const uint32_t lasttofind) //dest: reliq_compressed
 {
   const size_t nodesl = rq->nodesl;
   uint32_t found = 0;
   for (size_t i = 0; i < nodesl && found < lasttofind; i++)
-    match_add(rq,rq->nodes+i,parent,nodep,dest,&found);
+    match_add(rq,rq->nodes+i,NULL,nodep,dest,&found);
 
   if (nodep->position.s)
     dest_match_position(&nodep->position,dest,0,dest->size);
 }
 
 void
-node_exec(const reliq *rq, const reliq_chnode *parent, reliq_npattern *nodep, const flexarr *source, flexarr *dest) //source: reliq_compressed, dest: reliq_compressed
+node_exec(const reliq *rq, const reliq_npattern *nodep, const flexarr *source, flexarr *dest) //source: reliq_compressed, dest: reliq_compressed
 {
   uint32_t found=0,lasttofind=nodep->position_max;
   if (lasttofind == (uint32_t)-1)
@@ -389,7 +389,7 @@ node_exec(const reliq *rq, const reliq_chnode *parent, reliq_npattern *nodep, co
     lasttofind = -1;
 
   if (source->size == 0) {
-    node_exec_first(rq,parent,nodep,dest,lasttofind);
+    node_exec_first(rq,nodep,dest,lasttofind);
     return;
   }
 

@@ -43,6 +43,6 @@ typedef void (*axis_func_t)(const reliq*, const reliq_npattern*, const reliq_chn
 
 void axis_comp_functions(uint16_t type, axis_func_t *out);
 
-void node_exec(const reliq *rq, const reliq_chnode *parent, reliq_npattern *nodep, const flexarr *source, flexarr *dest); //source: reliq_compressed, dest: reliq_compressed
+void node_exec(const reliq *rq, const reliq_npattern *nodep, const flexarr *source, flexarr *dest); //source: reliq_compressed, dest: reliq_compressed
 
 #endif

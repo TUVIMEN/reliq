@@ -64,21 +64,11 @@ pattrib_match(const reliq *rq, const reliq_hnode *hnode, const struct pattrib *a
 }
 
 static int
-exprs_match(const reliq *rq, const reliq_chnode *chnode, const reliq_hook *hook)
+exprs_match(const reliq *rq, const reliq_chnode *chnode, const reliq_chnode *parent, const reliq_hook *hook)
 {
-  const size_t desccount = chnode->tag_count+chnode->text_count+chnode->comment_count;
-  reliq r = {
-    .data = rq->data,
-    .datal = rq->datal,
-    .nodes = (reliq_chnode*)chnode,
-    .nodesl = desccount+1,
-    .attribs = rq->attribs
-  };
-  const reliq_chnode *last = chnode+desccount;
-  r.attribsl = last->attribs+reliq_chnode_attribsl(rq,last);
-
   size_t compressedl = 0;
-  reliq_error *err = reliq_exec_r(&r,&hook->match.expr,chnode,NULL,NULL,&compressedl);
+  reliq_compressed input = { .hnode = chnode-rq->nodes, .parent = parent ? parent-rq->nodes : (uint32_t)-1 };
+  reliq_error *err = reliq_exec_r(rq,&input,1,&hook->match.expr,NULL,NULL,&compressedl);
   if (err)
     free(err);
   if (err || !compressedl)
@@ -112,7 +102,7 @@ match_hook(const nmatcher_state *st, const reliq_hook *hook)
     if ((!reliq_regexec(&hook->match.pattern,src,srcl))^invert)
       return 0;
   } else if (flags&H_EXPRS) {
-    if (!exprs_match(rq,chnode,hook)^invert)
+    if (!exprs_match(rq,chnode,parent,hook)^invert)
       return 0;
   }
   return 1;
