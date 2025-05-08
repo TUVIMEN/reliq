@@ -139,6 +139,7 @@ convert_from_compressed(const reliq_compressed *compressed, const size_t compres
   flexarr_conv(&nodes,(void**)&ret.nodes,&ret.nodesl);
   flexarr_conv(&attribs,(void**)&ret.attribs,&ret.attribsl);
 
+  ret.url = rq->url;
   if (independent) {
     ret.freedata = reliq_std_free;
     sink_close(&out);
