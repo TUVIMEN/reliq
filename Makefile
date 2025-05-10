@@ -31,6 +31,7 @@ O_LINKED := 0 # link reliq to libreliq
 STRIP_ARGS =
 LDFLAGS_R = ${LDFLAGS}
 CFLAGS_D = -DRELIQ_VERSION=\"${VERSION}\"
+CFLAGS_R =
 
 LIB_SRC = src/flexarr.c src/sink.c src/html.c src/hnode.c src/reliq.c src/hnode_print.c src/ctype.c src/utils.c src/output.c src/entities.c src/pattern.c src/range.c src/exprs_comp.c src/exprs_exec.c src/format.c src/npattern_comp.c src/npattern_exec.c src/node_exec.c src/edit.c src/edit_sed.c src/edit_wc.c src/edit_tr.c src/url.c src/scheme.c src/fields.c
 
@@ -65,26 +66,26 @@ SRC = src/main.c src/usage.c ${LIB_SRC}
 ifeq ($(strip ${O_LIB}),1)
 	SRC = ${LIB_SRC}
 	LDFLAGS_R += -shared
-	CFLAGS += -fPIC
+	CFLAGS_R += -fPIC
 endif
 
 ifeq ($(strip ${O_LINKED}),1)
-	CFLAGS += -DLINKED
+	CFLAGS_R += -DLINKED
 	SRC = src/main.c
 	LDFLAGS_R += -lreliq
 endif
 
 ifeq ($(strip ${S}),1)
-	CFLAGS += -fsanitize=address
+	CFLAGS_R += -fsanitize=address
 	D = 1
 endif
 
 ifeq ($(strip ${D}),1)
-	CFLAGS += -DDEBUG -O0 -ggdb
+	CFLAGS_R += -DDEBUG -O0 -ggdb
 endif
 
 TEST_FLAGS=$(shell echo "${CFLAGS_D}" | sed -E 's/(^| )-D/\1/g; s/(^| )[a-zA-Z0-9_]+=("[^"]*")?[^ ]*( |$$)//')
-CFLAGS_ALL = ${CFLAGS_D} ${CFLAGS}
+CFLAGS_ALL = ${CFLAGS_D} ${CFLAGS} ${CFLAGS_R}
 
 OBJ = ${SRC:.c=.o}
 
