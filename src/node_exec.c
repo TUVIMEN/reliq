@@ -243,7 +243,7 @@ X(subsequent)
 
   for (size_t i = (current-nodes)+desc+1; i < nodesl; i++) {
     match_add(rq,nodes+i,current,nodep,dest,found);
-    if (*found >= lasttofind || i == 0)
+    if (*found >= lasttofind)
       return;
   }
 }
@@ -255,7 +255,7 @@ X(after)
 
   for (size_t i = (current-nodes)+1; i < nodesl; i++) {
     match_add(rq,nodes+i,current,nodep,dest,found);
-    if (*found >= lasttofind || i == 0)
+    if (*found >= lasttofind)
       return;
   }
 }

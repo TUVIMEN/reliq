@@ -137,7 +137,7 @@ extern const uint8_t reliq_chnode_sz;
   inherited from previous expression.
 
   It's also used to define structure for nodes_output, then .hnode
-  stores small integers subtracted from UINT32_MAX, and .parent stores
+  stores small integers subtracted from UINT32_MAX i.e. (UINT32_MAX-6), and .parent stores
   pointer to reliq_output_field
 */
 typedef struct {
