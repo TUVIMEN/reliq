@@ -167,7 +167,7 @@ print_int(long num, SINK *outfile)
 void *
 mempcpy(void *dest, void *src, const size_t n)
 {
-  memcpy(dest,src);
+  memcpy(dest,src,n);
   return dest+n;
 }
 #endif
