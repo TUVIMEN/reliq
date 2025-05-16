@@ -39,7 +39,7 @@ ifeq ("$(shell uname -s | sed "s/-.*//")","MINGW64_NT")
 
 ifeq ("$(shell echo "#define _POSIX_C_SOURCE 1" > src/strptime.c)","")
 endif
-ifeq ("$(shell curl 'https://git.musl-libc.org/cgit/musl/plain/src/time/strptime.c' >> src/strptime.c)","")
+ifeq ("$(shell curl 'https://git.musl-libc.org/cgit/musl/plain/src/time/strptime.c' | sed  's/nl_langinfo\x28[^\x29]*\x29/""/' >> src/strptime.c)","")
 endif
 
 	LIB_SRC += src/strptime.c
