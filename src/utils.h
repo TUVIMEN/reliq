@@ -83,4 +83,8 @@ reliq_cstr reliq_str_to_cstr(reliq_str str);
 void *memrchr(void *restrict src, const int c, const size_t size);
 #endif
 
+#if defined(__APPLE__)
+void *mempcpy(void *dest, void *src, const size_t n);
+#endif
+
 #endif

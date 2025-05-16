@@ -108,6 +108,7 @@ reliq-h:
 
 
 lib: clean reliq-h
+	uname -s
 	@make D=${D} S=${S} O_LIB=1 TARGET=lib${TARGET}.so
 
 install-pc:

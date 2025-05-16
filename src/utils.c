@@ -162,6 +162,16 @@ print_int(long num, SINK *outfile)
   print_uint(num,outfile);
 }
 
+
+#if defined(__APPLE__)
+void *
+mempcpy(void *dest, void *src, const size_t n)
+{
+  memcpy(dest,src);
+  return dest+n;
+}
+#endif
+
 #if defined(__MINGW32__) || defined(__MINGW64__) || defined(__APPLE__)
 void *
 memrchr(void *restrict src, const int c, const size_t size)
