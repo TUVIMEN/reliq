@@ -35,9 +35,15 @@ CFLAGS_R =
 
 LIB_SRC = src/flexarr.c src/sink.c src/html.c src/hnode.c src/reliq.c src/hnode_print.c src/ctype.c src/utils.c src/output.c src/entities.c src/pattern.c src/range.c src/exprs_comp.c src/exprs_exec.c src/format.c src/npattern_comp.c src/npattern_exec.c src/node_exec.c src/edit.c src/edit_sed.c src/edit_wc.c src/edit_tr.c src/url.c src/scheme.c src/fields.c
 
+ifeq ("$(shell uname -s | sed "s/^-.*//")","MINGW64_NT")
+	$(shell curl 'https://git.musl-libc.org/cgit/musl/plain/src/time/strptime.c' | sed 's/\<__tm_gmtoff\>/tm_gmtoff/g' > src/strptime.c)
+	LIB_SRC += src/strptime.c
+endif
+
 ifeq ("$(shell uname -s)","Darwin")
 	STRIP_ARGS += -x
 endif
+
 ifeq ($(strip ${O_HTML_VERY_SMALL}),1)
 	HTML_SIZE=0
 endif
