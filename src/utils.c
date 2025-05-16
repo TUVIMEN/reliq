@@ -162,6 +162,26 @@ print_int(long num, SINK *outfile)
   print_uint(num,outfile);
 }
 
+#if defined(__MINGW32__) || defined(__MINGW64__) || defined(__APPLE__)
+void *
+memrchr(void *restrict src, const int c, const size_t size)
+{
+  uchar searched = c;
+  if (!size)
+    return NULL;
+
+  char *restrict str = src;
+  for (size_t i = size-1; ; i--) {
+    if (str[i] == searched)
+      return src+i;
+
+    if (!i)
+      break;
+  }
+  return NULL;
+}
+#endif
+
 #if defined(__MINGW32__) || defined(__MINGW64__)
 char const *
 memmem(char const *haystack, size_t haystackl, const char *needle, const size_t needlel)

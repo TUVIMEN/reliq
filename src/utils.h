@@ -79,4 +79,8 @@ void splchars_conv(char *src, size_t *size);
 void splchars_conv_sink(const char *src, const size_t size, SINK *sn);
 reliq_cstr reliq_str_to_cstr(reliq_str str);
 
+#if defined(__MINGW32__) || defined(__MINGW64__) || defined(__APPLE__)
+void *memrchr(void *restrict src, const int c, const size_t size);
+#endif
+
 #endif
