@@ -36,7 +36,7 @@ CFLAGS_R =
 LIB_SRC = src/flexarr.c src/sink.c src/html.c src/hnode.c src/reliq.c src/hnode_print.c src/ctype.c src/utils.c src/output.c src/entities.c src/pattern.c src/range.c src/exprs_comp.c src/exprs_exec.c src/format.c src/npattern_comp.c src/npattern_exec.c src/node_exec.c src/edit.c src/edit_sed.c src/edit_wc.c src/edit_tr.c src/url.c src/scheme.c src/fields.c
 
 ifeq ("$(shell uname -s | sed "s/^-.*//")","MINGW64_NT")
-	$(shell curl 'https://git.musl-libc.org/cgit/musl/plain/src/time/strptime.c' | sed 's/\<__tm_gmtoff\>/tm_gmtoff/g' > src/strptime.c)
+	$(shell curl 'https://git.musl-libc.org/cgit/musl/plain/src/time/strptime.c' | sed 's/\<__tm_gmtoff\>/tm_gmtoff/g; /^char \*strptime.const char/s/strptime/musl_strptime/' > src/strptime.c)
 	LIB_SRC += src/strptime.c
 endif
 
@@ -114,7 +114,6 @@ reliq-h:
 
 
 lib: clean reliq-h
-	uname -s
 	@make D=${D} S=${S} O_LIB=1 TARGET=lib${TARGET}.so
 
 install-pc:

@@ -27,6 +27,10 @@
 #include <time.h>
 #include <assert.h>
 
+#if defined(__MINGW32__) || defined(__MINGW64__)
+char *musl_strptime(const char *restrict s, const char *restrict f, struct tm *restrict tm);
+#endif
+
 #define OUTFIELD_ARGS_INC 8
 
 static void outfields_value_print(const reliq *rq, SINK *out, const reliq_output_field_type *type, const char *value, const size_t valuel, const uchar notempty);
@@ -479,7 +483,12 @@ outfields_date_match(const reliq_str *args, const size_t argsl, char *matched, s
     memcpy(format,args[i].b,args[i].s);
     format[args[i].s] = '\0';
 
+    #if defined(__MINGW32__) || defined(__MINGW64__)
+    char *r = musl_strptime(matched,format,date);
+    #else
     char *r = strptime(matched,format,date);
+    #endif
+
     if (r && *r == '\0') {
       found = 1;
       break;
