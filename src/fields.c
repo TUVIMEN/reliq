@@ -41,7 +41,7 @@ outfield_type_name_get(const char *src, size_t *pos, const size_t s, char const 
   size_t i = *pos;
 
   *type = src+i;
-  while (i < s && isalnum(src[i]))
+  while (i < s && (isalnum(src[i]) || src[i] == '_' || src[i] == '-'))
     (i)++;
   *typel = i-(*type-src);
 
@@ -135,125 +135,10 @@ outfield_type_get_args(const char *src, size_t *pos, const size_t size, reliq_st
   return err;
 }
 
-static reliq_error *
-outfield_validate_args(const reliq_output_field_type *type)
+static void
+print_null(SINK *out)
 {
-  char c = type->type;
-  switch (c) {
-    case 'a':
-    case 'U':
-      if (type->argsl > 1)
-        return script_err("output field: type %c takes at most 1 argument yet %lu were specified",c,type->argsl);
-      if (c == 'a' && type->args[0].s > 1)
-        return script_err("output field: type %c: expected a single character argument",c);
-      break;
-    case 'd':
-      break;
-
-    default:
-      return script_err("output field: type %c doesn't take any arguments yet %lu were specified",c,type->argsl);
-  }
-  return NULL;
-}
-
-static reliq_error *
-outfield_type_get(const char *src, size_t *pos, const size_t size, reliq_output_field_type *type, const uchar isarray)
-{
-  reliq_error *err = NULL;
-  size_t i = *pos;
-
-  const char *name;
-  size_t namel;
-  outfield_type_name_get(src,&i,size,&name,&namel);
-  if (namel == 0)
-    goto_script_seterr(END,"output field: unspecified type name at %lu",i);
-
-  if (isarray && *name == 'a')
-    goto_script_seterr(END,"output field: array: array type in array is not allowed");
-
-  type->type = *name;
-
-  if (i < size && src[i] == '(') {
-    i++;
-    if ((err = outfield_type_get_args(src,&i,size,&type->args,&type->argsl)))
-      goto END;
-    if ((err = outfield_validate_args(type)))
-      goto END;
-  }
-
-  if (*name == 'a') {
-    type->subtype = calloc(1,sizeof(reliq_output_field_type));
-    type->subtype->type = 's';
-
-    if (i < size && src[i] == '.') {
-      i++;
-      if ((err = outfield_type_get(src,&i,size,type->subtype,1)))
-        goto END;
-    }
-  }
-
-  END:
-  *pos = i;
-  return err;
-}
-
-reliq_error *
-reliq_output_field_comp(const char *src, size_t *pos, const size_t s, reliq_output_field *outfield)
-{
-  if (*pos >= s || src[*pos] != '.')
-    return NULL;
-
-  reliq_error *err = NULL;
-  const char *name;
-  size_t i=*pos,namel=0;
-
-  *outfield = (reliq_output_field){
-    .type = (reliq_output_field_type){
-        .type = 's'
-    }
-  };
-
-  i++;
-
-  outfield_name_get(src,&i,s,&name,&namel);
-
-  if (i < s && src[i] == '.') {
-    i++;
-    if ((err = outfield_type_get(src,&i,s,&outfield->type,0)))
-      goto ERR;
-  }
-
-  outfield->isset = 1;
-
-  if (i < s && (src[i] == '\'' || src[i] == '"')) {
-    size_t qstart = i+1;
-    if ((err = skip_quotes(src,&i,s)))
-      goto ERR;
-    size_t qend = i-1;
-
-    size_t qlen = qend-qstart;
-    outfield->annotation = (reliq_str){
-      .b = memdup(src+qstart,qlen),
-      .s = qlen
-    };
-  }
-
-  if (i < s && !isspace(src[i])) {
-    if (isprint(src[i])) {
-      goto_script_seterr(ERR,"output field: unexpected character '%c' at %lu",src[i],i);
-    } else
-      goto_script_seterr(ERR,"output field: unexpected character 0x%02x at %lu",src[i],i);
-  }
-
-  if (!namel)
-    goto ERR;
-
-  outfield->name.s = namel;
-  outfield->name.b = memdup(name,namel);
-
-  ERR:
-  *pos = i;
-  return err;
+  sink_write(out,"null",4);
 }
 
 #define OUTFIELDS_NUM_FLOAT 1
@@ -435,9 +320,6 @@ outfields_array_print(const reliq *rq, SINK *out, const reliq_output_field_type 
   sink_put(out,'[');
 
   char const *start=value,*end,*last=value+valuel;
-  reliq_output_field_type sub = {
-    .type = type->subtype->type
-  };
   char delim = '\n';
   if (type->argsl)
     delim = *type->args[0].b;
@@ -450,7 +332,7 @@ outfields_array_print(const reliq *rq, SINK *out, const reliq_output_field_type 
     if (start != value)
       sink_put(out,',');
 
-    outfields_value_print(rq,out,&sub,start,end-start,1);
+    outfields_value_print(rq,out,type->subtype,start,end-start,1);
     start = end+1;
   }
 
@@ -538,82 +420,230 @@ outfields_url_print(const reliq *rq, SINK *out, const reliq_output_field_type *t
   return 0;
 }
 
-static void
-outfields_value_print_default(char type, SINK *out, const char *value, const size_t valuel)
+#define X(x) static uchar predef_repr_##x (UNUSED const reliq *rq, SINK *out, UNUSED const reliq_output_field_type *type, UNUSED const char *value, UNUSED const size_t valuel)
+X(s) { return outfields_str_print(out,value,valuel); }
+X(n) { return outfields_num_print(out,value,valuel,OUTFIELDS_NUM_FLOAT); }
+X(i) { return outfields_num_print(out,value,valuel,OUTFIELDS_NUM_INT); }
+X(u) { return outfields_num_print(out,value,valuel,OUTFIELDS_NUM_UNSIGNED); }
+X(b) { return outfields_bool_print(out,value,valuel); }
+X(d) { return outfields_date_print(out,type,value,valuel); }
+X(U) { return outfields_url_print(rq,out,type,value,valuel); }
+X(a) { return outfields_array_print(rq,out,type,value,valuel); }
+X(N) {
+  print_null(out);
+  return 0;
+}
+#undef X
+
+#define X(x) static void predef_default_val_##x (SINK *out, UNUSED const char *value, UNUSED const size_t valuel)
+X(s) { sink_write(out,"\"\"",2); }
+X(n) { sink_put(out,'0'); }
+X(i) { sink_put(out,'0'); }
+X(u) { sink_put(out,'0'); }
+X(b) { sink_write(out,"false",5); }
+X(d) { outfields_str_print(out,value,valuel); }
+X(U) { sink_write(out,"\"\"",2); }
+X(a) { sink_write(out,"[]",2); }
+X(N) { print_null(out); }
+#undef X
+
+static reliq_error *
+valid_no_args(const reliq_output_field_type *type)
 {
-  switch (type) {
-    case 's':
-      sink_write(out,"\"\"",2);
-      break;
-    case 'n':
-      sink_put(out,'0');
-      break;
-    case 'i':
-      sink_put(out,'0');
-      break;
-    case 'u':
-      sink_put(out,'0');
-      break;
-    case 'b':
-      sink_write(out,"false",5);
-      break;
-    case 'd':
-      outfields_str_print(out,value,valuel);
-      break;
-    case 'U':
-      sink_write(out,"\"\"",2);
-      break;
-    case 'a':
-      sink_write(out,"[]",2);
-      break;
-    default:
-      sink_write(out,"null",4);
-      break;
+  if (type->argsl > 0)
+    return script_err("output field: type %.*s doesn't take any arguments yet %lu were specified",(int)type->name.s,type->name.b,type->argsl);
+  return NULL;
+}
+
+static reliq_error *
+valid_one_optional(const reliq_output_field_type *type)
+{
+  if (type->argsl > 1)
+    return script_err("output field: type %.*s takes at most 1 argument yet %lu were specified",(int)type->name.s,type->name.b,type->argsl);
+  return NULL;
+}
+
+static reliq_error *
+valid_array(const reliq_output_field_type *type)
+{
+  reliq_error *err = valid_one_optional(type);
+  if (err)
+    return err;
+
+  if (type->args[0].s > 1)
+    return script_err("output field: type %.*s: expected a single character argument",(int)type->name.s,type->name.b);
+  return NULL;
+}
+
+struct predefined {
+  reliq_cstr name;
+  reliq_error *(*valid)(const reliq_output_field_type*);
+  uchar (*repr)(const reliq*, SINK*, const reliq_output_field_type*, const char*, const size_t);
+  void (*default_val)(SINK*, const char*, const size_t);
+  uchar type;
+} const predefined_types[] = {
+#define X(x,y,z) { \
+  .name = { .b = #x, .s = sizeof(#x)-1 }, \
+  .valid = y, \
+  .repr = predef_repr_##x, \
+  .default_val = predef_default_val_##x, \
+  .type = z \
+}
+X(s,valid_no_args,RELIQ_SCHEME_TYPE_STRING),
+X(n,valid_no_args,RELIQ_SCHEME_TYPE_NUM),
+X(i,valid_no_args,RELIQ_SCHEME_TYPE_INT),
+X(u,valid_no_args,RELIQ_SCHEME_TYPE_UNSIGNED),
+X(b,valid_no_args,RELIQ_SCHEME_TYPE_BOOL),
+X(d,NULL,RELIQ_SCHEME_TYPE_DATE),
+X(U,valid_one_optional,RELIQ_SCHEME_TYPE_URL),
+X(a,valid_array,RELIQ_SCHEME_TYPE_ARRAY),
+X(N,valid_no_args,RELIQ_SCHEME_TYPE_NULL),
+#undef X
+};
+
+const struct predefined *
+find_predefined(const char *name, const size_t namel)
+{
+  for (size_t i = 0 ; i < LENGTH(predefined_types); i++)
+    if (memeq(name,predefined_types[i].name.b,namel,predefined_types[i].name.s))
+      return predefined_types+i;
+  return NULL;
+}
+
+void
+outfield_scheme_type(const reliq_output_field_type *ftype, uchar *type, uchar *isarray)
+{
+  const struct predefined *match = find_predefined(ftype->name.b,ftype->name.s);
+  if (!match) {
+    *type = RELIQ_SCHEME_TYPE_UNKNOWN;
+    return;
   }
+
+  if (match->type == RELIQ_SCHEME_TYPE_ARRAY) {
+    *isarray = 1;
+    outfield_scheme_type(ftype->subtype,type,isarray);
+    return;
+  }
+
+  *type = match->type;
+}
+
+static reliq_error *
+outfield_type_get(const char *src, size_t *pos, const size_t size, reliq_output_field_type *type, const uchar isarray)
+{
+  reliq_error *err = NULL;
+  size_t i = *pos;
+
+  if (i < size && src[i] == '.') {
+    i++;
+  } else {
+    type->name.b = memdup("s",1);
+    type->name.s = 1;
+    goto END;
+  }
+
+  const char *name;
+  size_t namel;
+  outfield_type_name_get(src,&i,size,&name,&namel);
+  if (namel == 0)
+    goto_script_seterr(END,"output field: unspecified type name at %lu",i);
+
+  const struct predefined *match = find_predefined(name,namel);
+  const uchar typearray = (match && match->type == RELIQ_SCHEME_TYPE_ARRAY);
+
+  if (isarray && typearray)
+    goto_script_seterr(END,"output field: array: array type in array is not allowed");
+
+  type->name.b = memdup(name,namel);
+  type->name.s = namel;
+
+  if (i < size && src[i] == '(') {
+    i++;
+    if ((err = outfield_type_get_args(src,&i,size,&type->args,&type->argsl)))
+      goto END;
+    if (match && match->valid && (err = match->valid(type)))
+      goto END;
+  }
+
+  if (typearray) {
+    type->subtype = calloc(1,sizeof(reliq_output_field_type));
+    if ((err = outfield_type_get(src,&i,size,type->subtype,1)))
+      goto END;
+  }
+
+  END:
+  *pos = i;
+  return err;
+}
+
+reliq_error *
+reliq_output_field_comp(const char *src, size_t *pos, const size_t s, reliq_output_field *outfield)
+{
+  if (*pos >= s || src[*pos] != '.')
+    return NULL;
+
+  reliq_error *err = NULL;
+  const char *name;
+  size_t i=*pos,namel=0;
+
+  *outfield = (reliq_output_field){0};
+  i++;
+
+  outfield_name_get(src,&i,s,&name,&namel);
+
+  if ((err = outfield_type_get(src,&i,s,&outfield->type,0)))
+    goto ERR;
+
+  outfield->isset = 1;
+
+  if (i < s && (src[i] == '\'' || src[i] == '"')) {
+    size_t qstart = i+1;
+    if ((err = skip_quotes(src,&i,s)))
+      goto ERR;
+    size_t qend = i-1;
+
+    size_t qlen = qend-qstart;
+    outfield->annotation = (reliq_str){
+      .b = memdup(src+qstart,qlen),
+      .s = qlen
+    };
+  }
+
+  if (i < s && !isspace(src[i])) {
+    if (isprint(src[i])) {
+      goto_script_seterr(ERR,"output field: unexpected character '%c' at %lu",src[i],i);
+    } else
+      goto_script_seterr(ERR,"output field: unexpected character 0x%02x at %lu",src[i],i);
+  }
+
+  if (!namel)
+    goto ERR;
+
+  outfield->name.s = namel;
+  outfield->name.b = memdup(name,namel);
+
+  ERR:
+  *pos = i;
+  return err;
 }
 
 static void
 outfields_value_print(const reliq *rq, SINK *out, const reliq_output_field_type *type, const char *value, const size_t valuel, const uchar notempty)
 {
-  uchar def = 0;
-
-  if (!notempty) {
-    outfields_value_print_default(type->type,out,value,valuel);
+  const struct predefined *match = find_predefined(type->name.b,type->name.s);
+  if (!match) {
+    outfields_str_print(out,value,valuel);
     return;
   }
 
-  switch (type->type) {
-    case 's':
-      def = outfields_str_print(out,value,valuel);
-      break;
-    case 'n':
-      def = outfields_num_print(out,value,valuel,OUTFIELDS_NUM_FLOAT);
-      break;
-    case 'i':
-      def = outfields_num_print(out,value,valuel,OUTFIELDS_NUM_INT);
-      break;
-    case 'u':
-      def = outfields_num_print(out,value,valuel,OUTFIELDS_NUM_UNSIGNED);
-      break;
-    case 'b':
-      def = outfields_bool_print(out,value,valuel);
-      break;
-    case 'd':
-      def = outfields_date_print(out,type,value,valuel);
-      break;
-    case 'U':
-      def = outfields_url_print(rq,out,type,value,valuel);
-      break;
-    case 'a':
-      def = outfields_array_print(rq,out,type,value,valuel);
-      break;
-    default:
-      sink_write(out,"null",4);
-      break;
+  if (!notempty) {
+    match->default_val(out,value,valuel);
+    return;
   }
 
+  uchar def = match->repr(rq,out,type,value,valuel);
   if (def)
-    outfields_value_print_default(type->type,out,value,valuel);
+    match->default_val(out,value,valuel);
 }
 
 static void

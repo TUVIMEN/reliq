@@ -235,12 +235,16 @@ void reliq_efree(reliq_expr *expr);
 #define RELIQ_SCHEME_TYPE_DATE 7
 #define RELIQ_SCHEME_TYPE_URL 8
 #define RELIQ_SCHEME_TYPE_OBJECT 9
+#define RELIQ_SCHEME_TYPE_UNKNOWN 10
+
+//objects of this type should have their subtype used instead, and .isarray set
+#define RELIQ_SCHEME_TYPE_ARRAY 127
 
 struct reliq_scheme_field {
   reliq_cstr name;
   reliq_cstr annotation;
   uint16_t lvl;
-  unsigned char type : 4;
+  unsigned char type : 7;
   unsigned char isarray : 1;
 };
 

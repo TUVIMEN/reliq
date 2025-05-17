@@ -57,3 +57,5 @@ dd89f4ba0315f16c0791b35ab6287c79,'.va ul1 .n1; { .title h21 | "%i", .values ul1 
 fe8552a3f6522e529d2c6de9d3334371,'.va ul1 .n1; { .title h21 | "%i", .values ul1 l@[1]; { usaf, usii } ; { .value span1 | "%i" , .nothing p1 | "%i" }  } |'
 6c00a4f25001c4845898ed3a2699370c,'.g ul1 .n1; { .r p1, .h ul1 l@[0],  .c ul1 l@[1]; { la, ua } ; { p1  } | , .k span1 }'
 05a7e3fb87a143edff739ee7c844bd39,'.covers.a("\o7") img | "%(src)v\a", .links.a("\x5C") a | "%(href)v \\ \U0e0a"'
+6a10a0ccf0c90e7361fd02d7986b8d0d,'.na.N *'
+bf43e6dc8363ec9ded5eb76d158a7ef3,'.na.int *'

@@ -24,7 +24,7 @@
 
 typedef struct reliq_output_field_type reliq_output_field_type;
 struct reliq_output_field_type {
-  char type;
+  reliq_str name;
   reliq_str *args;
   size_t argsl;
   reliq_output_field_type *subtype;
@@ -53,6 +53,8 @@ struct outfield {
 void reliq_output_field_free(reliq_output_field *outfield);
 
 reliq_error *reliq_output_field_comp(const char *src, size_t *pos, const size_t s, reliq_output_field *outfield);
+
+void outfield_scheme_type(const reliq_output_field_type *ftype, uchar *type, uchar *isarray);
 
 void outfields_print(const reliq *rq, flexarr *fields, SINK *out); //fields: struct outfield*
 

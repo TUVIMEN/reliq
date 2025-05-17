@@ -28,45 +28,6 @@
 
 #define SCHEME_INC 64
 
-static inline void
-scheme_field_type(const reliq_output_field_type *ftype, uchar *type, uchar *isarray)
-{
-  if (ftype->type == 'a') {
-    *isarray = 1;
-    ftype = ftype->subtype;
-    *type = 'N';
-    if (!ftype)
-      return;
-  }
-
-  switch (ftype->type) {
-    case 's':
-      *type = RELIQ_SCHEME_TYPE_STRING;
-      break;
-    case 'u':
-      *type = RELIQ_SCHEME_TYPE_UNSIGNED;
-      break;
-    case 'i':
-      *type = RELIQ_SCHEME_TYPE_INT;
-      break;
-    case 'n':
-      *type = RELIQ_SCHEME_TYPE_NUM;
-      break;
-    case 'b':
-      *type = RELIQ_SCHEME_TYPE_BOOL;
-      break;
-    case 'd':
-      *type = RELIQ_SCHEME_TYPE_DATE;
-      break;
-    case 'U':
-      *type = RELIQ_SCHEME_TYPE_URL;
-      break;
-    default:
-      *type = RELIQ_SCHEME_TYPE_NULL;
-      break;
-  }
-}
-
 static const reliq_expr *
 scheme_last_chainlink(const reliq_expr *expr)
 {
@@ -96,7 +57,7 @@ scheme_add_field(flexarr *fields, const reliq_expr *expr, const uint16_t lvl)
   if (expr->childfields > 1) {
     type = RELIQ_SCHEME_TYPE_OBJECT;
   } else
-    scheme_field_type(&field->type,&type,&isarray);
+    outfield_scheme_type(&field->type,&type,&isarray);
 
   struct reliq_scheme_field *f = flexarr_inc(fields);
   *f = (struct reliq_scheme_field){
