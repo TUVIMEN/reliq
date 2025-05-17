@@ -37,7 +37,7 @@ LIB_SRC = src/flexarr.c src/sink.c src/html.c src/hnode.c src/reliq.c src/hnode_
 
 ifeq ("$(shell uname -s | sed "s/-.*//")","MINGW64_NT")
 
-ifeq ("$(shell curl 'https://git.musl-libc.org/cgit/musl/plain/src/time/strptime.c' | sed  's/\<__tm_gmtoff\>/tm_gmtoff/;/^#include <langinfo.h>/d; s/nl_langinfo\x28[^\x29]*\x29/""/;s/\<ABDAY_1\>/3/g;s/\<ABMON_1\>/2/g' >> src/strptime.c)","")
+ifeq ("$(shell curl 'https://git.musl-libc.org/cgit/musl/plain/src/time/strptime.c' | sed  's/\<__tm_gmtoff\>/tm_gmtoff/;/^#include <langinfo.h>/d; s/nl_langinfo\x28[^\x29]*\x29/""/;s/\<ABDAY_1\>/3/g;s/\<ABMON_1\>/2/g' > src/strptime.c)","")
 endif
 
 	LIB_SRC += src/strptime.c
