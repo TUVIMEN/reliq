@@ -183,6 +183,8 @@ d41d8cd98f00b204e9800998ecf8427e,'comment@ | "\"%UA\"\n"'
 28b1133273380fd9827eaaab18c9354d,'textnoerr@ | "\"%UA\"\n"'
 ad32b49ae9981e68f36a92d1f0e9a4e1,'textall@ | "\"%UA\"\n"'
 
+70a12f5b8db1e8b941f6ae3256e07d1e,'* .E>\[0-9]+'
+
 < editing.html
 d41d8cd98f00b204e9800998ecf8427e,'texterr@ | "\"%UA\"\n"'
 9cf3f7a62023402500be89109b596a4c,'comment@ | "\"%UA\"\n"'

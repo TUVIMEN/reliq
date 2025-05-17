@@ -32,6 +32,11 @@ typedef struct {
   uint8_t s;
 } cstr8;
 
+typedef struct {
+  char *b;
+  uint8_t s;
+} str8;
+
 #include "reliq.h"
 
 #endif

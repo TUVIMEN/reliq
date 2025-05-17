@@ -191,7 +191,7 @@ regcomp_add_pattern_regex(reliq_pattern *pattern, const char *src, const size_t 
   //both reliq and regex library have escaping systems, because of that every '\\' has to be converted to '\\\\'
   addedspace += escapes_of_escapes_count(src,size)<<1;
 
-  char *tmp = malloc(size+addedspace+1);
+  char *tmp = alloca(size+addedspace+1);
   size_t patternl = 0;
 
   if (fullmatch || match == RELIQ_PATTERN_MATCH_BEGINNING)
@@ -205,7 +205,6 @@ regcomp_add_pattern_regex(reliq_pattern *pattern, const char *src, const size_t 
   tmp[patternl] = 0;
 
   int r = regcomp(&pattern->match.reg,tmp,regexflags);
-  free(tmp);
   if (r != 0)
     return script_err("pattern: regcomp: could not compile pattern");
   return NULL;
@@ -253,12 +252,16 @@ reliq_regcomp(reliq_pattern *pattern, const char *src, size_t *pos, const size_t
   *pattern = (reliq_pattern){0};
   regcomp_get_flags(pattern,src,&i,size,flags);
 
-  if (i && i < size && src[i-1] == '>' && src[i] == '[') {
-    if ((err = range_comp(src,&i,size,&pattern->range)))
-      goto END;
-    if (i >= size || src[i] == delim || isspace(src[i])) {
-      pattern->flags |= RELIQ_PATTERN_ALL;
-      goto END;
+  if (i && i < size && src[i-1] == '>') {
+    if (i+1 < size && src[i] == '\\' && src[i+1] == '[') {
+      i++;
+    } else if (src[i] == '[') {
+      if ((err = range_comp(src,&i,size,&pattern->range)))
+        goto END;
+      if (i >= size || src[i] == delim || isspace(src[i])) {
+        pattern->flags |= RELIQ_PATTERN_ALL;
+        goto END;
+      }
     }
   }
 
