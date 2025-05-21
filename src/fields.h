@@ -27,13 +27,15 @@ struct reliq_output_field_type {
   reliq_str name;
   reliq_str *args;
   size_t argsl;
-  reliq_output_field_type *subtype;
+  reliq_output_field_type *subtypes;
+  size_t subtypesl;
 };
 
 typedef struct {
-  reliq_output_field_type type;
   reliq_str name;
   reliq_str annotation;
+  reliq_output_field_type *types;
+  size_t typesl;
   unsigned char isset; //signifies that compilation was successful, if set to 0 field should be ignored
 } reliq_output_field;
 
@@ -54,7 +56,7 @@ void reliq_output_field_free(reliq_output_field *outfield);
 
 reliq_error *reliq_output_field_comp(const char *src, size_t *pos, const size_t s, reliq_output_field *outfield);
 
-void outfield_scheme_type(const reliq_output_field_type *ftype, uchar *type, uchar *isarray);
+void outfield_scheme_types(const reliq_output_field_type *types, const size_t typesl, struct reliq_scheme_field_types *stypes);
 
 void outfields_print(const reliq *rq, flexarr *fields, SINK *out); //fields: struct outfield*
 

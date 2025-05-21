@@ -42,31 +42,43 @@ scheme_last_chainlink(const reliq_expr *expr)
   return ((reliq_expr*)exprs->v)+exprsl-1;
 }
 
+void
+reliq_scheme_field_types_one(struct reliq_scheme_field_types *t)
+{
+  t->b = malloc(sizeof(reliq_scheme_field_type));
+  t->b[0].isarray = 0;
+  t->s = 1;
+}
+
 static void
 scheme_add_field(flexarr *fields, const reliq_expr *expr, const uint16_t lvl)
 {
-  uchar type=0,isarray=0;
   const reliq_output_field *field = &expr->outfield;
 
-  if (EXPR_TYPE_IS(expr->flags,EXPR_CHAIN)) {
-    const reliq_expr *lastlink = scheme_last_chainlink(expr);
-    if (lastlink && EXPR_TYPE_IS(lastlink->flags,EXPR_SINGULAR))
-      isarray = 1;
-  }
-
-  if (expr->childfields > 1) {
-    type = RELIQ_SCHEME_TYPE_OBJECT;
-  } else
-    outfield_scheme_type(&field->type,&type,&isarray);
-
-  struct reliq_scheme_field *f = flexarr_inc(fields);
-  *f = (struct reliq_scheme_field){
+  struct reliq_scheme_field f = {
     .lvl = lvl,
     .name = reliq_str_to_cstr(field->name),
     .annotation = reliq_str_to_cstr(field->annotation),
-    .type = type,
-    .isarray = isarray
   };
+
+  if (expr->childfields > 1) {
+    struct reliq_scheme_field_types *types = &f.types;
+    reliq_scheme_field_types_one(types);
+
+    if (EXPR_TYPE_IS(expr->flags,EXPR_CHAIN)) {
+      const reliq_expr *lastlink = scheme_last_chainlink(expr);
+      if (lastlink && EXPR_TYPE_IS(lastlink->flags,EXPR_SINGULAR)) {
+        types->b[0].isarray = 1;
+        types = &types->b[0].type.types;
+        reliq_scheme_field_types_one(types);
+      }
+    }
+
+    types->b[0].type.type = RELIQ_SCHEME_TYPE_OBJECT;
+  } else
+    outfield_scheme_types(field->types,field->typesl,&f.types);
+
+  *(struct reliq_scheme_field*)flexarr_inc(fields) = f;
 }
 
 static uchar
@@ -164,8 +176,34 @@ reliq_json_scheme(const reliq_expr *expr)
   };
 }
 
+static void reliq_scheme_field_types_free(struct reliq_scheme_field_types *types);
+
+static void
+reliq_scheme_field_type_free(reliq_scheme_field_type *type)
+{
+  if (!type->isarray)
+    return;
+  reliq_scheme_field_types_free(&type->type.types);
+}
+
+static void
+reliq_scheme_field_types_free(struct reliq_scheme_field_types *types)
+{
+  const size_t size = types->s;
+  reliq_scheme_field_type *type = types->b;
+  for (size_t i = 0; i < size; i++)
+    reliq_scheme_field_type_free(type+i);
+  if (size)
+    free(types->b);
+}
+
 void
 reliq_json_scheme_free(reliq_scheme *scheme)
 {
+  const size_t fieldsl = scheme->fieldsl;
+  struct reliq_scheme_field *fields = scheme->fields;
+  for (size_t i = 0; i < fieldsl; i++) {
+    reliq_scheme_field_types_free(&fields->types);
+  }
   free(scheme->fields);
 }

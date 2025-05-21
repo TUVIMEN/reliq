@@ -513,8 +513,9 @@ scheme_print_type(const uchar c)
     case RELIQ_SCHEME_TYPE_OBJECT:
       return "object";
     case RELIQ_SCHEME_TYPE_NULL:
-    default:
       return "null";
+    default:
+      return "unknown";
   }
 }
 
@@ -523,6 +524,37 @@ scheme_print_tabs(const uint16_t lvl)
 {
   for (size_t i = 0; i < lvl; i++)
     fputs("  ",stderr);
+}
+
+static void
+scheme_print_types(const struct reliq_scheme_field_types *types, uchar *isobj, uchar *isarray)
+{
+  const size_t typesl = types->s;
+  for (size_t i = 0; i < typesl; i++) {
+    const struct reliq_scheme_field_type *type = types->b+i;
+
+    if (type->isarray) {
+      *isarray = 1;
+      if (i == typesl-1 && type->type.types.s == 1 && type->type.types.b[0].type.type == RELIQ_SCHEME_TYPE_OBJECT) {
+        *isobj = 1;
+        return;
+      }
+
+      fputc('[',stderr);
+      scheme_print_types(&type->type.types,isobj,isarray);
+      fputc(']',stderr);
+    } else if (i == typesl-1 && type->type.type == RELIQ_SCHEME_TYPE_OBJECT) {
+      *isobj = 1;
+      return;
+    } else {
+      if (i == 0 && !*isarray)
+        fputc('.',stderr);
+      fprintf(stderr,"\033[32m%s\033[0m",scheme_print_type(type->type.type));
+    }
+
+    if (i != typesl-1)
+      fputc('|',stderr);
+  }
 }
 
 static size_t
@@ -537,19 +569,16 @@ scheme_print_r(const reliq_scheme *scheme, const size_t index, uint16_t minlvl)
       return i;
 
     scheme_print_tabs(f->lvl);
-    fprintf(stderr,"\033[34m%.*s\033[0m",f->name.s,f->name.b);
+    fprintf(stderr,"\033[34m%.*s\033[0m",(int)f->name.s,f->name.b);
 
-    const uchar isobj = (f->type == RELIQ_SCHEME_TYPE_OBJECT);
-
-    fprintf(stderr,"%c\033[0m\033[32m%s\033[0m",(f->isarray && !isobj) ? '[' : '.',scheme_print_type(f->type));
-    if (f->isarray && !isobj)
-      fputc(']',stderr);
+    uchar isarray=0,isobj=0;
+    scheme_print_types(&f->types,&isobj,&isarray);
 
     if (f->annotation.s)
-      fprintf(stderr," \033[32m%.*s\033[0m",f->annotation.s,f->annotation.b);
+      fprintf(stderr," \033[32m%.*s\033[0m",(int)f->annotation.s,f->annotation.b);
 
     if (isobj) {
-      if (f->isarray) {
+      if (isarray) {
         fputs(" \033[31;1m[\033[0m\n",stderr);
       } else
         fputs(" \033[32;1m{\033[0m\n",stderr);
@@ -557,7 +586,7 @@ scheme_print_r(const reliq_scheme *scheme, const size_t index, uint16_t minlvl)
       i = scheme_print_r(scheme,i+1,f->lvl+1)-1;
 
       scheme_print_tabs(f->lvl);
-      if (f->isarray) {
+      if (isarray) {
         fputs("\033[31;1m]\033[0m",stderr);
       } else
         fputs("\033[32;1m}\033[0m",stderr);
