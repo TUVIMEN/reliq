@@ -27,6 +27,8 @@
 #define MIN(x,y) ( ((x) < (y)) ? (x) : (y) )
 #define MAX(x,y) ( ((x) < (y)) ? (y) : (x) )
 
+#define LENGTH(x) (sizeof(x)/(sizeof(*x)))
+
 #define REGEX_PATTERN_SIZE (1<<10)
 
 #define RELIQ_DEBUG_SECTION_HEADER(x) \
@@ -36,49 +38,65 @@
 
 #define while_is(w,x,y,z) while ((y) < (z) && w((x)[(y)])) {(y)++;}
 #define while_isnt(w,x,y,z) while ((y) < (z) && !w((x)[(y)])) {(y)++;}
-#define LENGTH(x) (sizeof(x)/(sizeof(*x)))
 
+//so many ways to error
 #define script_err(...) reliq_set_error(RELIQ_ERROR_SCRIPT,__VA_ARGS__)
 #define goto_seterr(x,...) { err = reliq_set_error(__VA_ARGS__); goto x; }
 #define goto_seterr_p(x,...) { *err = reliq_set_error(__VA_ARGS__); goto x; }
 #define goto_script_seterr(x,...) goto_seterr(x,RELIQ_ERROR_SCRIPT,__VA_ARGS__)
 #define goto_script_seterr_p(x,...)  goto_seterr_p(x,RELIQ_ERROR_SCRIPT,__VA_ARGS__)
 
-#define memeq(w,x,y,z) ((y) == (z) && memcmp(w,x,y) == 0)
-#define memcaseeq(w,x,y,z) ((y) == (z) && memcasecmp(w,x,y) == 0)
-#define streq(x,y) memeq(x.b,y.b,x.s,y.s)
-#define strcaseeq(x,y) memcaseeq(x.b,y.b,x.s,y.s)
-
+//convert int to str
 void print_uint(unsigned long num, SINK *outfile);
 void print_int(long num, SINK *outfile);
-void strnrev(char *v, const size_t size); //was previously named strrev but mingw has it defined for some reason
 void uint_to_str(char *dest, size_t *destl, const size_t max_destl, unsigned long num);
+
+//convert str to int
+unsigned int get_dec(const char *src, const size_t size, size_t *traversed);
+uint64_t get_fromdec(const char *src, const size_t srcl, size_t *traversed, const unsigned char maxlength);
+uint64_t get_fromhex(const char *src, const size_t srcl, size_t *traversed, const unsigned char maxlength);
+unsigned int number_handle(const char *src, size_t *pos, const size_t size);
+
+//str functions
+void strnrev(char *v, const size_t size); //was previously named strrev but mingw has it defined for some reason
+char *delstr(char *src, const size_t pos, size_t *size, const size_t count);
+char *delchar(char *src, const size_t pos, size_t *size);
+
 void memtrim(char const **dest, size_t *destsize, const char *src, const size_t size);
 void memwordtok_r(const char *ptr, const size_t plen, char const **saveptr, size_t *saveptrlen, char const **word, size_t *wordlen);
+
 #if defined(__MINGW32__) || defined(__MINGW64__)
 char const *memmem(char const *haystack, size_t haystackl, const char *needle, const size_t needlel);
 #endif
 int memcasecmp(const void *v1, const void *v2, const size_t n);
 char const *memcasemem_r(char const *restrict haystack, size_t haystackl, const char *restrict needle, const size_t needlel);
 void *memdup(void const *src, const size_t size);
+
+#define memeq(w,x,y,z) ((y) == (z) && memcmp(w,x,y) == 0)
+#define memcaseeq(w,x,y,z) ((y) == (z) && memcasecmp(w,x,y) == 0)
+#define streq(x,y) memeq(x.b,y.b,x.s,y.s)
+#define strcaseeq(x,y) memcaseeq(x.b,y.b,x.s,y.s)
+
+//utf8
 uint32_t enc16utf8(const uint16_t c);
 uint64_t enc32utf8(const uint32_t c);
 int write_utf8(uint64_t data, char *result, size_t *traversed, const size_t maxlength);
+
+//convert special characters in string
 char splchar(const char c);
 char splchar2(const char *src, const size_t srcl, size_t *traversed);
 void splchar3(const char *src, const size_t srcl, char *result, size_t *resultl, size_t *traversed);
-char *delstr(char *src, const size_t pos, size_t *size, const size_t count);
-char *delchar(char *src, const size_t pos, size_t *size);
-unsigned int get_dec(const char *src, const size_t size, size_t *traversed);
-uint64_t get_fromdec(const char *src, const size_t srcl, size_t *traversed, const unsigned char maxlength);
-uint64_t get_fromhex(const char *src, const size_t srcl, size_t *traversed, const unsigned char maxlength);
-unsigned int number_handle(const char *src, size_t *pos, const size_t size);
-reliq_error *skip_quotes(const char *src, size_t *pos, const size_t size);
-reliq_error *get_quoted(const char *src, size_t *pos, const size_t size, const char delim, char **result, size_t *resultl);
+
 void splchars_conv(char *src, size_t *size);
 void splchars_conv_sink(const char *src, const size_t size, SINK *sn);
+
+//parse strings
+reliq_error *skip_quotes(const char *src, size_t *pos, const size_t size);
+reliq_error *get_quoted(const char *src, size_t *pos, const size_t size, const char delim, char **result, size_t *resultl);
+
 reliq_cstr reliq_str_to_cstr(reliq_str str);
 
+//inferior platforms bullshit
 #if defined(__MINGW32__) || defined(__MINGW64__) || defined(__APPLE__)
 void *memrchr(void *restrict src, const int c, const size_t size);
 #endif

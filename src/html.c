@@ -302,7 +302,6 @@ last_attrib(const flexarr *attrib) //attrib: reliq_cattrib
 static uchar
 text_is_empty(const char *text, const size_t textl)
 {
-  char *f = f;
   for (size_t i = 0; i < textl; i++)
     if (!isspace(text[i]))
       return 0;

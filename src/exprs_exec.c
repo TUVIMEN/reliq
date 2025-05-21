@@ -33,7 +33,7 @@
 #include "exprs.h"
 #include "node_exec.h"
 
-#define SCHEME_DEBUG
+/*#define SCHEME_DEBUG*/
 
 #define PASSED_INC (1<<8) //!! if increased causes huge allocation
 #define NCOLLECTOR_INC (1<<8)

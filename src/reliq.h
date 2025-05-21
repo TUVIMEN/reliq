@@ -56,6 +56,11 @@ extern "C" {
 #define RELIQ_ERROR_SCRIPT 15
 
 typedef struct {
+  char msg[RELIQ_ERROR_MESSAGE_LENGTH];
+  int code; //RELIQ_ERROR_
+} reliq_error;
+
+typedef struct {
   char *b;
   size_t s;
 } reliq_str;
@@ -65,11 +70,6 @@ typedef struct {
   size_t s;
 } reliq_cstr;
 
-typedef struct {
-  reliq_cstr key;
-  reliq_cstr value;
-} reliq_attrib;
-
 #pragma pack(push,1)
 typedef struct {
   uint32_t key; //key+hnode.all.b
@@ -78,30 +78,12 @@ typedef struct {
   uint32_t keyl RELIQ_HTML_OTHERSIZE(8,8);
 } reliq_cattrib; //compressed reliq_attrib, can be converted to reliq_attrib with reliq_cattrib_conv()
 #pragma pack(pop)
-extern const uint8_t reliq_cattrib_sz;
+extern const uint8_t reliq_cattrib_sz; //sizeof(reliq_cattrib)
 
 typedef struct {
-  char msg[RELIQ_ERROR_MESSAGE_LENGTH];
-  int code;
-} reliq_error;
-
-#define RELIQ_HNODE_TYPE_TAG 0
-#define RELIQ_HNODE_TYPE_COMMENT 1
-#define RELIQ_HNODE_TYPE_TEXT 2
-#define RELIQ_HNODE_TYPE_TEXT_EMPTY 3
-#define RELIQ_HNODE_TYPE_TEXT_ERR 4
-typedef struct {
-  reliq_cstr all;
-  reliq_cstr tag;
-  reliq_cstr insides;
-  reliq_cattrib const *attribs;
-  uint32_t attribsl;
-  uint32_t tag_count;
-  uint32_t text_count;
-  uint32_t comment_count;
-  uint16_t lvl;
-  uint8_t type;
-} reliq_hnode; //html node
+  reliq_cstr key;
+  reliq_cstr value;
+} reliq_attrib;
 
 #pragma pack(push,1)
 /*
@@ -130,7 +112,25 @@ typedef struct {
   uint32_t comment_count : 28;
 } reliq_chnode;
 #pragma pack(pop)
-extern const uint8_t reliq_chnode_sz;
+extern const uint8_t reliq_chnode_sz; //sizeof(reliq_chnode)
+
+#define RELIQ_HNODE_TYPE_TAG 0
+#define RELIQ_HNODE_TYPE_COMMENT 1
+#define RELIQ_HNODE_TYPE_TEXT 2
+#define RELIQ_HNODE_TYPE_TEXT_EMPTY 3
+#define RELIQ_HNODE_TYPE_TEXT_ERR 4
+typedef struct {
+  reliq_cstr all;
+  reliq_cstr tag;
+  reliq_cstr insides;
+  reliq_cattrib const *attribs;
+  uint32_t attribsl;
+  uint32_t tag_count;
+  uint32_t text_count;
+  uint32_t comment_count;
+  uint16_t lvl;
+  uint8_t type : 3; //RELIQ_HNODE_TYPE_
+} reliq_hnode; //html node
 
 #pragma pack(push,1)
 /*Is used when passing around by reliq_exec functions, it holds parent
@@ -146,6 +146,7 @@ typedef struct {
 } reliq_compressed;
 #pragma pack(pop)
 
+//anonymous declaration
 typedef struct reliq_expr reliq_expr;
 
 typedef struct {
@@ -178,7 +179,7 @@ void reliq_url_join(const reliq_url *ref, const reliq_url *url, reliq_url *dest)
 
 void reliq_url_free(reliq_url *url);
 
-//if reliq.freedata is set than it will be called with reliq_free() to free reliq.data
+//if reliq.freedata is set then it will be called with reliq_free() to free reliq.data
 typedef struct {
   reliq_url url;
 
@@ -202,6 +203,7 @@ int reliq_free(reliq *rq); //returns result of .freedata() otherwise 0
 //  doesn't have to be deallocated before calling this function
 void reliq_set_url(reliq *rq, const char *url, const size_t urll);
 
+//these work as partial reliq_chnode_conv()
 uint32_t reliq_chnode_attribsl(const reliq *rq, const reliq_chnode *hnode);
 uint32_t reliq_chnode_insides(const reliq *rq, const reliq_chnode *hnode, const uint8_t type);
 uint8_t reliq_chnode_type(const reliq_chnode *c);
@@ -212,7 +214,7 @@ const char *reliq_hnode_endtag_strip(const reliq_hnode *hn, size_t *len);
 void reliq_chnode_conv(const reliq *rq, const reliq_chnode *c, reliq_hnode *d);
 void reliq_cattrib_conv(const reliq *rq, const reliq_cattrib *c, reliq_attrib *d);
 
-// creates reliq with independent reliq.nodes
+//creates reliq with independent reliq.nodes
 reliq reliq_from_compressed(const reliq_compressed *compressed, const size_t compressedl, const reliq *rq);
 //creates reliq with independent reliq.nodes and reliq.data
 reliq reliq_from_compressed_independent(const reliq_compressed *compressed, const size_t compressedl, const reliq *rq);
@@ -250,7 +252,7 @@ typedef struct {
 struct reliq_scheme_field {
   reliq_field const *field;
   uint16_t lvl;
-  uint8_t type : 2;
+  uint8_t type : 2; //RELIQ_SCHEME_FIELD_TYPE_
 };
 
 typedef struct {
@@ -263,6 +265,7 @@ typedef struct {
   uint8_t repeating : 1;
 } reliq_scheme_t;
 
+//reliq_scheme_t should not be used after reliq_expr it was created from is freed
 reliq_scheme_t reliq_scheme(const reliq_expr *expr);
 void reliq_scheme_free(reliq_scheme_t *scheme);
 
