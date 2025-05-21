@@ -148,7 +148,7 @@ const struct hook_t hooks_list[] = {
   {{"A",1},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_all),(uintptr_t)"uWcnas"},
   {{"i",1},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_insides),(uintptr_t)"tWncas"},
   {{"S",1},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_start),(uintptr_t)"uWcnas"},
-  {{"n",1},H_MATCH_NODE|H_PATTERN|H_MATCH_NODE_MAIN,(uintptr_t)XN(node_name),(uintptr_t)"uWcnfs"},
+  {{"n",1},H_MATCH_NODE|H_PATTERN|H_MATCH_NODE_MAIN,(uintptr_t)XN(node_name),(uintptr_t)"uWinfs"},
   {{"a",1},H_MATCH_NODE|H_RANGE_UNSIGNED,(uintptr_t)XN(node_attributes),0},
   {{"E",1},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_end),(uintptr_t)"uWcnas"},
   {{"e",1},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_end_strip),(uintptr_t)"tWcnfs"},
@@ -156,7 +156,7 @@ const struct hook_t hooks_list[] = {
   {{"all",3},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_all),(uintptr_t)"uWcnas"},
   {{"insides",7},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_insides),(uintptr_t)"tWncas"},
   {{"start",5},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_start),(uintptr_t)"uWcnas"},
-  {{"name",4},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_name),(uintptr_t)"uWcnfs"},
+  {{"name",4},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_name),(uintptr_t)"uWinfs"},
   {{"attributes",10},H_MATCH_NODE|H_RANGE_UNSIGNED,(uintptr_t)XN(node_attributes),0},
   {{"end",3},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_end),(uintptr_t)"uWcnas"},
   {{"endstrip",8},H_MATCH_NODE|H_PATTERN,(uintptr_t)XN(node_end_strip),(uintptr_t)"tWcnfs"},
@@ -820,7 +820,7 @@ comp_node(const char *src, size_t *pos, const size_t size, uchar invert, uchar *
       goto END;
     attrib.flags |= A_VAL_MATTERS;
   } else {
-    if ((err = reliq_regcomp(&attrib.r[0],src,&i,size,'=',"uWncfs",strclass_attrib)))
+    if ((err = reliq_regcomp(&attrib.r[0],src,&i,size,'=',"uWnsfi",strclass_attrib)))
       goto END;
 
     while_is(isspace,src,i,size);

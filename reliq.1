@@ -150,9 +150,9 @@ Matching options:
 .SS ATTRIBUTE_NAME
 Attribute's name \fBPATTERN\fR. Starting by '+' or '-' will ensure that it will be treated as attribute, but in most cases can be omitted. '-' signifies its negation. It can be followed by \fB[RANGE]\fR which matches attribute's position in tag.
 
-\fBATTRIB_NAME\fR has 'uWncfs' pattern flags, \fBPATTERN\fR has 'tWncfs'.
+\fBATTRIB_NAME\fR has 'uWnsfi' pattern flags, \fBPATTERN\fR has 'tWncfs'.
 
-Attribute name can be shortened to '.' or '#' (see below). This sets \fBATTRIB_NAME\fR flags to 'uWnsfi' and 'uwncsf' for \fBPATTERN\fR.
+Attribute name can be shortened to '.' or '#' (see below).  \fBATTRIB_NAME\fR flags to 'uWnsfi' and 'uwncsf' for \fBPATTERN\fR.
 .nf
 \&
 .in +4m
@@ -321,7 +321,7 @@ Pattern flags set to "uWcnas".
 .TP
 .BR n ",  " name " " \fI"PATTERN"\fR
 Get tags which name matches \fIPATTERN\fR. Used as \fBTAG\fR matcher.
-Pattern flags set to "uWcnfs".
+Pattern flags set to "uWinfs".
 .TP
 .BR a ",  " attributes " " \fI[URANGE]\fR
 Get tags with attributes that are within the \fIURANGE\fR.
