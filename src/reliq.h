@@ -138,7 +138,7 @@ extern const uint8_t reliq_chnode_sz;
 
   It's also used to define structure for nodes_output, then .hnode
   stores small integers subtracted from UINT32_MAX i.e. (UINT32_MAX-6), and .parent stores
-  pointer to reliq_output_field
+  pointer to reliq_field
 */
 typedef struct {
   uint32_t hnode;
@@ -226,40 +226,31 @@ reliq_error *reliq_exec(const reliq *rq, const reliq_compressed *input, const si
 
 void reliq_efree(reliq_expr *expr);
 
-#define RELIQ_SCHEME_TYPE_NULL 1
-#define RELIQ_SCHEME_TYPE_STRING 2
-#define RELIQ_SCHEME_TYPE_UNSIGNED 3
-#define RELIQ_SCHEME_TYPE_INT 4
-#define RELIQ_SCHEME_TYPE_NUM 5
-#define RELIQ_SCHEME_TYPE_BOOL 6
-#define RELIQ_SCHEME_TYPE_DATE 7
-#define RELIQ_SCHEME_TYPE_URL 8
-#define RELIQ_SCHEME_TYPE_OBJECT 9
-#define RELIQ_SCHEME_TYPE_UNKNOWN 10
-
-//objects of this type should have their subtype used instead
-#define RELIQ_SCHEME_TYPE_ARRAY 127
-
-typedef struct reliq_scheme_field_type reliq_scheme_field_type;
-struct reliq_scheme_field_types {
-  reliq_scheme_field_type *b;
-  size_t s;
+typedef struct reliq_field_type reliq_field_type;
+struct reliq_field_type {
+  reliq_str name;
+  reliq_str *args;
+  size_t argsl;
+  reliq_field_type *subtypes;
+  size_t subtypesl;
 };
 
-struct reliq_scheme_field_type {
-  union {
-    unsigned char type;
-    struct reliq_scheme_field_types types;
-  } type;
-  unsigned char isarray : 1;
-};
+typedef struct {
+  reliq_str name;
+  reliq_str annotation;
+  reliq_field_type *types;
+  size_t typesl;
+  uint8_t isset; //signifies that compilation was successful, if set to 0 field should be ignored
+} reliq_field;
+
+#define RELIQ_SCHEME_FIELD_TYPE_NORMAL 0
+#define RELIQ_SCHEME_FIELD_TYPE_OBJECT 1
+#define RELIQ_SCHEME_FIELD_TYPE_ARRAY 2
 
 struct reliq_scheme_field {
-  reliq_cstr name;
-  reliq_cstr annotation;
+  reliq_field const *field;
   uint16_t lvl;
-
-  struct reliq_scheme_field_types types;
+  uint8_t type : 2;
 };
 
 typedef struct {
@@ -267,13 +258,13 @@ typedef struct {
   size_t fieldsl;
 
   //is set to 1 if some output isn't guarded by a field which creates incorrect json
-  unsigned char leaking : 1;
+  uint8_t leaking : 1;
   //field name repeats in the same block which creates incorrect json
-  unsigned char repeating : 1;
-} reliq_scheme;
+  uint8_t repeating : 1;
+} reliq_scheme_t;
 
-reliq_scheme reliq_json_scheme(const reliq_expr *expr);
-void reliq_json_scheme_free(reliq_scheme *scheme);
+reliq_scheme_t reliq_scheme(const reliq_expr *expr);
+void reliq_scheme_free(reliq_scheme_t *scheme);
 
 reliq_error *reliq_set_error(const int code, const char *fmt, ...);
 

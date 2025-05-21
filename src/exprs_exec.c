@@ -33,7 +33,7 @@
 #include "exprs.h"
 #include "node_exec.h"
 
-/*#define SCHEME_DEBUG*/
+#define SCHEME_DEBUG
 
 #define PASSED_INC (1<<8) //!! if increased causes huge allocation
 #define NCOLLECTOR_INC (1<<8)
@@ -271,7 +271,7 @@ exec_block(const reliq_expr *expr, const flexarr *source, flexarr *dest, exec_st
 }
 
 static reliq_error *
-exec_singular(const reliq_expr *expr, const reliq_output_field *named, const flexarr *source, flexarr *dest, exec_state *st)
+exec_singular(const reliq_expr *expr, const reliq_field *named, const flexarr *source, flexarr *dest, exec_state *st)
 {
   reliq_error *err = NULL;
   if (!source->size)
@@ -305,7 +305,7 @@ exec_singular(const reliq_expr *expr, const reliq_output_field *named, const fle
 }
 
 static reliq_error *
-exec_table(const reliq_expr *expr, const reliq_output_field *named, const flexarr *source, flexarr *dest, exec_state *st) //source: reliq_compressed, dest: reliq_compressed, out: reliq_compressed, ncollector: struct ncollector
+exec_table(const reliq_expr *expr, const reliq_field *named, const flexarr *source, flexarr *dest, exec_state *st) //source: reliq_compressed, dest: reliq_compressed, out: reliq_compressed, ncollector: struct ncollector
 {
   reliq_error *err = NULL;
 
@@ -347,7 +347,7 @@ exec_chain(const reliq_expr *expr, const flexarr *source, flexarr *dest, exec_st
   size_t lastn = startn;
   reliq_expr const *lastnode = NULL;
   uchar fieldprotected=0,copied_state=0;
-  reliq_output_field const *fieldnamed = NULL;
+  reliq_field const *fieldnamed = NULL;
   if (expr->outfield.isset) {
     if (expr->outfield.name.b) {
       fieldnamed = &expr->outfield;
@@ -492,33 +492,6 @@ reliq_exec_r(const reliq *rq, const reliq_compressed *input, const size_t inputl
 
 #ifdef SCHEME_DEBUG
 
-static const char *
-scheme_print_type(const uchar c)
-{
-  switch (c) {
-    case RELIQ_SCHEME_TYPE_STRING:
-      return "str";
-    case RELIQ_SCHEME_TYPE_UNSIGNED:
-      return "unsigned";
-    case RELIQ_SCHEME_TYPE_INT:
-      return "int";
-    case RELIQ_SCHEME_TYPE_BOOL:
-      return "bool";
-    case RELIQ_SCHEME_TYPE_NUM:
-      return "num";
-    case RELIQ_SCHEME_TYPE_DATE:
-      return "date";
-    case RELIQ_SCHEME_TYPE_URL:
-      return "url";
-    case RELIQ_SCHEME_TYPE_OBJECT:
-      return "object";
-    case RELIQ_SCHEME_TYPE_NULL:
-      return "null";
-    default:
-      return "unknown";
-  }
-}
-
 static void
 scheme_print_tabs(const uint16_t lvl)
 {
@@ -527,29 +500,19 @@ scheme_print_tabs(const uint16_t lvl)
 }
 
 static void
-scheme_print_types(const struct reliq_scheme_field_types *types, uchar *isobj, uchar *isarray)
+scheme_print_types(const reliq_field_type *types, const size_t typesl, uchar isarray)
 {
-  const size_t typesl = types->s;
   for (size_t i = 0; i < typesl; i++) {
-    const struct reliq_scheme_field_type *type = types->b+i;
+    const struct reliq_field_type *type = types+i;
 
-    if (type->isarray) {
-      *isarray = 1;
-      if (i == typesl-1 && type->type.types.s == 1 && type->type.types.b[0].type.type == RELIQ_SCHEME_TYPE_OBJECT) {
-        *isobj = 1;
-        return;
-      }
-
+    if (type->name.s == 1 && type->name.b[0] == 'a') {
       fputc('[',stderr);
-      scheme_print_types(&type->type.types,isobj,isarray);
+      scheme_print_types(type->subtypes,type->subtypesl,1);
       fputc(']',stderr);
-    } else if (i == typesl-1 && type->type.type == RELIQ_SCHEME_TYPE_OBJECT) {
-      *isobj = 1;
-      return;
     } else {
-      if (i == 0 && !*isarray)
+      if (i == 0 && !isarray)
         fputc('.',stderr);
-      fprintf(stderr,"\033[32m%s\033[0m",scheme_print_type(type->type.type));
+      fprintf(stderr,"\033[32m%.*s\033[0m",(int)type->name.s,type->name.b);
     }
 
     if (i != typesl-1)
@@ -558,7 +521,7 @@ scheme_print_types(const struct reliq_scheme_field_types *types, uchar *isobj, u
 }
 
 static size_t
-scheme_print_r(const reliq_scheme *scheme, const size_t index, uint16_t minlvl)
+scheme_print_r(const reliq_scheme_t *scheme, const size_t index, uint16_t minlvl)
 {
   const size_t fieldsl = scheme->fieldsl;
   const struct reliq_scheme_field *fields = scheme->fields;
@@ -567,18 +530,20 @@ scheme_print_r(const reliq_scheme *scheme, const size_t index, uint16_t minlvl)
     const struct reliq_scheme_field *f = fields+i;
     if (f->lvl < minlvl)
       return i;
+    const reliq_field *field = f->field;
+    const uint8_t type = f->type;
 
     scheme_print_tabs(f->lvl);
-    fprintf(stderr,"\033[34m%.*s\033[0m",(int)f->name.s,f->name.b);
+    fprintf(stderr,"\033[34m%.*s\033[0m",(int)field->name.s,field->name.b);
 
-    uchar isarray=0,isobj=0;
-    scheme_print_types(&f->types,&isobj,&isarray);
+    if (type == RELIQ_SCHEME_FIELD_TYPE_NORMAL)
+      scheme_print_types(field->types,field->typesl,0);
 
-    if (f->annotation.s)
-      fprintf(stderr," \033[32m%.*s\033[0m",(int)f->annotation.s,f->annotation.b);
+    if (field->annotation.s)
+      fprintf(stderr," \033[32m%.*s\033[0m",(int)field->annotation.s,field->annotation.b);
 
-    if (isobj) {
-      if (isarray) {
+    if (type != RELIQ_SCHEME_FIELD_TYPE_NORMAL) {
+      if (type == RELIQ_SCHEME_FIELD_TYPE_ARRAY) {
         fputs(" \033[31;1m[\033[0m\n",stderr);
       } else
         fputs(" \033[32;1m{\033[0m\n",stderr);
@@ -586,7 +551,7 @@ scheme_print_r(const reliq_scheme *scheme, const size_t index, uint16_t minlvl)
       i = scheme_print_r(scheme,i+1,f->lvl+1)-1;
 
       scheme_print_tabs(f->lvl);
-      if (isarray) {
+      if (type == RELIQ_SCHEME_FIELD_TYPE_ARRAY) {
         fputs("\033[31;1m]\033[0m",stderr);
       } else
         fputs("\033[32;1m}\033[0m",stderr);
@@ -598,7 +563,7 @@ scheme_print_r(const reliq_scheme *scheme, const size_t index, uint16_t minlvl)
 }
 
 static void
-scheme_print(const reliq_scheme *scheme)
+scheme_print(const reliq_scheme_t *scheme)
 {
   RELIQ_DEBUG_SECTION_HEADER("SCHEME");
 
@@ -626,9 +591,9 @@ reliq_exec_file(const reliq *rq, const reliq_compressed *input, const size_t inp
 
   #ifdef SCHEME_DEBUG
 
-  reliq_scheme sch = reliq_json_scheme(expr);
+  reliq_scheme_t sch = reliq_scheme(expr);
   scheme_print(&sch);
-  reliq_json_scheme_free(&sch);
+  reliq_scheme_free(&sch);
 
   #endif //SCHEME_DEBUG
 

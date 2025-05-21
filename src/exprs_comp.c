@@ -59,7 +59,7 @@ reliq_efree_intr(reliq_expr *expr)
 {
   format_free(expr->nodef,expr->nodefl);
   format_free(expr->exprf,expr->exprfl);
-  reliq_output_field_free(&expr->outfield);
+  reliq_field_free(&expr->outfield);
 
   if (EXPR_IS_TABLE(expr->flags)) {
     reliq_expr_free_pre(expr->e);
@@ -536,7 +536,7 @@ tokenize_isBlockStart(const char *src, size_t pos, const size_t size)
 static reliq_error *
 tokenize(const char *src, const size_t size, token **tokens, size_t *tokensl) //tokens: token
 {
-  #define token_found(x,y) { tokenstart=src+i; name=(x); tokensize=(y); goto FOUND; }
+  #define token_found(x,y) do { tokenstart=src+i; name=(x); tokensize=(y); goto FOUND; } while (0)
   reliq_error *err = NULL;
   flexarr ret = flexarr_init(sizeof(token),TOKEN_INC);
   char const *textstart = NULL;
@@ -678,16 +678,19 @@ from_tokenname_conditional(const enum tokenName name)
     case tConditionOr:
       ret |= EXPR_OR;
       break;
+
     case tConditionAndAll:
       ret |= EXPR_ALL;
     case tConditionAnd:
       ret |= EXPR_AND;
       break;
+
     case tConditionAndBlankAll:
       ret |= EXPR_ALL;
     case tConditionAndBlank:
       ret |= EXPR_AND_BLANK;
       break;
+
     default:
       return 0;
   }
@@ -880,11 +883,11 @@ tcomp_text(size_t *pos, tcomp_state *st)
   size_t len = tokens[i].size;
   if (st->first_in_node && tokens[i].start[0] == '.') {
     size_t g=0;
-    if ((err = reliq_output_field_comp(start,&g,len,&current->outfield))) //&current->outfield
+    if ((err = reliq_field_comp(start,&g,len,&current->outfield))) //&current->outfield
       return err;
     if (current->outfield.name.b) {
       /*if the above condition is removed protected fields will work as normal fields
-        i.e. '{ .li }; li' will be impossible but '{ . li } / line [1]' will also be,
+        i.e. '{ . li }; li' will be impossible but '{ . li } / line [1]' will also be,
         and it will break it's functionality*/
       st->childfields++;
       current->childfields++;
@@ -978,12 +981,12 @@ tcomp_conditional(size_t *pos, const enum tokenName name, tcomp_state *st)
 
   reliq_expr *lastret = &((reliq_expr*)ret->v)[ret->size-1];
   if (!EXPR_TYPE_IS(lastret->flags,EXPR_BLOCK_CONDITION)) {
-    reliq_output_field field = current->outfield;
+    reliq_field field = current->outfield;
     if (current->childfields-(field.name.b != NULL))
       return err_field_in_condition();
 
     reliq_expr t = *current;
-    t.outfield = (reliq_output_field){0};
+    t.outfield = (reliq_field){0};
 
     *current = (reliq_expr){0};
     flexarr f = flexarr_init(sizeof(reliq_expr),PATTERN_SIZE_INC);

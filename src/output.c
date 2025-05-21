@@ -284,7 +284,7 @@ ncollector_end(nodes_output_state *st)
 }
 
 static struct outfield *
-outfields_inc(enum outfieldCode code, uint16_t lvl, reliq_output_field const *fieldname, flexarr *outfields)
+outfields_inc(enum outfieldCode code, uint16_t lvl, reliq_field const *fieldname, flexarr *outfields)
 {
   struct outfield *field,
       **field_pre = flexarr_inc(outfields);
@@ -317,7 +317,7 @@ nodes_output_code_handle(enum outfieldCode code, enum outfieldCode prevcode, siz
     case ofArray:
     case ofNoFieldsBlock:
     case ofNamed:
-      field = outfields_inc(code,st->field_lvl,(reliq_output_field const*)compn->parent,st->outfields);
+      field = outfields_inc(code,st->field_lvl,(reliq_field const*)compn->parent,st->outfields);
 
       if (code == ofNamed || code == ofNoFieldsBlock) {
         field->f = sink_open(&field->v,&field->s);

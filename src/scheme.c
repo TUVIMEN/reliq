@@ -42,45 +42,6 @@ scheme_last_chainlink(const reliq_expr *expr)
   return ((reliq_expr*)exprs->v)+exprsl-1;
 }
 
-void
-reliq_scheme_field_types_one(struct reliq_scheme_field_types *t)
-{
-  t->b = malloc(sizeof(reliq_scheme_field_type));
-  t->b[0].isarray = 0;
-  t->s = 1;
-}
-
-static void
-scheme_add_field(flexarr *fields, const reliq_expr *expr, const uint16_t lvl)
-{
-  const reliq_output_field *field = &expr->outfield;
-
-  struct reliq_scheme_field f = {
-    .lvl = lvl,
-    .name = reliq_str_to_cstr(field->name),
-    .annotation = reliq_str_to_cstr(field->annotation),
-  };
-
-  if (expr->childfields > 1) {
-    struct reliq_scheme_field_types *types = &f.types;
-    reliq_scheme_field_types_one(types);
-
-    if (EXPR_TYPE_IS(expr->flags,EXPR_CHAIN)) {
-      const reliq_expr *lastlink = scheme_last_chainlink(expr);
-      if (lastlink && EXPR_TYPE_IS(lastlink->flags,EXPR_SINGULAR)) {
-        types->b[0].isarray = 1;
-        types = &types->b[0].type.types;
-        reliq_scheme_field_types_one(types);
-      }
-    }
-
-    types->b[0].type.type = RELIQ_SCHEME_TYPE_OBJECT;
-  } else
-    outfield_scheme_types(field->types,field->typesl,&f.types);
-
-  *(struct reliq_scheme_field*)flexarr_inc(fields) = f;
-}
-
 static uchar
 scheme_is_repeating(flexarr *fields, const size_t index, uint16_t lvl)
 {
@@ -91,14 +52,14 @@ scheme_is_repeating(flexarr *fields, const size_t index, uint16_t lvl)
     if (fieldsv[i].lvl != lvl)
       continue;
 
-    const char *name = fieldsv[i].name.b;
-    const size_t namel = fieldsv[i].name.s;
+    const char *name = fieldsv[i].field->name.b;
+    const size_t namel = fieldsv[i].field->name.s;
 
     for (size_t j = i+1; j < fieldsl && fieldsv[j].lvl >= lvl; j++) {
       if (fieldsv[j].lvl != lvl)
         continue;
 
-      if (memeq(name,fieldsv[j].name.b,namel,fieldsv[j].name.s))
+      if (memeq(name,fieldsv[j].field->name.b,namel,fieldsv[j].field->name.s))
         return 1;
     }
   }
@@ -106,7 +67,7 @@ scheme_is_repeating(flexarr *fields, const size_t index, uint16_t lvl)
   return 0;
 }
 
-static void reliq_json_scheme_r(const reliq_expr *expr, flexarr *fields, uchar *leaking, uchar *repeating, uint16_t lvl);
+static void reliq_scheme_r(const reliq_expr *expr, flexarr *fields, uchar *leaking, uchar *repeating, uint16_t lvl);
 
 static void
 scheme_search_block(flexarr *exprs, flexarr *fields, uchar *leaking, uchar *repeating, const uint16_t lvl) //exprs: reliq_expr, fields: struct reliq_scheme_field
@@ -116,13 +77,13 @@ scheme_search_block(flexarr *exprs, flexarr *fields, uchar *leaking, uchar *repe
   size_t index = fields->size;
 
   for (size_t i = 0; i < exprsl; i++)
-    reliq_json_scheme_r(exprsv+i,fields,leaking,repeating,lvl);
+    reliq_scheme_r(exprsv+i,fields,leaking,repeating,lvl);
   if (!*repeating)
     *repeating = scheme_is_repeating(fields,index+1,lvl+1);
 }
 
 static void
-reliq_json_scheme_r(const reliq_expr *expr, flexarr *fields, uchar *leaking, uchar *repeating, uint16_t lvl) //fields: struct reliq_scheme_field
+reliq_scheme_r(const reliq_expr *expr, flexarr *fields, uchar *leaking, uchar *repeating, uint16_t lvl) //fields: struct reliq_scheme_field
 {
   if (!expr)
     return;
@@ -132,7 +93,21 @@ reliq_json_scheme_r(const reliq_expr *expr, flexarr *fields, uchar *leaking, uch
       return;
     }
 
-    scheme_add_field(fields,expr,lvl);
+    uint8_t type = RELIQ_SCHEME_FIELD_TYPE_NORMAL;
+    if (expr->childfields > 1) {
+      type = RELIQ_SCHEME_FIELD_TYPE_OBJECT;
+      if (EXPR_TYPE_IS(expr->flags,EXPR_CHAIN)) {
+        const reliq_expr *lastlink = scheme_last_chainlink(expr);
+        if (lastlink && EXPR_TYPE_IS(lastlink->flags,EXPR_SINGULAR))
+          type = RELIQ_SCHEME_FIELD_TYPE_ARRAY;
+      }
+    }
+
+    *(struct reliq_scheme_field*)flexarr_inc(fields) = (struct reliq_scheme_field){
+      .field = &expr->outfield,
+      .lvl = lvl,
+      .type = type
+    };
     lvl++;
   } else if (expr->childfields == 0) {
     *leaking = 1;
@@ -147,15 +122,15 @@ reliq_json_scheme_r(const reliq_expr *expr, flexarr *fields, uchar *leaking, uch
   if (lastlink) {
     if (expr->childfields == 1)
       return;
-    reliq_json_scheme_r(lastlink,fields,leaking,repeating,lvl);
+    reliq_scheme_r(lastlink,fields,leaking,repeating,lvl);
     return;
   }
 
   scheme_search_block((flexarr*)expr->e,fields,leaking,repeating,lvl);
 }
 
-reliq_scheme
-reliq_json_scheme(const reliq_expr *expr)
+reliq_scheme_t
+reliq_scheme(const reliq_expr *expr)
 {
   flexarr fields_arr = flexarr_init(sizeof(struct reliq_scheme_field),SCHEME_INC);
   uchar leaking=0,repeating=0;
@@ -168,7 +143,7 @@ reliq_json_scheme(const reliq_expr *expr)
   size_t fieldsl;
   flexarr_conv(&fields_arr,(void**)&fields,&fieldsl);
 
-  return (reliq_scheme){
+  return (reliq_scheme_t){
     .fields = fields,
     .fieldsl = fieldsl,
     .leaking = (leaking > 0),
@@ -176,34 +151,9 @@ reliq_json_scheme(const reliq_expr *expr)
   };
 }
 
-static void reliq_scheme_field_types_free(struct reliq_scheme_field_types *types);
-
-static void
-reliq_scheme_field_type_free(reliq_scheme_field_type *type)
-{
-  if (!type->isarray)
-    return;
-  reliq_scheme_field_types_free(&type->type.types);
-}
-
-static void
-reliq_scheme_field_types_free(struct reliq_scheme_field_types *types)
-{
-  const size_t size = types->s;
-  reliq_scheme_field_type *type = types->b;
-  for (size_t i = 0; i < size; i++)
-    reliq_scheme_field_type_free(type+i);
-  if (size)
-    free(types->b);
-}
-
 void
-reliq_json_scheme_free(reliq_scheme *scheme)
+reliq_scheme_free(reliq_scheme_t *scheme)
 {
-  const size_t fieldsl = scheme->fieldsl;
-  struct reliq_scheme_field *fields = scheme->fields;
-  for (size_t i = 0; i < fieldsl; i++) {
-    reliq_scheme_field_types_free(&fields->types);
-  }
-  free(scheme->fields);
+  if (scheme->fields)
+    free(scheme->fields);
 }

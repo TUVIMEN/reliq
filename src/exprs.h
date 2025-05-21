@@ -49,7 +49,7 @@
 #include "output.h"
 
 struct reliq_expr {
-  reliq_output_field outfield;
+  reliq_field outfield;
   void *e; //either points to flexarr*(reliq_expr) or reliq_npattern
   reliq_format_func *nodef; //node format
   reliq_format_func *exprf; //expression format
