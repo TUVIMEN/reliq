@@ -269,7 +269,7 @@ will return
 }
 ```
 
-If field is presented with block with `|` with empty format that contains fields, field type will change to array and block will be executed for each tag
+If field has block with fields that has `|` while format is empty, field type will change to array and block will be executed for each tag
 
     reliq '
         .posts form #quickModForm; table l@[1]; tr l@[1] i@B>"id=\"subject_[0-9]*\"" i@v>".googlesyndication.com/"; {
