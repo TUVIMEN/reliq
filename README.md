@@ -2,23 +2,39 @@
 
 reliq is a html parsing and searching tool.
 
-## Building
-
-### Build
-
-    make install
-
-### Build library
-
-    make lib-install
-
-### Build linked
-
-    make linked
+## Installation
 
 ### AUR
 
     yay -S reliq
+
+### CLI tool
+
+    make install
+
+### Library only
+
+    make lib-install
+
+### Linked CLI tool and library
+
+    make linked
+
+## Build options
+
+```makefile
+D := 0 # debug build
+S := 0 # sanitizer build
+
+O_SMALL_STACK := 0 # change internal limits for a small stack
+O_PHPTAGS := 1 # support for <?php ?>
+O_AUTOCLOSING := 1 # html quirks, can be disabled if you close your tag correctly
+
+# only one should be set
+O_HTML_FULL := 0 # full html sizes, you probably don't know what you're doing
+O_HTML_SMALL := 1 # reasonable html sizes
+O_HTML_VERY_SMALL := 0 # this can be set if you don't put thousands of spaces between attributes
+```
 
 ## Usage
 
