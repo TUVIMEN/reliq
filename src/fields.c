@@ -572,6 +572,7 @@ X(N) {
   print_null(out);
   return 0;
 }
+X(e) {  return outfields_str_print(out,value,valuel); }
 #undef X
 
 #define X(x) static void predef_default_val_##x (SINK *out, UNUSED const char *value, UNUSED const size_t valuel)
@@ -584,6 +585,7 @@ X(d) { outfields_str_print(out,value,valuel); }
 X(U) { sink_write(out,"\"\"",2); }
 X(a) { sink_write(out,"[]",2); }
 X(N) { print_null(out); }
+X(e) { outfields_str_print(out,value,valuel); }
 #undef X
 
 static reliq_error *
@@ -706,10 +708,10 @@ X(i,valid_2_signed),
 X(u,valid_2_unsigned),
 X(b,valid_no_args),
 X(d,valid_any_str),
-//X(d,NULL), // NULL means any amount of arguments of any type
 X(U,valid_one_str_optional),
 X(a,valid_array),
 X(N,valid_no_args),
+X(e,NULL),
 #undef X
 };
 
