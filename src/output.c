@@ -28,10 +28,6 @@
 #include "format.h"
 #include "exprs.h"
 
-/*#define NCOLLECTOR_DEBUG*/
-/*#define FCOLLECTOR_DEBUG*/
-/*#define PRINT_CODE_DEBUG*/
-
 #define FCOLLECTOR_OUT_INC (1<<4)
 #define OUTFIELDS_INC (1<<4)
 

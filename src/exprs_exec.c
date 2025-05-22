@@ -33,8 +33,6 @@
 #include "exprs.h"
 #include "node_exec.h"
 
-/*#define SCHEME_DEBUG*/
-
 #define PASSED_INC (1<<8) //!! if increased causes huge allocation
 #define NCOLLECTOR_INC (1<<8)
 #define FCOLLECTOR_INC (1<<5)
@@ -499,6 +497,43 @@ scheme_print_tabs(const uint16_t lvl)
     fputs("  ",stderr);
 }
 
+void pretty_print_str(const char *src, const size_t size);
+
+static void
+scheme_print_type_arg(const struct reliq_field_type_arg *arg)
+{
+  if (arg->type == RELIQ_FIELD_TYPE_ARG_STR) {
+    pretty_print_str(arg->v.s.b,arg->v.s.s);
+  } else {
+    fputs("\033[31m",stderr);
+    if (arg->type == RELIQ_FIELD_TYPE_ARG_UNSIGNED) {
+      fprintf(stderr,"%lu",arg->v.u);
+    } else if (arg->type == RELIQ_FIELD_TYPE_ARG_SIGNED) {
+      fprintf(stderr,"%ld",arg->v.i);
+    } else if (arg->type == RELIQ_FIELD_TYPE_ARG_FLOATING) {
+      fprintf(stderr,"%g",arg->v.d);
+    } else
+      assert(0);
+    fputs("\033[0m",stderr);
+  }
+}
+
+static void
+scheme_print_type_args(const struct reliq_field_type_arg *args, const size_t argsl)
+{
+  if (!argsl)
+    return;
+
+  fputc('(',stderr);
+  for (size_t i = 0; i < argsl; i++) {
+    if (i != 0)
+      fputc(',',stderr);
+
+    scheme_print_type_arg(args+i);
+  }
+  fputc(')',stderr);
+}
+
 static void
 scheme_print_types(const reliq_field_type *types, const size_t typesl, uchar isarray)
 {
@@ -514,6 +549,7 @@ scheme_print_types(const reliq_field_type *types, const size_t typesl, uchar isa
         fputc('.',stderr);
       fprintf(stderr,"\033[32m%.*s\033[0m",(int)type->name.s,type->name.b);
     }
+    scheme_print_type_args(type->args,type->argsl);
 
     if (i != typesl-1)
       fputc('|',stderr);
@@ -573,6 +609,7 @@ scheme_print(const reliq_scheme_t *scheme)
     fprintf(stderr,"\033[31;1m------ REPEATING ------\033[0m\n");
 
   scheme_print_r(scheme,0,0);
+  fputc('\n',stderr);
 }
 
 #endif //SCHEME_DEBUG
@@ -596,7 +633,6 @@ reliq_exec_file(const reliq *rq, const reliq_compressed *input, const size_t inp
   reliq_scheme_free(&sch);
 
   #endif //SCHEME_DEBUG
-
 
   SINK out = sink_from_file(output);
   reliq_error *err = reliq_exec_r(rq,input,inputl,expr,&out,NULL,NULL);

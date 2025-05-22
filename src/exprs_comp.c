@@ -32,9 +32,6 @@
 #include "exprs.h"
 #include "reliq.h"
 
-/*#define EXPR_DEBUG*/
-/*#define TOKEN_DEBUG*/
-
 #define TOKEN_INC 1<<5
 #define TOKEN_TEXT_INC (1<<7)
 #define PATTERN_SIZE_INC (1<<5)
@@ -256,6 +253,23 @@ tosplchar(const char c)
   return r;
 }
 
+void
+pretty_print_str(const char *src, const size_t size)
+{
+  fputs("'\033[33m",stderr);
+  for (size_t i = 0; i < size; i++) {
+    char c = tosplchar(src[i]);
+    if (c != src[i]) {
+      fputs("\033[0m\033[35m",stderr);
+      fputc('\\',stderr);
+      fputc(c,stderr);
+      fputs("\033[0m\033[33m",stderr);
+    } else
+      fputc(c,stderr);
+  }
+  fputs("\033[0m'",stderr);
+}
+
 static void
 tokens_print(const token *tokens, const size_t tokensl)
 {
@@ -270,19 +284,9 @@ tokens_print(const token *tokens, const size_t tokensl)
       lvl--;
     for (size_t k = 0; k < lvl; k++)
       fwrite("  ",1,2,stderr);
-    fprintf(stderr,"\033[34m%-21s\033[0m | \033[32;1m%-4lu\033[0m | '\033[33m",name,tk->size);
-
-    for (size_t j = 0; j < tk->size; j++) {
-        char c = tosplchar(tk->start[j]);
-        if (c != tk->start[j]) {
-            fputs("\033[0m\033[35m",stderr);
-            fputc('\\',stderr);
-            fputc(c,stderr);
-            fputs("\033[0m\033[33m",stderr);
-        } else
-            fputc(c,stderr);
-    }
-    fputs("\033[0m'\n",stderr);
+    fprintf(stderr,"\033[34m%-21s\033[0m | \033[32;1m%-4lu\033[0m | ",name,tk->size);
+    pretty_print_str(tk->start,tk->size);
+    fputc('\n',stderr);
 
     if (tk->name == tBlockStart)
       lvl++;

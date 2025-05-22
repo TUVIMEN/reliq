@@ -32,6 +32,14 @@ typedef struct {
   uint8_t s;
 } cstr8;
 
+//#define SCHEME_DEBUG
+//#define EXPR_DEBUG
+//#define TOKEN_DEBUG
+//#define NCOLLECTOR_DEBUG
+//#define FCOLLECTOR_DEBUG
+//#define PRINT_CODE_DEBUG
+
+
 #include "reliq.h"
 
 #endif
