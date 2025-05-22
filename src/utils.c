@@ -248,20 +248,15 @@ splchar(const char c) //convert special characters e.g. '\n'
 }
 
 uint64_t
-get_fromdec(const char *src, const size_t srcl, size_t *traversed, const uchar maxlength)
+get_fromdec(const char *src, const size_t size, size_t *traversed)
 {
-  *traversed = 0;
-  if (!maxlength || !srcl)
-    return 0;
-  size_t i = 0;
-  uint64_t ret = 0;
-  const size_t size = MIN(srcl,maxlength);
-
-  for (; i < size && isdigit(src[i]); i++)
-    ret = (ret*10)+(src[i]-'0');
-
-  *traversed = i;
-  return ret;
+  size_t pos=0;
+  uint64_t r = 0;
+  while (pos < size && isdigit(src[pos]))
+    r = (r*10)+(src[pos++]-'0');
+  if (traversed)
+    *traversed = pos;
+  return r;
 }
 
 static int
@@ -277,25 +272,20 @@ hextodec(int n)
 }
 
 uint64_t
-get_fromhex(const char *src, const size_t srcl, size_t *traversed, const uchar maxlength)
+get_fromhex(const char *src, const size_t size, size_t *traversed)
 {
-  *traversed = 0;
-  if (!maxlength || !srcl)
-    return 0;
-  size_t i = 0;
-  uint64_t ret = 0;
-  const size_t size = MIN(srcl,maxlength);
-
-  for (; i < size; i++) {
-    int val = hextodec(src[i]);
+  size_t pos=0;
+  uint64_t r = 0;
+  while (pos < size) {
+    int val = hextodec(src[pos]);
     if (val == -1)
-      goto END;
-    ret = (ret<<4)|val;
+      break;
+    r = (r<<4)|val;
+    pos++;
   }
-
-  END: ;
-  *traversed = i;
-  return ret;
+  if (traversed)
+    *traversed = pos;
+  return r;
 }
 
 static uint64_t
@@ -304,7 +294,7 @@ splchar2_fromhex(const char *src, const size_t srcl, size_t *traversed, const uc
     *traversed = 1;
     return *src;
   }
-  uint64_t ret = get_fromhex(src+1,srcl-1,traversed,maxlength);
+  uint64_t ret = get_fromhex(src+1,MIN(maxlength,srcl-1),traversed);
   if (*traversed == 0)
     return ret = *src;
   (*traversed)++;
@@ -491,22 +481,10 @@ delchar(char *src, const size_t pos, size_t *size)
 }
 
 uint64_t
-get_dec(const char *src, const size_t size, size_t *traversed)
-{
-  size_t pos=0;
-  uint64_t r = 0;
-  while (pos < size && isdigit(src[pos]))
-    r = (r*10)+(src[pos++]-48);
-  if (traversed)
-    *traversed = pos;
-  return r;
-}
-
-uint64_t
 number_handle(const char *src, size_t *pos, const size_t size)
 {
   size_t s;
-  uint64_t ret = get_dec(src+*pos,size-*pos,&s);
+  uint64_t ret = get_fromdec(src+*pos,size-*pos,&s);
   if (s == 0)
     return -1;
   *pos += s;

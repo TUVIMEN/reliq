@@ -52,9 +52,8 @@ void print_int(int64_t num, SINK *out);
 void uint_to_str(char *dest, size_t *destl, const size_t max_destl, uint64_t num);
 
 //convert str to int
-uint64_t get_dec(const char *src, const size_t size, size_t *traversed);
-uint64_t get_fromdec(const char *src, const size_t srcl, size_t *traversed, const unsigned char maxlength);
-uint64_t get_fromhex(const char *src, const size_t srcl, size_t *traversed, const unsigned char maxlength);
+uint64_t get_fromdec(const char *src, const size_t size, size_t *traversed);
+uint64_t get_fromhex(const char *src, const size_t size, size_t *traversed);
 uint64_t number_handle(const char *src, size_t *pos, const size_t size);
 
 double get_point_of_double(const char *src, size_t *pos, const size_t size);

@@ -2225,10 +2225,10 @@ handle_number(const char *src, const size_t srcl, size_t *traversed, char *resul
   uint64_t data = 0;
   size_t trav;
   if (isdigit(src[i])) {
-    data = get_fromdec(src+i,srcl-i,&trav,DECODE_ENTITIES_MAX_DIGITS);
+    data = get_fromdec(src+i,MIN(DECODE_ENTITIES_MAX_DIGITS,srcl-i),&trav);
   } else {
     i++;
-    data = get_fromhex(src+i,srcl-i,&trav,DECODE_ENTITIES_MAX_XDIGITS);
+    data = get_fromhex(src+i,MIN(DECODE_ENTITIES_MAX_XDIGITS,srcl-i),&trav);
   }
   i += trav;
   uchar ended = (i < srcl && src[i] == ';');

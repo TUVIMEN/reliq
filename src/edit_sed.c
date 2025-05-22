@@ -58,7 +58,7 @@ static void
 sed_address_comp_number(const char *src, size_t *pos, const size_t size, uint32_t *result)
 {
   size_t s;
-  *result = get_dec(src+*pos,size-*pos,&s);
+  *result = get_fromdec(src+*pos,size-*pos,&s);
   *pos += s;
 }
 
