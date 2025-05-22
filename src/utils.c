@@ -41,7 +41,7 @@ strnrev(char *v, const size_t size)
 }
 
 void
-uint_to_str(char *dest, size_t *destl, const size_t max_destl, unsigned long num)
+uint_to_str(char *dest, size_t *destl, const size_t max_destl, uint64_t num)
 {
   *destl = 0;
   if (!max_destl)
@@ -143,7 +143,7 @@ memcasecmp(const void *v1, const void *v2, const size_t n)
 }
 
 void
-print_uint(unsigned long num, SINK *outfile)
+print_uint(uint64_t num, SINK *outfile)
 {
   char str[UINT_TO_STR_MAX];
   size_t len = 0;
@@ -153,7 +153,7 @@ print_uint(unsigned long num, SINK *outfile)
 }
 
 void
-print_int(long num, SINK *outfile)
+print_int(int64_t num, SINK *outfile)
 {
   if (num < 0) {
     sink_put(outfile,'-');
@@ -491,26 +491,91 @@ delchar(char *src, const size_t pos, size_t *size)
   return delstr(src,pos,size,1);
 }
 
-unsigned int
+uint64_t
 get_dec(const char *src, const size_t size, size_t *traversed)
 {
-    size_t pos=0;
-    unsigned int r = 0;
-    while (pos < size && isdigit(src[pos]))
-      r = (r*10)+(src[pos++]-48);
-    *traversed = pos;
-    return r;
+  size_t pos=0;
+  uint64_t r = 0;
+  while (pos < size && isdigit(src[pos]))
+    r = (r*10)+(src[pos++]-48);
+  *traversed = pos;
+  return r;
 }
 
-unsigned int
+uint64_t
 number_handle(const char *src, size_t *pos, const size_t size)
 {
   size_t s;
-  int ret = get_dec(src+*pos,size-*pos,&s);
+  uint64_t ret = get_dec(src+*pos,size-*pos,&s);
   if (s == 0)
     return -1;
   *pos += s;
   return ret;
+}
+
+static double
+get_point_of_double(const char *src, size_t *pos, const size_t size)
+{
+  size_t i = *pos;
+
+  double r = 0;
+  double mult = 0.1;
+
+  while (i < size && isdigit(src[i])) {
+    double d = src[i]-'0';
+    r += d*mult;
+    mult /= 10;
+
+    i++;
+  }
+
+  *pos = i;
+  return r;
+}
+
+char
+universal_number(const char *src, size_t *pos, const size_t size, void *result)
+{
+  char r = 0;
+  size_t i = *pos;
+  if (i >= size)
+    return r;
+
+  uint64_t t_unsigned = 0;
+  int64_t t_signed = 0;
+  double t_floating = 0;
+  uchar issigned = 0;
+
+  if (src[i] == '-') {
+    issigned = 1;
+    i++;
+  }
+
+  t_unsigned = number_handle(src,&i,size);
+  if (t_unsigned == (size_t)-1)
+    return r;
+
+  if (i+1 < size && src[i] == '.' && isdigit(src[i+1])) {
+    i += 2;
+
+    t_floating = get_point_of_double(src,&i,size);
+    t_floating += t_unsigned;
+    if (issigned)
+      t_floating *= -1;
+    *(double*)result = t_floating;
+    r = 'd';
+  } else if (issigned) {
+    t_signed = t_unsigned;
+    t_signed *= -1;
+    *(int64_t*)result = t_signed;
+    r = 's';
+  } else {
+    *(uint64_t*)result = t_unsigned;
+    r = 'u';
+  }
+
+  *pos = i;
+  return r;
 }
 
 reliq_error *

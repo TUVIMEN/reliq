@@ -63,7 +63,66 @@ outfield_name_get(const char *src, size_t *pos, const size_t s, char const **nam
 }
 
 static reliq_error *
-outfield_type_get_args(const char *src, size_t *pos, const size_t size, reliq_str **args, size_t *argsl)
+err_unexpected_char(char c, size_t pos)
+{
+  return script_err("output field: type argument list: unexpected character 0x%02x at %lu",c,pos);
+}
+
+static reliq_error *
+outfield_type_get_arg(const char *src, size_t *pos, const size_t size, SINK *buf, struct reliq_field_type_arg *arg)
+{
+  reliq_error *err = NULL;
+  size_t i = *pos;
+
+  if (src[i] == '"' || src[i] == '\'') {
+    size_t qstart = i+1;
+    if ((err = skip_quotes(src,&i,size)))
+      goto END;
+    size_t qend = i-1;
+
+    sink_size(buf,0);
+    splchars_conv_sink(src+qstart,qend-qstart,buf);
+    sink_flush(buf);
+
+    *arg = (struct reliq_field_type_arg){
+      .type = RELIQ_FIELD_TYPE_ARG_STR,
+      .v.s = (reliq_str){
+        .b = memdup(*buf->v.sf.ptr,*buf->v.sf.ptrl),
+        .s = *buf->v.sf.ptrl
+      }
+    };
+  } else if (isdigit(src[i]) || src[i] == '-') {
+    char r = universal_number(src,&i,size,&arg->v);
+    if (r == 0)
+      goto_script_seterr(END,"output field: type argument list: incorrect number");
+
+    if (r == 'u') {
+      arg->type = RELIQ_FIELD_TYPE_ARG_UNSIGNED;
+    } else if (r == 's') {
+      arg->type = RELIQ_FIELD_TYPE_ARG_SIGNED;
+    } else if (r == 'd') {
+      arg->type = RELIQ_FIELD_TYPE_ARG_FLOATING;
+    } else
+      assert(0);
+  } else
+    err = err_unexpected_char(src[i],i);
+
+  END: ;
+  *pos = i;
+  return err;
+}
+
+static void
+reliq_field_type_args_free(struct reliq_field_type_arg *args, const size_t argsl)
+{
+  for (size_t i = 0; i < argsl; i++) {
+    if (args[i].type == RELIQ_FIELD_TYPE_ARG_STR)
+      free(args[i].v.s.b);
+  }
+}
+
+static reliq_error *
+outfield_type_get_args(const char *src, size_t *pos, const size_t size, struct reliq_field_type_arg **args, size_t *argsl)
 {
   if (*pos >= size)
     return NULL;
@@ -72,7 +131,7 @@ outfield_type_get_args(const char *src, size_t *pos, const size_t size, reliq_st
   size_t i = *pos;
   *args = NULL;
   *argsl = 0;
-  flexarr a = flexarr_init(sizeof(reliq_str),OUTFIELD_ARGS_INC);
+  flexarr a = flexarr_init(sizeof(struct reliq_field_type_arg),OUTFIELD_ARGS_INC);
   char *arg;
   size_t argl;
   SINK buf = sink_open(&arg,&argl);
@@ -85,23 +144,11 @@ outfield_type_get_args(const char *src, size_t *pos, const size_t size, reliq_st
     if (src[i] == ')')
       goto_script_seterr(END,"output field: type: expected an argument in '(' bracket");
 
-    if (src[i] != '"' && src[i] != '\'') {
-      UNEXPECTED_CHAR: ;
-      goto_script_seterr(END,"output field: type argument list: unexpected character 0x%02x at %lu",src[i],i);
-    }
-
-    size_t qstart = i+1;
-    if ((err = skip_quotes(src,&i,size)))
+    struct reliq_field_type_arg s_arg;
+    if ((err = outfield_type_get_arg(src,&i,size,&buf,&s_arg)))
       goto END;
-    size_t qend = i-1;
 
-    sink_size(&buf,0);
-    splchars_conv_sink(src+qstart,qend-qstart,&buf);
-    sink_flush(&buf);
-    *(reliq_str*)flexarr_inc(&a) = (reliq_str){
-      .b = memdup(arg,argl),
-      .s = argl
-    };
+    *(struct reliq_field_type_arg*)flexarr_inc(&a) = s_arg;
 
     while_is(isspace,src,i,size);
     if (i >= size)
@@ -112,8 +159,10 @@ outfield_type_get_args(const char *src, size_t *pos, const size_t size, reliq_st
       goto END;
     }
 
-    if (src[i] != ',')
-      goto UNEXPECTED_CHAR;
+    if (src[i] != ',') {
+      err = err_unexpected_char(src[i],i);
+      goto END;
+    }
     i++;
   }
 
@@ -122,10 +171,7 @@ outfield_type_get_args(const char *src, size_t *pos, const size_t size, reliq_st
 
   END: ;
   if (err) {
-    const size_t a_size = a.size;
-    reliq_str *av = a.v;
-    for (size_t i = 0; i < a_size; i++)
-      free(av[i].b);
+    reliq_field_type_args_free(a.v,a.size);
     flexarr_free(&a);
   } else
     flexarr_conv(&a,(void**)args,argsl);
@@ -323,7 +369,7 @@ outfields_array_print(const reliq *rq, SINK *out, const reliq_field_type *type, 
   char const *start=value,*end,*last=value+valuel;
   char delim = '\n';
   if (type->argsl)
-    delim = *type->args[0].b;
+    delim = *type->args[0].v.s.b;
 
   while (start < last) {
     end = memchr(start,delim,last-start);
@@ -343,17 +389,17 @@ outfields_array_print(const reliq *rq, SINK *out, const reliq_field_type *type, 
 }
 
 static size_t
-outfields_date_maxsize(const reliq_str *args, const size_t argsl)
+outfields_date_maxsize(const struct reliq_field_type_arg *args, const size_t argsl)
 {
   size_t max_sz = 0;
   for (size_t i = 0; i < argsl; i++)
-    if (max_sz < args[i].s)
-      max_sz = args[i].s;
+    if (max_sz < args[i].v.s.s)
+      max_sz = args[i].v.s.s;
   return max_sz;
 }
 
 static uchar
-outfields_date_match(const reliq_str *args, const size_t argsl, char *matched, struct tm *date)
+outfields_date_match(const struct reliq_field_type_arg *args, const size_t argsl, char *matched, struct tm *date)
 {
   size_t max_sz = outfields_date_maxsize(args,argsl);
   uchar found = 0;
@@ -363,8 +409,8 @@ outfields_date_match(const reliq_str *args, const size_t argsl, char *matched, s
 
   *date = (struct tm){0};
   for (size_t i = 0; i < argsl; i++) {
-    memcpy(format,args[i].b,args[i].s);
-    format[args[i].s] = '\0';
+    memcpy(format,args[i].v.s.b,args[i].v.s.s);
+    format[args[i].v.s.s] = '\0';
 
     char *r = strptime(matched,format,date);
     if (r && *r == '\0') {
@@ -403,7 +449,7 @@ outfields_url_print(const reliq *rq, SINK *out, const reliq_field_type *type, co
   uchar uses_arg = type->argsl > 0;
 
   if (uses_arg) {
-    reliq_str *s = &type->args[0];
+    reliq_str *s = &type->args[0].v.s;
     reliq_url_parse(s->b,s->s,NULL,0,false,&ref_buf);
     ref = &ref_buf;
   }
@@ -457,21 +503,34 @@ valid_no_args(const reliq_field_type *type)
 }
 
 static reliq_error *
-valid_one_optional(const reliq_field_type *type)
+valid_one_str_optional(const reliq_field_type *type)
 {
   if (type->argsl > 1)
     return script_err("output field: type %.*s takes at most 1 argument yet %lu were specified",(int)type->name.s,type->name.b,type->argsl);
+  if (type->argsl == 1 && type->args[0].type != RELIQ_FIELD_TYPE_ARG_STR)
+    return script_err("output field: type %.*s accepts only a string argument",(int)type->name.s,type->name.b);
+  return NULL;
+}
+
+static reliq_error *
+valid_any_str(const reliq_field_type *type)
+{
+  const size_t argsl = type->argsl;
+  const struct reliq_field_type_arg *args = type->args;
+  for (size_t i = 0; i < argsl; i++)
+    if (args[i].type != RELIQ_FIELD_TYPE_ARG_STR)
+      return script_err("output field: type %.*s accepts only string arguments",(int)type->name.s,type->name.b);
   return NULL;
 }
 
 static reliq_error *
 valid_array(const reliq_field_type *type)
 {
-  reliq_error *err = valid_one_optional(type);
+  reliq_error *err = valid_one_str_optional(type);
   if (err)
     return err;
 
-  if (type->args[0].s > 1)
+  if (type->args[0].v.s.s > 1)
     return script_err("output field: type %.*s: expected a single character argument",(int)type->name.s,type->name.b);
   return NULL;
 }
@@ -493,8 +552,9 @@ X(n,valid_no_args),
 X(i,valid_no_args),
 X(u,valid_no_args),
 X(b,valid_no_args),
-X(d,NULL),
-X(U,valid_one_optional),
+X(d,valid_any_str),
+//X(d,NULL), // NULL means any amount of arguments of any type
+X(U,valid_one_str_optional),
 X(a,valid_array),
 X(N,valid_no_args),
 #undef X
@@ -507,6 +567,33 @@ find_predefined(const char *name, const size_t namel)
     if (memeq(name,predefined_types[i].name.b,namel,predefined_types[i].name.s))
       return predefined_types+i;
   return NULL;
+}
+
+static void reliq_field_types_free(reliq_field_type *types, const size_t typesl);
+
+static void
+reliq_field_type_free(reliq_field_type *type)
+{
+  if (type->name.b)
+    free(type->name.b);
+
+  if (type->args) {
+    reliq_field_type_args_free(type->args,type->argsl);
+    free(type->args);
+  }
+
+  reliq_field_types_free(type->subtypes,type->subtypesl);
+}
+
+static void
+reliq_field_types_free(reliq_field_type *types, const size_t typesl)
+{
+  if (!types)
+    return;
+
+  for (size_t i = 0; i < typesl; i++)
+    reliq_field_type_free(types+i);
+  free(types);
 }
 
 static reliq_error *outfield_type_get(const char *src, size_t *pos, const size_t size, reliq_field_type **types, size_t *typesl, const uchar isarray);
@@ -544,6 +631,8 @@ outfield_type_get_r(const char *src, size_t *pos, const size_t size, reliq_field
       goto END;
 
   END: ;
+  if (err)
+    reliq_field_type_free(type);
   *pos = i;
   return err;
 }
@@ -723,31 +812,6 @@ outfields_print(const reliq *rq, flexarr *fields, SINK *out) //fields: struct ou
   outfields_print_pre(rq,(struct outfield**)fields->v,&pos,fields->size,0,0,out);
 }
 
-static void
-reliq_field_type_free(reliq_field_type *types, const size_t typesl)
-{
-  if (!types)
-    return;
-
-  for (size_t i = 0; i < typesl; i++) {
-    reliq_field_type *type = types+i;
-
-    if (type->name.b)
-      free(type->name.b);
-
-    if (type->args) {
-      const size_t argsl = type->argsl;
-      reliq_str *args = type->args;
-      for (size_t j = 0; j < argsl; j++)
-        free(args[j].b);
-      free(args);
-    }
-
-    reliq_field_type_free(type->subtypes,type->subtypesl);
-  }
-  free(types);
-}
-
 void
 reliq_field_free(reliq_field *outfield)
 {
@@ -756,7 +820,7 @@ reliq_field_free(reliq_field *outfield)
   if (outfield->annotation.b)
     free(outfield->annotation.b);
 
-  reliq_field_type_free(outfield->types,outfield->typesl);
+  reliq_field_types_free(outfield->types,outfield->typesl);
 }
 
 void

@@ -228,10 +228,26 @@ reliq_error *reliq_exec(const reliq *rq, const reliq_compressed *input, const si
 
 void reliq_efree(reliq_expr *expr);
 
+
+#define RELIQ_FIELD_TYPE_ARG_STR 0
+#define RELIQ_FIELD_TYPE_ARG_UNSIGNED 1
+#define RELIQ_FIELD_TYPE_ARG_SIGNED 2
+#define RELIQ_FIELD_TYPE_ARG_FLOATING 3
+
+struct reliq_field_type_arg {
+  union {
+    reliq_str s;
+    uint64_t u;
+    int64_t i;
+    double d;
+  } v;
+  uint8_t type; //RELIQ_FIELD_TYPE_ARG_
+};
+
 typedef struct reliq_field_type reliq_field_type;
 struct reliq_field_type {
   reliq_str name;
-  reliq_str *args;
+  struct reliq_field_type_arg *args;
   size_t argsl;
   reliq_field_type *subtypes;
   size_t subtypesl;

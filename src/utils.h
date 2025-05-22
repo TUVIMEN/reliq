@@ -47,15 +47,18 @@
 #define goto_script_seterr_p(x,...)  goto_seterr_p(x,RELIQ_ERROR_SCRIPT,__VA_ARGS__)
 
 //convert int to str
-void print_uint(unsigned long num, SINK *outfile);
-void print_int(long num, SINK *outfile);
-void uint_to_str(char *dest, size_t *destl, const size_t max_destl, unsigned long num);
+void print_uint(uint64_t num, SINK *outfile);
+void print_int(int64_t num, SINK *outfile);
+void uint_to_str(char *dest, size_t *destl, const size_t max_destl, uint64_t num);
 
 //convert str to int
-unsigned int get_dec(const char *src, const size_t size, size_t *traversed);
+uint64_t get_dec(const char *src, const size_t size, size_t *traversed);
 uint64_t get_fromdec(const char *src, const size_t srcl, size_t *traversed, const unsigned char maxlength);
 uint64_t get_fromhex(const char *src, const size_t srcl, size_t *traversed, const unsigned char maxlength);
-unsigned int number_handle(const char *src, size_t *pos, const size_t size);
+uint64_t number_handle(const char *src, size_t *pos, const size_t size);
+
+//this handles uint64_t, int64_t and double types, and returns 'u', 's', 'd' respectively, 0 is returned for error
+char universal_number(const char *src, size_t *pos, const size_t size, void *result);
 
 //str functions
 void strnrev(char *v, const size_t size); //was previously named strrev but mingw has it defined for some reason
