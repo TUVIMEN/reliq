@@ -143,25 +143,24 @@ memcasecmp(const void *v1, const void *v2, const size_t n)
 }
 
 void
-print_uint(uint64_t num, SINK *outfile)
+print_uint(uint64_t num, SINK *out)
 {
   char str[UINT_TO_STR_MAX];
   size_t len = 0;
   uint_to_str(str,&len,UINT_TO_STR_MAX,num);
   if (len)
-    sink_write(outfile,str,len);
+    sink_write(out,str,len);
 }
 
 void
-print_int(int64_t num, SINK *outfile)
+print_int(int64_t num, SINK *out)
 {
   if (num < 0) {
-    sink_put(outfile,'-');
+    sink_put(out,'-');
     num *= -1;
   }
-  print_uint(num,outfile);
+  print_uint(num,out);
 }
-
 
 #if defined(__APPLE__)
 void *
@@ -498,7 +497,8 @@ get_dec(const char *src, const size_t size, size_t *traversed)
   uint64_t r = 0;
   while (pos < size && isdigit(src[pos]))
     r = (r*10)+(src[pos++]-48);
-  *traversed = pos;
+  if (traversed)
+    *traversed = pos;
   return r;
 }
 
@@ -513,7 +513,7 @@ number_handle(const char *src, size_t *pos, const size_t size)
   return ret;
 }
 
-static double
+double
 get_point_of_double(const char *src, size_t *pos, const size_t size)
 {
   size_t i = *pos;
@@ -541,9 +541,9 @@ universal_number(const char *src, size_t *pos, const size_t size, void *result)
   if (i >= size)
     return r;
 
-  uint64_t t_unsigned = 0;
-  int64_t t_signed = 0;
-  double t_floating = 0;
+  uint64_t t_unsigned;
+  int64_t t_signed;
+  double t_floating;
   uchar issigned = 0;
 
   if (src[i] == '-') {
@@ -556,7 +556,7 @@ universal_number(const char *src, size_t *pos, const size_t size, void *result)
     return r;
 
   if (i+1 < size && src[i] == '.' && isdigit(src[i+1])) {
-    i += 2;
+    i++;
 
     t_floating = get_point_of_double(src,&i,size);
     t_floating += t_unsigned;

@@ -46,9 +46,9 @@
 #define goto_script_seterr(x,...) goto_seterr(x,RELIQ_ERROR_SCRIPT,__VA_ARGS__)
 #define goto_script_seterr_p(x,...)  goto_seterr_p(x,RELIQ_ERROR_SCRIPT,__VA_ARGS__)
 
-//convert int to str
-void print_uint(uint64_t num, SINK *outfile);
-void print_int(int64_t num, SINK *outfile);
+void print_uint(uint64_t num, SINK *out);
+void print_int(int64_t num, SINK *out);
+
 void uint_to_str(char *dest, size_t *destl, const size_t max_destl, uint64_t num);
 
 //convert str to int
@@ -57,6 +57,7 @@ uint64_t get_fromdec(const char *src, const size_t srcl, size_t *traversed, cons
 uint64_t get_fromhex(const char *src, const size_t srcl, size_t *traversed, const unsigned char maxlength);
 uint64_t number_handle(const char *src, size_t *pos, const size_t size);
 
+double get_point_of_double(const char *src, size_t *pos, const size_t size);
 //this handles uint64_t, int64_t and double types, and returns 'u', 's', 'd' respectively, 0 is returned for error
 char universal_number(const char *src, size_t *pos, const size_t size, void *result);
 

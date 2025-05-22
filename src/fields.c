@@ -189,18 +189,19 @@ print_null(SINK *out)
 }
 
 #define OUTFIELDS_NUM_FLOAT 1
-#define OUTFIELDS_NUM_INT 2
+#define OUTFIELDS_NUM_SIGNED 2
 #define OUTFIELDS_NUM_UNSIGNED 4
 
 static uchar
-outfields_num_print(SINK *out, const char *value, const size_t valuel, const uint8_t flags)
+outfields_num_get(const char *value, const size_t valuel, const uint8_t flags, uchar *hasminus, reliq_cstr *digits, reliq_cstr *points)
 {
   if (!valuel)
     return 1;
 
   char const *start = value;
   size_t end = 0;
-  uchar isminus=0,haspoint=0,pointcount=0;
+  *hasminus = 0;
+  uchar haspoint=0;
 
   #define NUM_PARSE_FIRST_ZERO \
     if ((size_t)(start-value) < valuel && *start == '0') { \
@@ -212,7 +213,7 @@ outfields_num_print(SINK *out, const char *value, const size_t valuel, const uin
       goto GET_NUMBER; \
     }
 
-  if (flags&(OUTFIELDS_NUM_FLOAT|OUTFIELDS_NUM_INT)) {
+  if (flags&(OUTFIELDS_NUM_FLOAT|OUTFIELDS_NUM_SIGNED)) {
     NOT_A_NUMBER: ;
     while ((size_t)(start-value) < valuel && ((*start < '1' || *start > '9') && *start != '-')) {
       NUM_PARSE_FIRST_ZERO;
@@ -224,7 +225,7 @@ outfields_num_print(SINK *out, const char *value, const size_t valuel, const uin
         start++;
       if ((size_t)(start-value) < valuel && (*start < '1' || *start > '9'))
         goto NOT_A_NUMBER;
-      isminus = 1;
+      *hasminus = 1;
     }
   } else
     while ((size_t)(start-value) < valuel && (*start < '1' || *start > '9')) {
@@ -241,24 +242,108 @@ outfields_num_print(SINK *out, const char *value, const size_t valuel, const uin
 
   if (end) {
     if (flags&OUTFIELDS_NUM_FLOAT && (size_t)(start-value)+end+1 < valuel
-      && !pointcount && (start[end] == ',' || start[end] == '.') && isdigit(start[end+1]))
+      && !digits->b && (start[end] == ',' || start[end] == '.') && isdigit(start[end+1]))
       haspoint = 1;
-    if (isminus && end && (haspoint || *start != '0'))
-      sink_put(out,'-');
-    sink_write(out,start,end);
-  } else if (!pointcount)
-    sink_put(out,'0');
+
+    reliq_cstr t = { .b = start, .s = end };
+    if (digits->b) {
+      *points = t;
+    } else
+      *digits = t;
+  }
 
   start += end;
   end = 0;
 
   if (haspoint) {
-    pointcount++;
     haspoint = 0;
     start++;
-    isminus = 0;
-    sink_put(out,'.');
     goto GET_NUMBER;
+  }
+
+  return 0;
+}
+
+static char
+outfields_num_matches(const uint8_t flags, const struct reliq_field_type_arg *args, const size_t argsl, uchar hasminus, reliq_cstr *digits, reliq_cstr *points)
+{
+  if (!argsl)
+    return 0;
+
+  size_t pos = 0;
+  uint64_t u = number_handle(digits->b,&pos,digits->s);
+
+  #define set_signed(x) \
+    if (args[x].type == RELIQ_FIELD_TYPE_ARG_UNSIGNED) { \
+      c = args[x].v.u; \
+    } else \
+      c = args[x].v.i
+
+  #define set_floating(x) \
+    if (args[x].type == RELIQ_FIELD_TYPE_ARG_FLOATING) { \
+      c = args[x].v.d; \
+    } else set_signed(x)
+
+  if (flags == OUTFIELDS_NUM_UNSIGNED) {
+    if (u < args[0].v.u)
+      return 1;
+    if (argsl > 1 && u > args[1].v.u)
+      return 1;
+  } else if (flags == OUTFIELDS_NUM_SIGNED) {
+    int64_t s = u;
+    if (hasminus)
+      s *= -1;
+
+    int64_t c;
+    set_signed(0);
+    if (s < c)
+      return 1;
+
+    if (argsl > 1) {
+      set_signed(1);
+      if (s > c)
+        return 1;
+    }
+  } else {
+    double d = u;
+    pos = 0;
+    d += get_point_of_double(points->b,&pos,points->s);
+    if (hasminus)
+      d *= -1;
+
+    double c;
+    set_floating(0);
+    if (d < c)
+      return 1;
+
+    if (argsl > 1) {
+    set_floating(1);
+      if (d > c)
+        return 1;
+    }
+  }
+
+  return 0;
+}
+
+static uchar
+outfields_num_print(SINK *out, const reliq_field_type *type, const char *value, const size_t valuel, const uint8_t flags)
+{
+  uchar hasminus = 0;
+  reliq_cstr digits={0},points={0};
+  if (outfields_num_get(value,valuel,flags,&hasminus,&digits,&points))
+    return 1;
+
+  if (outfields_num_matches(flags,type->args,type->argsl,hasminus,&digits,&points))
+    return 1;
+
+  if (hasminus)
+    sink_put(out,'-');
+  if (digits.b)
+    sink_write(out,digits.b,digits.s);
+  if (points.b) {
+    sink_put(out,'.');
+    sink_write(out,points.b,points.s);
   }
 
   return 0;
@@ -468,10 +553,17 @@ outfields_url_print(const reliq *rq, SINK *out, const reliq_field_type *type, co
 }
 
 #define X(x) static uchar predef_repr_##x (UNUSED const reliq *rq, SINK *out, UNUSED const reliq_field_type *type, UNUSED const char *value, UNUSED const size_t valuel)
-X(s) { return outfields_str_print(out,value,valuel); }
-X(n) { return outfields_num_print(out,value,valuel,OUTFIELDS_NUM_FLOAT); }
-X(i) { return outfields_num_print(out,value,valuel,OUTFIELDS_NUM_INT); }
-X(u) { return outfields_num_print(out,value,valuel,OUTFIELDS_NUM_UNSIGNED); }
+X(s)
+{
+  if (type->argsl > 0 && valuel < type->args[0].v.u)
+    return 1;
+  if (type->argsl > 1 && valuel > type->args[1].v.u)
+    return 1;
+  return outfields_str_print(out,value,valuel);
+}
+X(n) { return outfields_num_print(out,type,value,valuel,OUTFIELDS_NUM_FLOAT); }
+X(i) { return outfields_num_print(out,type,value,valuel,OUTFIELDS_NUM_SIGNED); }
+X(u) { return outfields_num_print(out,type,value,valuel,OUTFIELDS_NUM_UNSIGNED); }
 X(b) { return outfields_bool_print(out,value,valuel); }
 X(d) { return outfields_date_print(out,type,value,valuel); }
 X(U) { return outfields_url_print(rq,out,type,value,valuel); }
@@ -495,10 +587,71 @@ X(N) { print_null(out); }
 #undef X
 
 static reliq_error *
+err_too_many_arguments(const size_t amount, const char *type, const size_t typel, const size_t argsl)
+{
+  if (amount == 0)
+    return script_err("output field: type %.*s doesn't take any arguments yet %lu were specified",(int)typel,type,argsl);
+  if (amount == 1)
+    return script_err("output field: type %.*s takes at most 1 argument yet %lu were specified",(int)typel,type,argsl);
+  return script_err("output field: type %.*s takes at most %lu arguments yet %lu were specified",(int)typel,type,amount,argsl);
+}
+
+static reliq_error *
 valid_no_args(const reliq_field_type *type)
 {
   if (type->argsl > 0)
-    return script_err("output field: type %.*s doesn't take any arguments yet %lu were specified",(int)type->name.s,type->name.b,type->argsl);
+    return err_too_many_arguments(0,type->name.b,type->name.s,type->argsl);
+  return NULL;
+}
+
+static reliq_error *
+valid_2_unsigned(const reliq_field_type *type)
+{
+  if (type->argsl > 2)
+    return err_too_many_arguments(2,type->name.b,type->name.s,type->argsl);
+
+  for (size_t i = 0; i < 2; i++) {
+    if (i >= type->argsl)
+      break;
+    if (type->args[i].type != RELIQ_FIELD_TYPE_ARG_UNSIGNED)
+      return script_err("output field: type %.*s accepts only an unsigned integer argument",(int)type->name.s,type->name.b);
+  }
+
+  return NULL;
+}
+
+static reliq_error *
+valid_2_signed(const reliq_field_type *type)
+{
+  if (type->argsl > 2)
+    return err_too_many_arguments(2,type->name.b,type->name.s,type->argsl);
+
+  for (size_t i = 0; i < 2; i++) {
+    if (i >= type->argsl)
+      break;
+    if (type->args[i].type != RELIQ_FIELD_TYPE_ARG_UNSIGNED
+        && type->args[i].type != RELIQ_FIELD_TYPE_ARG_SIGNED)
+      return script_err("output field: type %.*s accepts only an integer argument",(int)type->name.s,type->name.b);
+  }
+
+  return NULL;
+}
+
+static reliq_error *
+valid_2_float(const reliq_field_type *type)
+{
+  if (type->argsl > 2)
+    return err_too_many_arguments(2,type->name.b,type->name.s,type->argsl);
+
+  for (size_t i = 0; i < 2; i++) {
+    if (i >= type->argsl)
+      break;
+    if (type->args[i].type != RELIQ_FIELD_TYPE_ARG_UNSIGNED
+        && type->args[i].type != RELIQ_FIELD_TYPE_ARG_SIGNED
+        && type->args[i].type != RELIQ_FIELD_TYPE_ARG_FLOATING)
+      return script_err("output field: type %.*s accepts only a float argument",(int)type->name.s,type->name.b);
+  }
+
   return NULL;
 }
 
@@ -506,7 +659,7 @@ static reliq_error *
 valid_one_str_optional(const reliq_field_type *type)
 {
   if (type->argsl > 1)
-    return script_err("output field: type %.*s takes at most 1 argument yet %lu were specified",(int)type->name.s,type->name.b,type->argsl);
+    return err_too_many_arguments(1,type->name.b,type->name.s,type->argsl);
   if (type->argsl == 1 && type->args[0].type != RELIQ_FIELD_TYPE_ARG_STR)
     return script_err("output field: type %.*s accepts only a string argument",(int)type->name.s,type->name.b);
   return NULL;
@@ -547,10 +700,10 @@ struct predefined {
   .repr = predef_repr_##x, \
   .default_val = predef_default_val_##x \
 }
-X(s,valid_no_args),
-X(n,valid_no_args),
-X(i,valid_no_args),
-X(u,valid_no_args),
+X(s,valid_2_unsigned),
+X(n,valid_2_float),
+X(i,valid_2_signed),
+X(u,valid_2_unsigned),
 X(b,valid_no_args),
 X(d,valid_any_str),
 //X(d,NULL), // NULL means any amount of arguments of any type
