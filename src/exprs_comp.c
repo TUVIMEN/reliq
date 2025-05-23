@@ -211,29 +211,8 @@ typedef struct {
   enum tokenName name;
 } token;
 
-#ifdef TOKEN_DEBUG
 
-static const char *
-token_name(enum tokenName name)
-{
-  switch (name) {
-    case tInvalidThing: return "tInvalidThing";
-    case tText: return "tText";
-    case tBlockStart: return "tBlockStart";
-    case tBlockEnd: return "tBlockEnd";
-    case tNextNode: return "tNextNode";
-    case tChainLink: return "tChainLink";
-    case tNodeFormat: return "tNodeFormat";
-    case tExprFormat: return "tExprFormat";
-    case tConditionOr: return "tConditionOr";
-    case tConditionAnd: return "tConditionAnd";
-    case tConditionAndBlank: return "tConditionAndBlank";
-    case tConditionOrAll: return "tConditionOrAll";
-    case tConditionAndAll: return "tConditionAndAll";
-    case tConditionAndBlankAll: return "tConditionAndBlankAll";
-  }
-  return NULL;
-}
+#if defined(TOKEN_DEBUG) || defined(SCHEME_DEBUG)
 
 static char
 tosplchar(const char c)
@@ -268,6 +247,32 @@ pretty_print_str(const char *src, const size_t size)
       fputc(c,stderr);
   }
   fputs("\033[0m'",stderr);
+}
+
+#endif
+
+#ifdef TOKEN_DEBUG
+
+static const char *
+token_name(enum tokenName name)
+{
+  switch (name) {
+    case tInvalidThing: return "tInvalidThing";
+    case tText: return "tText";
+    case tBlockStart: return "tBlockStart";
+    case tBlockEnd: return "tBlockEnd";
+    case tNextNode: return "tNextNode";
+    case tChainLink: return "tChainLink";
+    case tNodeFormat: return "tNodeFormat";
+    case tExprFormat: return "tExprFormat";
+    case tConditionOr: return "tConditionOr";
+    case tConditionAnd: return "tConditionAnd";
+    case tConditionAndBlank: return "tConditionAndBlank";
+    case tConditionOrAll: return "tConditionOrAll";
+    case tConditionAndAll: return "tConditionAndAll";
+    case tConditionAndBlankAll: return "tConditionAndBlankAll";
+  }
+  return NULL;
 }
 
 static void
