@@ -82,3 +82,43 @@ a3b4ed42a8db2705affb83d4eed80abe,'( textempty@ * )( text@ * )( tag@ li ) li'
 f740451bbb3237233be930a93f182d2e,'text@ * ( texterr@ * )( textnoerr@ * )( textempty@ * ) | "\"%C\"\n", text@ * ( textall@ * ) | "\"%C\"\n"'
 
 974bc394e3fce450eaed24b13d0e1d46,'li ||||||||||/////// '
+
+b1793543c00531b01221ab3d42c7f914,'.owl.a() *'
+61311b0862f78e5ebcaf5c52d5c3e0ad,'.owl.a(12) *'
+
+e73cdd307cd55b20d7142b953ccc6990,'.owl.b("12") *'
+
+f36e9fdf8d3344ca8ec9776923763fb9,'.owl.s("12") *'
+f36e9fdf8d3344ca8ec9776923763fb9,'.owl.s(-12) *'
+f36e9fdf8d3344ca8ec9776923763fb9,'.owl.s(12.4) *'
+b1793543c00531b01221ab3d42c7f914,'.owl.s(12,) *'
+0e9e5d2ebec168af5ead47fb3921850d,'.owl.s(12,12,15) *'
+f1bd7006ba639a11d53ba9273fc80d3f,'.owl.s(,) *'
+
+99920e7db4584bca49cd22a484b1bbdd,'.owl.u("24") *'
+99920e7db4584bca49cd22a484b1bbdd,'.owl.u(-24) *'
+99920e7db4584bca49cd22a484b1bbdd,'.owl.u(24.2) *'
+c90394fed0c3c2408881abaa4dfe25f8,'.owl.u(24,-24,125) *'
+c90394fed0c3c2408881abaa4dfe25f8,'.owl.u(24,24,-125) *'
+
+0cdf479233d13b77be25a2769cef2484,'.owl.i("24") *'
+0cdf479233d13b77be25a2769cef2484,'.owl.i(24.2) *'
+99cb8bf5ce8cb2e950ba0b105954ad50,'.owl.i(24,-24,12.5) *'
+99cb8bf5ce8cb2e950ba0b105954ad50,'.owl.i(24,24,125) *'
+
+c81a3fd39161bd9273f633d169469a76,'.owl.n("24") *'
+558286c6f92765dbcafd1be10cd58bd6,'.owl.n(24,24,125) *'
+
+6df83b7a7b2e87b1ab16a05424e8c71a,'.owl.d(48) *'
+
+895c98071df54519563e73182d69ebfd,'.owl.U("http:len","name") *'
+2cc2e2dc8a7e1ac2940dc09a9bb4dca5,'.owl.U(48) *'
+
+550eb192adca1d020edaeb3214643b83,'.owl.N(48) *'
+
+ea538c91959a7900d0c4232332ed47c0,'.owl.n(21-24) *'
+2c213c2d762e88a6af56e0703da26e50,'.owl.n(21.24.2) *'
+642a8bd12f3cf755bb56d5f7787c7970,'.owl.n(21.24"as") *'
+8831939668bfc48508398898432bada7,'.owl.n(owl) *'
+6ebd2e00e7044e9889ef2bf82c1e6d79,'.owl.n("w"l) *'
+57baa9d7b2212409a6307685aa1fc0b9,'.owl.n("w"192) *'

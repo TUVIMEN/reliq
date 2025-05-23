@@ -4,6 +4,7 @@ f57e356d9c11f00155be01de2734e38d,'.u li; { img, code } |'
 1705334172fbf28670893f807200a7ca,'.0 h2, li; { .a img, .b code }, img, .c code'
 01254d5a940063698fca18b078c8d639,'li; { .a img, .b li; [0] code, img }, .c h3'
 0a25479801aef74716bd053e15a1db02,'li; asfasf; k; { .a b, .b d }, .c h2'
+
 85249e72203626647c75c1abd8116c0d,'.u.n d1 #num1 | "%i"'
 cb26af146fd6eb18e7efec4fb2aac509,'.u.n d1 #num2 | "%i"'
 e49266120e934268451e2296712a1f59,'.u.n d1 #num3 | "%i"'
@@ -12,16 +13,20 @@ c3b4b60de1b347501e97e0c0b00a9ce0,'.u.i d1 #num4 | "%i"'
 724115349c02720ee16b610f81936dca,'.u.u d1 #num4 | "%i"'
 85249e72203626647c75c1abd8116c0d,'.u.u d1 #num5 | "%i"'
 85249e72203626647c75c1abd8116c0d,'.u.n d1 #num5 | "%i"'
+
 6d6f6af7ebbef5b8fd7aff0544211948,'.u.s d1 #str1 | "%i"'
 ae62de9810831195c43b4bf4820196b8,'.u.s d1 #str2 | "%i"'
+
 0e912b71983292c33be2c552e9dcd2d9,'.u.b d1 #bool1 | "%i"'
 0e912b71983292c33be2c552e9dcd2d9,'.u.b d1 #bool2 | "%i"'
 50cbadd20dc301fa21ff344058ab5e4b,'.u.b d1 #bool3 | "%i"'
 50cbadd20dc301fa21ff344058ab5e4b,'.u.b d1 #bool4 | "%i"'
+
 b96766784190594e8d7d25d321947fff,'.u.a("_") d1 #arr1 | "%i"'
 9655fbd89f06ce7afb1175584021efa0,'.u.a("_").s d1 #arr2 | "%i"'
 e29ff3b010c3a58f8c8f28dba8f0a4fc,'.u.a("_").n d1 #arr3 | "%i"'
 d286a9c31fff6e94d1e099468a8901cf,'.u.a("_").b d1 #arr4 | "%i"'
+
 56d841dac41065b07bd2fbfde54f19fc,'.date.d d1 #date1 | "%i"'
 56d841dac41065b07bd2fbfde54f19fc,'.date.d("") d1 #date1 | "%i"'
 56d841dac41065b07bd2fbfde54f19fc,'.date.d("%Y") d1 #date1 | "%i"'
@@ -39,12 +44,14 @@ b028ecd2d6f6d3f1524daa06cac7ea63,'.date.d("%Y-%m","%Y-%m- ::%S","%Y-%m-%d") d1 #
 27a785786c94157cd860e7fb346109cb,'.date.d("%Y-%m","%Y-%m- ::%S","%Y-%m-%d") d1 #date5 | "%i"'
 d11d9815b7daf27b0261a00a3123b583,'.date.d("%b. %dnd \x27%y") d1 #date4 | "%i"'
 b930d90ebb8ffdaee874ac8edd8a2795,'.date.d("%d %m %y %H:%M:%S%z") d1 #date5 | "%i"'
+
 aafc67330599fb87a7fa07da174b8e42,--url 'http://wikipedia.org' '.url.U [0] a | "na"'
 0316e143590d71ce2e3b801f7595ae21,--url 'http://wikipedia.org' '.url.U [0] img | "%i"'
 c2db64f99c6ebc0162f2ff0a32704299,--url 'http://wikipedia.org' '.url.U nothing | "%i"'
 b80c9e236dfa1eb5e0c929de361637ff,--url 'http://wikipedia.org' '.u.U img | "\n\n\n  \t  \t"'
 06317c8db6333aa61cafdb13e1144136,--url 'http://wikipedia.org' '.u.U img | "\n\n\n  j\t  \t"'
 38540b74208196682cbec2478ba8829e,--url 'http://wikipedia.org' '.u.U [0] img | "\n\n \nj \n \a"'
+
 449cbf3b101c062518fd3fd98752400f,'.a { y1 }'
 80e181abcc6f113fa48bc40233e417b4,'code, .a { y1 , y2 } , h2'
 d2bf84d076d296474063dd0a78d5fcd3,'code, .a { y1 , y2, code } , h2'
@@ -57,5 +64,42 @@ dd89f4ba0315f16c0791b35ab6287c79,'.va ul1 .n1; { .title h21 | "%i", .values ul1 
 fe8552a3f6522e529d2c6de9d3334371,'.va ul1 .n1; { .title h21 | "%i", .values ul1 l@[1]; { usaf, usii } ; { .value span1 | "%i" , .nothing p1 | "%i" }  } |'
 6c00a4f25001c4845898ed3a2699370c,'.g ul1 .n1; { .r p1, .h ul1 l@[0],  .c ul1 l@[1]; { la, ua } ; { p1  } | , .k span1 }'
 05a7e3fb87a143edff739ee7c844bd39,'.covers.a("\o7") img | "%(src)v\a", .links.a("\x5C") a | "%(href)v \\ \U0e0a"'
-6a10a0ccf0c90e7361fd02d7986b8d0d,'.na.N *'
+
 bf43e6dc8363ec9ded5eb76d158a7ef3,'.na.int *'
+bf43e6dc8363ec9ded5eb76d158a7ef3,'.na.int(12,6,"qas") *'
+
+0940d61afba7a7deadd27db6cd2a43cc,'.ant.e(1.25,1,"asf") [0] li'
+bf43e6dc8363ec9ded5eb76d158a7ef3,'.na.e *'
+
+0940d61afba7a7deadd27db6cd2a43cc,'.ant.s(19) [0] li'
+4d168a43dcde52471c23ebe0bd4ab3cb,'.ant.s(20) [0] li'
+4d168a43dcde52471c23ebe0bd4ab3cb,'.ant.s(20,50) [0] li'
+0940d61afba7a7deadd27db6cd2a43cc,'.ant.s(5,19) [0] li'
+4d168a43dcde52471c23ebe0bd4ab3cb,'.ant.s(5,18) [0] li'
+
+d156ebf43cff7026be3c2dd324eb5050,'.rat.u(23) * #num4 | "%i"'
+e822c14e4389213f2459b9ffab0b2129,'.rat.u(24) * #num4 | "%i"'
+d156ebf43cff7026be3c2dd324eb5050,'.rat.u(2,50) * #num4 | "%i"'
+d156ebf43cff7026be3c2dd324eb5050,'.rat.u(2,23) * #num4 | "%i"'
+e822c14e4389213f2459b9ffab0b2129,'.rat.u(2,22) * #num4 | "%i"'
+
+0d9823a7599d596551dfa36d38c7e56e,'.cat.i(-23) * #num4 | "%i"'
+0d9823a7599d596551dfa36d38c7e56e,'.cat.i(-50) * #num4 | "%i"'
+dfc1c35c17cba1581d163d9de4c73d8e,'.cat.i(-22) * #num4 | "%i"'
+0d9823a7599d596551dfa36d38c7e56e,'.cat.i(-50,14) * #num4 | "%i"'
+0d9823a7599d596551dfa36d38c7e56e,'.cat.i(-50,-23) * #num4 | "%i"'
+dfc1c35c17cba1581d163d9de4c73d8e,'.cat.i(-50,-24) * #num4 | "%i"'
+
+2c3274323e1fac6e81354a027bd9ceaa,'.dog.n(-23.2) * #num4 | "%i"'
+2f562fd46a0922553ba0e97febf5e94e,'.dog.n(-23.1999) * #num4 | "%i"'
+2c3274323e1fac6e81354a027bd9ceaa,'.dog.n(-23.199999999999999) * #num4 | "%i"'
+2c3274323e1fac6e81354a027bd9ceaa,'.dog.n(-50,-22.199999) * #num4 | "%i"'
+2f562fd46a0922553ba0e97febf5e94e,'.dog.n(-50,-23.21) * #num4 | "%i"'
+
+0cdc90efe8d19fbd0d94a91b9b5a72e7,'.bat.u(50)|N * #num4 | "%i"'
+0cdc90efe8d19fbd0d94a91b9b5a72e7,'.bat.s(50)|N * #num4 | "%i"'
+0cdc90efe8d19fbd0d94a91b9b5a72e7,'.bat.b|N * #num4 | "%i" / sed "s/.*/  /"'
+
+77e23880b11f6855709c124db3827ae6,'.bee.s(999)|a [0] ul / sed "s/ /\n/g"'
+dddca1e722de5f7f60479bb3ac90f575,'.bee.s(999)|a(" ") [0] ul'
+0b813f94d486c28d1ee3d01c4fb2d40c,'.bee.s(9999)|a(" ").n|s [1] ul'
