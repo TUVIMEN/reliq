@@ -428,6 +428,9 @@ handle_ending(html_state *st, size_t *pos, reliq_cstr tagname, const size_t hnin
     goto END;
   }
 
+  if (info->script)
+    goto END;
+
   #ifdef RELIQ_AUTOCLOSING
   if (isinescapable(tagname))
     goto END;
@@ -487,50 +490,51 @@ tag_insides_handle(size_t *pos, const size_t hnindex, uint32_t *fallback, struct
       goto TEXT_REPEAT;
     }
 
-    if (!taginfo->script) {
-      if (f[i] == '!') {
-        reliq_chnode *hn = flexarr_incz(nodes);
-        hn->lvl = lvl+1;
-        hn->all = tagend;
-        hn->all_len = 0;
-        hn->attribs = last_attrib(attribs);
-        comment_handle(f,&i,s,hn);
-        st->comment_count++;
-        i--;
-        goto CONTINUE;
-      }
-
-      #ifdef RELIQ_AUTOCLOSING
-      if (autocloses(f,i,s,taginfo->autoclosing)) {
-        hnode = ((reliq_chnode*)nodes->v)+hnindex;
-        hnode->endtag = tagend-base;
-        hnode->all_len = tagend-hnode->all;
-        i = tagend-1;
-        goto END;
-      }
-      #endif
-      i = tagend;
-      uint32_t nfallback = html_struct_handle(&i,lvl+1,st);
-      if (unlikely(st->err)) {
-        err = 1;
-        htmlerr++;
-        goto END;
-      }
-      hnode = ((reliq_chnode*)nodes->v)+hnindex;
-      if (likely(nfallback)) {
-        if (nfallback == (uint32_t)-1) {
-          goto TEXT_REPEAT;
-        }
-        if (nfallback > 1) {
-          hnode->endtag = i-base;
-          *fallback = nfallback-1;
-          goto END;
-        } else
-          goto FINAL_TAG_END;
-      }
-      *fallback = nfallback;
-    } else
+    if (taginfo->script)
       goto TEXT_REPEAT;
+
+    if (f[i] == '!') {
+      reliq_chnode *hn = flexarr_incz(nodes);
+      hn->lvl = lvl+1;
+      hn->all = tagend;
+      hn->all_len = 0;
+      hn->attribs = last_attrib(attribs);
+      comment_handle(f,&i,s,hn);
+      st->comment_count++;
+      i--;
+      goto CONTINUE;
+    }
+
+    #ifdef RELIQ_AUTOCLOSING
+    if (autocloses(f,i,s,taginfo->autoclosing)) {
+      hnode = ((reliq_chnode*)nodes->v)+hnindex;
+      hnode->endtag = tagend-base;
+      hnode->all_len = tagend-hnode->all;
+      i = tagend-1;
+      goto END;
+    }
+    #endif
+
+    i = tagend;
+    uint32_t nfallback = html_struct_handle(&i,lvl+1,st);
+    if (unlikely(st->err)) {
+      err = 1;
+      htmlerr++;
+      goto END;
+    }
+    hnode = ((reliq_chnode*)nodes->v)+hnindex;
+    if (likely(nfallback)) {
+      if (nfallback == (uint32_t)-1) {
+        goto TEXT_REPEAT;
+      }
+      if (nfallback > 1) {
+        hnode->endtag = i-base;
+        *fallback = nfallback-1;
+        goto END;
+      } else
+        goto FINAL_TAG_END;
+    }
+    *fallback = nfallback;
 
     CONTINUE: ;
     text_finish(&tnindex,nodes,textstart,textend,&htmlerr,st->f);
