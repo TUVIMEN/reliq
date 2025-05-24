@@ -64,7 +64,7 @@ print_attrib_value_text(const reliq *rq, const reliq_cattrib *attribs, const siz
   const reliq_cattrib *a = attribs;
   for (size_t i = 0; i < attribsl; i++) {
     char const *base = rq->data+a[i].key;
-    if (memeq(base,text,textl,a[i].keyl)) {
+    if (memcaseeq(base,text,textl,a[i].keyl)) {
       base += a[i].keyl+a[i].value;
       print_chars(base,a[i].valuel,flags,outfile);
     }
