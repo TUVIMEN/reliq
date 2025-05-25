@@ -339,4 +339,4 @@ will return
 
 ## Syntax highlighting
 
-[vim](https://github.com/TUVIMEN/reliq/blob/master/reliq.vim)
+[vim](https://github.com/TUVIMEN/reliq-vim)
