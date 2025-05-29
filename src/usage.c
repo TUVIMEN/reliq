@@ -130,7 +130,7 @@ usage(const char *argv0, FILE *o)
   color(COLOR_SCRIPT,"PATTERNS");
   fputs(" in each html ",o);
   color(COLOR_INPUT,"FILE");
-  fputs(".\n",o);
+  fputs(".\n\n",o);
 
   color(COLOR_SECTION,"Example");
   fputs(": ",o);

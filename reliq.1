@@ -22,7 +22,7 @@ should be quoted when reliq is used in shell command.
 .PP
 When
 .I FILE
-isn't specified,
+isn't specified
 .I FILE
 will become standard input.
 
@@ -38,6 +38,12 @@ Output the version number of
 and exit.
 
 .SS "Modes of execution"
+.TP
+.BR \--html
+execute expression on provided html (default)
+.TP
+.BR \--urljoin
+join urls passed in arguments with first argument url
 .TP
 .BR \-f ", " --file "\fI FILE\fR"
 Obtain pattern from
@@ -99,7 +105,7 @@ It can be preceded by characters specifying the way of matching ended with '>' c
 
 After '>' character a range might be specified, which will match the number of characters in matched string. In such case specifying text is not mandatory.
 
-If unquoted text is set to a single '*' character matching of text will be ommited, leaving only matching by range.
+If unquoted text is set to a single '*' character matching of text will be omitted, leaving only matching by range.
 
 .nf
 \&
@@ -366,7 +372,7 @@ Matches only node itself (similar to \fBl@[0]\fR).
 Matches nodes that are only one level higher then self (similar to \fBl@[1]\fR).
 .TP
 .BR desc ",    " descendant
-Matches nodes that are lower than self (simalar to \fBl@[1:]\fR).
+Matches nodes that are lower than self (similar to \fBl@[1:]\fR).
 .TP
 .BR ancestor
 Matches nodes that are ancestors of self, relative level of 0 matches to parent.
@@ -427,7 +433,7 @@ Matches text nodes that are not of textempty type.
 Matches text nodes consisting of only whitespaces.
 .TP
 .BR texterr
-Matches text nodes in which error parsing html has occured
+Matches text nodes in which error parsing html has occurred
 .TP
 .BR textnoerr
 Matches text nodes that are not textempty or texterr
@@ -591,7 +597,7 @@ Lines are separated by \fIDELIM\fR (by default '\\n').
 .IP
 Trim whitespaces at the beginning and end of the whole input.
 
-Input can be split by \fIDELIM\fR and trimmed separatedly.
+Input can be split by \fIDELIM\fR and trimmed separately.
 .TP
 
 .B sort \fI"FLAGS"\fR \fI"DELIM"\fR
@@ -619,7 +625,7 @@ Translate characters in \fISTR1\fR to \fISTR2\fR.
 
 If \fISTR2\fR is not specified characters in \fISTR1\fR will be deleted.
 
-special STR syntax:
+Special STR syntax:
     \fBCHAR1-CHAR2\fR - all characters from CHAR1 to CHAR2 in descending order
     \fB[CHAR*REPEAT]\fR - REPEAT copies of CHAR
     \fB[:space:]\fR - support for common character types, written in lower case
@@ -767,30 +773,45 @@ Accumulates output and prints it in json format.
 
 Begins before \fBEXPRESSION\fR, starts with '.' character and is followed by name, which can be defined as [A-Za-z0-9_-]+.
 
-If field doesn't have a name it will be a protected field i.e. if the \fBEXPRESSION\fR matches nothing a newline will be printed.
+If field doesn't have a name it will be a protected field i.e. if the \fBEXPRESSION\fR matches nothing a newline will be printed (deprecated feature that will be removed in the future).
 
-To specify type of field the name has to be followed by '.' and type name.
-
-Only the first letter of type matters (e.g. \fI.n\fR and \fI.number\fR are equivalent), but type name can consist only of alphanumeric characters.
+To specify type of field the name has to be followed by '.' and type name, the same rules of naming apply as to the field names.
 
 List of types:
-    \fI.s\fR             string
 
-    \fI.b\fR             boolean value, returns true only if input starts with 'y', 'Y', 't', 'T' otherwise return false
+    \fI.s\fR             string, returns the exact input, set by default for fields without types
+    \fI.s(uint)\fR       string that has size greater than first argument
+    \fI.s(uint,uint)\fR  string that has size within range of first and second argument
 
-    \fI.n\fR             number, return the first found floating point number, if none found returns 0
+    \fI.b\fR             boolean value, return true only if first found non whitespace character is 'y', 'Y', 't', 'T' or number higher than 0, otherwise returns false. Fails only if input is empty
 
-    \fI.i\fR             integer, return the first found integer number, if none found returns 0
+    \fI.n\fR             number, return the first found floating point number, if none found or input is empty fails with 0
+    \fI.n(num)\fR        same as above but found number is greater than the first argument
+    \fI.n(num,num)\fR    same as above but found number is within range of first and second arguments
 
-    \fI.u\fR             unsigned integer, return the first non negative integer number, if none found returns 0
+    \fI.i\fR             integer, analogous to \fI.n\fR
+    \fI.i(int)\fR
+    \fI.i(int,int)\fR
+
+    \fI.u\fR             unsigned integer, analogous to \fI.n\fR
+    \fI.u(uint)\fR
+    \fI.u(uint,uint)\fR
+
+    \fI.d\fR             date, fails returning input
+    \fI.d(str...)\fR     date, fails if input doesn't match to any of arguments that are \fBstrptime\fR(3) format otherwise converts it into iso 8081 date
+
+    \fI.U\fR             url, join url in input with main url specified by \fB--url\fR option
+    \fI.U(str)\fR        url, join url in input with argument
+
+    \fI.N\fR             null, never fails
+
+    \fI.e\fR             error, never fails
+    \fI.e(...)\fR        error, arguments are used for annotation
 
     \fI.a\fR             array, of strings, delimited by '\\n'
-
-    \fI.a("\\t")\fR       array of strings, delimited by the first character in the string, i.e. '\\t'
-
+    \fI.a("\\t")\fR      array of strings, delimited by the first character in the argument, i.e. '\\t'
     \fI.a.type\fR        array of type, delimited by '\\n'
-
-    \fI.a("-").type\fR   array of type, delimited by the first character in the string (only one can be specified)
+    \fI.a("-").type\fR   array of type, delimited by the first character in the argument (only one can be specified)
 
 Examples:
 
@@ -807,13 +828,27 @@ Examples:
     \fI<a objects>\fR
     \fI{"author":{"image":"...","bolded":"..."}}\fR
 
-    since it has no field to return to as an array it creates incorrect json objects with repeating fields.
-    \fBdiv .author; { .images img, .bolded b } |\fR
-    \fI{"images":"...","bolded":"...","images":"...","bolded":"..."}\fR
-
-    blocks ended with '|' character are treated as arrays. If such block has no input, it returns "[]".
+    blocks ended with '|' character are treated as arrays. If such block has no input it returns "[]".
     \fB.authors div .author; { .images img, .bolded b } |\fR
     \fI{"authors":[{"images":"...","bolded":"..."}]}\fR
+
+If after type name is '|' character another type can be specified. In this case if field fails type after it is attempted. If input expression matched to nothing type will always fail and output of the last type in such chain will be returned.
+
+Examples:
+
+    .tag2 and .tag3 have results of num and null types failing since expression did not match to anything
+    \fB.tag.s nothing, .tag2.s|n nothing, .tag3.s|N nothing\fR
+    \fI{"tag":"","tag2":0,"tag3":null}\fR
+
+    .title2 is matched by int since title input doesn't fit the assertion
+    \fB.title.s(1)|N h2, .title2.s(10,50)|i h2\fR
+    \fI{"title":"...","title2":-123}\fR
+
+    after specifying type for array all alternative types will be assigned for array's elements since array can't fail
+    \fB.title.s(9999)|a("\\t").s(2,5)|u|N h2\fR
+    \fI{"title":[52,"...","...",null,0]}\fR
+
+If immediately after field a string in '\\'' or '"' brackets is specified it'll be treated as annotation e.g. '.u"annotation"', '.t.n(12)|N"annotation"'
 
 .SS COMMENTS
 
@@ -828,8 +863,8 @@ Are placed in between expressions and have to be surrounded by whitespace. They 
 .nf
 \&
 .in +4m
-\fB&\fR - execute second expression if first succeedes
-\fB&&\fR - execute second expression if first succeedes and ignore output of the first
+\fB&\fR - execute second expression if first succeeds
+\fB&&\fR - execute second expression if first succeeds and ignore output of the first
 \fB||\fR - execute second expression if first fails
 \fB^&\fR
 \fB^&&\fR
@@ -837,7 +872,7 @@ Are placed in between expressions and have to be surrounded by whitespace. They 
 .in
 \&
 
-Expression succeedes if anything inside of it matches html, e.g. \fB{ div, li | "" } && tr | "%i"\fR will print insides of \fBtr\fR tag if either div or \fBli\fR tags are found, even though li tag outputs nothing it will match because only matching html matters.
+Expression succeeds if anything inside of it matches html, e.g. \fB{ div, li | "" } && tr | "%i"\fR will print insides of \fBtr\fR tag if either div or \fBli\fR tags are found, even though li tag outputs nothing it will match because only matching html matters.
 
 If the described conditionals are preceded by '\fB^\fR' they will succeed only if everything matches, e.g. \fB{ div, li | "" } ^&& tr | "%i"\fR both \fBdiv\fR and \fBli\fR would have to match for \fBtr | "%li"\fR to happen.
 
@@ -847,7 +882,7 @@ Output fields cannot be embedded in conditionals e.g. \fB{ .likes.u * #likes | "
 
 .SH NOTES
 
-UTF-8 \fI\eu\fR and \fI\eU\fR escape directives don't work in any place where delimiter is to be specified i.e. array separator in fields, in translasion tables of \fBtr\fR, in \fIy\fR \fBsed\fR command, in delimiters of \fBsed\fR, \fBtr\fR, \fBline\fR, \fBtrim\fR, \fBuniq\fR, \fBsort\fR, \fBecho\fR, \fBcut\fR, \fBrev\fR, \fBtac\fR, \fBwc\fR commands.
+UTF-8 \fI\eu\fR and \fI\eU\fR escape directives don't work in any place where delimiter is to be specified i.e. array separator in fields, in translation tables of \fBtr\fR, in \fIy\fR \fBsed\fR command, in delimiters of \fBsed\fR, \fBtr\fR, \fBline\fR, \fBtrim\fR, \fBuniq\fR, \fBsort\fR, \fBecho\fR, \fBcut\fR, \fBrev\fR, \fBtac\fR, \fBwc\fR commands.
 
 .SH EXAMPLES
 Get tags 'a' with attribute 'href' at position 0 of value ending with '.org' or '.com', from result of matching tags 'div' with attribute 'id', and without attribute 'class', from file 'index.html'.
@@ -878,7 +913,7 @@ Get hyperlinks from level greater or equal to 6 (counting from zero).
 .B $ reliq 'a href @l[6:] | "%(href)v\\\\n"' index.html
 .in
 \&
-Get all urls from 'a' and 'img' tags, where images are end with '.png'.
+Get all urls from 'a' and 'img' tags, where images end with '.png'.
 .nf
 \&
 .in +4m
@@ -890,6 +925,20 @@ Get all urls in div with class 'index' or ul both with title attribute.
 \&
 .in +4m
 .B $ reliq '( div .index )( ul ) title; a href | "%(href)v\\\\n' index.html
+.in
+\&
+Decode html entities from index.html
+.nf
+\&
+.in +4m
+.B $ reliq --decode index.html
+.in
+\&
+Join urls with 'https://wikipedia.com/'
+.nf
+\&
+.in +4m
+.B $ reliq --urljoin 'https://wikipedia.com/' '/' 'index.html' './name/../../list/genres/a.html'
 .in
 \&
 
