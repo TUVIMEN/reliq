@@ -73,7 +73,9 @@ format_exec(char *input, size_t inputl, SINK *output, const reliq_chnode *hnode,
         out = sn[0] = &s_sn[0];
       }
 
-      chnode_printf(out,((reliq_cstr*)format[0].arg[0])->b,((reliq_cstr*)format[0].arg[0])->s,hnode,parent,rq);
+      reliq_cstr *str = format[0].arg[0];
+      if (str)
+        chnode_printf(out,str->b,str->s,hnode,parent,rq);
       i++;
     } else {
       if (formatl) {
