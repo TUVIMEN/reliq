@@ -16,6 +16,7 @@ c3b4b60de1b347501e97e0c0b00a9ce0,'.u.i d1 #num4 | "%i"'
 
 6d6f6af7ebbef5b8fd7aff0544211948,'.u.s d1 #str1 | "%i"'
 ae62de9810831195c43b4bf4820196b8,'.u.s d1 #str2 | "%i"'
+2cbbe033c1bdf7b9f6d20f561306a342,'.url.s|N nothing | "%i"'
 
 0e912b71983292c33be2c552e9dcd2d9,'.u.b d1 #bool1 | "%i"'
 0e912b71983292c33be2c552e9dcd2d9,'.u.b d1 #bool2 | "%i"'
@@ -45,9 +46,11 @@ b028ecd2d6f6d3f1524daa06cac7ea63,'.date.d("%Y-%m","%Y-%m- ::%S","%Y-%m-%d") d1 #
 d11d9815b7daf27b0261a00a3123b583,'.date.d("%b. %dnd \x27%y") d1 #date4 | "%i"'
 b930d90ebb8ffdaee874ac8edd8a2795,'.date.d("%d %m %y %H:%M:%S%z") d1 #date5 | "%i"'
 
+0316e143590d71ce2e3b801f7595ae21,--url 'http://wikipedia.org' '.url.U|N [0] a | ""'
 aafc67330599fb87a7fa07da174b8e42,--url 'http://wikipedia.org' '.url.U [0] a | "na"'
 0316e143590d71ce2e3b801f7595ae21,--url 'http://wikipedia.org' '.url.U [0] img | "%i"'
 c2db64f99c6ebc0162f2ff0a32704299,--url 'http://wikipedia.org' '.url.U nothing | "%i"'
+2cbbe033c1bdf7b9f6d20f561306a342,--url 'http://wikipedia.org' '.url.U|N nothing | "%i"'
 b80c9e236dfa1eb5e0c929de361637ff,--url 'http://wikipedia.org' '.u.U img | "\n\n\n  \t  \t"'
 06317c8db6333aa61cafdb13e1144136,--url 'http://wikipedia.org' '.u.U img | "\n\n\n  j\t  \t"'
 38540b74208196682cbec2478ba8829e,--url 'http://wikipedia.org' '.u.U [0] img | "\n\n \nj \n \a"'
