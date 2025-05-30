@@ -393,6 +393,17 @@ url_change_base(reliq_url *url, const char *from, const char *to)
   url->fragment.b = url->fragment.b-from+to;
 }
 
+reliq_url
+reliq_url_dup(const reliq_url *url)
+{
+  reliq_url r = *url;
+  if (r.allocated) {
+    r.url.b = memdup(r.url.b,r.url.s);
+    url_change_base(&r,url->url.b,r.url.b);
+  }
+  return r;
+}
+
 static void
 url_finalize(reliq_url *url, const bool reuse)
 {

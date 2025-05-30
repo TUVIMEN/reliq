@@ -177,6 +177,9 @@ void reliq_url_parse(const char *url, const size_t urll, const char *scheme, con
 //  }
 void reliq_url_join(const reliq_url *ref, const reliq_url *url, reliq_url *dest);
 
+//creates another reliq_url struct that has to be freed
+reliq_url reliq_url_dup(const reliq_url *url);
+
 void reliq_url_free(reliq_url *url);
 
 //if reliq.freedata is set then it will be called with reliq_free() to free reliq.data
