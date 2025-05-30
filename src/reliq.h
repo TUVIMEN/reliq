@@ -248,8 +248,8 @@ typedef struct reliq_field_type reliq_field_type;
 struct reliq_field_type {
   reliq_str name;
   struct reliq_field_type_arg *args;
-  size_t argsl;
   reliq_field_type *subtypes;
+  size_t argsl;
   size_t subtypesl;
 };
 
