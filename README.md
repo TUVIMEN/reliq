@@ -179,7 +179,7 @@ reliq '.links.a a href | "%(href)v\n", img src | "%(src)v\n"'
 
 will return
 
-```
+```json
 /static/images/icons/wikipedia.png
 /static/images/mobile/copyright/wikipedia-wordmark-en.svg
 /static/images/mobile/copyright/wikipedia-tagline-en.svg
@@ -277,7 +277,7 @@ reliq '
 
 will return
 
-```
+```json
 https://exampleother.com/a/8122.jpg
 {
     "user": {
