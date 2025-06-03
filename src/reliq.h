@@ -36,9 +36,9 @@ extern "C" {
 #define RELIQ_MAX_GROUP_LEVEL 256
 #define RELIQ_MAX_BLOCK_LEVEL 256
 #else
-#define RELIQ_MAX_NODE_LEVEL 8192 //stack overflows at 32744 at 8192kb stack
-#define RELIQ_MAX_GROUP_LEVEL 3552 //stack overflows at 14160 at 8192kb stack
-#define RELIQ_MAX_BLOCK_LEVEL 6892 //stack overflows at 27576 at 8192kb stack
+#define RELIQ_MAX_NODE_LEVEL 8192 //stack overflows at 21828 at 8192kb stack
+#define RELIQ_MAX_GROUP_LEVEL 3552 //stack overflows at 20149 at 8192kb stack
+#define RELIQ_MAX_BLOCK_LEVEL 6892 //stack overflows at 18066 at 8192kb stack
 #endif
 
 #if RELIQ_HTML_SIZE == 2
