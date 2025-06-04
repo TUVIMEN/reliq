@@ -46,10 +46,24 @@ O_HTML_VERY_SMALL := 0 # this can be set if you don't put thousands of spaces be
 
 ## Usage
 
-Get some help
+Manual provides coarse, but complete documentation about the tool and expression language.
 
 ```shell
 man reliq
+```
+
+I recommend reading it with colors like
+
+```bash
+man() {
+    LESS_TERMCAP_md=$'\e[01;31m' \
+    LESS_TERMCAP_me=$'\e[0m' \
+    LESS_TERMCAP_se=$'\e[0m' \
+    LESS_TERMCAP_so=$'\e[01;32;31m' \
+    LESS_TERMCAP_ue=$'\e[0m' \
+    LESS_TERMCAP_us=$'\e[01;34m' \
+    command man "$@"
+}
 ```
 
 Get `div` tags with class `tile`.
@@ -382,7 +396,7 @@ will return
         1948,
         1965,
         1989,
-        1994
+        1994,
         2010
     ]
 }
@@ -399,6 +413,7 @@ will return
 - [wordpress-madara-scraper](https://github.com/TUVIMEN/wordpress-madara-scraper)
 - [mangabuddy-scraper](https://github.com/TUVIMEN/mangabuddy-scraper)
 - [elektroda-scraper](https://github.com/TUVIMEN/elektroda-scraper)
+- [lightnovelworld](https://github.com/TUVIMEN/lightnovelworld)
 - and many others of my repositories
 
 ## Syntax highlighting
