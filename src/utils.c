@@ -1,6 +1,6 @@
 /*
     reliq - html searching tool
-    Copyright (C) 2020-2025 Dominik Stanisław Suchora <suchora.dominik7@gmail.com>
+    Copyright (C) 2020-2025 Dominik Stanisław Suchora <hexderm@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
