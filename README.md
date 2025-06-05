@@ -1,6 +1,6 @@
 # reliq
 
-reliq is a html parsing and searching tool.
+HTML parser with it's own matching language. Benchmark [here](https://github.com/TUVIMEN/reliq-python#benchmark), examples of syntax with highlighting [here](https://github.com/TUVIMEN/reliq-vim).
 
 ## Installation
 
@@ -210,7 +210,10 @@ It is a json like structure because reliq doesn't enforce json output as in abov
 It also does not check for repeating field names e.g.
 
 ```shell
-reliq '.a span #views | "%i", .a time datetime | "%(datetime)v\a"'
+reliq '
+    .a span #views | "%i",
+    .a time datetime | "%(datetime)v\a"
+'
 ```
 
 will return incorrect json
