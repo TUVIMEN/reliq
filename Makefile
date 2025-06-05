@@ -33,17 +33,7 @@ LDFLAGS_R = ${LDFLAGS}
 CFLAGS_D = -DRELIQ_VERSION=\"${VERSION}\"
 CFLAGS_R =
 
-LIB_SRC = src/flexarr.c src/sink.c src/html.c src/hnode.c src/reliq.c src/hnode_print.c src/ctype.c src/utils.c src/output.c src/entities.c src/pattern.c src/range.c src/exprs_comp.c src/exprs_exec.c src/format.c src/npattern_comp.c src/npattern_exec.c src/node_exec.c src/edit.c src/edit_sed.c src/edit_wc.c src/edit_tr.c src/url.c src/scheme.c src/fields.c
-
-ifeq ("$(shell uname -s | sed "s/-.*//")","MINGW64_NT")
-
-ifeq ("$(shell echo "#define _GNU_SOURCE" > src/strptime.c)","")
-endif
-ifeq ("$(shell curl 'https://raw.githubusercontent.com/res2001/strptime/refs/heads/master/strptime.c' >> src/strptime.c)","")
-endif
-
-	LIB_SRC += src/strptime.c
-endif
+LIB_SRC = src/flexarr.c src/sink.c src/html.c src/hnode.c src/reliq.c src/hnode_print.c src/ctype.c src/utils.c src/output.c src/entities.c src/pattern.c src/range.c src/exprs_comp.c src/exprs_exec.c src/format.c src/npattern_comp.c src/npattern_exec.c src/node_exec.c src/edit.c src/edit_sed.c src/edit_wc.c src/edit_tr.c src/url.c src/scheme.c src/fields.c ${LIB_OTHERS}
 
 ifeq ("$(shell uname -s)","Darwin")
 	STRIP_ARGS += -x
