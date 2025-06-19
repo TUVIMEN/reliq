@@ -33,7 +33,9 @@ LDFLAGS_R = ${LDFLAGS}
 CFLAGS_D = -DRELIQ_VERSION=\"${VERSION}\"
 CFLAGS_R =
 
-LIB_SRC = src/flexarr.c src/sink.c src/html.c src/hnode.c src/reliq.c src/hnode_print.c src/ctype.c src/utils.c src/output.c src/entities.c src/pattern.c src/range.c src/exprs_comp.c src/exprs_exec.c src/format.c src/npattern_comp.c src/npattern_exec.c src/node_exec.c src/edit.c src/edit_sed.c src/edit_wc.c src/edit_tr.c src/url.c src/scheme.c src/fields.c ${LIB_OTHERS}
+LIB_SRC = src/lib/flexarr.c src/lib/sink.c src/lib/html.c src/lib/hnode.c src/lib/reliq.c src/lib/hnode_print.c src/lib/ctype.c src/lib/utils.c src/lib/output.c src/lib/entities.c src/lib/pattern.c src/lib/range.c src/lib/exprs_comp.c src/lib/exprs_exec.c src/lib/format.c src/lib/npattern_comp.c src/lib/npattern_exec.c src/lib/node_exec.c src/lib/edit.c src/lib/edit_sed.c src/lib/edit_wc.c src/lib/edit_tr.c src/lib/url.c src/lib/scheme.c src/lib/fields.c ${LIB_OTHERS}
+
+CLI_SRC = src/cli/main.c src/cli/usage.c
 
 ifeq ("$(shell uname -s)","Darwin")
 	STRIP_ARGS += -x
@@ -62,17 +64,18 @@ ifeq ($(strip ${O_AUTOCLOSING}),1)
 	CFLAGS_D += -DRELIQ_AUTOCLOSING
 endif
 
-SRC = src/main.c src/usage.c ${LIB_SRC}
+SRC = ${LIB_SRC}
 
 ifeq ($(strip ${O_LIB}),1)
-	SRC = ${LIB_SRC}
 	LDFLAGS_R += -shared
 	CFLAGS_R += -fPIC
+else
+	SRC += ${CLI_SRC}
 endif
 
 ifeq ($(strip ${O_LINKED}),1)
 	CFLAGS_R += -DLINKED
-	SRC = src/main.c
+	SRC = ${CLI_SRC}
 	LDFLAGS_R += -lreliq
 endif
 

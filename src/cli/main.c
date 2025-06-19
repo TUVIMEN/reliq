@@ -16,7 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "ext.h"
+#include "../ext.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -33,7 +33,7 @@
 #include <libgen.h>
 #include <getopt.h>
 
-#include "reliq.h"
+#include "../lib/reliq.h"
 
 #define F_RECURSIVE 0x1
 
