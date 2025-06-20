@@ -32,8 +32,10 @@
 #include <errno.h>
 #include <libgen.h>
 #include <getopt.h>
+#include <assert.h>
 
 #include "../lib/reliq.h"
+#include "pretty.h"
 
 #define F_RECURSIVE 0x1
 
@@ -56,6 +58,18 @@ void usage(const char *argv0, FILE *o);
 
 char *url_ref = NULL;
 size_t url_refl = 0;
+
+struct pretty_settings psettings = {0};
+
+enum {
+  htmlProcess,
+  htmlPrettify,
+  urlJoin,
+  entityDecode,
+  entityDecodeExact,
+  entityEncode,
+  entityEncodeFull
+} run_mode = htmlProcess;
 
 static void
 die(const char *s, ...)
@@ -160,6 +174,23 @@ join_urls(const char *url, char **argv, size_t pos, const size_t argc)
 }
 
 static void
+html_prettify(char *f, size_t s, int (*freedata)(void*,size_t))
+{
+  reliq_error *err;
+
+  reliq rq;
+  if ((err = reliq_init(f,s,&rq))) {
+    reliq_efree(expr);
+    handle_reliq_error(err);
+  }
+
+
+
+  reliq_free(&rq);
+  freedata(f,s);
+}
+
+static void
 expr_exec(char *f, size_t s, int (*freedata)(void*,size_t))
 {
   if (f == NULL || s == 0)
@@ -170,6 +201,7 @@ expr_exec(char *f, size_t s, int (*freedata)(void*,size_t))
   reliq rq;
   if ((err = reliq_init(f,s,&rq)))
     goto ERR;
+
   if (url_ref)
     reliq_set_url(&rq,url_ref,url_refl);
 
@@ -177,8 +209,8 @@ expr_exec(char *f, size_t s, int (*freedata)(void*,size_t))
 
   reliq_free(&rq);
   freedata(f,s);
-  ERR: ;
 
+  ERR: ;
   if (err) {
     reliq_efree(expr);
     handle_reliq_error(err);
@@ -302,6 +334,119 @@ open_file(const char *path, const char *mode)
   return f;
 }
 
+static void
+file_exec_set(int argc, const char **argv)
+{
+  if (run_mode == htmlProcess) {
+    if (!expr && optind < argc) {
+      handle_reliq_error(reliq_ecomp(argv[optind],strlen(argv[optind]),&expr));
+      optind++;
+      assert(expr);
+    }
+    file_exec = expr_exec;
+  } else if (run_mode == htmlPrettify) {
+    file_exec = html_prettify;
+  } else if (run_mode == entityDecode) {
+    file_exec = str_decode;
+  } else if (run_mode == entityDecodeExact) {
+    file_exec = str_decode_exact;
+  } else if (run_mode == entityEncode) {
+    file_exec = str_encode;
+  } else if (run_mode == entityEncodeFull) {
+    file_exec = str_encode_full;
+  }
+}
+
+static int
+valid_int(const char *arg, const char *option)
+{
+  long int ret;
+  char *end;
+  ret = strtol(arg,&end,10);
+
+  if (!*end)
+    die("--%s: expected integer, got \"%s\"", option, arg);
+
+  return ret;
+}
+
+static uchar
+longopts_handle_mode(const char *name)
+{
+  #define X(x,y) if (strcmp(name,x) == 0) { \
+      run_mode = y; \
+    }
+
+  X("html",htmlProcess)
+  else X("urljoin",urlJoin)
+  else X("encode",entityEncode)
+  else X("encode-full",entityEncodeFull)
+  else X("decode",entityDecode)
+  else X("decode-exact",entityDecodeExact)
+  else
+    return 0;
+  return 1;
+
+  #undef X
+}
+
+static uchar
+longopts_handle_html_process(const char *name)
+{
+  #define X(x,y,z) if (strcmp(name,x) == 0) { \
+      psettings.y = z; \
+    }
+
+  X("indent",indent,valid_int(optarg,"indent"))
+  else X("cycle-indent",cycle_indent,valid_int(optarg,"cycle-indent"))
+  else X("indent-script",indent_script,1)
+  else X("no-indent-script",indent_script,0)
+  else X("indent-style",indent_style,1)
+  else X("no-indent-style",indent_style,0)
+  else X("wrap-text",wrap_text,1)
+  else X("no-wrap-text",wrap_text,0)
+  else X("wrap-comments",wrap_comments,1)
+  else X("no-wrap-comments",wrap_comments,0)
+  else X("color",color,1)
+  else X("force-color",color,2)
+  else X("no-color",color,0)
+  else X("trim-tags",trim_tags,1)
+  else X("no-trim-tags",trim_tags,0)
+  else X("trim-attribs",trim_attribs,1)
+  else X("no-trim-attribs",trim_attribs,0)
+  else X("trim-comments",trim_comments,1)
+  else X("no-trim-comments",trim_comments,0)
+  else X("normal-case",normal_case,1)
+  else X("no-normal-case",normal_case,0)
+  else X("fix",fix,1)
+  else X("no-fix",fix,0)
+  else X("merge-attribs",merge_attribs,1)
+  else X("no-merge-attribs",merge_attribs,0)
+  else X("remove-comments",remove_comments,1)
+  else X("no-remove-comments",remove_comments,0)
+  else X("show-hidden",show_hidden,1)
+  else X("no-show-hidden",show_hidden,0)
+  else X("overlap-ending",overlap_ending,1)
+  else X("no-overlap-ending",overlap_ending,0)
+  else
+    return 0;
+
+  run_mode = htmlProcess;
+  return 1;
+
+  #undef X
+}
+
+static void
+longopts_handle(const char *name)
+{
+  if (longopts_handle_mode(name))
+    return;
+
+  if (longopts_handle_html_process(name))
+    return;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -317,15 +462,6 @@ main(int argc, char **argv)
   if (argc < 2)
     usage(argv0,errfile);
 
-  enum {
-    htmlProcess,
-    urlJoin,
-    entityDecode,
-    entityDecodeExact,
-    entityEncode,
-    entityEncodeFull
-  } mode = htmlProcess;
-
   struct option long_options[] = {
     {"output",required_argument,NULL,'o'},
     {"help",no_argument,NULL,'h'},
@@ -339,89 +475,102 @@ main(int argc, char **argv)
     {"url",required_argument,NULL,'u'},
 
     {"html",no_argument,NULL,0},
+    {"pretty",no_argument,NULL,'p'},
     {"urljoin",no_argument,NULL,0},
     {"encode",no_argument,NULL,0},
     {"encode-full",no_argument,NULL,0},
     {"decode",no_argument,NULL,0},
     {"decode-exact",no_argument,NULL,0},
+
+    {"maxline",required_argument,NULL,'L'},
+    {"indent",required_argument,NULL,0},
+    {"cycle-indent",required_argument,NULL,0},
+
+    {"indent-script",no_argument,NULL,0},
+    {"no-indent-script",no_argument,NULL,0},
+    {"indent-style",no_argument,NULL,0},
+    {"no-indent-style",no_argument,NULL,0},
+    {"wrap-text",no_argument,NULL,0},
+    {"no-wrap-text",no_argument,NULL,0},
+    {"wrap-comments",no_argument,NULL,0},
+    {"no-wrap-comments",no_argument,NULL,0},
+    {"color",no_argument,NULL,0},
+    {"force-color",no_argument,NULL,0},
+    {"no-color",no_argument,NULL,0},
+    {"trim-tags",no_argument,NULL,0},
+    {"no-trim-tags",no_argument,NULL,0},
+    {"trim-attribs",no_argument,NULL,0},
+    {"no-trim-attribs",no_argument,NULL,0},
+    {"trim-comments",no_argument,NULL,0},
+    {"no-trim-comments",no_argument,NULL,0},
+    {"normal-case",no_argument,NULL,0},
+    {"no-normal-case",no_argument,NULL,0},
+    {"fix",no_argument,NULL,0},
+    {"no-fix",no_argument,NULL,0},
+    {"merge-attribs",no_argument,NULL,0},
+    {"no-merge-attribs",no_argument,NULL,0},
+    {"remove-comments",no_argument,NULL,0},
+    {"no-remove-comments",no_argument,NULL,0},
+    {"show-hidden",no_argument,NULL,0},
+    {"no-show-hidden",no_argument,NULL,0},
+    {"overlap-ending",no_argument,NULL,0},
+    {"no-overlap-ending",no_argument,NULL,0},
     {NULL,0,NULL,0}
   };
 
   while (1) {
     int index;
-    char const *name;
-    int opt = getopt_long(argc,argv,"lo:e:E:f:u:HrRvh",long_options,&index);
+    int opt = getopt_long(argc,argv,"lo:e:E:f:u:HrRvhpL:",long_options,&index);
     if (opt == -1)
       break;
 
     switch (opt) {
       case 'l':
-        mode = htmlProcess;
+        run_mode = htmlProcess;
         handle_reliq_error(reliq_ecomp("| \"%n%Ua - desc(%c) lvl(%L) size(%s) pos(%I)\\n\"",47,&expr));
         break;
       case 'o':
         outfile = open_file(optarg,"wb");
         break;
       case 'e':
-        mode = htmlProcess;
+        run_mode = htmlProcess;
         handle_reliq_error(reliq_ecomp(optarg,strlen(optarg),&expr));
         break;
       case 'E':
         errfile = open_file(optarg,"wb");
         break;
       case 'f':
-        mode = htmlProcess;
+        run_mode = htmlProcess;
         load_expr_from_file(optarg);
         break;
       case 'u':
-        mode = htmlProcess;
+        run_mode = htmlProcess;
         url_ref = optarg;
         url_refl = strlen(optarg);
+        break;
+      case 'L':
+        run_mode = htmlProcess;
+        psettings.maxline = valid_int(optarg,"maxline");
         break;
       case 'r': settings |= F_RECURSIVE; break;
       case 'R': settings |= F_RECURSIVE; nftwflags &= ~FTW_PHYS; break;
       case 'v': die(RELIQ_VERSION); break;
       case 'h': usage(argv0,errfile); break;
+      case 'p':
+        run_mode = htmlPrettify;
+        pretty_settings_init(&psettings);
+        break;
       case 0:
-        name = long_options[index].name;
-        if (strcmp(name,"html") == 0) {
-          mode = htmlProcess;
-        } else if (strcmp(name,"urljoin") == 0) {
-          mode = urlJoin;
-        } else if (strcmp(name,"encode") == 0) {
-          mode = entityEncode;
-        } else if (strcmp(name,"encode-full") == 0) {
-          mode = entityEncodeFull;
-        } else if (strcmp(name,"decode") == 0) {
-          mode = entityDecode;
-        } if (strcmp(name,"decode-exact") == 0) {
-          mode = entityDecodeExact;
-        }
+        longopts_handle(long_options[index].name);
         break;
       default: exit(1);
     }
   }
 
-  if (mode == htmlProcess) {
-    if (!expr && optind < argc) {
-      handle_reliq_error(reliq_ecomp(argv[optind],strlen(argv[optind]),&expr));
-      optind++;
-      if (!expr)
-        return -1;
-    }
-    file_exec = expr_exec;
-  } else if (mode == entityDecode) {
-    file_exec = str_decode;
-  } else if (mode == entityDecodeExact) {
-    file_exec = str_decode_exact;
-  } else if (mode == entityEncode) {
-    file_exec = str_encode;
-  } else if (mode == entityEncodeFull) {
-    file_exec = str_encode_full;
-  }
+  file_exec_set(argc,(const char**)argv);
 
   int g = optind;
-  if (mode == urlJoin) {
+  if (run_mode == urlJoin) {
     if (optind < argc)
       join_urls(argv[g],argv,g+1,argc);
   } else {

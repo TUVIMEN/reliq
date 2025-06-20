@@ -110,6 +110,43 @@ usage_color_option(FILE *o, const uchar cancolor, const char *shortopt, const ch
 }
 #define color_option(x,y,z) usage_color_option(o,cancolor,x,y,z)
 
+static void
+usage_end_default(FILE *o, const uchar cancolor, const char *value)
+{
+  if (value != (void*)1)
+    fputc(' ',o);
+  fputc('(',o);
+  if ((void*)value > (void*)1) {
+    color(COLOR_HIGHLIGHT,"by default");
+    fputc(' ',o);
+    color(COLOR_ARG,"%s",value);
+  } else {
+    color(COLOR_HIGHLIGHT,"default");
+  }
+  fputs(")\n",o);
+}
+
+#define end_default(x) usage_end_default(o,cancolor,x)
+
+static void
+usage_bool(FILE *o, const uchar cancolor, const char *name, const char *desc, const char *d_other)
+{
+  color_option(NULL,name,NULL);
+  fputs(desc,o);
+  if (!d_other) end_default(NULL); else fputc('\n',o);
+
+  char negation[256] = "no-";
+  strncat(negation,name,252);
+
+  color_option(NULL,negation,NULL);
+  if (d_other) {
+    fputs(d_other ? d_other : "",o);
+    end_default((void*)1);
+  } else fputc('\n',o);
+  fputc('\n',o);
+}
+#define bool_opt(x,y,z) usage_bool(o,cancolor,x,y,z)
+
 void
 usage(const char *argv0, FILE *o)
 {
@@ -180,9 +217,8 @@ usage(const char *argv0, FILE *o)
   color(COLOR_OPTION,"f");
   fputs(" or -",o);
   color(COLOR_OPTION,"e");
-  fputs(" options are set (",o);
-  color(COLOR_HIGHLIGHT,"default");
-  fputs(")\n",o);
+  fputs(" options are set",o);
+  end_default(NULL);
 
   color_option("l","list-structure",NULL);
   fputs("\t\tlist structure of ",o);
@@ -236,6 +272,48 @@ usage(const char *argv0, FILE *o)
   fputs("\n--",o);
   color(COLOR_SECTION,"decode-exact");
   fputs(": decode html entities\n",o);
+
+  fputs("\n-",o);
+  color(COLOR_SECTION,"p");
+  fputs(", --",o);
+  color(COLOR_SECTION,"pretty");
+  fputs(": prettify html (defaults are set only if this option is set)\n",o);
+
+  color_option("L","maxline","INT");
+  fputs("\t\tmax width of text in block, not counting the indent, if set to less than 1 everything is in one line",o);
+  end_default("90");
+  color_option(NULL,"indent","INT");
+  fputs("\t\t\tset indentation width",o);
+  end_default("2");
+  color_option(NULL,"cycle-indent","INT");
+  fputs("\t\tif number of indentations exceed this, they will reset to 0",o);
+  end_default("0");
+  fputc('\n',o);
+
+  bool_opt("indent-script","\t\tindent contents of script tag",0);
+  bool_opt("indent-style","\t\tindent contents of style tag",0);
+  bool_opt("wrap-text","\t\t\twrap text nodes",0);
+  bool_opt("wrap-comments","\t\twrap insides of comment nodes",0);
+
+  color_option(NULL,"color",NULL);
+  fputs("\t\t\tcolorize output if in terminal",o);
+  end_default(NULL);
+  color_option(NULL,"force-color",NULL);
+  fputs("\t\t\talways colorize output\n",o);
+  color_option(NULL,"no-color",NULL);
+  fputs("\n\n",o);
+
+  bool_opt("trim-tags","\t\t\ttrim whitespaces in tags insides",NULL);
+  bool_opt("trim-attribs","\t\ttrim whitespaces inbetween and in attribute values",NULL);
+  bool_opt("trim-comments","\t\ttrim whitespaces in comments beginning and ending",NULL);
+  bool_opt("normal-case","\t\t\tmake tag names, attribute names, classes and ids lowercase",NULL);
+  bool_opt("trim-comments","\t\ttrim whitespaces in comments beginning and ending",NULL);
+  bool_opt("fix","\t\t\t\tadd missing ending tags and match it's case to starting tag",NULL);
+  bool_opt("merge-attribs","\t\tmerge repeating atributes in the same tag, values are separated by whitespace",NULL);
+  bool_opt("remove-comments","\t\tremove all comment nodes","\t\t");
+  bool_opt("show-hidden","\t\t\tshow info hidden by prettification by coloring background of elements",NULL);
+  bool_opt("overlap-ending","\t\tAllow other tags/comments/text after ending of tag or comments unless both of them fit in maxline limit","\t\t");
+
 
   fputs("\nWhen input files aren't specified, standard input will be read.\n",o);
 

@@ -35,7 +35,7 @@ CFLAGS_R =
 
 LIB_SRC = src/lib/flexarr.c src/lib/sink.c src/lib/html.c src/lib/hnode.c src/lib/reliq.c src/lib/hnode_print.c src/lib/ctype.c src/lib/utils.c src/lib/output.c src/lib/entities.c src/lib/pattern.c src/lib/range.c src/lib/exprs_comp.c src/lib/exprs_exec.c src/lib/format.c src/lib/npattern_comp.c src/lib/npattern_exec.c src/lib/node_exec.c src/lib/edit.c src/lib/edit_sed.c src/lib/edit_wc.c src/lib/edit_tr.c src/lib/url.c src/lib/scheme.c src/lib/fields.c ${LIB_OTHERS}
 
-CLI_SRC = src/cli/main.c src/cli/usage.c
+CLI_SRC = src/cli/main.c src/cli/usage.c src/cli/pretty.c
 
 ifeq ("$(shell uname -s)","Darwin")
 	STRIP_ARGS += -x
