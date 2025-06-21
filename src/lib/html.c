@@ -643,6 +643,8 @@ html_struct_handle(size_t *pos, const uint16_t lvl, html_state *st)
   const uint32_t text_count = st->text_count;
   const uint32_t comment_count = st->comment_count;
 
+  uchar starttag_ended = 0;
+
   i++;
   while_is(isspace,f,i,s);
 
@@ -691,6 +693,9 @@ html_struct_handle(size_t *pos, const uint16_t lvl, html_state *st)
   if (i >= s || attribs_handle(f,&i,s,hnode,attribs))
     goto END;
 
+  starttag_ended = (i < s);
+
+
   if (find_tag_info(tagname,&taginfo)) {
     hnode->all_len = i-hnode->all+1;
     goto END;
@@ -708,7 +713,7 @@ html_struct_handle(size_t *pos, const uint16_t lvl, html_state *st)
   END: ;
   if (i >= s) {
     hnode->all_len = s-hnode->all;
-    if (hnode->endtag == 0)
+    if (starttag_ended && hnode->endtag == 0)
       hnode->endtag = s-start;
   } else if (!hnode->all_len) {
     hnode->all_len = i-hnode->all;

@@ -115,6 +115,20 @@ d41d8cd98f00b204e9800998ecf8427e,'a href=/wedding/'
 
 < unclosed-tag.html
 18c53a8a802f5c7ca3f883a2ed89f8ce,'td .tablerow | "%i"'
+b5497ce69cae9763b3caed8c012a7380,'td .tablerow | "%Ui"'
+
+< unclosed-tag-2.html
+4380445a8b72fc8ec56af6d5b149eba6,'li | "%S"'
+d41d8cd98f00b204e9800998ecf8427e,'li | "%i"'
+4380445a8b72fc8ec56af6d5b149eba6,'li | "%A"'
+d41d8cd98f00b204e9800998ecf8427e,'li | "%e"'
+
+< unclosed-tag-3.html
+b5cc94ef46da0ebeb769715ae4f3fa95,'li | "%S"'
+d41d8cd98f00b204e9800998ecf8427e,'li | "%i"'
+b5cc94ef46da0ebeb769715ae4f3fa95,'li | "%A"'
+d41d8cd98f00b204e9800998ecf8427e,'li | "%e"'
+d784fa8b6d98d27699781bd9a7cf19f0,'li ksfah | "%(ksfah)Uv"'
 
 < editing.html
 e47d4d3285c95618f1efb1bc71132fb8,'{ li i@\, }'
