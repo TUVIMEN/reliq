@@ -19,7 +19,6 @@
 #ifndef RELIQ_HNODE_PRINT_H
 #define RELIQ_HNODE_PRINT_H
 
-#include "sink.h"
 #include "types.h"
 
 void chnode_printf(SINK *outfile, const char *format, const size_t formatl, const reliq_chnode *chnode, const reliq_chnode *parent, const reliq *rq);

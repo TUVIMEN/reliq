@@ -21,7 +21,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
-#include "flexarr.h"
+#include "../flexarr.h"
 
 /*
     SINK type was created to replace open_memstream(), since it's not portable and slow.

@@ -19,8 +19,6 @@
 #ifndef RELIQ_FORMAT_H
 #define RELIQ_FORMAT_H
 
-#include "flexarr.h"
-#include "sink.h"
 #include "types.h"
 
 //reliq_format_func flags

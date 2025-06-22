@@ -21,7 +21,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "flexarr.h"
 #include "utils.h"
 #include "range.h"
 #include "format.h"

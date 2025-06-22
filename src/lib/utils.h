@@ -20,7 +20,6 @@
 #define RELIQ_UTILS_H
 
 #include <string.h>
-#include "sink.h"
 #include "types.h"
 #include "ctype.h"
 

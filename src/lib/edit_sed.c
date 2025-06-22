@@ -23,9 +23,8 @@
 #include <regex.h>
 
 #include "ctype.h"
+#include "types.h"
 #include "utils.h"
-#include "flexarr.h"
-#include "sink.h"
 #include "format.h"
 #include "edit.h"
 

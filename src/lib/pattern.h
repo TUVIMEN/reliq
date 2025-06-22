@@ -21,7 +21,6 @@
 
 #include <regex.h>
 
-#include "sink.h"
 #include "types.h"
 #include "range.h"
 

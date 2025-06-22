@@ -22,7 +22,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#include "flexarr.h"
+#include "../flexarr.h"
 #include "sink.h"
 
 typedef unsigned char uchar;

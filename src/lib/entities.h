@@ -21,7 +21,6 @@
 
 #include <stdbool.h>
 
-#include "sink.h"
 #include "types.h"
 #include "reliq.h"
 

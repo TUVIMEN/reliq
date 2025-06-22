@@ -19,8 +19,8 @@
 #ifndef RELIQ_NODE_EXEC_H
 #define RELIQ_NODE_EXEC_H
 
+#include "types.h"
 #include "reliq.h"
-#include "flexarr.h"
 #include "npattern.h"
 
 #define AXIS_SELF (1<<0)

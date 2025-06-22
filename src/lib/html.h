@@ -19,7 +19,6 @@
 #ifndef RELIQ_HTML_H
 #define RELIQ_HTML_H
 
-#include "flexarr.h"
 #include "types.h"
 
 reliq_error *html_handle(const char *data, const size_t size, reliq_chnode **nodes, size_t *nodesl, reliq_cattrib **attribs, size_t *attribsl);

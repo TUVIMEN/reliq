@@ -23,7 +23,6 @@
 
 #include "ctype.h"
 #include "utils.h"
-#include "sink.h"
 #include "format.h"
 #include "edit.h"
 

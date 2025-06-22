@@ -19,8 +19,6 @@
 #ifndef RELIQ_EDIT_H
 #define RELIQ_EDIT_H
 
-#include "flexarr.h"
-#include "sink.h"
 #include "types.h"
 #include "format.h"
 #include "range.h"

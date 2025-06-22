@@ -22,7 +22,6 @@
 #include <string.h>
 #include <stdarg.h>
 
-#include "flexarr.h"
 #include "sink.h"
 #include "utils.h"
 #include "html.h"

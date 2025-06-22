@@ -20,8 +20,6 @@
 #define RELIQ_OUTPUT_H
 
 #include "types.h"
-#include "flexarr.h"
-#include "sink.h"
 
 struct ncollector {
     const reliq_expr *e;

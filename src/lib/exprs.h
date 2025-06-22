@@ -21,8 +21,6 @@
 
 #include "types.h"
 
-#include "sink.h"
-
 //reliq_expr flags
 //.e = reliq_npattern
 #define EXPR_NPATTERN 1

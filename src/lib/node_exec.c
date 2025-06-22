@@ -20,7 +20,6 @@
 
 #include <assert.h>
 
-#include "flexarr.h"
 #include "reliq.h"
 #include "output.h"
 #include "npattern_intr.h"
