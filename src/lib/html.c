@@ -107,7 +107,7 @@ comment_handle(const char *f, size_t *pos, const size_t s, reliq_chnode *hn)
     hn->endtag = i-base;
   }
   hn->all_len = i-hn->all;
-  *pos = i;
+  *pos = i-1;
 }
 
 static inline void
@@ -275,8 +275,7 @@ isinescapable(reliq_cstr str)
 }
 #endif
 
-static uint32_t
-html_struct_handle(size_t *pos, const uint16_t lvl, html_state *st);
+static uint32_t html_struct_handle(size_t *pos, const uint16_t lvl, html_state *st);
 
 struct tag_info {
     #ifdef RELIQ_AUTOCLOSING
@@ -328,6 +327,8 @@ text_finish(size_t *tnindex, flexarr *nodes, const size_t textstart, const size_
 static void
 text_add(html_state *st, const uint16_t lvl, size_t *tnindex)
 {
+  if (*tnindex != (size_t)-1)
+    return;
   st->text_count++;
   reliq_chnode *tn = flexarr_incz(st->nodes);
   tn->attribs = last_attrib(st->attribs);
@@ -470,7 +471,7 @@ tag_insides_handle(size_t *pos, const size_t hnindex, uint32_t *fallback, struct
       i++;
     textend = i;
 
-    if (textstart != i && tnindex == (size_t)-1)
+    if (textstart != i)
       text_add(st,lvl+1,&tnindex);
 
     if (i >= s)
@@ -500,7 +501,6 @@ tag_insides_handle(size_t *pos, const size_t hnindex, uint32_t *fallback, struct
       hn->attribs = last_attrib(attribs);
       comment_handle(f,&i,s,hn);
       st->comment_count++;
-      i--;
       goto CONTINUE;
     }
 
@@ -663,7 +663,6 @@ html_struct_handle(size_t *pos, const uint16_t lvl, html_state *st)
     hnode->attribs = last_attrib(attribs);
     comment_handle(f,&i,s,hnode);
     st->comment_count++;
-
     goto ERR;
   }
 
@@ -744,10 +743,10 @@ html_handle(const char *data, const size_t size, reliq_chnode **nodes, size_t *n
     .attribs = &attribs_buffer,
   };
   uint32_t htmlerr = 0;
+  size_t tnindex = -1; //textnode index
 
-  for (size_t i = 0; i < size;) {
+  for (size_t i = 0; i < size; i++) {
     size_t textstart=i;
-    size_t tnindex = -1; //textnode index
     size_t textend;
 
     TEXT_REPEAT: ;
@@ -756,8 +755,7 @@ html_handle(const char *data, const size_t size, reliq_chnode **nodes, size_t *n
     textend = i;
     if (textstart != textend) {
       htmlerr++;
-      if (tnindex == (size_t)-1)
-        text_add(&st,0,&tnindex);
+      text_add(&st,0,&tnindex);
     }
 
     while (i < size && data[i] == '<') {
@@ -768,12 +766,9 @@ html_handle(const char *data, const size_t size, reliq_chnode **nodes, size_t *n
         goto TEXT_REPEAT;
     }
 
-    if (tnindex != (size_t)-1)
-      text_finish(&tnindex,&nodes_buffer,textstart,textend,&htmlerr,data);
+    text_finish(&tnindex,&nodes_buffer,textstart,textend,&htmlerr,data);
     if (st.err)
       break;
-
-    i++;
   }
 
   if (st.err) {
