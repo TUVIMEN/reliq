@@ -335,6 +335,21 @@ order_attribs_find(const reliq *rq, const reliq_cattrib *attribs, const size_t a
 }
 
 static void
+order_attribs_add(const reliq *rq, flexarr *buf, const size_t pos, const reliq_attrib *attr, reliq_cattrib const *attribs, const size_t attribsl) //buf: reliq_cattrib
+{
+  *(reliq_cattrib*)flexarr_inc(buf) = attribs[pos];
+  size_t j = pos+1;
+
+  while (j < attribsl) {
+    const reliq_cattrib *same = order_attribs_find(rq,attribs+j,attribsl-j,attr);
+    if (!same)
+      break;
+    *(reliq_cattrib*)flexarr_inc(buf) = *same;
+    j = same-attribs+1;
+  }
+}
+
+static void
 order_attribs(const reliq *rq, flexarr *buf, reliq_cattrib const **attribs, size_t *attribsl) //buf: reliq_cattrib
 {
   reliq_cattrib const *a = *attribs;
@@ -343,20 +358,14 @@ order_attribs(const reliq *rq, flexarr *buf, reliq_cattrib const **attribs, size
     return;
   buf->size = 0;
 
-  for (size_t i = 0; i < al-1; i++) {
+  for (size_t i = 0; i < al; i++) {
     const reliq_cattrib *cattr = a+i;
     if (order_cattribs_find(buf->v,buf->size,cattr))
       continue;
 
     reliq_attrib attr;
     reliq_cattrib_conv(rq,cattr,&attr);
-
-    while (1) {
-      const reliq_cattrib *same = order_attribs_find(rq,a+i+1,al-i-1,&attr);
-      if (!same)
-        break;
-      *(reliq_cattrib*)flexarr_inc(buf) = *same;
-    }
+    order_attribs_add(rq,buf,i,&attr,a,al);
   }
 
   *attribs = buf->v;
@@ -395,6 +404,9 @@ print_pretty_attrib_value(const reliq_attrib *attr, const struct pretty_state *s
     || (quote != '\'' && quote != '"'))
     quote = 0;
 
+  if (!quote && attr->value.s == 0)
+    return 0;
+
   if (trim_tags) {
     if (print("=",1,st,linesize,0))
       return 1;
@@ -419,7 +431,7 @@ print_pretty_attrib_value(const reliq_attrib *attr, const struct pretty_state *s
   if (attr->value.b+attr->value.s >= st->rq->data+st->rq->datal) {
     if (s->fix && print(&quote,1,st,linesize,0))
       return 1;
-  } else if (print(attr->value.b+attr->value.s,1,st,linesize,0))
+  } else if (print(&quote,1,st,linesize,0))
     return 1;
 
   return 0;
@@ -540,7 +552,7 @@ print_pretty_tag_start_finish(const reliq_hnode *node, const struct pretty_state
 
   size_t pos = tag_start_before_insides(node,st);
   if (s->trim_tags) {
-    if (memchr(node->all.b+pos,'/',node->all.s-pos) == NULL
+    if (pos < node->all.s && memchr(node->all.b+pos,'/',node->all.s-pos) == NULL
       && print(" /",2,st,linesize,0))
       return 1;
   } else if (print(node->all.b+pos,node->all.s-pos-ended,st,linesize,0))
