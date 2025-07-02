@@ -547,31 +547,27 @@ static uchar
 print_pretty_tag_start_finish(const reliq_hnode *node, const struct pretty_state *st, size_t *linesize)
 {
   const struct pretty_settings *s = st->s;
-  uchar ended = 0;
-  size_t size;
-  if (node->insides.b) {
-    size = node->insides.s-1;
-  } else
-    size = node->all.s-1;
+  uchar closed = 0;
+  size_t size = (node->insides.b)
+    ? (size_t)(node->insides.b-node->all.b) : node->all.s;
 
-  if (node->all.b[size] == '>') {
-    ended = 1;
-    size--;
-  }
+  if (node->all.b[size] == '>')
+    closed = 1;
 
   size_t pos = tag_start_before_insides(node,st);
+  const uchar ended = (pos < node->all.s && memchr(node->all.b+pos,'/',size-pos) != NULL);
+
   if (s->trim_tags) {
-    if (pos < node->all.s && memchr(node->all.b+pos,'/',node->all.s-pos) == NULL
-      && print(" /",2,st,linesize,0))
+    if (ended && print(" /",2,st,linesize,0))
       return 1;
-  } else if (print(node->all.b+pos,node->all.s-pos-ended,st,linesize,0))
+  } else if (print(node->all.b+pos,node->all.s-pos-closed,st,linesize,0))
     return 1;
 
-  if ((ended || s->fix)
+  if ((closed || s->fix)
     && print(">",1,st,linesize,0))
     return 1;
 
-  if (!node->insides.b && s->fix)
+  if (!ended && !node->insides.b && s->fix)
     return print_endtag_none(node,st,linesize);
 
   return 0;
