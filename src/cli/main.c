@@ -127,8 +127,8 @@ handle_reliq_error(reliq_error *err) {
   exit(c);
 }
 
-uchar
-should_colorize(FILE *o)
+static uchar
+should_colorize_r(FILE *o)
 {
   #ifdef __unix__
 
@@ -157,6 +157,15 @@ should_colorize(FILE *o)
   return 0;
 
   #endif
+}
+
+uchar
+should_colorize(FILE *o)
+{
+  static uchar cancolor = (uchar)-1;
+  if (cancolor == (uchar)-1)
+    cancolor = should_colorize_r(o);
+  return cancolor;
 }
 
 static void
