@@ -29,37 +29,7 @@ typedef unsigned char uchar;
 
 extern FILE *errfile;
 
-static uchar
-should_colorize(FILE *o)
-{
-  #ifdef __unix__
-
-  int fd = fileno(o);
-  if (fd == -1)
-    return 0;
-
-  const char *term = getenv("TERM");
-  if (strcmp(term,"dump") == 0)
-    return 0;
-
-  struct stat st;
-  fstat(fd,&st);
-  if (!S_ISCHR(st.st_mode))
-    return 0;
-
-  struct stat t_st;
-  stat("/dev/null",&t_st);
-  if (st.st_ino == t_st.st_ino && st.st_dev == t_st.st_dev)
-    return 0;
-
-  return isatty(fd);
-
-  #else
-
-  return 0;
-
-  #endif
-}
+uchar should_colorize(FILE *o);
 
 static void
 usage_color(FILE *o, char *color, const char *s, ...)
@@ -279,13 +249,13 @@ usage(const char *argv0, FILE *o)
   color(COLOR_SECTION,"pretty");
   fputs(": prettify html (defaults are set only if this option is set)\n",o);
 
-  color_option("L","maxline","INT");
-  fputs("\t\tmax width of text in block, not counting the indent, if set to less than 1 everything is in one line",o);
+  color_option("L","maxline","UINT");
+  fputs("\t\tmax width of text in block, not counting the indent, if set to less than 0 everything is in one line",o);
   end_default("90");
-  color_option(NULL,"indent","INT");
+  color_option(NULL,"indent","UINT");
   fputs("\t\t\tset indentation width",o);
   end_default("2");
-  color_option(NULL,"cycle-indent","INT");
+  color_option(NULL,"cycle-indent","UINT");
   fputs("\t\tif number of indentations exceed this, they will reset to 0",o);
   end_default("0");
   fputc('\n',o);

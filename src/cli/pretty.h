@@ -22,9 +22,9 @@
 #include "../lib/reliq.h"
 
 struct pretty_settings {
-  int maxline;
-  int indent;
-  int cycle_indent;
+  size_t maxline;
+  size_t indent;
+  size_t cycle_indent;
   unsigned char indent_script : 1;
   unsigned char indent_style : 1;
   unsigned char wrap_text : 1;
@@ -42,5 +42,7 @@ struct pretty_settings {
 };
 
 void pretty_settings_init(struct pretty_settings *settings);
+
+void print_pretty(const reliq *rq, const struct pretty_settings *s, FILE *out);
 
 #endif

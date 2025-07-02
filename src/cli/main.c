@@ -127,6 +127,38 @@ handle_reliq_error(reliq_error *err) {
   exit(c);
 }
 
+uchar
+should_colorize(FILE *o)
+{
+  #ifdef __unix__
+
+  int fd = fileno(o);
+  if (fd == -1)
+    return 0;
+
+  const char *term = getenv("TERM");
+  if (strcmp(term,"dump") == 0)
+    return 0;
+
+  struct stat st;
+  fstat(fd,&st);
+  if (!S_ISCHR(st.st_mode))
+    return 0;
+
+  struct stat t_st;
+  stat("/dev/null",&t_st);
+  if (st.st_ino == t_st.st_ino && st.st_dev == t_st.st_dev)
+    return 0;
+
+  return isatty(fd);
+
+  #else
+
+  return 0;
+
+  #endif
+}
+
 static void
 str_decode(char *f, size_t s, int (*freedata)(void*,size_t)) {
   reliq_decode_entities_file(f,s,outfile,true);
@@ -184,7 +216,7 @@ html_prettify(char *f, size_t s, int (*freedata)(void*,size_t))
     handle_reliq_error(err);
   }
 
-
+  print_pretty(&rq,&psettings,outfile);
 
   reliq_free(&rq);
   freedata(f,s);
@@ -357,15 +389,15 @@ file_exec_set(int argc, const char **argv)
   }
 }
 
-static int
-valid_int(const char *arg, const char *option)
+static unsigned long int
+valid_uint(const char *arg, const char *option)
 {
   long int ret;
   char *end;
   ret = strtol(arg,&end,10);
 
-  if (!*end)
-    die("--%s: expected integer, got \"%s\"", option, arg);
+  if (*end || ret < 0)
+    die("--%s: expected unsigned integer, got \"%s\"", option, arg);
 
   return ret;
 }
@@ -397,8 +429,8 @@ longopts_handle_html_process(const char *name)
       psettings.y = z; \
     }
 
-  X("indent",indent,valid_int(optarg,"indent"))
-  else X("cycle-indent",cycle_indent,valid_int(optarg,"cycle-indent"))
+  X("indent",indent,valid_uint(optarg,"indent"))
+  else X("cycle-indent",cycle_indent,valid_uint(optarg,"cycle-indent"))
   else X("indent-script",indent_script,1)
   else X("no-indent-script",indent_script,0)
   else X("indent-style",indent_style,1)
@@ -549,8 +581,8 @@ main(int argc, char **argv)
         url_refl = strlen(optarg);
         break;
       case 'L':
-        run_mode = htmlProcess;
-        psettings.maxline = valid_int(optarg,"maxline");
+        run_mode = htmlPrettify;
+        psettings.maxline = valid_uint(optarg,"maxline");
         break;
       case 'r': settings |= F_RECURSIVE; break;
       case 'R': settings |= F_RECURSIVE; nftwflags &= ~FTW_PHYS; break;
