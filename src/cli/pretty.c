@@ -158,16 +158,32 @@ static uchar
 print_wrapped(const char *src, const size_t size, const struct pretty_state *st, const uchar wrap, size_t *linesize)
 {
   const size_t maxline = st->s->maxline;
-  if (!wrap || *st->linesize || !maxline || *linesize+size >= maxline)
+  if (!wrap || *st->linesize || !maxline || *linesize+size < maxline)
     return print(src,size,st,linesize,1);
 
   size_t pos = 0;
+  size_t prevnewline = st->p_st->newline;
+  st->p_st->newline = 1;
   while (pos < size) {
     size_t prevpos = pos;
+
     while (pos < size && pos-prevpos < maxline)
-      get_word(src,&pos,size);
-    print(src+prevpos,pos-prevpos,st,linesize,1);
+      if (src[pos++] == '\n')
+        break;
+
+    if (pos-prevpos >= maxline) {
+      pos = prevpos;
+      while (pos < size && pos-prevpos < maxline)
+        get_word(src,&pos,size);
+    }
+
+    const char *line = src+prevpos;
+    size_t linel = pos-prevpos;
+    get_trimmed(line,linel,&line,&linel);
+
+    print(line,linel,st,linesize,1);
   }
+  st->p_st->newline = prevnewline;
   return 0;
 }
 
