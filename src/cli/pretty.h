@@ -35,7 +35,7 @@ struct pretty_settings {
   unsigned char color : 2;
   unsigned char normal_case : 1;
   unsigned char fix : 1;
-  unsigned char merge_attribs : 1;
+  unsigned char order_attribs : 1;
   unsigned char remove_comments : 1;
   unsigned char show_hidden : 1;
   unsigned char overlap_ending : 1;

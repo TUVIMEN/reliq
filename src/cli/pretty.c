@@ -58,7 +58,7 @@ pretty_settings_init(struct pretty_settings *settings)
     .color = 1,
     .normal_case = 1,
     .fix = 1,
-    .merge_attribs = 1,
+    .order_attribs = 1,
     .remove_comments = 0,
     .show_hidden = 0,
     .overlap_ending = 0,
@@ -75,6 +75,28 @@ struct pretty_state {
   const uchar color;
 };
 
+static void
+print_indents(const struct pretty_state *st, const size_t size, size_t *linesize)
+{
+  struct print_state *p_st = st->p_st;
+  FILE *out = st->out;
+
+  if (p_st->not_first && !p_st->justnewline) {
+    fputc('\n',out);
+    size_t lvl = p_st->lvl;
+    if (st->s->cycle_indent != 0)
+      lvl %= st->s->cycle_indent;
+
+    const size_t indent = st->s->indent;
+    for (size_t i = 0; i < lvl; i++)
+      for (size_t j = 0; j < indent; j++)
+        fputc(' ',out);
+    *linesize = 0;
+  }
+  p_st->justnewline = (size == 0);
+  p_st->not_first = 1;
+}
+
 static uchar
 print_r(const char *src, const size_t size, const struct pretty_state *st, size_t *linesize, const uchar newline, int (*transform)(int))
 {
@@ -86,22 +108,9 @@ print_r(const char *src, const size_t size, const struct pretty_state *st, size_
   struct print_state *p_st = st->p_st;
   FILE *out = st->out;
 
-  if (newline && p_st->newline) {
-    if (p_st->not_first && !p_st->justnewline) {
-      fputc('\n',out);
-      size_t lvl = p_st->lvl;
-      if (st->s->cycle_indent != 0)
-        lvl %= st->s->cycle_indent;
-      const size_t indent = st->s->indent;
+  if (newline && p_st->newline)
+    print_indents(st,size,linesize);
 
-      for (size_t i = 0; i < lvl; i++)
-        for (size_t j = 0; j < indent; j++)
-          fputc(' ',out);
-      *linesize = 0;
-    }
-    p_st->justnewline = (size == 0);
-    p_st->not_first = 1;
-  }
   if (size) // !st->s->overlap_ending
     p_st->justnewline = 0;
 
@@ -489,7 +498,7 @@ print_pretty_attribs(const reliq_hnode *node, const struct pretty_state *st, siz
 {
   reliq_cattrib const *attribs = node->attribs;
   size_t attribsl = node->attribsl;
-  if (st->s->merge_attribs)
+  if (st->s->order_attribs)
     order_attribs(st->rq,st->attrs_buf,&attribs,&attribsl);
 
   return print_pretty_attribs_r(attribs,attribsl,st,&node->tag,linesize);

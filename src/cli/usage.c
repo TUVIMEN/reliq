@@ -279,7 +279,7 @@ usage(const char *argv0, FILE *o)
   bool_opt("normal-case","\t\t\tmake tag names, attribute names, classes and ids lowercase",NULL);
   bool_opt("trim-comments","\t\ttrim whitespaces in comments beginning and ending",NULL);
   bool_opt("fix","\t\t\t\tadd missing ending tags and match it's case to starting tag",NULL);
-  bool_opt("merge-attribs","\t\tmerge repeating atributes in the same tag, values are separated by whitespace",NULL);
+  bool_opt("order-attribs","\t\torder repeating atributes in the same tag",NULL);
   bool_opt("remove-comments","\t\tremove all comment nodes","\t\t");
   bool_opt("show-hidden","\t\t\tshow info hidden by prettification by coloring background of elements",NULL);
   bool_opt("overlap-ending","\t\tAllow other tags/comments/text after ending of tag or comments unless both of them fit in maxline limit","\t\t");

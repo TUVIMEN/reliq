@@ -452,8 +452,8 @@ longopts_handle_html_process(const char *name)
   else X("no-normal-case",normal_case,0)
   else X("fix",fix,1)
   else X("no-fix",fix,0)
-  else X("merge-attribs",merge_attribs,1)
-  else X("no-merge-attribs",merge_attribs,0)
+  else X("order-attribs",order_attribs,1)
+  else X("no-order-attribs",order_attribs,0)
   else X("remove-comments",remove_comments,1)
   else X("no-remove-comments",remove_comments,0)
   else X("show-hidden",show_hidden,1)
@@ -539,8 +539,8 @@ main(int argc, char **argv)
     {"no-normal-case",no_argument,NULL,0},
     {"fix",no_argument,NULL,0},
     {"no-fix",no_argument,NULL,0},
-    {"merge-attribs",no_argument,NULL,0},
-    {"no-merge-attribs",no_argument,NULL,0},
+    {"order-attribs",no_argument,NULL,0},
+    {"no-order-attribs",no_argument,NULL,0},
     {"remove-comments",no_argument,NULL,0},
     {"no-remove-comments",no_argument,NULL,0},
     {"show-hidden",no_argument,NULL,0},
