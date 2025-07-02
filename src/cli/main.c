@@ -432,49 +432,39 @@ longopts_handle_mode(const char *name)
 }
 
 static uchar
-longopts_handle_html_process(const char *name)
+longopts_handle_html_prettify(const char *name)
 {
   #define X(x,y,z) if (strcmp(name,x) == 0) { \
       psettings.y = z; \
     }
+  #define Y(x,y) X(x,y,1) \
+    else X("no-" x,y,0)
 
   X("indent",indent,valid_uint(optarg,"indent"))
   else X("cycle-indent",cycle_indent,valid_uint(optarg,"cycle-indent"))
-  else X("indent-script",indent_script,1)
-  else X("no-indent-script",indent_script,0)
-  else X("indent-style",indent_style,1)
-  else X("no-indent-style",indent_style,0)
-  else X("wrap-text",wrap_text,1)
-  else X("no-wrap-text",wrap_text,0)
-  else X("wrap-comments",wrap_comments,1)
-  else X("no-wrap-comments",wrap_comments,0)
+  else Y("indent-script",indent_script)
+  else Y("indent-style",indent_style)
+  else Y("wrap-text",wrap_text)
+  else Y("wrap-comments",wrap_comments)
   else X("color",color,1)
   else X("force-color",color,2)
   else X("no-color",color,0)
-  else X("trim-tags",trim_tags,1)
-  else X("no-trim-tags",trim_tags,0)
-  else X("trim-attribs",trim_attribs,1)
-  else X("no-trim-attribs",trim_attribs,0)
-  else X("trim-comments",trim_comments,1)
-  else X("no-trim-comments",trim_comments,0)
-  else X("normal-case",normal_case,1)
-  else X("no-normal-case",normal_case,0)
-  else X("fix",fix,1)
-  else X("no-fix",fix,0)
-  else X("order-attribs",order_attribs,1)
-  else X("no-order-attribs",order_attribs,0)
-  else X("remove-comments",remove_comments,1)
-  else X("no-remove-comments",remove_comments,0)
-  else X("show-hidden",show_hidden,1)
-  else X("no-show-hidden",show_hidden,0)
-  else X("overlap-ending",overlap_ending,1)
-  else X("no-overlap-ending",overlap_ending,0)
+  else Y("trim-tags",trim_tags)
+  else Y("trim-attribs",trim_attribs)
+  else Y("trim-comments",trim_comments)
+  else Y("normal-case",normal_case)
+  else Y("fix",fix)
+  else Y("order-attribs",order_attribs)
+  else Y("remove-comments",remove_comments)
+  else Y("show-hidden",show_hidden)
+  else Y("overlap-ending",overlap_ending)
   else
     return 0;
 
-  run_mode = htmlProcess;
+  run_mode = htmlPrettify;
   return 1;
 
+  #undef Y
   #undef X
 }
 
@@ -484,7 +474,7 @@ longopts_handle(const char *name)
   if (longopts_handle_mode(name))
     return;
 
-  if (longopts_handle_html_process(name))
+  if (longopts_handle_html_prettify(name))
     return;
 }
 
@@ -502,6 +492,10 @@ main(int argc, char **argv)
   argv0 = strdup(basename(argv[0]));
   if (argc < 2)
     usage(argv0,errfile);
+
+  #define X(x) \
+    {x,no_argument,NULL,0}, \
+    {"no-" x,no_argument,NULL,0}
 
   struct option long_options[] = {
     {"output",required_argument,NULL,'o'},
@@ -527,37 +521,26 @@ main(int argc, char **argv)
     {"indent",required_argument,NULL,0},
     {"cycle-indent",required_argument,NULL,0},
 
-    {"indent-script",no_argument,NULL,0},
-    {"no-indent-script",no_argument,NULL,0},
-    {"indent-style",no_argument,NULL,0},
-    {"no-indent-style",no_argument,NULL,0},
-    {"wrap-text",no_argument,NULL,0},
-    {"no-wrap-text",no_argument,NULL,0},
-    {"wrap-comments",no_argument,NULL,0},
-    {"no-wrap-comments",no_argument,NULL,0},
+    X("indent-script"),
+    X("indent-style"),
+    X("wrap-text"),
+    X("wrap-comments"),
     {"color",no_argument,NULL,0},
     {"force-color",no_argument,NULL,0},
     {"no-color",no_argument,NULL,0},
-    {"trim-tags",no_argument,NULL,0},
-    {"no-trim-tags",no_argument,NULL,0},
-    {"trim-attribs",no_argument,NULL,0},
-    {"no-trim-attribs",no_argument,NULL,0},
-    {"trim-comments",no_argument,NULL,0},
-    {"no-trim-comments",no_argument,NULL,0},
-    {"normal-case",no_argument,NULL,0},
-    {"no-normal-case",no_argument,NULL,0},
-    {"fix",no_argument,NULL,0},
-    {"no-fix",no_argument,NULL,0},
-    {"order-attribs",no_argument,NULL,0},
-    {"no-order-attribs",no_argument,NULL,0},
-    {"remove-comments",no_argument,NULL,0},
-    {"no-remove-comments",no_argument,NULL,0},
-    {"show-hidden",no_argument,NULL,0},
-    {"no-show-hidden",no_argument,NULL,0},
-    {"overlap-ending",no_argument,NULL,0},
-    {"no-overlap-ending",no_argument,NULL,0},
+    X("trim-tags"),
+    X("trim-attribs"),
+    X("trim-comments"),
+    X("normal-case"),
+    X("fix"),
+    X("order-attribs"),
+    X("remove-comments"),
+    X("show-hidden"),
+    X("overlap-ending"),
     {NULL,0,NULL,0}
   };
+
+  #undef X
 
   while (1) {
     int index;
