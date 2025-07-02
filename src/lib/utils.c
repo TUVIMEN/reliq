@@ -135,7 +135,7 @@ memcasecmp(const void *v1, const void *v2, const size_t n)
     char u1 = toupper_inline(s1[i]);
     char u2 = toupper_inline(s2[i]);
     char diff = u1-u2;
-    if (diff)
+    if (diff != 0)
       return diff;
   }
   return 0;
