@@ -544,6 +544,28 @@ tag_start_before_insides(const reliq_hnode *node, const struct pretty_state *st)
 }
 
 static uchar
+tag_selfclosing(const char *tag, const size_t tagl)
+{
+  static const struct {
+    const char *b;
+    uint8_t s;
+  } selfclosing[] = {
+    {"br",2},{"img",3},{"input",5},
+    {"link",4},{"meta",4},{"hr",2},{"col",3},{"embed",5},
+    {"area",4},{"base",4},{"param",5},
+    {"source",6},{"track",5},{"wbr",3},{"command",7},
+    {"keygen",6},{"menuitem",8}
+  };
+  static const size_t selfclosingl = sizeof(selfclosing)/sizeof(*selfclosing);
+
+  for (size_t i = 0; i < selfclosingl; i++)
+    if (tagl == selfclosing[i].s
+      && memcasecmp(tag,selfclosing[i].b,tagl) == 0)
+      return 1;
+  return 0;
+}
+
+static uchar
 print_pretty_tag_start_finish(const reliq_hnode *node, const struct pretty_state *st, size_t *linesize)
 {
   const struct pretty_settings *s = st->s;
@@ -567,7 +589,8 @@ print_pretty_tag_start_finish(const reliq_hnode *node, const struct pretty_state
     && print(">",1,st,linesize,0))
     return 1;
 
-  if (!ended && !node->insides.b && s->fix)
+  if (!ended && !node->insides.b && s->fix
+    && !tag_selfclosing(node->tag.b,node->tag.s))
     return print_endtag_none(node,st,linesize);
 
   return 0;
