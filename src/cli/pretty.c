@@ -789,4 +789,7 @@ print_pretty(const reliq *rq, const struct pretty_settings *s, FILE *out)
   print_pretty_broad(rq->nodes,rq->nodesl,&st,&lsize);
 
   flexarr_free(st.attrs_buf);
+
+  if (s->maxline != 0)
+    fputc('\n',out);
 }
