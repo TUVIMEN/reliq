@@ -237,9 +237,9 @@ comment_start(const reliq_hnode *node)
   const char *src = node->insides.b;
   size_t size = 0;
 
-  while (!isspace(*(src-1))) {
-    size--;
-    src++;
+  while (src-1 != node->all.b && !isspace(*(src-1))) {
+    size++;
+    src--;
   }
 
   return (reliq_cstr){
@@ -252,17 +252,14 @@ static uchar
 print_pretty_comment_start(const reliq_hnode *node, const struct pretty_state *st, size_t *linesize, uchar *small)
 {
   reliq_cstr start = comment_start(node);
+  *small = (node->all.s-start.s < 3 || memcmp(start.b,"!--",3) != 0);
 
   if (st->s->trim_comments) {
     if (print("<!",2,st,linesize,0))
       return 1;
-  } else if (print(node->all.b+1,start.b-node->all.b,st,linesize,0))
-    return 1;
-
-  *small = (node->all.s-start.s < 3 || memcmp(start.b,"!--",3) != 0);
-  start.s = *small ? 0 : 3;
-
-  return print(start.b,start.s,st,linesize,0);
+    return (!*small && print("--",2,st,linesize,0));
+  } else
+    return print(node->all.b,node->insides.b-node->all.b,st,linesize,0);
 }
 
 static uchar
