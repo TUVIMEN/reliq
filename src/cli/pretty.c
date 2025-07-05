@@ -136,28 +136,22 @@ print_lower(const char *src, const size_t size, const struct pretty_state *st, s
 }
 
 static uchar
-print_minified_r(const char *src, const size_t size, const struct pretty_state *st, size_t *linesize)
+print_minified(const char *src, const size_t size, const struct pretty_state *st, size_t *linesize)
 {
-  for (size_t i = 0; i < size; i++) {
+  for (size_t i = 0; i < size; ) {
     if (isspace(src[i])) {
       if (print_r(" ",1,st,linesize,0,NULL))
         return 1;
       i++;
       while (i < size && isspace(src[i]))
         i++;
-      i--;
-    } else if (print_r(src+i,1,st,linesize,0,NULL))
-      return 1;
+    } else {
+      if (print_r(src+i,1,st,linesize,0,NULL))
+        return 1;
+      i++;
+    }
   }
   return 0;
-}
-
-static uchar
-print_minified(const char *src, const size_t size, const struct pretty_state *st, size_t *linesize, const uchar newline)
-{
-  if (!st->s->maxline)
-    return print_minified_r(src,size,st,linesize);
-  return print(src,size,st,linesize,newline);
 }
 
 static size_t
@@ -193,7 +187,7 @@ print_wrapped(const char *src, const size_t size, const struct pretty_state *st,
 {
   const size_t maxline = st->s->maxline;
   if (!maxline)
-    return print_minified_r(src,size,st,linesize);
+    return print_minified(src,size,st,linesize);
 
   if (!wrap || *st->linesize || *linesize+size < maxline)
     return print(src,size,st,linesize,1);
@@ -306,8 +300,11 @@ print_pretty_comment_insides(const reliq_hnode *node, const struct pretty_state 
   if (s->trim_comments)
     get_trimmed(src,size,&src,&size);
 
-  if (!s->wrap_comments)
-    return print_minified(src,size,st,linesize,0);
+  if (!s->wrap_comments) {
+    if (!st->s->maxline)
+      return print_minified(src,size,st,linesize);
+    return print(src,size,st,linesize,0);
+  }
   return print_wrapped(src,size,st,1,linesize);
 }
 
@@ -701,6 +698,34 @@ print_pretty_tag_end(const reliq_hnode *node, const struct pretty_state *st, siz
 static uchar print_pretty_broad(const reliq_chnode *nodes, const size_t nodesl, const struct pretty_state *st, size_t *linesize);
 
 static uchar
+print_minified_script(const char *src, const size_t size, const struct pretty_state *st, size_t *linesize)
+{
+  for (size_t i = 0; i < size; ) {
+    if (isspace(src[i])) {
+      size_t spaces=0,previ=i;
+      do {
+        if (src[i] == ' ')
+          spaces++;
+        i++;
+      } while (i < size && isspace(src[i]));
+
+      if (i-previ == spaces) {
+        for (size_t j = previ; j < i; j++)
+          if (print(" ",1,st,linesize,0))
+            return 1;
+      } else if (print(" ",1,st,linesize,0))
+        return 1;
+    } else {
+      if (print(src+i,1,st,linesize,0))
+        return 1;
+      i++;
+    }
+  }
+
+  return 0;
+}
+
+static uchar
 handle_tag_script(const reliq_chnode *next, const reliq_hnode *node, const struct pretty_state *st, size_t *linesize, const size_t desc)
 {
   uchar script=0,style=0;
@@ -731,7 +756,9 @@ handle_tag_script(const reliq_chnode *next, const reliq_hnode *node, const struc
   if (size == 0)
     return 0;
 
-  return print_minified(src,size,st,linesize,1);
+  if (!st->s->maxline)
+    return print_minified_script(src,size,st,linesize);
+  return print(src,size,st,linesize,1);
 }
 
 static uchar
