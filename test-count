@@ -2,4 +2,4 @@
 
 # counts the amount of tests overall
 
-grep -h -E '^[0-9a-f]{32},' $(find test -type f -name '*.test') | wc -l
+grep -h -E '^[0-9a-f]{32},' $(find tests -type f -name '*.test') | wc -l

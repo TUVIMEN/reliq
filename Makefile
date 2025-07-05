@@ -132,30 +132,31 @@ reliq: ${OBJ}
 	${CC} ${CFLAGS_ALL} -c $< -o $@
 
 test: all
-	@./test.sh test/basic.test . "${TEST_FLAGS}" || true
+	@./tests/test.sh tests/basic.test . "${TEST_FLAGS}" || true
 
 test-advanced: all
-	@./test.sh test/advanced.test . "${TEST_FLAGS}" || true
+	@./tests/test.sh tests/advanced.test . "${TEST_FLAGS}" || true
 
 test-errors: all
-	@./test.sh test/errors.test . "${TEST_FLAGS}" || true
+	@./tests/test.sh tests/errors.test . "${TEST_FLAGS}" || true
 
 test-afl: all
-	@./test.sh test/afl.test . "${TEST_FLAGS}" || true
+	@./tests/test.sh tests/afl.test . "${TEST_FLAGS}" || true
 
 test-all: all
-	@./test.sh test/all.test . "${TEST_FLAGS}" || true
+	@./tests/test.sh tests/all.test . "${TEST_FLAGS}" || true
+	@./tests/test_urlparse.py || true
 
-test-update: test
-	@./test.sh test/all.test update "${TEST_FLAGS}" || true
+test-update: all
+	@./tests/test.sh tests/all.test update "${TEST_FLAGS}" || true
 
 test-speed: lib
-	@gcc -O3 testspeed.c -o testspeed ./libreliq.so
-	@./testspeed
+	@gcc -O3 speed.c -o speed ./libreliq.so
+	@./speed
 
 dist: clean
 	mkdir -p ${TARGET}-${VERSION}
-	cp -r test LICENSE Makefile README.md src reliq.1 ${TARGET}-${VERSION}
+	cp -r tests LICENSE Makefile README.md src reliq.1 ${TARGET}-${VERSION}
 	tar -c ${TARGET}-${VERSION} | xz -e9 > ${TARGET}-${VERSION}.tar.xz
 	rm -rf ${TARGET}-${VERSION}
 
