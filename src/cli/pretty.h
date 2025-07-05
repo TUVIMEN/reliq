@@ -25,8 +25,8 @@ struct pretty_settings {
   size_t maxline;
   size_t indent;
   size_t cycle_indent;
-  unsigned char indent_script : 1;
-  unsigned char indent_style : 1;
+  unsigned char wrap_script : 1;
+  unsigned char wrap_style : 1;
   unsigned char wrap_text : 1;
   unsigned char wrap_comments : 1;
   unsigned char trim_tags : 1;

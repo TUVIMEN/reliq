@@ -442,8 +442,8 @@ longopts_handle_html_prettify(const char *name)
 
   X("indent",indent,valid_uint(optarg,"indent"))
   else X("cycle-indent",cycle_indent,valid_uint(optarg,"cycle-indent"))
-  else Y("indent-script",indent_script)
-  else Y("indent-style",indent_style)
+  else Y("wrap-script",wrap_script)
+  else Y("wrap-style",wrap_style)
   else Y("wrap-text",wrap_text)
   else Y("wrap-comments",wrap_comments)
   else X("color",color,1)
@@ -521,8 +521,8 @@ main(int argc, char **argv)
     {"indent",required_argument,NULL,0},
     {"cycle-indent",required_argument,NULL,0},
 
-    X("indent-script"),
-    X("indent-style"),
+    X("wrap-script"),
+    X("wrap-style"),
     X("wrap-text"),
     X("wrap-comments"),
     {"color",no_argument,NULL,0},

@@ -48,8 +48,8 @@ pretty_settings_init(struct pretty_settings *settings)
     .maxline = 90,
     .indent = 2,
     .cycle_indent = 0,
-    .indent_script = 1,
-    .indent_style = 1,
+    .wrap_script = 0,
+    .wrap_style = 0,
     .wrap_text = 1,
     .wrap_comments = 1,
     .trim_tags = 1,
@@ -699,9 +699,42 @@ static uchar print_pretty_broad(const reliq_chnode *nodes, const size_t nodesl, 
 static uchar
 print_pretty_tag_insides(const reliq_chnode *chnode, const reliq_hnode *node, const struct pretty_state *st, size_t *linesize)
 {
-  chnode++;
   const size_t desc = node->tag_count+node->comment_count+node->text_count;
-  return print_pretty_broad(chnode,desc,st,linesize);
+  if (!desc)
+    return 0;
+
+  const reliq_chnode *next = chnode+1;
+
+  uchar script=0,style=0;
+  if (node->tag.s == 6 && memcasecmp(node->tag.b,"script",6) == 0) {
+    script = 1;
+  } else if (node->tag.s == 5 && memcasecmp(node->tag.b,"style",5) == 0)
+    style = 1;
+
+  if ((script && !st->s->wrap_script) || (style && !st->s->wrap_style)) {
+    assert(desc == 1);
+
+    reliq_hnode text;
+    reliq_chnode_conv(st->rq,next,&text);
+
+    uint8_t type = text.type;
+    assert(type == RELIQ_HNODE_TYPE_TEXT
+      || type == RELIQ_HNODE_TYPE_TEXT_EMPTY
+      || type == RELIQ_HNODE_TYPE_TEXT_ERR);
+
+    if (type == RELIQ_HNODE_TYPE_TEXT_EMPTY)
+      return 0;
+
+    const char *src;
+    size_t size;
+    get_trimmed(text.all.b,text.all.s,&src,&size);
+    if (size == 0)
+      return 0;
+
+    return print(src,size,st,linesize,1);
+  }
+
+  return print_pretty_broad(next,desc,st,linesize);
 }
 
 static uchar
@@ -712,7 +745,10 @@ print_pretty_tag(const reliq_chnode *chnode, const reliq_hnode *node, const stru
   if (!node->insides.b)
     return 0;
 
-  if (print_pretty_tag_insides(chnode,node,st,linesize))
+  st->p_st->lvl++;
+  uchar r = print_pretty_tag_insides(chnode,node,st,linesize);
+  st->p_st->lvl--;
+  if (r)
     return 1;
 
   return print_pretty_tag_end(node,st,linesize);
@@ -766,20 +802,12 @@ print_pretty_node(const reliq_chnode *chnode, const struct pretty_state *st, siz
 static uchar
 print_pretty_broad(const reliq_chnode *nodes, const size_t nodesl, const struct pretty_state *st, size_t *linesize)
 {
-  uchar ret = 0;
-  st->p_st->lvl++;
-
   for (size_t i = 0; i < nodesl;) {
     i += print_pretty_node(nodes+i,st,linesize)+1;
-    if (*st->linesize && *linesize >= st->s->maxline) {
-      ret = 1;
-      goto END;
-    }
+    if (*st->linesize && *linesize >= st->s->maxline)
+      return 1;
   }
-
-  END: ;
-  st->p_st->lvl--;
-  return ret;
+  return 0;
 }
 
 void
@@ -791,7 +819,7 @@ print_pretty(const reliq *rq, const struct pretty_settings *s, FILE *out)
 
   flexarr attr_buf = flexarr_init(sizeof(const reliq_cattrib),ATTRS_INCR);
   struct print_state p_st = {
-    .lvl=(size_t)-1,
+    .lvl=0,
     .newline=1,
     .justnewline=0,
     .not_first=0

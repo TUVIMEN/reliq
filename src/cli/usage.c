@@ -260,8 +260,8 @@ usage(const char *argv0, FILE *o)
   end_default("0");
   fputc('\n',o);
 
-  bool_opt("indent-script","\t\tindent contents of script tag",0);
-  bool_opt("indent-style","\t\tindent contents of style tag",0);
+  bool_opt("wrap-script","\t\twrap contents of script tag",0);
+  bool_opt("wrap-style","\t\twrap contents of style tag",0);
   bool_opt("wrap-text","\t\t\twrap text nodes",0);
   bool_opt("wrap-comments","\t\twrap insides of comment nodes",0);
 
