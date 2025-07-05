@@ -81,7 +81,7 @@ print_indents(const struct pretty_state *st, const size_t size, size_t *linesize
   struct print_state *p_st = st->p_st;
   FILE *out = st->out;
 
-  if (p_st->not_first && !p_st->justnewline) {
+  if (st->s->maxline != 0 && p_st->not_first && !p_st->justnewline) {
     fputc('\n',out);
     size_t lvl = p_st->lvl;
     if (st->s->cycle_indent != 0)
@@ -133,6 +133,23 @@ static uchar
 print_lower(const char *src, const size_t size, const struct pretty_state *st, size_t *linesize)
 {
   return print_r(src,size,st,linesize,0,tolower);
+}
+
+static uchar
+print_minified(const char *src, const size_t size, const struct pretty_state *st, size_t *linesize)
+{
+  for (size_t i = 0; i < size; i++) {
+    if (isspace(src[i])) {
+      if (print_r(" ",1,st,linesize,0,NULL))
+        return 1;
+      i++;
+      while (i < size && isspace(src[i]))
+        i++;
+      i--;
+    } else if (print_r(src+i,1,st,linesize,0,NULL))
+      return 1;
+  }
+  return 0;
 }
 
 static size_t
@@ -208,6 +225,9 @@ print_pretty_text(const reliq_hnode *node, const struct pretty_state *st, size_t
 
   if (size == 0)
     return 0;
+
+  if (st->s->maxline == 0)
+    return print_minified(src,size,st,linesize);
   return print_wrapped(src,size,st,st->s->wrap_text,linesize);
 }
 
@@ -280,6 +300,8 @@ print_pretty_comment_insides(const reliq_hnode *node, const struct pretty_state 
   if (s->trim_comments)
     get_trimmed(src,size,&src,&size);
 
+  if (st->s->maxline == 0)
+    return print_minified(src,size,st,linesize);
   if (!s->wrap_comments)
     return print(src,size,st,linesize,0);
   return print_wrapped(src,size,st,1,linesize);
