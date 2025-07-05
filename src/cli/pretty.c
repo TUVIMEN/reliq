@@ -136,7 +136,7 @@ print_lower(const char *src, const size_t size, const struct pretty_state *st, s
 }
 
 static uchar
-print_minified(const char *src, const size_t size, const struct pretty_state *st, size_t *linesize)
+print_minified_r(const char *src, const size_t size, const struct pretty_state *st, size_t *linesize)
 {
   for (size_t i = 0; i < size; i++) {
     if (isspace(src[i])) {
@@ -150,6 +150,14 @@ print_minified(const char *src, const size_t size, const struct pretty_state *st
       return 1;
   }
   return 0;
+}
+
+static uchar
+print_minified(const char *src, const size_t size, const struct pretty_state *st, size_t *linesize, const uchar newline)
+{
+  if (!st->s->maxline)
+    return print_minified_r(src,size,st,linesize);
+  return print(src,size,st,linesize,newline);
 }
 
 static size_t
@@ -184,7 +192,10 @@ static uchar
 print_wrapped(const char *src, const size_t size, const struct pretty_state *st, const uchar wrap, size_t *linesize)
 {
   const size_t maxline = st->s->maxline;
-  if (!wrap || *st->linesize || !maxline || *linesize+size < maxline)
+  if (!maxline)
+    return print_minified_r(src,size,st,linesize);
+
+  if (!wrap || *st->linesize || *linesize+size < maxline)
     return print(src,size,st,linesize,1);
 
   size_t pos = 0;
@@ -226,8 +237,6 @@ print_pretty_text(const reliq_hnode *node, const struct pretty_state *st, size_t
   if (size == 0)
     return 0;
 
-  if (st->s->maxline == 0)
-    return print_minified(src,size,st,linesize);
   return print_wrapped(src,size,st,st->s->wrap_text,linesize);
 }
 
@@ -297,10 +306,8 @@ print_pretty_comment_insides(const reliq_hnode *node, const struct pretty_state 
   if (s->trim_comments)
     get_trimmed(src,size,&src,&size);
 
-  if (st->s->maxline == 0)
-    return print_minified(src,size,st,linesize);
   if (!s->wrap_comments)
-    return print(src,size,st,linesize,0);
+    return print_minified(src,size,st,linesize,0);
   return print_wrapped(src,size,st,1,linesize);
 }
 
@@ -592,16 +599,16 @@ print_pretty_tag_start_finish(const reliq_hnode *node, const struct pretty_state
   size_t size = (node->insides.b)
     ? (size_t)(node->insides.b-node->all.b) : node->all.s;
 
-  if (node->all.b[size] == '>')
+  if (node->all.b[size-1] == '>')
     closed = 1;
 
   size_t pos = tag_start_before_insides(node,st);
-  const uchar ended = (pos < node->all.s && memchr(node->all.b+pos,'/',size-pos) != NULL);
+  const uchar ended = (pos < node->all.s && memchr(node->all.b+pos-closed,'/',size-pos) != NULL);
 
   if (s->trim_tags) {
     if (ended && print(" /",2,st,linesize,0))
       return 1;
-  } else if (print(node->all.b+pos,node->all.s-pos-closed,st,linesize,0))
+  } else if (print(node->all.b+pos-closed,size-pos,st,linesize,0))
     return 1;
 
   if ((closed || s->fix)
@@ -694,6 +701,40 @@ print_pretty_tag_end(const reliq_hnode *node, const struct pretty_state *st, siz
 static uchar print_pretty_broad(const reliq_chnode *nodes, const size_t nodesl, const struct pretty_state *st, size_t *linesize);
 
 static uchar
+handle_tag_script(const reliq_chnode *next, const reliq_hnode *node, const struct pretty_state *st, size_t *linesize, const size_t desc)
+{
+  uchar script=0,style=0;
+  if (node->tag.s == 6 && memcasecmp(node->tag.b,"script",6) == 0) {
+    script = 1;
+  } else if (node->tag.s == 5 && memcasecmp(node->tag.b,"style",5) == 0)
+    style = 1;
+
+  if ((!script || st->s->wrap_script) && (!style || st->s->wrap_style))
+    return (uchar)-1;
+
+  assert(desc == 1);
+
+  reliq_hnode text;
+  reliq_chnode_conv(st->rq,next,&text);
+
+  uint8_t type = text.type;
+  assert(type == RELIQ_HNODE_TYPE_TEXT
+    || type == RELIQ_HNODE_TYPE_TEXT_EMPTY
+    || type == RELIQ_HNODE_TYPE_TEXT_ERR);
+
+  if (type == RELIQ_HNODE_TYPE_TEXT_EMPTY)
+    return 0;
+
+  const char *src;
+  size_t size;
+  get_trimmed(text.all.b,text.all.s,&src,&size);
+  if (size == 0)
+    return 0;
+
+  return print_minified(src,size,st,linesize,1);
+}
+
+static uchar
 print_pretty_tag_insides(const reliq_chnode *chnode, const reliq_hnode *node, const struct pretty_state *st, size_t *linesize)
 {
   const size_t desc = node->tag_count+node->comment_count+node->text_count;
@@ -702,34 +743,9 @@ print_pretty_tag_insides(const reliq_chnode *chnode, const reliq_hnode *node, co
 
   const reliq_chnode *next = chnode+1;
 
-  uchar script=0,style=0;
-  if (node->tag.s == 6 && memcasecmp(node->tag.b,"script",6) == 0) {
-    script = 1;
-  } else if (node->tag.s == 5 && memcasecmp(node->tag.b,"style",5) == 0)
-    style = 1;
-
-  if ((script && !st->s->wrap_script) || (style && !st->s->wrap_style)) {
-    assert(desc == 1);
-
-    reliq_hnode text;
-    reliq_chnode_conv(st->rq,next,&text);
-
-    uint8_t type = text.type;
-    assert(type == RELIQ_HNODE_TYPE_TEXT
-      || type == RELIQ_HNODE_TYPE_TEXT_EMPTY
-      || type == RELIQ_HNODE_TYPE_TEXT_ERR);
-
-    if (type == RELIQ_HNODE_TYPE_TEXT_EMPTY)
-      return 0;
-
-    const char *src;
-    size_t size;
-    get_trimmed(text.all.b,text.all.s,&src,&size);
-    if (size == 0)
-      return 0;
-
-    return print(src,size,st,linesize,1);
-  }
+  uchar r = handle_tag_script(next,node,st,linesize,desc);
+  if (r != (uchar)-1)
+    return r;
 
   return print_pretty_broad(next,desc,st,linesize);
 }
