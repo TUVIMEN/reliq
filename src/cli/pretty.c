@@ -111,7 +111,7 @@ print_r(const char *src, const size_t size, const struct pretty_state *st, size_
   if (newline && p_st->newline)
     print_indents(st,size,linesize);
 
-  if (size) // !st->s->overlap_ending
+  if (size && !st->s->overlap_ending)
     p_st->justnewline = 0;
 
   if (transform) {
