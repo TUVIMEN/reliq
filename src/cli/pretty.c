@@ -445,7 +445,7 @@ print_pretty_attrib_value(const reliq_attrib *attr, const struct pretty_state *s
     if (quote && print(&quote,1,st,linesize,0))
       return 1;
   } else {
-    base = attr->key.b+attr->key.s+1;
+    base = attr->key.b+attr->key.s;
     space = attr->value.b-base;
     if (print(base,space,st,linesize,0))
       return 1;
@@ -499,9 +499,12 @@ print_pretty_attribs_r(const reliq_cattrib *attribs, const size_t attribsl, cons
       space = 1;
     } else {
       if (i == 0) {
-        base = tag->b+tag->s+1;
-      } else
-        base = prevattr.key.b+prevattr.key.s+1;
+        base = tag->b+tag->s;
+      } else {
+        base = prevattr.value.b+prevattr.value.s;
+        if (*base == '"' || *base == '\'')
+          base++;
+      }
       space = attr.key.b-base;
 
       prevattr = attr;
@@ -561,8 +564,12 @@ tag_start_before_insides(const reliq_hnode *node, const struct pretty_state *st)
 
   reliq_attrib attr;
   reliq_cattrib_conv(st->rq,attribs+attribsl-1,&attr);
-  if (attr.value.b)
-    return attr.value.b+attr.value.s+1-node->all.b;
+  if (attr.value.b) {
+    size_t ret = attr.value.b-node->all.b+attr.value.s;
+    if (node->all.b[ret] == '"' || node->all.b[ret] == '\'')
+      ret++;
+    return ret+1;
+  }
   return attr.key.b+attr.key.s+1-node->all.b;
 }
 
