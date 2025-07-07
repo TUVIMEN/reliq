@@ -143,6 +143,9 @@ test-errors: all
 test-afl: all
 	@./tests/test.sh tests/afl.test . "${TEST_FLAGS}" || true
 
+test-pretty:
+	@./tests/test.sh tests/pretty.test . "${TEST_FLAGS}" || true
+
 test-all: all
 	@./tests/test.sh tests/all.test . "${TEST_FLAGS}" || true
 	@./tests/test_urlparse.py || true

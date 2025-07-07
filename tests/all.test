@@ -2,3 +2,4 @@
 @errors.test
 @advanced.test
 @afl.test
+@pretty.test

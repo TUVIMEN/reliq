@@ -1,0 +1,18 @@
+< 1.html
+b2bf2c2054ddc4d711cb719e6cd0afa8,-p --no-trim-tag
+1481b6bb391792a4235f2f20d630afc9,-p --no-trim-attribs
+728b6004b85b75197b0c419c1f5d4fb7,-L 20 --trim-comments
+fd73d24da5a64903d96f0aaf014427fc,-p
+7d187821b331a0c0cac937c46c19a175,-p -L 0
+3d61028738bed885db3e9a04a7f43607,-L 0
+b819f23f1e58d2dda7e19668d5e754d9,-L 20 --indent 2
+5141e1b3403fe1716bf5800d21bd079a,-L 20 --indent 2 --fix
+a4a6fd5e3cd812129233120c07aea5e3,-L 1 --indent 2 --wrap-script
+0254f18754f9a4697df5ad60efb1ee89,-L 10 --indent 2 --wrap-style
+fbf52cd4ae076d5d5e130f865b847607,-L 1 --indent 2 --wrap-comments
+6c0d3ffec50aef96b4f8f020d5e431aa,-L 10 --indent 2 --wrap-text
+b08402d3bea6ae8e015f104cef7c84d3,-L 20 --indent 2 --remove-comments
+5a2d73aebb02c9540bfe8697c6b10f19,-L 20 --indent 2 --overlap-ending
+b314b9ebb802f9ad9f439d7ad5fc80a6,-L 20 --indent 2 --normal-case
+1acbd18327b804a261f614fd89b22026,-L 20 --indent 2 --cycle-indent 4
+dd36eea45077d94ab88b76452afa3cd7,-L 20 --indent 2 --order-attribs
