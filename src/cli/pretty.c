@@ -746,7 +746,7 @@ handle_tag_script(const reliq_chnode *next, const reliq_hnode *node, const struc
   } else if (node->tag.s == 5 && memcasecmp(node->tag.b,"style",5) == 0)
     style = 1;
 
-  if ((!script || st->s->wrap_script) && (!style || st->s->wrap_style))
+  if (!script && !style)
     return (uchar)-1;
 
   assert(desc == 1);
@@ -768,9 +768,12 @@ handle_tag_script(const reliq_chnode *next, const reliq_hnode *node, const struc
   if (size == 0)
     return 0;
 
+
   if (!st->s->maxline)
     return print_minified_script(src,size,st,linesize);
-  return print(src,size,st,linesize,1);
+  return print_wrapped(src,size,st,
+    (script && st->s->wrap_script) || (style && st->s->wrap_style),
+    linesize);
 }
 
 static uchar
