@@ -501,7 +501,7 @@ print_pretty_attribs_r(const reliq_cattrib *attribs, const size_t attribsl, cons
     reliq_attrib attr;
     reliq_cattrib_conv(st->rq,attribs+i,&attr);
 
-    if (trim_tags) {
+    if (trim_tags || s->order_attribs) {
       base = " ";
       space = 1;
     } else {
