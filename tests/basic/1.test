@@ -19,6 +19,7 @@ d41d8cd98f00b204e9800998ecf8427e,'B>div\;'
 d96a93c0639d397e1769a4ad1dd0f671,'div E>(id|style)'
 abf03b57d4cf180519283d5198c1e736,'div id=E>con(\;|t)'
 071f6ee8b65e5f4675927a2e1f0e1634,'div .gas; @'
+50effe117744fcbb223089c8b1bee59c,'{ [0] p | "%i -- "jj} }'
 
 2ea37c28b1cde2dbc79dc39e033d60e4,'div [-]class'
 ab39f28ce41c57abe6f1d16d97f02ccb,'div +[:]class'
