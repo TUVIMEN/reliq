@@ -409,7 +409,9 @@ print_pretty_attrib_value_trim(const reliq_attrib *attr, const struct pretty_sta
 {
   size_t pos = 0;
   const char *src = attr->value.b;
-  const size_t size = attr->value.s;
+  size_t size = attr->value.s;
+  get_trimmed(src,size,&src,&size);
+
   for (size_t i=0; pos < size; i++) {
     if (i && print(" ",1,st,linesize,0))
       return 1;
