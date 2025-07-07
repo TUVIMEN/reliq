@@ -136,6 +136,14 @@ print_lower(const char *src, const size_t size, const struct pretty_state *st, s
 }
 
 static uchar
+print_case(const char *src, const size_t size, const struct pretty_state *st, size_t *linesize, const uchar newline)
+{
+  if (st->s->normal_case)
+    return print_lower(src,size,st,linesize);
+  return print(src,size,st,linesize,newline);
+}
+
+static uchar
 print_minified(const char *src, const size_t size, const struct pretty_state *st, size_t *linesize)
 {
   for (size_t i = 0; i < size; ) {
@@ -474,10 +482,7 @@ print_pretty_attrib_value(const reliq_attrib *attr, const struct pretty_state *s
 static uchar
 print_pretty_attrib(const reliq_attrib *attr, const struct pretty_state *st, size_t *linesize)
 {
-  if (st->s->normal_case) {
-    if (print_lower(attr->key.b,attr->key.s,st,linesize))
-      return 1;
-  } else if (print(attr->key.b,attr->key.s,st,linesize,0))
+  if (print_case(attr->key.b,attr->key.s,st,linesize,0))
     return 1;
 
   return print_pretty_attrib_value(attr,st,linesize);
@@ -533,24 +538,11 @@ print_pretty_attribs(const reliq_hnode *node, const struct pretty_state *st, siz
 }
 
 static uchar
-print_tag_name(const reliq_hnode *node, const struct pretty_state *st, size_t *linesize)
-{
-  if (st->s->normal_case) {
-    if (print_lower(node->tag.b,node->tag.s,st,linesize))
-      return 1;
-  } else {
-    if (print(node->tag.b,node->tag.s,st,linesize,0))
-      return 1;
-  }
-  return 0;
-}
-
-static uchar
 print_endtag_none(const reliq_hnode *node, const struct pretty_state *st, size_t *linesize)
 {
   if (print("</",2,st,linesize,1))
     return 1;
-  if (print_tag_name(node,st,linesize))
+  if (print_case(node->tag.b,node->tag.s,st,linesize,0))
     return 1;
   return print(">",1,st,linesize,0);
 }
@@ -644,7 +636,7 @@ print_pretty_tag_start(const reliq_hnode *node, const struct pretty_state *st, s
       return 1;
   }
 
-  if (print_tag_name(node,st,linesize))
+  if (print_case(node->tag.b,node->tag.s,st,linesize,0))
     return 1;
 
   if (print_pretty_attribs(node,st,linesize))
@@ -692,7 +684,7 @@ print_pretty_tag_end(const reliq_hnode *node, const struct pretty_state *st, siz
     pos++;
 
   if (fix || s->normal_case) {
-    if (print_tag_name(node,st,linesize))
+    if (print_case(node->tag.b,node->tag.s,st,linesize,0))
       return 1;
   } else if (print(end+prevpos,pos-prevpos,st,linesize,0))
     return 1;
