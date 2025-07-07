@@ -601,11 +601,18 @@ print_pretty_tag_start_finish(const reliq_hnode *node, const struct pretty_state
     closed = 1;
 
   size_t pos = tag_start_before_insides(node,st);
-  const uchar ended = (pos < node->all.s && memchr(node->all.b+pos-closed,'/',size-pos) != NULL);
+  const char *ending_slash = NULL;
+  const uchar ended = (pos < node->all.s
+      && (ending_slash = memchr(node->all.b+pos-closed,'/',size-pos)) != NULL);
 
   if (s->trim_tags) {
-    if (ended && print(" /",2,st,linesize,0))
-      return 1;
+    if (ended) {
+      if (isspace(*(ending_slash-1))
+        && print(" ",1,st,linesize,0))
+        return 1;
+      if (print("/",1,st,linesize,0))
+        return 1;
+    }
   } else if (print(node->all.b+pos-closed,size-pos,st,linesize,0))
     return 1;
 
