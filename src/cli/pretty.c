@@ -680,6 +680,7 @@ print_pretty_tag_end(const reliq_hnode *node, const struct pretty_state *st, siz
 
   print_whitespace();
 
+  prevpos = pos;
   while (pos < endl && !isspace(end[pos]) && end[pos] != '>')
     pos++;
 
@@ -689,10 +690,13 @@ print_pretty_tag_end(const reliq_hnode *node, const struct pretty_state *st, siz
   } else if (print(end+prevpos,pos-prevpos,st,linesize,0))
     return 1;
 
-  print_whitespace();
+  print_whitespace(); //changes prevpos
 
   if (fix || (pos < endl && end[pos] == '>'))
     return print(">",1,st,linesize,0);
+
+  if (s->trim_tags && prevpos != pos)
+    print(" ",1,st,linesize,0);
   return print(end+pos,endl-pos,st,linesize,0);
 }
 
