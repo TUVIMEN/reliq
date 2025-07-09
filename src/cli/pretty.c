@@ -42,6 +42,8 @@ typedef unsigned char uchar;
 #define COLOR_ATTRIB_KEY "\033[35m"
 #define COLOR_ATTRIB_SEPARATOR "\033[32m"
 #define COLOR_ATTRIB_VALUE "\033[31m"
+#define COLOR_ATTRIB_CLASS "\033[33m"
+#define COLOR_ATTRIB_ID "\033[36m"
 
 #define COLOR_CLEAR "\033[0m"
 
@@ -563,8 +565,17 @@ print_pretty_attrib_after(const reliq_attrib *attr, const struct pretty_state *s
 static uchar
 print_pretty_attrib(const reliq_attrib *attr, const struct pretty_state *st, size_t *linesize)
 {
-  colret(COLOR_ATTRIB_KEY,
-    print_case(attr->key.b,attr->key.s,st,linesize,0));
+  const char *key = attr->key.b;
+  const size_t keyl = attr->key.s;
+  const char *col = COLOR_ATTRIB_KEY;
+
+  if (keyl == 5 && memcasecmp(key,"class",5) == 0) {
+    col = COLOR_ATTRIB_CLASS;
+  } else if (keyl == 2 && memcasecmp(key,"id",2) == 0)
+    col = COLOR_ATTRIB_ID;
+
+  colret(col,
+    print_case(key,keyl,st,linesize,0));
 
   return print_pretty_attrib_after(attr,st,linesize);
 }
