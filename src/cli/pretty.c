@@ -32,17 +32,17 @@ typedef unsigned char uchar;
 #define while_is(w,x,y,z) while ((y) < (z) && w((x)[(y)])) {(y)++;}
 #define while_isnt(w,x,y,z) while ((y) < (z) && !w((x)[(y)])) {(y)++;}
 
-#define COLOR_COMMENT "\033[36m"
+#define COLOR_COMMENT "\033[36;3m"
 
 #define COLOR_TEXT NULL
-#define COLOR_TEXT_ERROR "\033[31m"
+#define COLOR_TEXT_ERROR "\033[31;1m"
 
 #define COLOR_BRACKETS "\033[34m"
 #define COLOR_TAGNAME "\033[33m"
 #define COLOR_ATTRIB_KEY "\033[35m"
 #define COLOR_ATTRIB_SEPARATOR "\033[32m"
 #define COLOR_ATTRIB_VALUE "\033[31m"
-#define COLOR_ATTRIB_CLASS "\033[33m"
+#define COLOR_ATTRIB_CLASS "\033[34m"
 #define COLOR_ATTRIB_ID "\033[36m"
 
 #define COLOR_CLEAR "\033[0m"
