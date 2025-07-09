@@ -283,7 +283,7 @@ usage(const char *argv0, FILE *o)
   bool_opt("remove-comments","\t\tremove all comment nodes","\t\t");
   bool_opt("overlap-ending","\t\tAllow other tags/comments/text after ending of tag or comments unless both of them fit in maxline limit","\t\t");
 
-  fputs("\nWhen input files aren't specified, standard input will be read.\n",o);
+  fputs("When input files aren't specified, standard input will be read.\n",o);
 
   exit(1);
 }
