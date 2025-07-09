@@ -2,9 +2,11 @@
 b2bf2c2054ddc4d711cb719e6cd0afa8,-p --no-trim-tag
 1481b6bb391792a4235f2f20d630afc9,-p --no-trim-attribs
 728b6004b85b75197b0c419c1f5d4fb7,-L 20 --trim-comments
+
 fd73d24da5a64903d96f0aaf014427fc,-p
 7d187821b331a0c0cac937c46c19a175,-p -L 0
 3d61028738bed885db3e9a04a7f43607,-L 0
+
 b819f23f1e58d2dda7e19668d5e754d9,-L 20 --indent 2
 5141e1b3403fe1716bf5800d21bd079a,-L 20 --indent 2 --fix
 a4a6fd5e3cd812129233120c07aea5e3,-L 1 --indent 2 --wrap-script
@@ -16,3 +18,28 @@ b08402d3bea6ae8e015f104cef7c84d3,-L 20 --indent 2 --remove-comments
 b314b9ebb802f9ad9f439d7ad5fc80a6,-L 20 --indent 2 --normal-case
 1acbd18327b804a261f614fd89b22026,-L 20 --indent 2 --cycle-indent 4
 dd36eea45077d94ab88b76452afa3cd7,-L 20 --indent 2 --order-attribs
+
+# color
+<
+64f9558d207bfdf2c733a02bf8ae1626,-p --force-color <<< '<p>jsla < /  '
+
+< 1.html
+2e1569e7b97d92d39d4f32f6049306a9,-p --force-color --no-trim-tag
+af51257ce2ff4aa2b7cfdeecd59932eb,-p --force-color --no-trim-attribs
+e29ec20e2c8ce7f220f9f2ddca59f9d3,--force-color -L 20 --trim-comments
+
+749ff1651bca150a76aee46d64b91b7a,-p --force-color
+20a062ed71d3f0db98eccc1882c83784,-p --force-color -L 0
+831d27c70133fcb3961ff98ba78a3a1b,--force-color -L 0
+
+17daae50eed1ef11a492a93a4b895de4,--force-color -L 20 --indent 2
+5984497b566f36a652f8dabfd5906be3,--force-color -L 20 --indent 2 --fix
+c03f8ee4350daa5749f9a2097248147e,--force-color -L 1 --indent 2 --wrap-script
+88f593bcbd66df6710b29de371fb5047,--force-color -L 10 --indent 2 --wrap-style
+1a5b803c70222439d59186bb800292c7,--force-color -L 1 --indent 2 --wrap-comments
+2b26c869dbf02382a489a8cc73fc670c,--force-color -L 10 --indent 2 --wrap-text
+2d9f834985dba30d96258c2ee6740466,--force-color -L 20 --indent 2 --remove-comments
+0a1ecfc81ec808a9c2927f2da0606fdd,--force-color -L 20 --indent 2 --overlap-ending
+80efd30a7193df626a13a5ddfdd28bed,--force-color -L 20 --indent 2 --normal-case
+cd4476e0b1e87a372265b61be9b00443,--force-color -L 20 --indent 2 --cycle-indent 4
+4f6b893ccb1676b0c2d9ed8ec052a42c,--force-color -L 20 --indent 2 --order-attribs
