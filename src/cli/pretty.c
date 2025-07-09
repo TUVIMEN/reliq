@@ -75,7 +75,6 @@ pretty_settings_init(struct pretty_settings *settings)
     .fix = 1,
     .order_attribs = 1,
     .remove_comments = 0,
-    .show_hidden = 0,
     .overlap_ending = 0,
   };
 }

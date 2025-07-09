@@ -456,7 +456,6 @@ longopts_handle_html_prettify(const char *name)
   else Y("fix",fix)
   else Y("order-attribs",order_attribs)
   else Y("remove-comments",remove_comments)
-  else Y("show-hidden",show_hidden)
   else Y("overlap-ending",overlap_ending)
   else
     return 0;
@@ -535,7 +534,6 @@ main(int argc, char **argv)
     X("fix"),
     X("order-attribs"),
     X("remove-comments"),
-    X("show-hidden"),
     X("overlap-ending"),
     {NULL,0,NULL,0}
   };
