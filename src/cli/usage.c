@@ -284,7 +284,6 @@ usage(const char *argv0, FILE *o)
   bool_opt("show-hidden","\t\t\tshow info hidden by prettification by coloring background of elements",NULL);
   bool_opt("overlap-ending","\t\tAllow other tags/comments/text after ending of tag or comments unless both of them fit in maxline limit","\t\t");
 
-
   fputs("\nWhen input files aren't specified, standard input will be read.\n",o);
 
   exit(1);
