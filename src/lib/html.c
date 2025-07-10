@@ -250,7 +250,7 @@ phptag_handle(const char *f, size_t *pos, const size_t s, reliq_chnode *hnode, f
       continue;
     }
     if (unlikely(f[i] == '?' && f[i+1] == '>')) {
-      hnode->endtag = i-1-base;
+      hnode->endtag = i-base;
       i++;
       break;
     }
