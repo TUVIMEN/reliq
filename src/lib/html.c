@@ -244,12 +244,14 @@ phptag_handle(const char *f, size_t *pos, const size_t s, reliq_chnode *hnode, f
   base += hnode->tagl = tagname.s;
 
   char *ending;
+  uchar foundend = 0;
   for (; i < s; i++) {
     if (unlikely(f[i] == '\\')) {
       i += 2;
       continue;
     }
     if (unlikely(f[i] == '?' && f[i+1] == '>')) {
+      foundend = 1;
       hnode->endtag = i-base;
       i++;
       break;
@@ -270,6 +272,8 @@ phptag_handle(const char *f, size_t *pos, const size_t s, reliq_chnode *hnode, f
     }
   }
   hnode->all_len = i-hnode->all+1;
+  if (!foundend)
+    hnode->endtag = i-base;
   END: ;
   *pos = i;
   return 0;
