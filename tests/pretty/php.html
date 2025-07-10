@@ -1,0 +1,97 @@
+<html>
+    <?xml version='1.0' encoding='UTF-8'?><?xml-stylesheet type='text/xsl' href='lll'?><!-- sitemap-generator-url='http://www.arnebrachhold.de' sitemap-generator-version='4.1.21' -->
+<?php kj?>
+<div>
+<  ?    php
+
+    $ROUTES = [];
+
+    class Route {
+        protected $method = null;
+        protected $path = [];
+        public $func = null;
+
+        protected function create_path($str, ...$validators) {
+            if (gettype($str) != "string")
+                throw new Exception("str has to be a string");
+            $size = strlen($str);
+            if ($size == 0)
+                throw new Exception("str cannot be empty");
+
+            $ret = [];
+            $start = 0;
+            $i = 0;
+            $val_count = count($validators);
+            $val = 0;
+
+            for (; $i < $size; $i++) {
+                if ($str[$i] === '@') {
+                    if ($i-$start > 0)
+                        array_push($ret,substr($str,$start,$i-$start));
+
+                    if ($val >= $val_count)
+                        throw new Exception("not enough validators given");
+
+                    array_push($ret,$validators[$val++]);
+
+                    $start = ++$i;
+                }
+            }
+            if ($size-$start > 0)
+                array_push($ret,substr($str,$start,$size-$start));
+
+            return $ret;
+        }
+
+        function __construct($method, $path, $func, ...$validators) {
+            $this->method = $method;
+            $this->path = $this->create_path($path,...$validators);
+            $this->func = $func;
+        }
+
+        protected function check_path($str) {
+            $pathl = count($this->path);
+            $strl = strlen($str);
+            $values = [];
+
+            $strc = 0;
+            $pathc = 0;
+            while (True) {
+                if ($strc >= $strl) {
+                    if ($pathc >= $pathl)
+                        break;
+                    return [False];
+                }
+                if ($pathc >= $pathl)
+                    return [False];
+
+                if (gettype($this->path[$pathc]) === "string") {
+                    $len = strlen($this->path[$pathc]);
+                    if ($strc+$len > $strl || (strcasecmp($this->path[$pathc],substr($str,$strc,$len)) != 0))
+                        return [False];
+                    $strc += $len;
+                } else {
+                    $r = $this->path[$pathc](substr($str,$strc),'/');
+                    if ($r[0] == 0)
+                        return [False];
+                    $strc += $r[0];
+                    array_push($values,$r[1]);
+                }
+
+                $pathc++;
+            }
+
+            return [True,$values];
+        }
+
+        function check($method, $str) {
+            if ($method !== $this->method)
+                return [False];
+            return $this->check_path($str);
+        }
+    }
+?>
+</div>
+</html>
+
+<?php  jkl > <p>list

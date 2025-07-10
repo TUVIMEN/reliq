@@ -1,0 +1,14 @@
+< php.html
+a1002d10d48dfd0c44d5cf2cb489883e,-L 90 --indent 2
+ad9c22da784d68fa6fb59a31c086e1a6,-p --no-trim-tags
+7a92acaf252b914912683a740d4914e3,-p --no-fix
+4d4eb897043aca93f9c1095f69c17528,-p
+03d8257bfa038320eec2412848399035,-p -L 1
+42bfbe640c75557aaa806f980aa86fe4,-p -L 0
+
+# colors
+189f064e1a96d5c62d1d1713fe17b367,-p --no-trim-tags --force-color
+79595270120913726d442ecaf907c405,-p --no-fix --force-color
+a2893851b2fded2d127b85ef24cfa6bd,-p --force-color
+973ba89ffa48335146d02dfbd6954e23,-p --force-color -L 1
+3896656c5cd6d48d0426514f41543715,-p --force-color -L 0
