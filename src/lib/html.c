@@ -259,7 +259,7 @@ phptag_handle(const char *f, size_t *pos, const size_t s, reliq_chnode *hnode, f
     if (unlikely(f[i] == '"')) {
       i++;
       if (phptag_skip_dquote(f,&i,s))
-        goto END;
+        break;
     } else if (unlikely(f[i] == '\'')) {
       i++;
       ending = memchr(f+i,'\'',s-i);
@@ -267,14 +267,13 @@ phptag_handle(const char *f, size_t *pos, const size_t s, reliq_chnode *hnode, f
         i = ending-f;
       } else {
         i = s;
-        goto END;
+        break;
       }
     }
   }
   hnode->all_len = i-hnode->all+1;
   if (!foundend)
     hnode->endtag = i-base;
-  END: ;
   *pos = i;
   return 0;
 }

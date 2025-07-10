@@ -13,3 +13,5 @@ e91fb2d11ab1f6338ff1e5a2e09cf787,'php  | "--%i\n"'
 <
 e8f3a15b2c9dcb4b4fb39fc613e89764,'php | "%Ui\n"' <<< '<?php kj?>'
 3419abebbc9b207175643b21bda52726,'php | "%Ui\n"' <<< '<?php  jkl >'
+4a56f9225f66091fe8a07d87d20c1b72,'php | "%Ui\n", p' <<< '<?php  jkl " ?><p>'
+7035fe8dbead5b67c147dbca5ed9045e,'php | "%Ui\n", p' <<< "<?php  jkl ' ?><p>"
