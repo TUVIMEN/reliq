@@ -250,13 +250,13 @@ usage(const char *argv0, FILE *o)
   fputs(": prettify html (defaults are set only if this option is set)\n",o);
 
   color_option("L","maxline","UINT");
-  fputs("\t\tmax width of text in block, not counting the indent, if set to less than 0 everything is in one line",o);
+  fputs("\t\tmax width of text in block excluding indentation, if set to 0 output is minified",o);
   end_default("90");
   color_option(NULL,"indent","UINT");
   fputs("\t\t\tset indentation width",o);
   end_default("2");
   color_option(NULL,"cycle-indent","UINT");
-  fputs("\t\tif number of indentations exceed this, they will reset to 0",o);
+  fputs("\t\tif number of indentations is exceeded it's reset to 0 (\fIby default 0\fR)",o);
   end_default("0");
   fputc('\n',o);
 

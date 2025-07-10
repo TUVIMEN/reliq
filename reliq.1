@@ -37,37 +37,6 @@ Output the version number of
 .B reliq
 and exit.
 
-.SS "Modes of execution"
-.TP
-.BR \--html
-execute expression on provided html (default)
-.TP
-.BR \--urljoin
-join urls passed in arguments with first argument url
-.TP
-.BR \-f ", " --file "\fI FILE\fR"
-Obtain pattern from
-.IR FILE.
-The empty file contains zero patterns, and therefore matches nothing.
-.TP
-.BR \-e ", " --expression "\fI PATTERN\fR"
-use
-.IR PATTERN
-instead of first input argument
-.TP
-.BR \--encode
-encode '\fB&\fR', '\fB<\fR', '\fB>\fR', '\fB"\fR', '\fB\\'\fR' to html entities in input files
-.TP
-.BR \--encode-full
-encode all possible characters to html entities in input files
-.TP
-.BR \--decode
-decode html entities, while translating &nbsp; to space in input files
-.TP
-.BR \--decode-exact
-decode html entities in input files
-
-
 .SS "General Output Control"
 .TP
 .BR \-o ", " --output " \fIFILE\fR"
@@ -90,12 +59,119 @@ Read all files under each directory, recursively.
 Read all files under each directory, recursively.
 Follow all symbolic links, unlike
 .BR \-r .
-.SS "Other Options"
+
+.SS "Modes of execution"
 .TP
-.B \-l ", " --list-structure
+.BR \--html
+execute expression on provided html (\fIdefault\fR)
+.TP
+.BR \--urljoin
+join urls passed in arguments with first argument url
+.TP
+.BR \--encode
+encode '\fB&\fR', '\fB<\fR', '\fB>\fR', '\fB"\fR', '\fB\\'\fR' to html entities in input files
+.TP
+.BR \--encode-full
+encode all possible characters to html entities in input files
+.TP
+.BR \--decode
+decode html entities, while translating &nbsp; to space in input files
+.TP
+.BR \--decode-exact
+decode html entities in input files
+.TP
+.BR \-p ", " --pretty
+prettify html in input files. This mode can also be set by using suboptions, but defaults are set only by this flag.
+
+.SS "HTML mode"
+.TP
+.BR \-f ", " --file "\fI FILE\fR"
+Obtain pattern from
+.IR FILE.
+The empty file contains zero patterns, and therefore matches nothing.
+.TP
+.BR \-e ", " --expression "\fI PATTERN\fR"
+use
+.IR PATTERN
+instead of first input argument
+.TP
+.BR \-l ", " --list-structure
 set
 .IR PATTERN
 to '| "%n%Ua - desc(%c) lvl(%L) size(%s) pos(%I)\\n"'.
+
+.SS "Pretty mode"
+.TP
+.BR \-L ", " --maxline "\fI UINT\fR"
+max width of text in block excluding indentation, if set to 0 output is minified (\fIby default 90\fR)
+.TP
+.BR --indent "\fI UINT\fR"
+set indentation width (\fIby default 2\fR)
+.TP
+.BR --cycle-indent "\fI UINT\fR"
+if number of indentations is exceeded it's reset to 0 (\fIby default 0\fR)
+
+.TP
+.BR \--wrap-script (\fIdefault\fR) " --no-wrap-script
+wrap contents of script tag
+
+.TP
+.BR \--wrap-style (\fIdefault\fR) " --no-wrap-style
+wrap contents of style tag
+
+.TP
+.BR \--wrap-text (\fIdefault\fR) " --no-wrap-text
+wrap text nodes
+
+.TP
+.BR \--wrap-comments (\fIdefault\fR) " --no-wrap-comments
+wrap insides of comment nodes
+
+.TP
+.BR \--color
+colorize output if in terminal (\fIdefault\fR)
+.TP
+.BR \--force-color
+always colorize output
+.TP
+.BR \--no-color
+do not colorize output
+
+.TP
+.BR \--trim-tags (\fIdefault\fR) " --no-trim-tags
+trim whitespaces in tags insides
+
+.TP
+.BR \--trim-attribs (\fIdefault\fR) " --no-trim-attribs
+trim whitespaces inbetween and in attribute values
+
+.TP
+.BR \--trim-comments (\fIdefault\fR) " --no-trim-comments
+trim whitespaces in comments beginning and ending
+
+.TP
+.BR \--normal-case (\fIdefault\fR) " --no-normal-case
+make tag names, attribute names, classes and ids lowercase
+
+.TP
+.BR \--trim-comments (\fIdefault\fR) " --no-trim-comments
+trim whitespaces in comments beginning and ending
+
+.TP
+.BR \--fix (\fIdefault\fR) " --no-fix
+add missing ending tags and match it's case to starting tag
+
+.TP
+.BR \--order-attribs (\fIdefault\fR) " --no-order-attribs
+order repeating atributes in the same tag
+
+.TP
+.BR \--remove-comments " " --no-remove-comments "(\fIdefault\fR)"
+remove all comment nodes
+
+.TP
+.BR \--overlap-ending " " --no-overlap-ending "(\fIdefault\fR)"
+Allow other tags/comments/text after ending of tag or comments unless both of them fit in maxline limit
 
 .SH SYNTAX
 .SS PATTERN
@@ -939,6 +1015,20 @@ Join urls with 'https://wikipedia.com/'
 \&
 .in +4m
 .B $ reliq --urljoin 'https://wikipedia.com/' '/' 'index.html' './name/../../list/genres/a.html'
+.in
+\&
+Prettify index.html
+.nf
+\&
+.in +4m
+.B $ reliq -p index.html
+.in
+\&
+Minify index.html
+.nf
+\&
+.in +4m
+.B $ reliq -p -L 0 --no-color index.html
 .in
 \&
 
