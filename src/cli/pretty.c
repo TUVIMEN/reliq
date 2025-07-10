@@ -32,6 +32,12 @@ typedef unsigned char uchar;
 #define while_is(w,x,y,z) while ((y) < (z) && w((x)[(y)])) {(y)++;}
 #define while_isnt(w,x,y,z) while ((y) < (z) && !w((x)[(y)])) {(y)++;}
 
+#define print_whitespace(prevpos, pos, base, basel) \
+  prevpos = pos; \
+  while_is(isspace,base,pos,basel); \
+  if (!trim_tags && print(base+prevpos,pos-prevpos,st,linesize,0)) \
+    return 1
+
 #define COLOR_COMMENT "\033[36;3m"
 
 #define COLOR_TEXT NULL
@@ -744,25 +750,39 @@ print_pretty_tag_start_finish(const reliq_hnode *node, const struct pretty_state
 }
 
 static uchar
-print_pretty_tag_start(const reliq_hnode *node, const struct pretty_state *st, size_t *linesize)
+tag_start_phplike(const reliq_hnode *node, const struct pretty_state *st, size_t *linesize, uchar *phplike)
 {
-  const struct pretty_settings *s = st->s;
+  const uchar trim_tags = st->s->trim_tags;
+  const char *base = node->all.b;
+  size_t basel = node->all.s;
+  size_t pos=1,prevpos;
 
-  const char *base;
-  size_t space;
+  print_whitespace(prevpos,pos,base,basel);
 
+  if ((*phplike = (base+pos != node->tag.b && base[pos] == '?'))) {
+    colret(COLOR_BRACKETS,
+      print("?",1,st,linesize,0));
+    pos++;
+    print_whitespace(prevpos,pos,base,basel);
+  }
+
+  return 0;
+}
+
+static uchar
+print_pretty_tag_start(const reliq_hnode *node, const struct pretty_state *st, size_t *linesize, uchar *phplike)
+{
   colret(COLOR_BRACKETS,
     print("<",1,st,linesize,0));
 
-  if (!s->trim_tags) {
-    base = node->all.b+1;
-    space = node->tag.b-base;
-    if (print(base,space,st,linesize,0))
-      return 1;
-  }
+  if (tag_start_phplike(node,st,linesize,phplike))
+    return 1;
 
   colret(COLOR_TAGNAME,
     print_case(node->tag.b,node->tag.s,st,linesize,0));
+
+  if (*phplike)
+    return 0;
 
   if (print_pretty_attribs(node,st,linesize))
     return 1;
@@ -788,22 +808,16 @@ print_pretty_tag_end(const reliq_hnode *node, const struct pretty_state *st, siz
   colret(COLOR_BRACKETS,
     print("<",1,st,linesize,1));
 
-  #define print_whitespace() \
-    prevpos = pos; \
-    while_is(isspace,end,pos,endl); \
-    if (!trim_tags && print(end+prevpos,pos-prevpos,st,linesize,0)) \
-      return 1
-
   size_t pos = 1;
   size_t prevpos = pos;
-  print_whitespace();
+  print_whitespace(prevpos,pos,end,endl);
 
   assert(end[pos] == '/');
   colret(COLOR_BRACKETS,
     print("/",1,st,linesize,0));
   pos++;
 
-  print_whitespace();
+  print_whitespace(prevpos,pos,end,endl);
 
   prevpos = pos;
   while (pos < endl && !isspace(end[pos]) && end[pos] != '>')
@@ -819,7 +833,7 @@ print_pretty_tag_end(const reliq_hnode *node, const struct pretty_state *st, siz
   if (r)
     return 1;
 
-  print_whitespace(); //changes prevpos
+  print_whitespace(prevpos,pos,end,endl); //changes prevpos
 
   if (fix || (pos < endl && end[pos] == '>'))
     colretr(COLOR_BRACKETS,
@@ -837,8 +851,6 @@ print_pretty_tag_end(const reliq_hnode *node, const struct pretty_state *st, siz
     colretr(COLOR_BRACKETS,
       print(">",1,st,linesize,0));
   return r;
-
-  #undef print_whitespace
 }
 
 static uchar print_pretty_broad(const reliq_chnode *nodes, const size_t nodesl, const struct pretty_state *st, size_t *linesize);
@@ -927,10 +939,65 @@ print_pretty_tag_insides(const reliq_chnode *chnode, const reliq_hnode *node, co
 }
 
 static uchar
+phplike_insides(const reliq_hnode *node, const struct pretty_state *st, size_t *linesize)
+{
+  const uchar trim_tags = st->s->trim_tags;
+  const char *src = node->insides.b;
+  size_t size = node->insides.s;
+  size_t pos=(node->tag.b+node->tag.s)-node->all.b,
+    prevpos;
+
+  print_whitespace(prevpos,pos,node->all.b,node->all.s);
+
+  if (!st->s->maxline)
+    return print_minified(src,size,st,linesize);
+  return print(src,size,st,linesize,0);
+}
+
+static uchar
+phplike_end(const reliq_hnode *node, const struct pretty_state *st, size_t *linesize)
+{
+  const uchar trim_tags = st->s->trim_tags;
+  const char *base = node->all.b;
+  size_t basel = node->all.s;
+  size_t pos=(node->insides.b+node->insides.s)-node->all.b,
+    prevpos;
+
+  print_whitespace(prevpos,pos,node->all.b,node->all.s);
+
+  if (pos >= basel) {
+    if (st->s->fix) {
+      if (print(" ",1,st,linesize,0))
+        return 0;
+      PRINT_END: ;
+      colretr(COLOR_BRACKETS,
+        print("?>",2,st,linesize,0));
+    }
+    return 0;
+  }
+
+  assert(pos+2 == basel && base[pos] == '?' && base[pos+1] == '>');
+  goto PRINT_END;
+}
+
+static uchar
+phplike_finish(const reliq_hnode *node, const struct pretty_state *st, size_t *linesize)
+{
+  if (phplike_insides(node,st,linesize))
+    return 1;
+  return phplike_end(node,st,linesize);
+}
+
+static uchar
 print_pretty_tag(const reliq_chnode *chnode, const reliq_hnode *node, const struct pretty_state *st, size_t *linesize)
 {
-  if (print_pretty_tag_start(node,st,linesize))
+  uchar phplike;
+  if (print_pretty_tag_start(node,st,linesize,&phplike))
     return 1;
+
+  if (phplike)
+    return phplike_finish(node,st,linesize);
+
   if (!node->insides.b)
     return 0;
 
