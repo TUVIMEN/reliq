@@ -52,7 +52,7 @@ typedef struct {
     size_t amount_i; //iterator of ncols[ncols_i].amount
 
     uint16_t field_lvl;
-    uchar field_ended;
+    bool field_ended;
 } nodes_output_state;
 
 struct fcollector_out {
@@ -208,7 +208,7 @@ output_default(nodes_output_state *st)
 }
 
 static void
-field_ended_free(SINK **out_field, uchar *field_ended)
+field_ended_free(SINK **out_field, bool *field_ended)
 {
   if (*out_field) {
     sink_close(*out_field);
@@ -287,7 +287,7 @@ outfields_inc(enum outfieldCode code, uint16_t lvl, reliq_field const *fieldname
 
   *field = (struct outfield){
     .lvl = lvl,
-    .code = (uchar)code
+    .code = (uint8_t)code
   };
 
   struct outfield **outfieldsv = (struct outfield**)outfields->v;
@@ -299,7 +299,7 @@ outfields_inc(enum outfieldCode code, uint16_t lvl, reliq_field const *fieldname
   return field;
 }
 
-static uchar
+static bool
 nodes_output_code_handle(enum outfieldCode code, enum outfieldCode prevcode, size_t nodes_i_diff, SINK *out, const reliq_compressed *compn, nodes_output_state *st)
 {
   struct outfield *field;

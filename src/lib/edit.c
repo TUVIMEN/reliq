@@ -37,7 +37,7 @@ edit_missing_arg(const char *argv0)
 }
 
 reliq_error *
-edit_arg_str(const edit_args *args, const char *argv0, const uchar num, reliq_cstr **dest)
+edit_arg_str(const edit_args *args, const char *argv0, const uint8_t num, reliq_cstr **dest)
 {
   const void *arg = args->arg[num];
   *dest = NULL;
@@ -56,7 +56,7 @@ edit_arg_str(const edit_args *args, const char *argv0, const uchar num, reliq_cs
 }
 
 reliq_error *
-edit_arg_delim(const edit_args *args, const char *argv0, const uchar num, char *delim, uchar *found)
+edit_arg_delim(const edit_args *args, const char *argv0, const uint8_t num, char *delim, bool *found)
 {
   reliq_error *err = NULL;
 
@@ -83,7 +83,7 @@ edit_arg_delim(const edit_args *args, const char *argv0, const uchar num, char *
 }
 
 reliq_error *
-edit_arg_range(const edit_args *args, const char *argv0, const uchar num, reliq_range const **dest)
+edit_arg_range(const edit_args *args, const char *argv0, const uint8_t num, reliq_range const **dest)
 {
   const void *arg = args->arg[num];
   *dest = NULL;
@@ -221,7 +221,7 @@ reliq_error *
 sort_edit(const reliq_cstr *src, SINK *output, const edit_args *args)
 {
   char delim = '\n';
-  uchar reverse=0,unique=0; //,natural=0,icase=0;
+  uint8_t reverse=0,unique=0; //,natural=0,icase=0;
   const char argv0[] = "sort";
 
   reliq_error *err;
@@ -337,8 +337,8 @@ line_edit(const reliq_cstr *src, SINK *output, const edit_args *args)
 reliq_error *
 cut_edit(const reliq_cstr *src, SINK *output, const edit_args *args)
 {
-  uchar delim[256]={0};
-  uchar complement=0,onlydelimited=0,delimited=0;
+  uint8_t delim[256]={0};
+  bool complement=0,onlydelimited=0,delimited=0;
   char linedelim = '\n';
   const char argv0[] = "cut";
   reliq_error *err;
@@ -382,7 +382,7 @@ cut_edit(const reliq_cstr *src, SINK *output, const edit_args *args)
   const size_t bufsize = 8192;
   char buf[bufsize];
   size_t bufcurrent = 0;
-  uchar printlinedelim;
+  bool printlinedelim;
 
   const char *str = src->b;
   const size_t strl = src->s;
@@ -401,10 +401,10 @@ cut_edit(const reliq_cstr *src, SINK *output, const edit_args *args)
       while (1) {
         dstart = start;
         dend = dstart;
-        while (!delim[(uchar)str[dend]] && dend < end)
+        while (!delim[(uint8_t)str[dend]] && dend < end)
           dend++;
         dlength = dend-dstart;
-        if (delim[(uchar)str[dend]] && dend < end)
+        if (delim[(uint8_t)str[dend]] && dend < end)
           dend++;
         if (dlength != dend-dstart) {
           printlinedelim = 1;
@@ -465,7 +465,7 @@ trim_edit(const reliq_cstr *src, SINK *output, const edit_args *args)
 {
   char delim = '\0';
   const char argv0[] = "trim";
-  uchar hasdelim = 0;
+  bool hasdelim = 0;
 
   reliq_error *err;
   if ((err = edit_arg_delim(args,argv0,0,&delim,&hasdelim)))

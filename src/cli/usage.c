@@ -24,12 +24,11 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <stdarg.h>
-
-typedef unsigned char uchar;
+#include <stdbool.h>
 
 extern FILE *errfile;
 
-uchar should_colorize(FILE *o);
+bool should_colorize(FILE *o);
 
 static void
 usage_color(FILE *o, char *color, const char *s, ...)
@@ -60,7 +59,7 @@ usage_color(FILE *o, char *color, const char *s, ...)
 #define COLOR_HIGHLIGHT "36;1"
 
 static void
-usage_color_option(FILE *o, const uchar cancolor, const char *shortopt, const char *longopt, const char *arg)
+usage_color_option(FILE *o, const bool cancolor, const char *shortopt, const char *longopt, const char *arg)
 {
   fputs("  ",o);
   if (shortopt) {
@@ -81,7 +80,7 @@ usage_color_option(FILE *o, const uchar cancolor, const char *shortopt, const ch
 #define color_option(x,y,z) usage_color_option(o,cancolor,x,y,z)
 
 static void
-usage_end_default(FILE *o, const uchar cancolor, const char *value)
+usage_end_default(FILE *o, const bool cancolor, const char *value)
 {
   if (value != (void*)1)
     fputc(' ',o);
@@ -99,7 +98,7 @@ usage_end_default(FILE *o, const uchar cancolor, const char *value)
 #define end_default(x) usage_end_default(o,cancolor,x)
 
 static void
-usage_bool(FILE *o, const uchar cancolor, const char *name, const char *desc, const char *d_other)
+usage_bool(FILE *o, const bool cancolor, const char *name, const char *desc, const char *d_other)
 {
   color_option(NULL,name,NULL);
   fputs(desc,o);
@@ -122,7 +121,7 @@ usage(const char *argv0, FILE *o)
 {
   if (!o)
     return;
-  uchar cancolor = should_colorize(o);
+  bool cancolor = should_colorize(o);
 
   color(COLOR_SECTION,"Usage");
   fprintf(o,": %s [",argv0);

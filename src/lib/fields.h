@@ -28,11 +28,11 @@ struct outfield {
   size_t s;
   reliq_field const *o;
   uint16_t lvl;
-  uchar code;
+  uint8_t code;
 
   //set when something attempted to write, and if not set
   //  tells field types that expression didn't find any hnodes
-  uchar notempty : 1;
+  bool notempty : 1;
 };
 
 void reliq_field_free(reliq_field *outfield);

@@ -43,10 +43,10 @@ typedef struct {
   flexarr *ncollector; //struct ncollector
   flexarr *fcollector; //struct fcollector
   flexarr *out; //reliq_compressed
-  uchar isempty : 1;
-  uchar noncol : 1; //no ncollector
-  uchar something_found : 1;
-  uchar something_failed : 1;
+  bool isempty : 1;
+  bool noncol : 1; //no ncollector
+  bool something_found : 1;
+  bool something_failed : 1;
 } exec_state;
 
 static reliq_error *exec_chain(const reliq_expr *expr, const flexarr *source, flexarr *dest, exec_state *st); //source: reliq_compressed, dest: reliq_compressed
@@ -101,7 +101,7 @@ ncollector_check(flexarr *ncollector, size_t correctsize) //ncollector: struct n
 }*/
 
 static inline void
-ncollector_add(flexarr *ncollector, const size_t newsize, size_t startn, size_t lastn, const reliq_expr *lastnode, uchar flags, uchar useformat, uchar isempty, uchar noncollector) //ncollector: struct ncollector, dest: reliq_compressed, source: reliq_compressed
+ncollector_add(flexarr *ncollector, const size_t newsize, size_t startn, size_t lastn, const reliq_expr *lastnode, uint8_t flags, bool useformat, bool isempty, bool noncollector) //ncollector: struct ncollector, dest: reliq_compressed, source: reliq_compressed
 {
   if ((!newsize && !isempty) || noncollector || (useformat && !lastnode))
     return;
@@ -123,7 +123,7 @@ ncollector_add(flexarr *ncollector, const size_t newsize, size_t startn, size_t 
 }
 
 static void
-ncollector_add_copy(flexarr *ncollector, flexarr *dest, flexarr *source, size_t startn, size_t lastn, const reliq_expr *lastnode, uchar flags, uchar useformat, uchar isempty, uchar noncollector) //ncollector: struct ncollector, dest: reliq_compressed, source: reliq_compressed
+ncollector_add_copy(flexarr *ncollector, flexarr *dest, flexarr *source, size_t startn, size_t lastn, const reliq_expr *lastnode, uint8_t flags, bool useformat, bool isempty, bool noncollector) //ncollector: struct ncollector, dest: reliq_compressed, source: reliq_compressed
 {
   if (!source->size && !isempty)
     return;
@@ -134,7 +134,7 @@ ncollector_add_copy(flexarr *ncollector, flexarr *dest, flexarr *source, size_t 
 }
 
 static void
-fcollector_add(const size_t lastn, const uchar isnodef, const reliq_expr *expr, flexarr *ncollector, flexarr *fcollector) //ncollector: struct ncollector, fcollector: struct fcollector
+fcollector_add(const size_t lastn, const bool isnodef, const reliq_expr *expr, flexarr *ncollector, flexarr *fcollector) //ncollector: struct ncollector, fcollector: struct fcollector
 {
   struct fcollector *fcols = (struct fcollector*)fcollector->v;
   for (size_t i = fcollector->size; i > 0; i--) {
@@ -176,7 +176,7 @@ exec_block_conditional(const reliq_expr *expr, const flexarr *source, flexarr *d
     if ((err = exec_chain(current,source,dest,st)))
       goto END;
 
-    uchar success = st->something_found;
+    bool success = st->something_found;
     if (current->flags&EXPR_ALL)
         success = (success && !st->something_failed);
 
@@ -201,7 +201,7 @@ exec_block_conditional(const reliq_expr *expr, const flexarr *source, flexarr *d
       break;
   }
 
-  uchar isempty = st->isempty;
+  bool isempty = st->isempty;
   if (!isempty && dest->size == firstsize && expr->outfield.isset && expr->outfield.name.b)
     isempty = 1;
 
@@ -336,7 +336,7 @@ exec_chain(const reliq_expr *expr, const flexarr *source, flexarr *dest, exec_st
     return NULL;
   reliq_error *err = NULL;
   flexarr srctemp;
-  uchar src_alloc = (exprsl > 1 || !source);
+  bool src_alloc = (exprsl > 1 || !source);
   if (src_alloc)
     srctemp = flexarr_init(sizeof(reliq_compressed),PASSED_INC);
   flexarr desttemp = flexarr_init(sizeof(reliq_compressed),PASSED_INC);
@@ -344,7 +344,7 @@ exec_chain(const reliq_expr *expr, const flexarr *source, flexarr *dest, exec_st
   size_t startn = st->ncollector->size;
   size_t lastn = startn;
   reliq_expr const *lastnode = NULL;
-  uchar fieldprotected=0,copied_state=0;
+  bool fieldprotected=0,copied_state=0;
   reliq_field const *fieldnamed = NULL;
   if (expr->outfield.isset) {
     if (expr->outfield.name.b) {
@@ -354,7 +354,7 @@ exec_chain(const reliq_expr *expr, const flexarr *source, flexarr *dest, exec_st
   }
 
   const flexarr *src = source ? source : &srctemp;
-  uchar something_failed = 0,
+  bool something_failed = 0,
         something_found = 0;
 
   for (size_t i = 0; i < exprsl; i++) {
@@ -365,7 +365,7 @@ exec_chain(const reliq_expr *expr, const flexarr *source, flexarr *dest, exec_st
     if (EXPR_IS_TABLE(current->flags)) {
       lastn = st->ncollector->size;
       size_t prevsize = desttemp.size;
-      uchar prev_noncol = st->noncol;
+      bool prev_noncol = st->noncol;
 
       if (i != exprsl-1)
         st->noncol |= 1;
@@ -535,7 +535,7 @@ scheme_print_type_args(const struct reliq_field_type_arg *args, const size_t arg
 }
 
 static void
-scheme_print_types(const reliq_field_type *types, const size_t typesl, uchar isarray)
+scheme_print_types(const reliq_field_type *types, const size_t typesl, bool isarray)
 {
   for (size_t i = 0; i < typesl; i++) {
     const struct reliq_field_type *type = types+i;

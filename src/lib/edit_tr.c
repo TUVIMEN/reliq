@@ -94,12 +94,12 @@ tr_strrange_next(const char *src, const size_t size, size_t *pos, int *rstart, i
   }
   if (*rstart != -1 && *array != NULL) {
     for (; *rstart < 256; (*rstart)++)
-      if ((*array)[(uchar)*rstart])
+      if ((*array)[(uint8_t)*rstart])
         return (*rstart)++;
     if (*pos >= size) {
       *hasended = 1;
       for (; *rstart > 0; (*rstart)--) {
-        if ((*array)[(uchar)*rstart-1]) {
+        if ((*array)[(uint8_t)*rstart-1]) {
           int r = *rstart-1;
           *rstart = 256;
           return r;
@@ -191,7 +191,7 @@ tr_strrange_next(const char *src, const size_t size, size_t *pos, int *rstart, i
 }
 
 reliq_error *
-tr_strrange(const char *src1, const size_t size1, const char *src2, const size_t size2, uchar arr[256], uchar arr_enabled[256], uchar complement)
+tr_strrange(const char *src1, const size_t size1, const char *src2, const size_t size2, uint8_t arr[256], bool arr_enabled[256], bool complement)
 {
   size_t pos[2]={0};
   int rstart[2]={-1,-1},rend[2]={-1,-1},repeat[2]={-1,-1},hasended[2]={0};
@@ -219,9 +219,9 @@ tr_strrange(const char *src1, const size_t size1, const char *src2, const size_t
       r2 = last_r2;
 
     if (!complement && arr_enabled)
-      arr_enabled[(uchar)r1] = 1;
+      arr_enabled[(uint8_t)r1] = 1;
 
-    arr[(uchar)r1] = (src2 && !complement) ? (uchar)r2 : 1;
+    arr[(uint8_t)r1] = (src2 && !complement) ? (uint8_t)r2 : 1;
   }
   if (complement) {
     int last = 0;
@@ -235,17 +235,17 @@ tr_strrange(const char *src1, const size_t size1, const char *src2, const size_t
         last = r;
       }
       for (uint16_t i = 0; i < 256; i++) {
-        if (arr[(uchar)i]) {
-          arr[(uchar)i] = 0;
+        if (arr[(uint8_t)i]) {
+          arr[(uint8_t)i] = 0;
         } else {
-          arr[(uchar)i] = last;
+          arr[(uint8_t)i] = last;
           if (arr_enabled)
-            arr_enabled[(uchar)i] = 1;
+            arr_enabled[(uint8_t)i] = 1;
         }
       }
     } else
       for (uint16_t i = 0; i < 256; i++)
-        arr[(uchar)i] = !arr[(uchar)i];
+        arr[(uint8_t)i] = !arr[(uint8_t)i];
   }
   return NULL;
 }
@@ -253,9 +253,9 @@ tr_strrange(const char *src1, const size_t size1, const char *src2, const size_t
 reliq_error *
 tr_edit(const reliq_cstr *src, SINK *output, const edit_args *args)
 {
-  uchar array[256] = {0};
+  uint8_t array[256] = {0};
   reliq_cstr *string[2] = {NULL};
-  uchar complement=0,squeeze=0;
+  uint8_t complement=0,squeeze=0;
   const char argv0[] = "tr";
   reliq_error *err;
 
@@ -289,7 +289,7 @@ tr_edit(const reliq_cstr *src, SINK *output, const edit_args *args)
     if ((err = tr_strrange(string[0]->b,string[0]->s,NULL,0,array,NULL,complement)))
       return err;
     for (size_t i = 0; i < strl; i++) {
-      if (!array[(uchar)str[i]]) {
+      if (!array[(uint8_t)str[i]]) {
         buf[bufcurrent++] = str[i];
         if (bufcurrent == bufsize) {
           sink_write(output,buf,bufcurrent);
@@ -302,12 +302,12 @@ tr_edit(const reliq_cstr *src, SINK *output, const edit_args *args)
     return NULL;
   }
 
-  uchar array_enabled[256] = {0};
+  bool array_enabled[256] = {0};
   if ((err = tr_strrange(string[0]->b,string[0]->s,string[1]->b,string[1]->s,array,array_enabled,complement)))
     return err;
 
   for (size_t i = 0; i < strl; i++) {
-    buf[bufcurrent++] = (array_enabled[(uchar)str[i]]) ? array[(uchar)str[i]] : str[i];
+    buf[bufcurrent++] = (array_enabled[(uint8_t)str[i]]) ? array[(uint8_t)str[i]] : str[i];
     if (bufcurrent == bufsize) {
       sink_write(output,buf,bufcurrent);
       bufcurrent = 0;

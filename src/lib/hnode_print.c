@@ -90,7 +90,7 @@ print_attrib_value(const reliq *rq, const reliq_cattrib *attribs, const size_t a
 }
 
 static void
-print_text_r(const reliq *rq, const reliq_chnode *hnode, uint8_t flags, SINK *outfile, uchar recursive)
+print_text_r(const reliq *rq, const reliq_chnode *hnode, uint8_t flags, SINK *outfile, bool recursive)
 {
   if (hnode->text_count == 0)
     return;
@@ -111,11 +111,11 @@ print_text_r(const reliq *rq, const reliq_chnode *hnode, uint8_t flags, SINK *ou
 
 
 static void
-print_text(const reliq *rq, const reliq_chnode *hnode, uint8_t flags, SINK *outfile, uchar recursive)
+print_text(const reliq *rq, const reliq_chnode *hnode, uint8_t flags, SINK *outfile, bool recursive)
 {
   SINK *out = outfile;
   SINK t_out;
-  const uchar trim = (flags&PC_UNTRIM) ? 0 : 1;
+  const bool trim = (flags&PC_UNTRIM) ? 0 : 1;
   char *ptr;
   size_t ptrl;
   if (trim) {
@@ -135,7 +135,7 @@ print_text(const reliq *rq, const reliq_chnode *hnode, uint8_t flags, SINK *outf
   }
 }
 
-static uchar
+static bool
 printf_C(const reliq_hnode *hn, char c, SINK *outfile)
 {
   switch (c) {

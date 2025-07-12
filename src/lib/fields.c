@@ -34,7 +34,7 @@ char *strptime(const char *restrict s, const char *restrict f, struct tm *restri
 #define OUTFIELD_ARGS_INC -8
 #define OUTFIELD_TYPE_INC -8
 
-static void outfields_value_print(const reliq *rq, SINK *out, const reliq_field_type *types, const size_t typesl, const char *value, const size_t valuel, const uchar notempty);
+static void outfields_value_print(const reliq *rq, SINK *out, const reliq_field_type *types, const size_t typesl, const char *value, const size_t valuel, const bool notempty);
 
 static void
 outfield_type_name_get(const char *src, size_t *pos, const size_t s, char const **type, size_t *typel)
@@ -192,8 +192,8 @@ print_null(SINK *out)
 #define OUTFIELDS_NUM_SIGNED 2
 #define OUTFIELDS_NUM_UNSIGNED 4
 
-static uchar
-outfields_num_get(const char *value, const size_t valuel, const uint8_t flags, uchar *hasminus, reliq_cstr *digits, reliq_cstr *points)
+static bool
+outfields_num_get(const char *value, const size_t valuel, const uint8_t flags, bool *hasminus, reliq_cstr *digits, reliq_cstr *points)
 {
   if (!valuel)
     return 1;
@@ -201,7 +201,7 @@ outfields_num_get(const char *value, const size_t valuel, const uint8_t flags, u
   char const *start = value;
   size_t end = 0;
   *hasminus = 0;
-  uchar haspoint=0;
+  bool haspoint=0;
 
   #define NUM_PARSE_FIRST_ZERO \
     if ((size_t)(start-value) < valuel && *start == '0') { \
@@ -265,7 +265,7 @@ outfields_num_get(const char *value, const size_t valuel, const uint8_t flags, u
 }
 
 static char
-outfields_num_matches(const uint8_t flags, const struct reliq_field_type_arg *args, const size_t argsl, uchar hasminus, reliq_cstr *digits, reliq_cstr *points)
+outfields_num_matches(const uint8_t flags, const struct reliq_field_type_arg *args, const size_t argsl, bool hasminus, reliq_cstr *digits, reliq_cstr *points)
 {
   if (!argsl)
     return 0;
@@ -326,10 +326,10 @@ outfields_num_matches(const uint8_t flags, const struct reliq_field_type_arg *ar
   return 0;
 }
 
-static uchar
+static bool
 outfields_num_print(SINK *out, const reliq_field_type *type, const char *value, const size_t valuel, const uint8_t flags)
 {
-  uchar hasminus = 0;
+  bool hasminus = 0;
   reliq_cstr digits={0},points={0};
   if (outfields_num_get(value,valuel,flags,&hasminus,&digits,&points))
     return 1;
@@ -349,7 +349,7 @@ outfields_num_print(SINK *out, const reliq_field_type *type, const char *value, 
   return 0;
 }
 
-static uchar
+static bool
 outfields_bool_print(SINK *out, const char *value, const size_t valuel)
 {
   char const *start = value;
@@ -401,10 +401,10 @@ outfields_unicode_print(SINK *out, uint16_t character)
   sink_write(out,val,vall);
 }
 
-static uchar
+static bool
 outfields_str_print(SINK *out, const char *value, const size_t valuel)
 {
-  const uchar sub[256] = {
+  const uint8_t sub[256] = {
     128,129,130,131,132,133,134,135,'b','t','n',139,'f','r',142,143,144,145,146,147,148,149,150,
     151,152,153,154,155,156,157,158,159,0,0,34,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,92,0,0,0,0,0,0,0,0,0,
@@ -420,7 +420,7 @@ outfields_str_print(SINK *out, const char *value, const size_t valuel)
   sink_put(out,'"');
 
   for (size_t i = 0; i < valuel; i++) {
-    uchar s = sub[(uchar)value[i]];
+    uint8_t s = sub[(uint8_t)value[i]];
     if (s) {
       if (end)
         sink_write(out,start,end);
@@ -443,7 +443,7 @@ outfields_str_print(SINK *out, const char *value, const size_t valuel)
   return 0;
 }
 
-static uchar
+static uint8_t
 outfields_array_print(const reliq *rq, SINK *out, const reliq_field_type *type, const char *value, const size_t valuel)
 {
   if (!valuel)
@@ -483,11 +483,11 @@ outfields_date_maxsize(const struct reliq_field_type_arg *args, const size_t arg
   return max_sz;
 }
 
-static uchar
+static uint8_t
 outfields_date_match(const struct reliq_field_type_arg *args, const size_t argsl, char *matched, struct tm *date)
 {
   size_t max_sz = outfields_date_maxsize(args,argsl);
-  uchar found = 0;
+  bool found = 0;
   if (!max_sz)
     return found;
   char *format = alloca(max_sz+1);
@@ -506,7 +506,7 @@ outfields_date_match(const struct reliq_field_type_arg *args, const size_t argsl
   return found;
 }
 
-static uchar
+static uint8_t
 outfields_date_print(SINK *out, const reliq_field_type *type, const char *value, const size_t valuel)
 {
   if (!type->argsl)
@@ -526,12 +526,12 @@ outfields_date_print(SINK *out, const reliq_field_type *type, const char *value,
   return 0;
 }
 
-static uchar
+static uint8_t
 outfields_url_print(const reliq *rq, SINK *out, const reliq_field_type *type, const char *value, const size_t valuel)
 {
   const reliq_url *ref = &rq->url;
   reliq_url ref_buf;
-  uchar uses_arg = type->argsl > 0;
+  const uint8_t uses_arg = type->argsl > 0;
 
   if (uses_arg) {
     reliq_str *s = &type->args[0].v.s;
@@ -552,7 +552,7 @@ outfields_url_print(const reliq *rq, SINK *out, const reliq_field_type *type, co
   return 0;
 }
 
-#define X(x) static uchar predef_repr_##x (UNUSED const reliq *rq, SINK *out, UNUSED const reliq_field_type *type, UNUSED const char *value, UNUSED const size_t valuel)
+#define X(x) static bool predef_repr_##x (UNUSED const reliq *rq, SINK *out, UNUSED const reliq_field_type *type, UNUSED const char *value, UNUSED const size_t valuel)
 X(s)
 {
   if (type->argsl > 0 && valuel < type->args[0].v.u)
@@ -693,7 +693,7 @@ valid_array(const reliq_field_type *type)
 struct predefined {
   reliq_cstr name;
   reliq_error *(*valid)(const reliq_field_type*);
-  uchar (*repr)(const reliq*, SINK*, const reliq_field_type*, const char*, const size_t);
+  bool (*repr)(const reliq*, SINK*, const reliq_field_type*, const char*, const size_t);
   void (*default_val)(SINK*, const char*, const size_t);
 } const predefined_types[] = {
 #define X(x,y) { \
@@ -751,10 +751,10 @@ reliq_field_types_free(reliq_field_type *types, const size_t typesl)
   free(types);
 }
 
-static reliq_error *outfield_type_get(const char *src, size_t *pos, const size_t size, reliq_field_type **types, size_t *typesl, const uchar isarray);
+static reliq_error *outfield_type_get(const char *src, size_t *pos, const size_t size, reliq_field_type **types, size_t *typesl, const bool isarray);
 
 static reliq_error *
-outfield_type_get_r(const char *src, size_t *pos, const size_t size, reliq_field_type *type, const uchar isarray)
+outfield_type_get_r(const char *src, size_t *pos, const size_t size, reliq_field_type *type, const bool isarray)
 {
   reliq_error *err = NULL;
   size_t i = *pos;
@@ -765,7 +765,7 @@ outfield_type_get_r(const char *src, size_t *pos, const size_t size, reliq_field
     goto_script_seterr(END,"output field: unspecified type name at %lu",i);
 
   const struct predefined *match = find_predefined(name,namel);
-  const uchar typearray = (match && match->name.s == 1 && match->name.b[0] == 'a');
+  const bool typearray = (match && match->name.s == 1 && match->name.b[0] == 'a');
 
   if (isarray && typearray)
     goto_script_seterr(END,"output field: array: array type in array is not allowed");
@@ -793,7 +793,7 @@ outfield_type_get_r(const char *src, size_t *pos, const size_t size, reliq_field
 }
 
 static reliq_error *
-outfield_type_get(const char *src, size_t *pos, const size_t size, reliq_field_type **types, size_t *typesl, const uchar isarray)
+outfield_type_get(const char *src, size_t *pos, const size_t size, reliq_field_type **types, size_t *typesl, const bool isarray)
 {
   size_t i = *pos;
 
@@ -885,7 +885,7 @@ reliq_field_comp(const char *src, size_t *pos, const size_t size, reliq_field *o
 }
 
 static void
-outfields_value_print(const reliq *rq, SINK *out, const reliq_field_type *types, const size_t typesl, const char *value, const size_t valuel, const uchar notempty)
+outfields_value_print(const reliq *rq, SINK *out, const reliq_field_type *types, const size_t typesl, const char *value, const size_t valuel, const bool notempty)
 {
   if (!typesl) {
     DEFAULT_PRINT: ;
@@ -909,8 +909,7 @@ outfields_value_print(const reliq *rq, SINK *out, const reliq_field_type *types,
       return;
     }
 
-    uchar def = match->repr(rq,out,type,value,valuel);
-    if (!def)
+    if (!match->repr(rq,out,type,value,valuel))
       return;
     if (i == typesl-1)
       match->default_val(out,value,valuel);
@@ -918,7 +917,7 @@ outfields_value_print(const reliq *rq, SINK *out, const reliq_field_type *types,
 }
 
 static void
-outfields_print_pre(const reliq *rq, struct outfield **fields, size_t *pos, const size_t size, const uint16_t lvl, uchar isarray, SINK *out)
+outfields_print_pre(const reliq *rq, struct outfield **fields, size_t *pos, const size_t size, const uint16_t lvl, bool isarray, SINK *out)
 {
   size_t i = *pos;
 

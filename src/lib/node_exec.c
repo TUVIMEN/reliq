@@ -139,7 +139,7 @@ X(parent) {
 }
 
 static inline void
-siblings_preceding(const reliq *rq, const reliq_npattern *nodep, const reliq_chnode *current, flexarr *dest, uint32_t *found, const uint32_t lasttofind, const uchar full)
+siblings_preceding(const reliq *rq, const reliq_npattern *nodep, const reliq_chnode *current, flexarr *dest, uint32_t *found, const uint32_t lasttofind, const bool full)
 {
   const reliq_chnode *nodes = rq->nodes;
   if (nodes == current)

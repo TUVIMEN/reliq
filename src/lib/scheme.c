@@ -42,7 +42,7 @@ scheme_last_chainlink(const reliq_expr *expr)
   return ((reliq_expr*)exprs->v)+exprsl-1;
 }
 
-static uchar
+static bool
 scheme_is_repeating(flexarr *fields, const size_t index, uint16_t lvl)
 {
   const size_t fieldsl = fields->size;
@@ -67,10 +67,10 @@ scheme_is_repeating(flexarr *fields, const size_t index, uint16_t lvl)
   return 0;
 }
 
-static void reliq_scheme_r(const reliq_expr *expr, flexarr *fields, uchar *leaking, uchar *repeating, uint16_t lvl);
+static void reliq_scheme_r(const reliq_expr *expr, flexarr *fields, bool *leaking, bool *repeating, uint16_t lvl);
 
 static void
-scheme_search_block(flexarr *exprs, flexarr *fields, uchar *leaking, uchar *repeating, const uint16_t lvl) //exprs: reliq_expr, fields: struct reliq_scheme_field
+scheme_search_block(flexarr *exprs, flexarr *fields, bool *leaking, bool *repeating, const uint16_t lvl) //exprs: reliq_expr, fields: struct reliq_scheme_field
 {
   const reliq_expr *exprsv = exprs->v;
   const size_t exprsl = exprs->size;
@@ -83,7 +83,7 @@ scheme_search_block(flexarr *exprs, flexarr *fields, uchar *leaking, uchar *repe
 }
 
 static void
-reliq_scheme_r(const reliq_expr *expr, flexarr *fields, uchar *leaking, uchar *repeating, uint16_t lvl) //fields: struct reliq_scheme_field
+reliq_scheme_r(const reliq_expr *expr, flexarr *fields, bool *leaking, bool *repeating, uint16_t lvl) //fields: struct reliq_scheme_field
 {
   if (!expr)
     return;
@@ -114,7 +114,7 @@ reliq_scheme_r(const reliq_expr *expr, flexarr *fields, uchar *leaking, uchar *r
     return;
   }
 
-  uchar type = expr->flags&EXPR_TYPE;
+  uint8_t type = expr->flags&EXPR_TYPE;
   if (type == EXPR_NPATTERN || type == EXPR_BLOCK_CONDITION)
     return;
 
@@ -133,7 +133,7 @@ reliq_scheme_t
 reliq_scheme(const reliq_expr *expr)
 {
   flexarr fields_arr = flexarr_init(sizeof(struct reliq_scheme_field),SCHEME_INC);
-  uchar leaking=0,repeating=0;
+  bool leaking=0,repeating=0;
 
   scheme_search_block((flexarr*)expr->e,&fields_arr,&leaking,&repeating,0);
   if (!repeating)

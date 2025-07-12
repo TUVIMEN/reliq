@@ -26,8 +26,6 @@
 #include "utils.h"
 #include "pattern.h"
 
-typedef unsigned char uchar;
-
 static void
 regcomp_set_flags(uint16_t *flags, const char *src, const size_t len)
 {
@@ -181,7 +179,7 @@ regcomp_add_pattern_regex(reliq_pattern *pattern, const char *src, const size_t 
     regexflags |= REG_EXTENDED;
 
   size_t addedspace = 0;
-  uchar fullmatch = (match == RELIQ_PATTERN_MATCH_FULL) ? 1 : 0;
+  const bool fullmatch = (match == RELIQ_PATTERN_MATCH_FULL) ? 1 : 0;
 
   if (fullmatch)
     addedspace = 2;
@@ -388,7 +386,7 @@ int
 reliq_regexec(const reliq_pattern *pattern, const char *src, const size_t size)
 {
   uint16_t pass = pattern->flags&RELIQ_PATTERN_PASS;
-  uchar invert = (pattern->flags&RELIQ_PATTERN_INVERT) ? 1 : 0;
+  const bool invert = (pattern->flags&RELIQ_PATTERN_INVERT) ? 1 : 0;
   if ((!range_match(size,&pattern->range,RANGE_UNSIGNED)))
     return invert;
 

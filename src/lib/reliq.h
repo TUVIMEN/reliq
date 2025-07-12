@@ -279,9 +279,9 @@ typedef struct {
   size_t fieldsl;
 
   //is set to 1 if some output isn't guarded by a field which creates incorrect json
-  uint8_t leaking : 1;
+  bool leaking : 1;
   //field name repeats in the same block which creates incorrect json
-  uint8_t repeating : 1;
+  bool repeating : 1;
 } reliq_scheme_t;
 
 //reliq_scheme_t should not be used after reliq_expr it was created from is freed

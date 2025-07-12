@@ -32,18 +32,18 @@ extern const char IS_GRAPH[];
 extern const char IS_PRINT[];
 extern const char IS_PUNCT[];
 
-#define isalnum(x) IS_ALNUM[(unsigned char)x]
-#define isalpha(x) IS_ALPHA[(unsigned char)x]
-#define isdigit(x) IS_DIGIT[(unsigned char)x]
-#define isspace(x) IS_SPACE[(unsigned char)x]
-#define isxdigit(x) IS_XDIGIT[(unsigned char)x]
-#define isupper(x) IS_UPPER[(unsigned char)x]
-#define islower(x) IS_LOWER[(unsigned char)x]
-#define isblank(x) IS_BLANK[(unsigned char)x]
-#define iscntrl(x) IS_CNTRL[(unsigned char)x]
-#define isgraph(x) IS_GRAPH[(unsigned char)x]
-#define isprint(x) IS_PRINT[(unsigned char)x]
-#define ispunct(x) IS_PUNCT[(unsigned char)x]
+#define isalnum(x) IS_ALNUM[(uint8_t)x]
+#define isalpha(x) IS_ALPHA[(uint8_t)x]
+#define isdigit(x) IS_DIGIT[(uint8_t)x]
+#define isspace(x) IS_SPACE[(uint8_t)x]
+#define isxdigit(x) IS_XDIGIT[(uint8_t)x]
+#define isupper(x) IS_UPPER[(uint8_t)x]
+#define islower(x) IS_LOWER[(uint8_t)x]
+#define isblank(x) IS_BLANK[(uint8_t)x]
+#define iscntrl(x) IS_CNTRL[(uint8_t)x]
+#define isgraph(x) IS_GRAPH[(uint8_t)x]
+#define isprint(x) IS_PRINT[(uint8_t)x]
+#define ispunct(x) IS_PUNCT[(uint8_t)x]
 
 #define toupper_inline(x) (islower(x) ? (x)-32 : (x))
 #define tolower_inline(x) (isupper(x) ? (x)+32 : (x))

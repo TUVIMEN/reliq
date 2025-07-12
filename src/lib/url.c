@@ -47,7 +47,7 @@ trim_url(reliq_cstr *url)
   url->s -= i;
 }
 
-static inline uchar
+static inline bool
 char_unsafe(char c)
 {
   return (c == '\n' || c == '\t' || c == '\r');
@@ -70,7 +70,7 @@ remove_unsafe(reliq_str *url)
   }
 }
 
-static inline uchar
+static inline bool
 char_scheme(char c)
 {
   return (isalnum(c) || c == '+' || c == '-' || c == '.');
@@ -104,7 +104,7 @@ get_scheme(reliq_cstr *url, const char *scheme, size_t schemel, reliq_cstr *dest
   };
 }
 
-static inline uchar
+static inline bool
 char_netloc_end(char c)
 {
   return (c == '/' || c == '?' || c == '#');
@@ -220,7 +220,7 @@ const reliq_cstr scheme_uses_netloc[] = {
   {"wss",3}, {"itms-services",13}
 };
 
-uchar
+bool
 scheme_in_list(const reliq_cstr *scheme, const reliq_cstr *scheme_list, const size_t len)
 {
   const char *b = scheme->b;
@@ -268,14 +268,14 @@ get_params(reliq_cstr *path, reliq_cstr *scheme, reliq_cstr *dest)
   };
 }
 
-static inline uchar
-is_path_notabsolute(const uchar path_exists, const uchar path_slash)
+static inline bool
+is_path_notabsolute(const bool path_exists, const bool path_slash)
 {
   return (path_exists && !path_slash);
 }
 
-static inline uchar
-is_path_hasnetloc(const reliq_cstr *scheme, const uchar path_exists, const uchar path_slash, const uchar path_dslash)
+static inline bool
+is_path_hasnetloc(const reliq_cstr *scheme, const bool path_exists, const bool path_slash, const bool path_dslash)
 {
   return (path_dslash ||
     (scheme->s && scheme_in(scheme,scheme_uses_netloc)
@@ -283,7 +283,7 @@ is_path_hasnetloc(const reliq_cstr *scheme, const uchar path_exists, const uchar
 }
 
 static size_t
-finalize_size(const reliq_url *url, const uchar path_notabsolute, const uchar path_hasnetloc)
+finalize_size(const reliq_url *url, const bool path_notabsolute, const bool path_hasnetloc)
 {
   size_t r = 0;
 
@@ -333,7 +333,7 @@ append_c_to(char **dest, char c)
 }
 
 static char *
-finalize_copy_before(reliq_url *url, char *dest, const uchar path_notabsolute, const uchar path_hasnetloc)
+finalize_copy_before(reliq_url *url, char *dest, const bool path_notabsolute, const bool path_hasnetloc)
 {
   if (url->scheme.s) {
     append_finalize(&dest,&url->scheme);
@@ -407,7 +407,7 @@ reliq_url_dup(const reliq_url *url)
 static void
 url_finalize(reliq_url *url, const bool reuse)
 {
-  uchar path_exists=0,path_slash=0,path_dslash=0;
+  bool path_exists=0,path_slash=0,path_dslash=0;
   if (url->params.s)
     path_exists = 1;
   if (url->path.s) {
@@ -419,7 +419,7 @@ url_finalize(reliq_url *url, const bool reuse)
     }
   }
 
-  const uchar path_notabsolute = is_path_notabsolute(path_exists,path_slash),
+  const bool path_notabsolute = is_path_notabsolute(path_exists,path_slash),
     path_hasnetloc = is_path_hasnetloc(&url->scheme,path_exists,path_slash,path_dslash);
   const size_t s = finalize_size(url,path_notabsolute,path_hasnetloc);
   char *u = NULL;
@@ -431,7 +431,7 @@ url_finalize(reliq_url *url, const bool reuse)
   if (!s)
     goto END;
 
-  uchar resize = 0;
+  bool resize = 0;
   if (reuse) {
     if (s > url->allocated) {
       resize = 1;
@@ -475,11 +475,11 @@ finalize_path_size(const struct urldir *dirs, const size_t dirs_size)
 }
 
 static void
-url_finalize_path(reliq_url *url, const struct urldir *dirs, const size_t dirs_size, const uchar first_slash, const uchar last_slash, const uchar reuse)
+url_finalize_path(reliq_url *url, const struct urldir *dirs, const size_t dirs_size, const bool first_slash, const bool last_slash, const bool reuse)
 {
   url->path.s = finalize_path_size(dirs,dirs_size)+first_slash+last_slash;
-  const uchar path_exists = (dirs_size || url->params.s);
-  const uchar path_notabsolute = is_path_notabsolute(path_exists,first_slash),
+  const bool path_exists = (dirs_size || url->params.s);
+  const bool path_notabsolute = is_path_notabsolute(path_exists,first_slash),
     path_hasnetloc = is_path_hasnetloc(&url->scheme,path_exists,first_slash,0);
   const size_t s = finalize_size(url,path_notabsolute,path_hasnetloc);
   char *u = NULL;
@@ -491,7 +491,7 @@ url_finalize_path(reliq_url *url, const struct urldir *dirs, const size_t dirs_s
   if (!s)
     goto END;
 
-  uchar resize = 0;
+  bool resize = 0;
   if (reuse) {
     if (s > url->allocated) {
       resize = 1;
@@ -612,7 +612,7 @@ urldirs_append(struct urldir *dirs, size_t *size, const char *path, const size_t
 }
 
 static void
-url_join_mkpath(struct urldir *dirs, size_t *dirs_size, uchar *first_slash, uchar *last_slash, const reliq_cstr *path, const reliq_cstr *rpath)
+url_join_mkpath(struct urldir *dirs, size_t *dirs_size, bool *first_slash, bool *last_slash, const reliq_cstr *path, const reliq_cstr *rpath)
 {
   size_t dirs_sz = 0;
   *last_slash = 0;
@@ -645,7 +645,7 @@ url_join_mkpath(struct urldir *dirs, size_t *dirs_size, uchar *first_slash, ucha
     const char *b = dirs[i].from;
     size_t s = dirs[i].to-dirs[i].from;
 
-    uchar drop = 0;
+    bool drop = 0;
     if (s == 1 && b[0] == '.') {
       drop = 0;
     } else if (s == 2 && b[0] == '.' && b[1] == '.') {
@@ -711,7 +711,7 @@ reliq_url_join(const reliq_url *ref, const reliq_url *url, reliq_url *dest)
 
   struct urldir dirs[DIRS_MAX];
   size_t dirs_size = 0;
-  uchar first_slash,last_slash;
+  bool first_slash,last_slash;
   url_join_mkpath(dirs,&dirs_size,&first_slash,&last_slash,&u.path,&ref->path);
 
   if (!dirs_size && first_slash && last_slash)

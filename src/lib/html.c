@@ -194,12 +194,12 @@ attrib_handle(const char *f, size_t *pos, const size_t s, flexarr *attribs) //at
 }
 
 #ifdef RELIQ_PHPTAGS
-static uchar
+static bool
 phptag_skip_dquote(const char *f, size_t *pos, const size_t s)
 {
   size_t n,jumpv;
   size_t i = *pos;
-  uchar err = 0;
+  bool err = 0;
 
   while (1) {
     char *ending = memchr(f+i,'"',s-i);
@@ -244,7 +244,7 @@ phptag_handle(const char *f, size_t *pos, const size_t s, reliq_chnode *hnode, f
   base += hnode->tagl = tagname.s;
 
   char *ending;
-  uchar foundend = 0;
+  bool foundend = 0;
   for (; i < s; i++) {
     if (unlikely(f[i] == '\\')) {
       i += 2;
@@ -280,7 +280,7 @@ phptag_handle(const char *f, size_t *pos, const size_t s, reliq_chnode *hnode, f
 #endif
 
 #ifdef RELIQ_AUTOCLOSING
-static uchar
+static bool
 isinescapable(reliq_cstr str)
 {
   for (size_t g = 0; g < LENGTH(inescapable_s); g++)
@@ -294,10 +294,10 @@ static uint32_t html_struct_handle(size_t *pos, const uint16_t lvl, html_state *
 
 struct tag_info {
     #ifdef RELIQ_AUTOCLOSING
-    uchar autoclosing;
+    uint8_t autoclosing;
     #endif
-    uchar foundend : 1;
-    uchar script : 1;
+    bool foundend : 1;
+    bool script : 1;
 };
 
 static inline uint32_t
@@ -312,7 +312,7 @@ last_attrib(const flexarr *attrib) //attrib: reliq_cattrib
   return attrib->size;
 }
 
-static uchar
+static bool
 text_is_empty(const char *text, const size_t textl)
 {
   for (size_t i = 0; i < textl; i++)
@@ -352,10 +352,10 @@ text_add(html_state *st, const uint16_t lvl, size_t *tnindex)
 }
 
 #ifdef RELIQ_AUTOCLOSING
-static uchar
-autocloses(const char *f, size_t pos, const size_t s, const uchar autoclosing)
+static bool
+autocloses(const char *f, size_t pos, const size_t s, const uint8_t autoclosing)
 {
-  if (autoclosing == (uchar)-1)
+  if (autoclosing == (uint8_t)-1)
     return 0;
 
   const cstr8 *arr = autoclosing_s[autoclosing];
@@ -366,7 +366,7 @@ autocloses(const char *f, size_t pos, const size_t s, const uchar autoclosing)
   if (!name.s)
     return 0;
 
-  for (uchar j = 1; arr[j].b; j++)
+  for (uint8_t j = 1; arr[j].b; j++)
     if (strcaseeq(arr[j],name))
       return 1;
 
@@ -374,7 +374,7 @@ autocloses(const char *f, size_t pos, const size_t s, const uchar autoclosing)
 }
 #endif
 
-static uchar
+static bool
 ancestor_ending(const char *f, size_t *pos, reliq_cstr endname, const reliq_chnode *nodesv, const size_t hnindex, reliq_chnode *hnode, const uint16_t lvl, const size_t tagend, const size_t base, uint32_t *fallback)
 {
   for (size_t j = hnindex-1;; j--) {
@@ -403,10 +403,10 @@ ancestor_ending(const char *f, size_t *pos, reliq_cstr endname, const reliq_chno
   return 0;
 }
 
-static uchar
+static bool
 handle_ending(html_state *st, size_t *pos, reliq_cstr tagname, const size_t hnindex, uint32_t *htmlerr, struct tag_info *info, const uint16_t lvl, const size_t tagend, const size_t base, uint32_t *fallback)
 {
-  uchar end = 0;
+  bool end = 0;
   size_t i = *pos;
   reliq_cstr endname;
   const char *f = st->f;
@@ -458,10 +458,10 @@ handle_ending(html_state *st, size_t *pos, reliq_cstr tagname, const size_t hnin
   return end;
 }
 
-static uchar
+static bool
 tag_insides_handle(size_t *pos, const size_t hnindex, uint32_t *fallback, struct tag_info *taginfo, html_state *st)
 {
-  uchar err = 0;
+  bool err = 0;
   const char *f = st->f;
   const size_t s = st->s;
   flexarr *nodes = st->nodes; //reliq_chnode
@@ -564,11 +564,11 @@ tag_insides_handle(size_t *pos, const size_t hnindex, uint32_t *fallback, struct
   return err;
 }
 
-static uchar
+static bool
 attribs_handle(const char *f, size_t *pos, const size_t s, reliq_chnode *hnode, flexarr *attribs) //attribs: reliq_cattrib
 {
   size_t i = *pos;
-  uchar ended = 0;
+  bool ended = 0;
 
   for (; i < s && f[i] != '>';) {
     if (isspace(f[i])) {
@@ -604,10 +604,10 @@ attribs_handle(const char *f, size_t *pos, const size_t s, reliq_chnode *hnode, 
   return ended;
 }
 
-static uchar
+static bool
 find_tag_info(reliq_cstr tagname, struct tag_info *info)
 {
-  #define search_array(x,y) for (uchar _j = 0; _j < (uchar)LENGTH(x); _j++) \
+  #define search_array(x,y) for (uint8_t _j = 0; _j < (uint8_t)LENGTH(x); _j++) \
     if (strcaseeq(x[_j],y))
 
   search_array(selfclosing_s,tagname)
@@ -622,7 +622,7 @@ find_tag_info(reliq_cstr tagname, struct tag_info *info)
 
   #ifdef RELIQ_AUTOCLOSING
   info->autoclosing = -1;
-  for (uchar j = 0; j < (uchar)LENGTH(autoclosing_s); j++) {
+  for (uint8_t j = 0; j < (uint8_t)LENGTH(autoclosing_s); j++) {
     if (strcaseeq(autoclosing_s[j][0],tagname)) {
       info->autoclosing = j;
       return 0;
@@ -657,8 +657,6 @@ html_struct_handle(size_t *pos, const uint16_t lvl, html_state *st)
   const uint32_t text_count = st->text_count;
   const uint32_t comment_count = st->comment_count;
 
-  uchar starttag_ended = 0;
-
   i++;
   while_is(isspace,f,i,s);
 
@@ -680,6 +678,8 @@ html_struct_handle(size_t *pos, const uint16_t lvl, html_state *st)
     st->comment_count++;
     goto ERR;
   }
+
+  bool starttag_ended = 0;
 
   #ifdef RELIQ_PHPTAGS
   if (unlikely(f[i] == '?')) {
@@ -707,7 +707,6 @@ html_struct_handle(size_t *pos, const uint16_t lvl, html_state *st)
     goto END;
 
   starttag_ended = (i < s);
-
 
   if (find_tag_info(tagname,&taginfo)) {
     hnode->all_len = i-hnode->all+1;

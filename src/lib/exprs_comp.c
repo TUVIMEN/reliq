@@ -346,7 +346,7 @@ skip_comment_haskell_multiline(const char *src, size_t *pos, const size_t s)
   *pos = i;
 }
 
-static uchar
+static bool
 skip_comment(const char *src, size_t *pos, const size_t s)
 {
   size_t i = *pos;
@@ -425,7 +425,7 @@ tokenize_conditionals_normal(const char *src, const size_t i, const size_t size,
 static enum tokenName
 tokenize_conditionals(const char *src, size_t i, const size_t size, size_t *tk_size)
 {
-  uchar all = 0;
+  bool all = 0;
   if (src[i] == '^') {
       all = 1;
       i++;
@@ -449,7 +449,7 @@ tokenize_conditionals(const char *src, size_t i, const size_t size, size_t *tk_s
   }
 }
 
-static uchar
+static bool
 isconditional(const enum tokenName name)
 {
   switch (name) {
@@ -465,13 +465,13 @@ isconditional(const enum tokenName name)
   }
 }
 
-static inline uchar
+static inline bool
 tokenize_is_struct_token_char(const char c)
 {
   return (c == ',' || c == ';' || c == '{' || c == '}');
 }
 
-static uchar
+static bool
 tokenize_is_struct_token_following(const char *src, size_t pos, const size_t size)
 {
   while (1) {
@@ -485,7 +485,7 @@ tokenize_is_struct_token_following(const char *src, size_t pos, const size_t siz
   }
 }
 
-static uchar
+static bool
 tokenize_is_struct_token_preceding(const char *src, size_t pos)
 {
   char prev = 0;
@@ -504,7 +504,7 @@ tokenize_is_struct_token_preceding(const char *src, size_t pos)
   }
 }
 
-static uchar
+static bool
 tokenize_isNextNode(const char *src, size_t pos, const size_t size)
 {
   if (src[pos] != ',')
@@ -512,7 +512,7 @@ tokenize_isNextNode(const char *src, size_t pos, const size_t size)
   return tokenize_is_struct_token_following(src,pos,size);
 }
 
-static uchar
+static bool
 tokenize_isChainLink(const char *src, size_t pos, const size_t size)
 {
   if (src[pos] != ';')
@@ -520,23 +520,23 @@ tokenize_isChainLink(const char *src, size_t pos, const size_t size)
   return tokenize_is_struct_token_following(src,pos,size);
 }
 
-static uchar
+static bool
 tokenize_isBlockEnd(const char *src, size_t pos, const size_t size)
 {
   if (src[pos] != '}')
     return 0;
-  uchar r = tokenize_is_struct_token_preceding(src,pos);
+  const bool r = tokenize_is_struct_token_preceding(src,pos);
   if (!r)
     return 0;
   return tokenize_is_struct_token_following(src,pos,size);
 }
 
-static uchar
+static bool
 tokenize_isBlockStart(const char *src, size_t pos, const size_t size)
 {
   if (src[pos] != '{')
     return 0;
-  uchar r = tokenize_is_struct_token_preceding(src,pos);
+  const bool r = tokenize_is_struct_token_preceding(src,pos);
   if (!r)
     return 0;
   return tokenize_is_struct_token_following(src,pos,size);
@@ -642,14 +642,14 @@ tokenize(const char *src, const size_t size, token **tokens, size_t *tokensl) //
   #undef token_found
 }
 
-static inline uchar
+static inline bool
 is_empty_node(reliq_expr *node)
 {
   return (!node->outfield.name.b && !node->nodefl && !node->exprfl);
 }
 
 static reliq_error *
-add_chainlink(flexarr *exprs, reliq_expr *cl, const uchar noerr) //exprs: reliq_expr
+add_chainlink(flexarr *exprs, reliq_expr *cl, const bool noerr) //exprs: reliq_expr
 {
   reliq_error *err = NULL;
 
@@ -728,11 +728,11 @@ typedef struct {
   uint16_t lvl;
   uint16_t childfields;
   uint16_t childformats;
-  uchar foundend : 1;
-  uchar first_in_node : 1;
-  uchar expr_has_nformat : 1;
-  uchar expr_has_eformat : 1;
-  uchar lasttext_nonempty : 1;
+  bool foundend : 1;
+  bool first_in_node : 1;
+  bool expr_has_nformat : 1;
+  bool expr_has_eformat : 1;
+  bool lasttext_nonempty : 1;
 } tcomp_state;
 
 static reliq_error *from_token_comp(size_t *pos, tcomp_state *st);
@@ -795,13 +795,13 @@ tcomp_blockstart(size_t *pos, tcomp_state *st)
 }
 
 static inline const char *
-tcomp_format_err_name(uchar isnode)
+tcomp_format_err_name(bool isnode)
 {
   return isnode ? "node" : "expression";
 }
 
 static inline reliq_error *
-tcomp_format(size_t *pos, const uchar isnode, tcomp_state *st)
+tcomp_format(size_t *pos, const bool isnode, tcomp_state *st)
 {
   size_t i = *pos;
   const size_t size = st->size;

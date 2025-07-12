@@ -44,7 +44,7 @@ typedef struct {
 } reliq_range;
 
 reliq_error *range_comp(const char *src, size_t *pos, const size_t size, reliq_range *range);
-unsigned char range_match(const uint32_t matched, const reliq_range *range, const size_t last);
+bool range_match(const uint32_t matched, const reliq_range *range, const size_t last);
 void range_free(reliq_range *range);
 unsigned int predict_range_max(const reliq_range *range);
 

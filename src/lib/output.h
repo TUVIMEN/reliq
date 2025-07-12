@@ -31,7 +31,7 @@ struct fcollector {
   size_t start;
   size_t end;
   uint16_t lvl;
-  unsigned char isnodef;
+  bool isnodef : 1;
 };
 
 typedef struct reliq_format_func reliq_format_func;

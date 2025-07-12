@@ -143,7 +143,7 @@ sed_address_comp_pre(const char *src, size_t *pos, const size_t size, struct sed
     return NULL;
   }
 
-  uchar onlynumber = 0;
+  bool onlynumber = 0;
 
   if (src[*pos] != ',')
     return NULL;
@@ -198,12 +198,12 @@ sed_address_comp(const char *src, size_t *pos, const size_t size, struct sed_add
 }
 
 static int
-sed_address_exec(const char *src, const size_t size, const uint32_t line, const uchar islast, struct sed_address *address)
+sed_address_exec(const char *src, const size_t size, const uint32_t line, const bool islast, struct sed_address *address)
 {
   if (address->flags == SED_A_EMPTY)
     return 1;
   regmatch_t pmatch;
-  uchar rev=0,range=0,first=0;
+  bool rev=0,range=0,first=0;
   uint16_t flags = address->flags;
 
   if (flags&SED_A_REVERSE)
@@ -244,7 +244,7 @@ sed_address_exec(const char *src, const size_t size, const uint32_t line, const 
 
     if (!(flags&SED_A_FOUND1))
       return rev;
-    uchar r = (line <= address->fline+address->num[1]);
+    bool r = (line <= address->fline+address->num[1]);
     if (!r)
       address->flags &= ~SED_A_FOUND1;
     return r^rev;
@@ -439,7 +439,7 @@ sed_comp_y(const size_t pos, const char name, struct sed_expression *sedexpr, re
     return sed_EXTRACHARS(pos);
 
   sedexpr->arg1 = calloc(256,sizeof(char));
-  sedexpr->arg2 = calloc(256,sizeof(uchar));
+  sedexpr->arg2 = calloc(256,sizeof(uint8_t));
   reliq_cstr first = sedexpr->arg;
   size_t i=0,j=0;
 
@@ -459,8 +459,8 @@ sed_comp_y(const size_t pos, const char name, struct sed_expression *sedexpr, re
       j += traversed-1;
     }
 
-    ((uchar*)sedexpr->arg2)[(uchar)c1] = 1;
-    ((char*)sedexpr->arg1)[(uchar)c1] = c2;
+    ((uint8_t*)sedexpr->arg2)[(uint8_t)c1] = 1;
+    ((char*)sedexpr->arg1)[(uint8_t)c1] = c2;
   }
 
   if (i != first.s || j != second->s)
@@ -576,7 +576,7 @@ sed_comp_check_labels(flexarr *script) //script: struct sed_expression
   const size_t size = script->size;
   for (size_t i = 0; i < size; i++) {
     if ((scriptv[i].name == 'b' || scriptv[i].name == 't' || scriptv[i].name == 'T') && scriptv[i].arg.s) {
-      uchar found = 0;
+      bool found = 0;
       for (size_t j = 0; j < size; j++) {
         if (scriptv[j].name == ':' &&
           streq(scriptv[i].arg,scriptv[j].arg)) {
@@ -699,7 +699,7 @@ sed_script_comp(const char *src, const size_t size, int eflags, flexarr *script)
 }
 
 static reliq_error *
-sed_pre_edit(const char *src, const size_t size, SINK *output, char *buffers[3], flexarr *script, const char linedelim, uchar silent) //script: struct sed_expression
+sed_pre_edit(const char *src, const size_t size, SINK *output, char *buffers[3], flexarr *script, const char linedelim, bool silent) //script: struct sed_expression
 {
   char *patternsp = buffers[0],
     *buffersp = buffers[1],
@@ -707,9 +707,9 @@ sed_pre_edit(const char *src, const size_t size, SINK *output, char *buffers[3],
   size_t patternspl=0,bufferspl=0,holdspl=0;
 
   size_t line=0,lineend;
-  uchar islastline,appendnextline=0,successfulsub=0;
+  bool islastline,appendnextline=0,successfulsub=0;
 
-  uchar patternsp_delim=0,
+  bool patternsp_delim=0,
     buffersp_delim=0,
     holdsp_delim=0;
 
@@ -869,12 +869,12 @@ sed_pre_edit(const char *src, const size_t size, SINK *output, char *buffers[3],
           break;
         case 'y':
           for (size_t i = 0; i < patternspl; i++)
-            patternsp[i] = (((uchar*)scriptv[cycle].arg2)[(uchar)patternsp[i]]) ?
-                ((char*)scriptv[cycle].arg1)[(uchar)patternsp[i]] : patternsp[i];
+            patternsp[i] = (((uint8_t*)scriptv[cycle].arg2)[(uint8_t)patternsp[i]]) ?
+                ((char*)scriptv[cycle].arg1)[(uint8_t)patternsp[i]] : patternsp[i];
           break;
         case 's': {
           successfulsub = 0;
-          uchar global = ((((uint64_t)scriptv[cycle].arg2)&SED_EXPRESSION_S_GLOBAL) ? 1 : 0),
+          const bool global = ((((uint64_t)scriptv[cycle].arg2)&SED_EXPRESSION_S_GLOBAL) ? 1 : 0),
             print = ((((uint64_t)scriptv[cycle].arg2)&SED_EXPRESSION_S_PRINT) ? 1 : 0);
           uint32_t matchnum = ((uint64_t)scriptv[cycle].arg2)&SED_EXPRESSION_S_NUMBER,
             matchfound = 0;
@@ -921,11 +921,11 @@ sed_pre_edit(const char *src, const size_t size, SINK *output, char *buffers[3],
 
                 if (isdigit(unchanged_c)) {
                   c = unchanged_c-'0';
-                  if (pmatch[(uchar)c].rm_so == -1 || pmatch[(uchar)c].rm_eo == -1)
+                  if (pmatch[(uint8_t)c].rm_so == -1 || pmatch[(uint8_t)c].rm_eo == -1)
                     continue;
-                  if (bufferspl+(pmatch[(uchar)c].rm_eo-pmatch[(uchar)c].rm_so) >= SED_MAX_PATTERN_SPACE)
+                  if (bufferspl+(pmatch[(uint8_t)c].rm_eo-pmatch[(uint8_t)c].rm_so) >= SED_MAX_PATTERN_SPACE)
                     goto BIGLINE;
-                  int loop_start=pmatch[(uchar)c].rm_so,loop_end=pmatch[(uchar)c].rm_eo;
+                  int loop_start=pmatch[(uint8_t)c].rm_so,loop_end=pmatch[(uint8_t)c].rm_eo;
                   if (c) { //shift by after if not \0
                     loop_start += after;
                     loop_end += after;
@@ -1001,7 +1001,7 @@ sed_edit(const reliq_cstr *src, SINK *output, const edit_args *args)
 {
   reliq_error *err;
   const char argv0[] = "sed";
-  uchar extendedregex=0,silent=0;
+  bool extendedregex=0,silent=0;
 
   char linedelim = '\n';
 

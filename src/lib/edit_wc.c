@@ -31,7 +31,7 @@ wc_edit(const reliq_cstr *src, SINK *output, const edit_args *args)
 {
   char delim = '\n';
   const char argv0[] = "wc";
-  uchar v[4];
+  uint8_t v[4];
   v[0] = 2; //lines
   v[1] = 2; //words
   v[2] = 2; //characters
@@ -60,7 +60,7 @@ wc_edit(const reliq_cstr *src, SINK *output, const edit_args *args)
     return err;
 
   if (v[0] == 1 || v[1] == 1 || v[2] == 1 || v[3] == 1)
-    for (uchar i = 0; i < 4; i++)
+    for (uint8_t i = 0; i < 4; i++)
       if (v[i] == 2)
         v[i] = 0;
 
@@ -92,8 +92,8 @@ wc_edit(const reliq_cstr *src, SINK *output, const edit_args *args)
     }
   }
 
-  uchar amountset = 0;
-  for (uchar i = 0; i < 4; i++)
+  uint8_t amountset = 0;
+  for (uint8_t i = 0; i < 4; i++)
     if (v[i])
       amountset++;
 
@@ -101,14 +101,14 @@ wc_edit(const reliq_cstr *src, SINK *output, const edit_args *args)
   size_t numl;
 
   if (amountset == 1) {
-    for (uchar i = 0; i < 4; i++) {
+    for (uint8_t i = 0; i < 4; i++) {
       if (v[i]) {
         uint_to_str(numbuf,&numl,22,r[i]);
         sink_write(output,numbuf,numl);
         break;
       }
     }
-  } else for (uchar i = 0; i < 4; i++) {
+  } else for (uint8_t i = 0; i < 4; i++) {
     if (v[i]) {
       uint_to_str(numbuf,&numl,22,r[i]);
       sink_put(output,'\t');

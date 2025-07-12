@@ -82,8 +82,8 @@ reliq_chnode_shift(reliq_cattrib *attribs, reliq_chnode *node, const size_t pos,
     attribs[i].key = (attribs[i].key-prev)+pos;
 }
 
-void
-convert_from_compressed_add_descendants(const reliq *rq, const reliq_chnode *root, flexarr *nodes, flexarr *attribs, const size_t pos, const uchar independent)
+static void
+convert_from_compressed_add_descendants(const reliq *rq, const reliq_chnode *root, flexarr *nodes, flexarr *attribs, const size_t pos, const bool independent)
 {
   const size_t desccount = root->tag_count+root->text_count+root->comment_count;
   const uint16_t lvl = root->lvl;
@@ -108,7 +108,7 @@ convert_from_compressed_add_descendants(const reliq *rq, const reliq_chnode *roo
 }
 
 static reliq
-convert_from_compressed(const reliq_compressed *compressed, const size_t compressedl, const reliq *rq, const uchar independent)
+convert_from_compressed(const reliq_compressed *compressed, const size_t compressedl, const reliq *rq, const bool independent)
 {
   reliq ret;
 

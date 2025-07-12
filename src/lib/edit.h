@@ -25,14 +25,14 @@
 
 typedef reliq_format_func edit_args;
 
-reliq_error *edit_arg_str(const edit_args *args, const char *argv0, const uchar num, reliq_cstr **dest);
-reliq_error *edit_arg_delim(const edit_args *args, const char *argv0, const uchar num, char *delim, uchar *found);
-reliq_error *edit_arg_range(const edit_args *args, const char *argv0, const uchar num, reliq_range const **dest);
+reliq_error *edit_arg_str(const edit_args *args, const char *argv0, const uint8_t num, reliq_cstr **dest);
+reliq_error *edit_arg_delim(const edit_args *args, const char *argv0, const uint8_t num, char *delim, bool *found);
+reliq_error *edit_arg_range(const edit_args *args, const char *argv0, const uint8_t num, reliq_range const **dest);
 reliq_error *edit_missing_arg(const char *argv0);
 
 reliq_cstr edit_cstr_get_line(const char *src, const size_t size, size_t *saveptr, const char delim);
 
-reliq_error *tr_strrange(const char *src1, const size_t size1, const char *src2, const size_t size2, unsigned char arr[256], unsigned char arr_enabled[256], unsigned char complement);
+reliq_error *tr_strrange(const char *src1, const size_t size1, const char *src2, const size_t size2, uint8_t arr[256], bool arr_enabled[256], bool complement);
 
 reliq_error *sed_edit(const reliq_cstr *src, SINK *output, const edit_args *args);
 reliq_error *decode_edit(const reliq_cstr *src, SINK *output, const edit_args *args);

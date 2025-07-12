@@ -28,7 +28,7 @@
 #define RANGES_INC -(1<<4)
 
 static inline void
-match_relative_xinvert(uint32_t *x, uchar *inf, const uint8_t flags, const uint8_t val, const size_t last)
+match_relative_xinvert(uint32_t *x, bool *inf, const uint8_t flags, const uint8_t val, const size_t last)
 {
   if (flags&R_RELATIVE(0)) {
     if (x == 0) {
@@ -39,23 +39,23 @@ match_relative_xinvert(uint32_t *x, uchar *inf, const uint8_t flags, const uint8
     *inf = 1;
 }
 
-static uchar
+static bool
 match_relative(const uint32_t matched, const reliq_range *range, const size_t last)
 {
   struct reliq_range_node const *r;
   for (size_t i = 0; i < range->s; i++) {
     r = &range->b[i];
     uint32_t x = r->v[0], y = r->v[1];
-    uchar invert = ((r->flags&R_INVERT) != 0);
-    uchar xinf=0,yinf=0;
+    bool invert = ((r->flags&R_INVERT) != 0);
+    bool xinf=0,yinf=0;
     if (!(r->flags&R_RANGE)) {
       match_relative_xinvert(&x,&xinf,r->flags,r->v[0],last);
-      uchar c = (matched == x && !xinf);
+      bool c = (matched == x && !xinf);
       if (c^invert)
         return 1;
     } else {
       match_relative_xinvert(&x,&xinf,r->flags,r->v[0],last);
-      uchar c;
+      bool c;
       if (r->flags&R_NOTSPECIFIED(1)) {
         yinf = 1;
       } else if (r->flags&R_RELATIVE(1)) {
@@ -77,7 +77,7 @@ match_relative(const uint32_t matched, const reliq_range *range, const size_t la
 }
 
 static inline void
-match_signed_invert(int32_t *x, uchar *inf, const uint8_t n, const uint8_t flags)
+match_signed_invert(int32_t *x, bool *inf, const uint8_t n, const uint8_t flags)
 {
   if (flags&R_NOTSPECIFIED(n)) {
     *inf = 1;
@@ -91,23 +91,23 @@ match_signed_invert(int32_t *x, uchar *inf, const uint8_t n, const uint8_t flags
     *x *= -1;
 }
 
-static uchar
+static bool
 match_signed(const int32_t matched, const reliq_range *range)
 {
   struct reliq_range_node const *r;
   for (size_t i = 0; i < range->s; i++) {
     r = &range->b[i];
     int32_t x = r->v[0], y = r->v[1];
-    uchar xinf=0,yinf=0;
-    uchar invert = ((r->flags&R_INVERT) != 0);
+    bool xinf=0,yinf=0;
+    bool invert = ((r->flags&R_INVERT) != 0);
     if (!(r->flags&R_RANGE)) {
       match_signed_invert(&x,&xinf,0,r->flags);
-      uchar c = (matched == x && !xinf);
+      bool c = (matched == x && !xinf);
       if (c^invert)
         return 1;
     } else {
       match_signed_invert(&x,&xinf,0,r->flags);
-      uchar c;
+      bool c;
       match_signed_invert(&y,&yinf,1,r->flags);
       c = ((matched >= x || xinf) && (matched <= y || yinf) && (r->v[2] < 2 || (matched+r->v[3])%r->v[2] == 0));
       if (c^invert)
@@ -117,25 +117,25 @@ match_signed(const int32_t matched, const reliq_range *range)
   return 0;
 }
 
-static uchar
+static bool
 match_unsigned(const uint32_t matched, const reliq_range *range)
 {
   struct reliq_range_node const *r;
   for (size_t i = 0; i < range->s; i++) {
     r = &range->b[i];
     uint32_t x = r->v[0], y = r->v[1];
-    uchar xinf=0,yinf=0;
-    uchar invert = ((r->flags&R_INVERT) != 0);
+    bool xinf=0,yinf=0;
+    bool invert = ((r->flags&R_INVERT) != 0);
     if (!(r->flags&R_RANGE)) {
       if (r->flags&(R_RELATIVE(0)|R_NOTSPECIFIED(0)))
         xinf = 1;
-      uchar c = (matched == x && !xinf);
+      bool c = (matched == x && !xinf);
       if (c^invert)
         return 1;
     } else {
       if (r->flags&(R_RELATIVE(0)|R_NOTSPECIFIED(0)))
         xinf = 1;
-      uchar c;
+      bool c;
       if (r->flags&(R_RELATIVE(1)|R_NOTSPECIFIED(1)))
         yinf = 1;
       c = ((matched >= x || xinf) && (matched <= y || yinf) && (r->v[2] < 2 || (matched+r->v[3])%r->v[2] == 0));
@@ -146,7 +146,7 @@ match_unsigned(const uint32_t matched, const reliq_range *range)
   return 0;
 }
 
-uchar
+bool
 range_match(const uint32_t matched, const reliq_range *range, const size_t last)
 {
   if (!range || !range->s)

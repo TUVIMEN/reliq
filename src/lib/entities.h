@@ -19,8 +19,6 @@
 #ifndef RELIQ_DECODE_ENTITIES_H
 #define RELIQ_DECODE_ENTITIES_H
 
-#include <stdbool.h>
-
 #include "types.h"
 #include "reliq.h"
 

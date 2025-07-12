@@ -24,6 +24,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <string.h>
+#include <stdbool.h>
 #include <stdarg.h>
 #if !(defined(__MINGW32__) || defined(__MINGW64__))
 #include <sys/mman.h>
@@ -40,8 +41,6 @@
 #define F_RECURSIVE 0x1
 
 #define BUFF_INC_VALUE (1<<23)
-
-typedef unsigned char uchar;
 
 char *argv0;
 reliq_expr *expr = NULL;
@@ -127,7 +126,7 @@ handle_reliq_error(reliq_error *err) {
   exit(c);
 }
 
-static uchar
+static bool
 should_colorize_r(FILE *o)
 {
   #ifdef __unix__
@@ -159,11 +158,11 @@ should_colorize_r(FILE *o)
   #endif
 }
 
-uchar
+bool
 should_colorize(FILE *o)
 {
-  static uchar cancolor = (uchar)-1;
-  if (cancolor == (uchar)-1)
+  static uint8_t cancolor = (uint8_t)-1;
+  if (cancolor == (uint8_t)-1)
     cancolor = should_colorize_r(o);
   return cancolor;
 }
@@ -411,7 +410,7 @@ valid_uint(const char *arg, const char *option)
   return ret;
 }
 
-static uchar
+static bool
 longopts_handle_mode(const char *name)
 {
   #define X(x,y) if (strcmp(name,x) == 0) { \
@@ -431,7 +430,7 @@ longopts_handle_mode(const char *name)
   #undef X
 }
 
-static uchar
+static bool
 longopts_handle_html_prettify(const char *name)
 {
   #define X(x,y,z) if (strcmp(name,x) == 0) { \

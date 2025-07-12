@@ -226,8 +226,8 @@ struct nmatchers_state {
   uint16_t axisflags;
   uint16_t lvl;
   uint8_t prevtype;
-  uchar hastag;
-  uchar typehooks_count : 1;
+  bool hastag;
+  bool typehooks_count : 1;
 };
 
 static void
@@ -317,7 +317,7 @@ match_hook_unexpected_argument(const uint16_t flags)
   return NULL;
 }
 
-static inline uchar
+static inline bool
 hook_handle_isname(char c)
 {
   if (c == '_' || c == '-')
@@ -341,7 +341,7 @@ nmatchers_type_hmask(const uint8_t type)
   }
 }
 
-static uchar
+static bool
 find_hook(const char *name, const size_t namel, const uint8_t type, size_t *pos)
 {
   const uint16_t hmask = (H_ACCESS|H_TYPE|H_GLOBAL|nmatchers_type_hmask(type));
@@ -484,7 +484,7 @@ hook_handle(const char *src, size_t *pos, const size_t size, reliq_hook *out_hoo
 }
 
 static inline void
-nmatchers_node_add(flexarr *arr, uchar type, void *data, const size_t size) //arr: nmatchers
+nmatchers_node_add(flexarr *arr, uint8_t type, void *data, const size_t size) //arr: nmatchers
 {
   nmatchers_node *new = flexarr_inc(arr);
   new->type = type;
@@ -525,13 +525,13 @@ strclass_attrib(const char *str, const size_t strl)
   return -1;
 }
 
-static inline uchar
+static inline bool
 nmatchers_type_text(const uint8_t type)
 {
   return (type >= NM_TEXT && type <= NM_TEXT_ALL);
 }
 
-static inline uchar
+static inline bool
 nmatchers_type_conflict(const uint8_t type1, const uint8_t type2)
 {
   if (type1 == type2)
@@ -548,7 +548,7 @@ nmatchers_type_conflict(const uint8_t type1, const uint8_t type2)
 
 static void handle_nmatchers(size_t *pos, struct nmatchers_state *st);
 
-static inline uchar //i've run out of names
+static inline bool //i've run out of names
 nmatchers_type_text_pure(const uint8_t type)
 {
   return (type == NM_TEXT || type == NM_TEXT_NOERR || type == NM_TEXT_ERR);
@@ -576,9 +576,9 @@ nmatchers_type_merge(const uint8_t type, uint8_t *dest)
 }
 
 static nmatchers *
-handle_nmatchers_group_add(size_t *pos, struct nmatchers_state *st, flexarr *groups_matches, uchar *wastag)
+handle_nmatchers_group_add(size_t *pos, struct nmatchers_state *st, flexarr *groups_matches, bool *wastag)
 {
-  uchar prevhastag = st->hastag;
+  bool prevhastag = st->hastag;
   nmatchers *matches = st->matches;
   nmatchers *ret = flexarr_incz(groups_matches);
   uint8_t prevtype = st->prevtype;
@@ -587,7 +587,7 @@ handle_nmatchers_group_add(size_t *pos, struct nmatchers_state *st, flexarr *gro
   st->prevtype = matches->type;
   st->matches = ret;
   handle_nmatchers(pos,st);
-  uchar sethastag = st->hastag;
+  bool sethastag = st->hastag;
   st->hastag = prevhastag;
   st->matches = matches;
   st->prevtype = prevtype;
@@ -606,7 +606,7 @@ handle_nmatchers_group_add(size_t *pos, struct nmatchers_state *st, flexarr *gro
   return NULL;
 }
 
-static uchar
+static bool
 handle_nmatchers_group(size_t *pos, flexarr *result, struct nmatchers_state *st) //result: nmatchers_node
 {
   const char *src = st->src;
@@ -621,7 +621,7 @@ handle_nmatchers_group(size_t *pos, flexarr *result, struct nmatchers_state *st)
 
   flexarr f_groups_matches = flexarr_init(sizeof(nmatchers),NODE_MATCHES_INC);
   groups_matches = &f_groups_matches;
-  uchar wastag = 0;
+  bool wastag = 0;
 
   uint8_t type_acc = NM_DEFAULT;
 
@@ -678,9 +678,9 @@ handle_nmatchers_group(size_t *pos, flexarr *result, struct nmatchers_state *st)
 }
 
 static reliq_error *
-match_hook_add_access_type(const size_t pos, const reliq_hook *hook, const uchar invert, flexarr *result, struct nmatchers_state *st) //result: nmatchers_node
+match_hook_add_access_type(const size_t pos, const reliq_hook *hook, const bool invert, flexarr *result, struct nmatchers_state *st) //result: nmatchers_node
 {
-  const uchar isaccess = ((hook->hook->flags&H_ACCESS) > 0);
+  const bool isaccess = ((hook->hook->flags&H_ACCESS) > 0);
   if (invert)
     return script_err("%s hook \"%s\" cannot be inverted",
       isaccess ? "access" : "type",hook->hook->name.b);
@@ -704,8 +704,8 @@ match_hook_add_access_type(const size_t pos, const reliq_hook *hook, const uchar
   return NULL;
 }
 
-static uchar
-hook_add(size_t *pos, const uchar invert, flexarr *result, struct nmatchers_state *st) //result: nmatchers_node
+static uint8_t
+hook_add(size_t *pos, const bool invert, flexarr *result, struct nmatchers_state *st) //result: nmatchers_node
 {
   const char *src = st->src;
   const size_t size = st->size;
@@ -754,7 +754,7 @@ find_main_hook(const uint16_t main_hook_mask)
 }
 
 static reliq_error *
-comp_node_add_tag(const char *src, size_t *pos, const size_t size, const uchar invert, flexarr *result) //result: nmatchers_node
+comp_node_add_tag(const char *src, size_t *pos, const size_t size, const bool invert, flexarr *result) //result: nmatchers_node
 {
   reliq_pattern tag;
   reliq_error *err;
@@ -771,13 +771,13 @@ comp_node_add_tag(const char *src, size_t *pos, const size_t size, const uchar i
 }
 
 static reliq_error *
-comp_node(const char *src, size_t *pos, const size_t size, uchar invert, uchar *hastag, flexarr *result) //result: nmatchers_node
+comp_node(const char *src, size_t *pos, const size_t size, bool invert, bool *hastag, flexarr *result) //result: nmatchers_node
 {
   reliq_error *err = NULL;
   size_t i = *pos;
   char shortcut = 0;
   struct pattrib attrib = {0};
-  uchar tofree = 1;
+  bool tofree = 1;
 
   if (invert)
     attrib.flags |= A_INVERT;
@@ -856,7 +856,7 @@ comp_node(const char *src, size_t *pos, const size_t size, uchar invert, uchar *
 }
 
 static reliq_error *
-comp_single_text(const char *src, size_t *pos, const size_t size, uchar invert, uchar *hastag, const uint16_t main_hook_mask, flexarr *result) //result: nmatchers_node
+comp_single_text(const char *src, size_t *pos, const size_t size, bool invert, bool *hastag, const uint16_t main_hook_mask, flexarr *result) //result: nmatchers_node
 {
   reliq_error *err = NULL;
 
@@ -881,18 +881,18 @@ comp_single_text(const char *src, size_t *pos, const size_t size, uchar invert, 
 
 
 static reliq_error *
-comp_comment(const char *src, size_t *pos, const size_t size, uchar invert, uchar *hastag, flexarr *result) //result: nmatchers_node
+comp_comment(const char *src, size_t *pos, const size_t size, bool invert, bool *hastag, flexarr *result) //result: nmatchers_node
 {
   return comp_single_text(src,pos,size,invert,hastag,H_MATCH_COMMENT_MAIN,result);
 }
 
 static reliq_error *
-comp_text(const char *src, size_t *pos, const size_t size, uchar invert, uchar *hastag, flexarr *result) //result: nmatchers_node
+comp_text(const char *src, size_t *pos, const size_t size, bool invert, bool *hastag, flexarr *result) //result: nmatchers_node
 {
   return comp_single_text(src,pos,size,invert,hastag,H_MATCH_TEXT_MAIN,result);
 }
 
-static uchar
+static bool
 handle_nmatchers_position(size_t *pos, struct nmatchers_state *st)
 {
   const char *src = st->src;
@@ -934,10 +934,10 @@ err_multiple(const size_t pos)
   return script_err("node %lu: multiple types cannot be mixed",pos);
 }
 
-static uchar
-hook_check(size_t *pos, const uchar invert, flexarr *result, struct nmatchers_state *st) //result: nmatchers_node
+static bool
+hook_check(size_t *pos, const bool invert, flexarr *result, struct nmatchers_state *st) //result: nmatchers_node
 {
-  uchar r = hook_add(pos,invert,result,st);
+  uint8_t r = hook_add(pos,invert,result,st);
   if (!r)
     return 0;
 
@@ -955,7 +955,7 @@ hook_check(size_t *pos, const uchar invert, flexarr *result, struct nmatchers_st
 }
 
 static reliq_error *
-type_comp(const char *src, size_t *pos, const size_t size, const uchar invert, uchar *hastag, flexarr *result, uint8_t *type) //result: nmatchers_node
+type_comp(const char *src, size_t *pos, const size_t size, const bool invert, bool *hastag, flexarr *result, uint8_t *type) //result: nmatchers_node
 {
   switch (*type) {
     case NM_DEFAULT:
@@ -983,7 +983,7 @@ handle_nmatchers(size_t *pos, struct nmatchers_state *st)
   nmatchers *matches = st->matches;
   *matches = (nmatchers){ .type = st->prevtype };
   uint8_t *type = &matches->type;
-  uchar *hastag = &st->hastag;
+  bool *hastag = &st->hastag;
   st->typehooks_count = 0;
 
   size_t i = *pos;
@@ -1012,7 +1012,7 @@ handle_nmatchers(size_t *pos, struct nmatchers_state *st)
         break;
     }
 
-    uchar invert = 0;
+    bool invert = 0;
     if (src[i] == '+') {
       i++;
     } else if (src[i] == '-') {

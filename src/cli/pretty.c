@@ -25,8 +25,6 @@
 
 #include "pretty.h"
 
-typedef unsigned char uchar;
-
 #define ATTRS_INC -32
 
 #define while_is(w,x,y,z) while ((y) < (z) && w((x)[(y)])) {(y)++;}
@@ -53,13 +51,13 @@ typedef unsigned char uchar;
 
 #define COLOR_CLEAR "\033[0m"
 
-uchar should_colorize(FILE *o);
+bool should_colorize(FILE *o);
 
 struct print_state {
   size_t lvl;
-  uchar newline : 1;
-  uchar justnewline : 1;
-  uchar not_first : 1;
+  bool newline : 1;
+  bool justnewline : 1;
+  bool not_first : 1;
 };
 
 void
@@ -91,8 +89,8 @@ struct pretty_state {
   const struct pretty_settings *s;
   FILE *out;
   struct print_state *p_st;
-  uchar *linesize;
-  const uchar color;
+  bool *linesize;
+  const bool color;
 };
 
 static void
@@ -127,7 +125,7 @@ color(const char *col, const struct pretty_state *st)
 
 #define colret(x,y) do { \
     color(x,st); \
-    uchar r = y; \
+    bool r = y; \
     color(COLOR_CLEAR,st); \
     if (r) \
       return 1; \
@@ -135,13 +133,13 @@ color(const char *col, const struct pretty_state *st)
 
 #define colretr(x,y) do { \
     color(x,st); \
-    uchar r = y; \
+    bool r = y; \
     color(COLOR_CLEAR,st); \
     return r; \
   } while (0)
 
-static uchar
-print_r(const char *src, const size_t size, const struct pretty_state *st, size_t *linesize, const uchar newline, int (*transform)(int))
+static bool
+print_r(const char *src, const size_t size, const struct pretty_state *st, size_t *linesize, const bool newline, int (*transform)(int))
 {
   if (*st->linesize) {
     *linesize += size;
@@ -166,27 +164,27 @@ print_r(const char *src, const size_t size, const struct pretty_state *st, size_
   return 0;
 }
 
-static uchar
-print(const char *src, const size_t size, const struct pretty_state *st, size_t *linesize, const uchar newline)
+static bool
+print(const char *src, const size_t size, const struct pretty_state *st, size_t *linesize, const bool newline)
 {
   return print_r(src,size,st,linesize,newline,NULL);
 }
 
-static uchar
+static bool
 print_lower(const char *src, const size_t size, const struct pretty_state *st, size_t *linesize)
 {
   return print_r(src,size,st,linesize,0,tolower);
 }
 
-static uchar
-print_case(const char *src, const size_t size, const struct pretty_state *st, size_t *linesize, const uchar newline)
+static bool
+print_case(const char *src, const size_t size, const struct pretty_state *st, size_t *linesize, const bool newline)
 {
   if (st->s->normal_case)
     return print_lower(src,size,st,linesize);
   return print(src,size,st,linesize,newline);
 }
 
-static uchar
+static bool
 print_minified(const char *src, const size_t size, const struct pretty_state *st, size_t *linesize)
 {
   for (size_t i = 0; i < size; ) {
@@ -233,8 +231,8 @@ get_trimmed(const char *src, size_t size, char const** dest, size_t *destl)
   *destl = size;
 }
 
-static uchar
-print_wrapped(const char *src, const size_t size, const struct pretty_state *st, const uchar wrap, size_t *linesize)
+static bool
+print_wrapped(const char *src, const size_t size, const struct pretty_state *st, const bool wrap, size_t *linesize)
 {
   const size_t maxline = st->s->maxline;
   if (!maxline)
@@ -269,7 +267,7 @@ print_wrapped(const char *src, const size_t size, const struct pretty_state *st,
   return 0;
 }
 
-static uchar
+static bool
 print_pretty_text_r(const reliq_hnode *node, const struct pretty_state *st, size_t *linesize)
 {
   const char *src;
@@ -282,7 +280,7 @@ print_pretty_text_r(const reliq_hnode *node, const struct pretty_state *st, size
   return print_wrapped(src,size,st,st->s->wrap_text,linesize);
 }
 
-static uchar
+static bool
 print_pretty_text(const reliq_hnode *node, const struct pretty_state *st, size_t *linesize)
 {
   if (node->type == RELIQ_HNODE_TYPE_TEXT_EMPTY)
@@ -311,8 +309,8 @@ comment_start(const reliq_hnode *node)
   };
 }
 
-static uchar
-print_pretty_comment_start(const reliq_hnode *node, const struct pretty_state *st, size_t *linesize, uchar *small)
+static bool
+print_pretty_comment_start(const reliq_hnode *node, const struct pretty_state *st, size_t *linesize, bool *small)
 {
   reliq_cstr start = comment_start(node);
   *small = (node->all.s-start.s < 3 || memcmp(start.b,"!--",3) != 0);
@@ -325,23 +323,23 @@ print_pretty_comment_start(const reliq_hnode *node, const struct pretty_state *s
     return print(node->all.b,node->insides.b-node->all.b,st,linesize,0);
 }
 
-static uchar
-print_pretty_comment_end(const reliq_hnode *node, const struct pretty_state *st, size_t *linesize, const uchar small)
+static bool
+print_pretty_comment_end(const reliq_hnode *node, const struct pretty_state *st, size_t *linesize, const bool small)
 {
   const char *src = node->all.b;
   size_t size = node->all.s;
   reliq_cstr end={ .b=src+size, .s=0 };
 
-  uchar ending = 1;
+  bool ending = 0;
   if (src[size-1] == '>') {
+    ending = 1;
     end.b -= 1;
     end.s += 1;
     if (!small && size > 3 && memcmp(src+size-3,"--",2) == 0) {
       end.b -= 2;
       end.s += 2;
     }
-  } else
-    ending = 0;
+  }
 
   if (ending) {
     return print(end.b,end.s,st,linesize,st->s->wrap_comments);
@@ -351,7 +349,7 @@ print_pretty_comment_end(const reliq_hnode *node, const struct pretty_state *st,
     return print("-->",3,st,linesize,st->s->wrap_comments);
 }
 
-static uchar
+static bool
 print_pretty_comment_insides(const reliq_hnode *node, const struct pretty_state *st, size_t *linesize)
 {
   const struct pretty_settings *s = st->s;
@@ -368,15 +366,15 @@ print_pretty_comment_insides(const reliq_hnode *node, const struct pretty_state 
   return print_wrapped(src,size,st,1,linesize);
 }
 
-static uchar
+static bool
 print_pretty_comment_r(const reliq_hnode *node, const struct pretty_state *st, size_t *linesize)
 {
-  uchar small;
+  bool small;
   if (print_pretty_comment_start(node,st,linesize,&small))
     return 1;
 
   st->p_st->lvl++;
-  uchar r = print_pretty_comment_insides(node,st,linesize);
+  bool r = print_pretty_comment_insides(node,st,linesize);
   st->p_st->lvl--;
   if (r)
     return 1;
@@ -384,7 +382,7 @@ print_pretty_comment_r(const reliq_hnode *node, const struct pretty_state *st, s
   return print_pretty_comment_end(node,st,linesize,small);
 }
 
-static uchar
+static bool
 print_pretty_comment(const reliq_hnode *node, const struct pretty_state *st, size_t *linesize)
 {
   if (st->s->remove_comments || !node->all.s)
@@ -471,7 +469,7 @@ order_attribs(const reliq *rq, flexarr *buf, reliq_cattrib const **attribs, size
   *attribsl = buf->size;
 }
 
-static uchar
+static bool
 print_pretty_attrib_value_trim(const reliq_attrib *attr, const struct pretty_state *st, size_t *linesize)
 {
   size_t pos = 0;
@@ -489,7 +487,7 @@ print_pretty_attrib_value_trim(const reliq_attrib *attr, const struct pretty_sta
   return 0;
 }
 
-static uchar
+static bool
 print_pretty_attrib_separator(const reliq_attrib *attr, const struct pretty_state *st, size_t *linesize, const char quote)
 {
   const char *base = attr->key.b+attr->key.s;
@@ -516,7 +514,7 @@ print_pretty_attrib_separator(const reliq_attrib *attr, const struct pretty_stat
   return print(base+prevpos,pos-prevpos,st,linesize,0);
 }
 
-static uchar
+static bool
 print_pretty_attrib_value(const reliq_attrib *attr, const struct pretty_state *st, size_t *linesize, const char quote)
 {
   if (quote && print(&quote,1,st,linesize,0))
@@ -540,14 +538,14 @@ print_pretty_attrib_value(const reliq_attrib *attr, const struct pretty_state *s
   return 0;
 }
 
-static uchar
+static bool
 print_pretty_attrib_after(const reliq_attrib *attr, const struct pretty_state *st, size_t *linesize)
 {
   if (!attr->value.b)
     return 0;
 
   const struct pretty_settings *s = st->s;
-  const uchar trim_tags = s->trim_tags;
+  const bool trim_tags = s->trim_tags;
 
   char quote = *(attr->value.b-1);
   if (attr->key.b+attr->key.s == attr->value.b-1
@@ -567,7 +565,7 @@ print_pretty_attrib_after(const reliq_attrib *attr, const struct pretty_state *s
     print_pretty_attrib_value(attr,st,linesize,quote));
 }
 
-static uchar
+static bool
 print_pretty_attrib(const reliq_attrib *attr, const struct pretty_state *st, size_t *linesize)
 {
   const char *key = attr->key.b;
@@ -585,14 +583,14 @@ print_pretty_attrib(const reliq_attrib *attr, const struct pretty_state *st, siz
   return print_pretty_attrib_after(attr,st,linesize);
 }
 
-static uchar
+static bool
 print_pretty_attribs_r(const reliq_cattrib *attribs, const size_t attribsl, const struct pretty_state *st, const reliq_cstr *tag, size_t *linesize)
 {
   const struct pretty_settings *s = st->s;
   const char *base;
   size_t space;
   reliq_attrib prevattr;
-  const uchar trim_tags = s->trim_tags;
+  const bool trim_tags = s->trim_tags;
 
   for (size_t i = 0; i < attribsl; i++) {
     reliq_attrib attr;
@@ -623,7 +621,7 @@ print_pretty_attribs_r(const reliq_cattrib *attribs, const size_t attribsl, cons
   return 0;
 }
 
-static uchar
+static bool
 print_pretty_attribs(const reliq_hnode *node, const struct pretty_state *st, size_t *linesize)
 {
   reliq_cattrib const *attribs = node->attribs;
@@ -634,7 +632,7 @@ print_pretty_attribs(const reliq_hnode *node, const struct pretty_state *st, siz
   return print_pretty_attribs_r(attribs,attribsl,st,&node->tag,linesize);
 }
 
-static uchar
+static bool
 print_endtag_none(const reliq_hnode *node, const struct pretty_state *st, size_t *linesize)
 {
   colret(COLOR_BRACKETS,
@@ -667,7 +665,7 @@ tag_start_before_insides(const reliq_hnode *node, const struct pretty_state *st)
   return attr.key.b+attr.key.s+1-node->all.b;
 }
 
-static uchar
+static bool
 tag_selfclosing(const char *tag, const size_t tagl)
 {
   static const struct {
@@ -689,7 +687,7 @@ tag_selfclosing(const char *tag, const size_t tagl)
   return 0;
 }
 
-static uchar
+static bool
 print_pretty_tag_start_slash(const char *base, size_t basel, const struct pretty_state *st, size_t *linesize)
 {
   size_t pos=0,prevpos;
@@ -711,11 +709,11 @@ print_pretty_tag_start_slash(const char *base, size_t basel, const struct pretty
   return 0;
 }
 
-static uchar
+static bool
 print_pretty_tag_start_finish(const reliq_hnode *node, const struct pretty_state *st, size_t *linesize)
 {
   const struct pretty_settings *s = st->s;
-  uchar closed = 0;
+  bool closed = 0;
   size_t size = (node->insides.b)
     ? (size_t)(node->insides.b-node->all.b) : node->all.s;
 
@@ -724,7 +722,7 @@ print_pretty_tag_start_finish(const reliq_hnode *node, const struct pretty_state
 
   size_t pos = tag_start_before_insides(node,st);
   const char *ending_slash = NULL;
-  const uchar ended = (pos < node->all.s
+  const bool ended = (pos < node->all.s
       && (ending_slash = memchr(node->all.b+pos-closed,'/',size-pos)) != NULL);
 
   if (s->trim_tags) {
@@ -749,10 +747,10 @@ print_pretty_tag_start_finish(const reliq_hnode *node, const struct pretty_state
   return 0;
 }
 
-static uchar
-tag_start_phplike(const reliq_hnode *node, const struct pretty_state *st, size_t *linesize, uchar *phplike)
+static bool
+tag_start_phplike(const reliq_hnode *node, const struct pretty_state *st, size_t *linesize, bool *phplike)
 {
-  const uchar trim_tags = st->s->trim_tags;
+  const bool trim_tags = st->s->trim_tags;
   const char *base = node->all.b;
   size_t basel = node->all.s;
   size_t pos=1,prevpos;
@@ -769,8 +767,8 @@ tag_start_phplike(const reliq_hnode *node, const struct pretty_state *st, size_t
   return 0;
 }
 
-static uchar
-print_pretty_tag_start(const reliq_hnode *node, const struct pretty_state *st, size_t *linesize, uchar *phplike)
+static bool
+print_pretty_tag_start(const reliq_hnode *node, const struct pretty_state *st, size_t *linesize, bool *phplike)
 {
   colret(COLOR_BRACKETS,
     print("<",1,st,linesize,0));
@@ -790,11 +788,11 @@ print_pretty_tag_start(const reliq_hnode *node, const struct pretty_state *st, s
   return print_pretty_tag_start_finish(node,st,linesize);
 }
 
-static uchar
+static bool
 print_pretty_tag_end(const reliq_hnode *node, const struct pretty_state *st, size_t *linesize)
 {
   const struct pretty_settings *s = st->s;
-  const uchar fix = s->fix;
+  const bool fix = s->fix;
   size_t endl;
   const char *end = reliq_hnode_endtag(node,&endl);
   if (!end) {
@@ -803,7 +801,7 @@ print_pretty_tag_end(const reliq_hnode *node, const struct pretty_state *st, siz
     return 0;
   }
 
-  const uchar trim_tags = s->trim_tags;
+  const bool trim_tags = s->trim_tags;
 
   colret(COLOR_BRACKETS,
     print("<",1,st,linesize,1));
@@ -823,7 +821,7 @@ print_pretty_tag_end(const reliq_hnode *node, const struct pretty_state *st, siz
   while (pos < endl && !isspace(end[pos]) && end[pos] != '>')
     pos++;
 
-  uchar r;
+  bool r;
   color(COLOR_TAGNAME,st);
   if (fix || s->normal_case) {
     r = print_case(node->tag.b,node->tag.s,st,linesize,0);
@@ -842,7 +840,7 @@ print_pretty_tag_end(const reliq_hnode *node, const struct pretty_state *st, siz
   if (s->trim_tags && prevpos != pos)
     print(" ",1,st,linesize,0);
 
-  uchar ended = (end[endl-1] == '>');
+  bool ended = (end[endl-1] == '>');
 
   if (ended)
     endl--;
@@ -853,9 +851,9 @@ print_pretty_tag_end(const reliq_hnode *node, const struct pretty_state *st, siz
   return r;
 }
 
-static uchar print_pretty_broad(const reliq_chnode *nodes, const size_t nodesl, const struct pretty_state *st, size_t *linesize);
+static bool print_pretty_broad(const reliq_chnode *nodes, const size_t nodesl, const struct pretty_state *st, size_t *linesize);
 
-static uchar
+static bool
 print_minified_script(const char *src, const size_t size, const struct pretty_state *st, size_t *linesize)
 {
   for (size_t i = 0; i < size; ) {
@@ -883,17 +881,17 @@ print_minified_script(const char *src, const size_t size, const struct pretty_st
   return 0;
 }
 
-static uchar
+static uint8_t
 handle_tag_script(const reliq_chnode *next, const reliq_hnode *node, const struct pretty_state *st, size_t *linesize, const size_t desc)
 {
-  uchar script=0,style=0;
+  bool script=0,style=0;
   if (node->tag.s == 6 && memcasecmp(node->tag.b,"script",6) == 0) {
     script = 1;
   } else if (node->tag.s == 5 && memcasecmp(node->tag.b,"style",5) == 0)
     style = 1;
 
   if (!script && !style)
-    return (uchar)-1;
+    return (uint8_t)-1;
 
   assert(desc == 1);
 
@@ -922,7 +920,7 @@ handle_tag_script(const reliq_chnode *next, const reliq_hnode *node, const struc
     linesize);
 }
 
-static uchar
+static bool
 print_pretty_tag_insides(const reliq_chnode *chnode, const reliq_hnode *node, const struct pretty_state *st, size_t *linesize)
 {
   const size_t desc = node->tag_count+node->comment_count+node->text_count;
@@ -931,17 +929,17 @@ print_pretty_tag_insides(const reliq_chnode *chnode, const reliq_hnode *node, co
 
   const reliq_chnode *next = chnode+1;
 
-  uchar r = handle_tag_script(next,node,st,linesize,desc);
-  if (r != (uchar)-1)
+  uint8_t r = handle_tag_script(next,node,st,linesize,desc);
+  if (r != (uint8_t)-1)
     return r;
 
   return print_pretty_broad(next,desc,st,linesize);
 }
 
-static uchar
+static bool
 phplike_insides(const reliq_hnode *node, const struct pretty_state *st, size_t *linesize)
 {
-  const uchar trim_tags = st->s->trim_tags;
+  const bool trim_tags = st->s->trim_tags;
   const char *src = node->insides.b;
   size_t size = node->insides.s;
   size_t pos=(node->tag.b+node->tag.s)-node->all.b,
@@ -954,10 +952,10 @@ phplike_insides(const reliq_hnode *node, const struct pretty_state *st, size_t *
   return print(src,size,st,linesize,0);
 }
 
-static uchar
+static bool
 phplike_end(const reliq_hnode *node, const struct pretty_state *st, size_t *linesize)
 {
-  const uchar trim_tags = st->s->trim_tags;
+  const bool trim_tags = st->s->trim_tags;
   const char *base = node->all.b;
   size_t basel = node->all.s;
   size_t pos=(node->insides.b+node->insides.s)-node->all.b,
@@ -980,7 +978,7 @@ phplike_end(const reliq_hnode *node, const struct pretty_state *st, size_t *line
   goto PRINT_END;
 }
 
-static uchar
+static bool
 phplike_finish(const reliq_hnode *node, const struct pretty_state *st, size_t *linesize)
 {
   if (phplike_insides(node,st,linesize))
@@ -988,10 +986,10 @@ phplike_finish(const reliq_hnode *node, const struct pretty_state *st, size_t *l
   return phplike_end(node,st,linesize);
 }
 
-static uchar
+static bool
 print_pretty_tag(const reliq_chnode *chnode, const reliq_hnode *node, const struct pretty_state *st, size_t *linesize)
 {
-  uchar phplike;
+  bool phplike;
   if (print_pretty_tag_start(node,st,linesize,&phplike))
     return 1;
 
@@ -1002,7 +1000,7 @@ print_pretty_tag(const reliq_chnode *chnode, const reliq_hnode *node, const stru
     return 0;
 
   st->p_st->lvl++;
-  uchar r = print_pretty_tag_insides(chnode,node,st,linesize);
+  bool r = print_pretty_tag_insides(chnode,node,st,linesize);
   st->p_st->lvl--;
   if (r)
     return 1;
@@ -1011,7 +1009,7 @@ print_pretty_tag(const reliq_chnode *chnode, const reliq_hnode *node, const stru
 }
 
 static size_t
-print_pretty_node_r(const reliq_chnode *chnode, const struct pretty_state *st, size_t *linesize, uchar *hasnewline)
+print_pretty_node_r(const reliq_chnode *chnode, const struct pretty_state *st, size_t *linesize, bool *hasnewline)
 {
   reliq_hnode node;
   reliq_chnode_conv(st->rq,chnode,&node);
@@ -1029,10 +1027,10 @@ print_pretty_node_r(const reliq_chnode *chnode, const struct pretty_state *st, s
 static size_t
 print_pretty_node(const reliq_chnode *chnode, const struct pretty_state *st, size_t *linesize)
 {
-  uchar hasnewline = 0;
+  bool hasnewline = 0;
   size_t r;
 
-  uchar prevlinesize = *st->linesize;
+  bool prevlinesize = *st->linesize;
   size_t prevlsize = *linesize;
   *st->linesize = 1;
   r = print_pretty_node_r(chnode,st,linesize,&hasnewline);
@@ -1046,7 +1044,7 @@ print_pretty_node(const reliq_chnode *chnode, const struct pretty_state *st, siz
     if (size-prevlsize > 0)
       print("",0,st,linesize,1);
     const struct pretty_settings *s = st->s;
-    const uchar newline = st->p_st->newline;
+    const bool newline = st->p_st->newline;
     st->p_st->newline = s->maxline != 0 && size >= s->maxline;
     r = print_pretty_node_r(chnode,st,linesize,&hasnewline);
     st->p_st->newline = newline;
@@ -1055,7 +1053,7 @@ print_pretty_node(const reliq_chnode *chnode, const struct pretty_state *st, siz
   return r;
 }
 
-static uchar
+static bool
 print_pretty_broad(const reliq_chnode *nodes, const size_t nodesl, const struct pretty_state *st, size_t *linesize)
 {
   for (size_t i = 0; i < nodesl;) {
@@ -1069,7 +1067,7 @@ print_pretty_broad(const reliq_chnode *nodes, const size_t nodesl, const struct 
 void
 print_pretty(const reliq *rq, const struct pretty_settings *s, FILE *out)
 {
-  uchar color = (s->color == 1)
+  bool color = (s->color == 1)
     ? should_colorize(out)
     : (s->color == 2);
 
@@ -1080,7 +1078,7 @@ print_pretty(const reliq *rq, const struct pretty_settings *s, FILE *out)
     .justnewline=0,
     .not_first=0
   };
-  uchar linesize = 0;
+  bool linesize = 0;
   struct pretty_state st = {
     .rq = rq,
     .s = s,

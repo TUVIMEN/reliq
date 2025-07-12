@@ -174,7 +174,7 @@ mempcpy(void *dest, void *src, const size_t n)
 void *
 memrchr(void *restrict src, const int c, const size_t size)
 {
-  uchar searched = c;
+  uint8_t searched = c;
   if (!size)
     return NULL;
 
@@ -288,7 +288,7 @@ get_fromhex(const char *src, const size_t size, size_t *traversed)
 }
 
 static uint64_t
-splchar2_fromhex(const char *src, const size_t srcl, size_t *traversed, const uchar maxlength) {
+splchar2_fromhex(const char *src, const size_t srcl, size_t *traversed, const uint8_t maxlength) {
   if (srcl < 1) {
     *traversed = 1;
     return *src;
@@ -344,10 +344,10 @@ splchar2(const char *src, const size_t srcl, size_t *traversed)
   return ret;
 }
 
-static uchar
+static uint8_t
 most_significant_bit(uint32_t n)
 {
-  uchar ret = 0;
+  uint8_t ret = 0;
   while (n >>= 1)
     ret++;
   return ret;
@@ -417,7 +417,7 @@ write_utf8(uint64_t data, char *result, size_t *traversed, const size_t maxlengt
 }
 
 static void
-splchar3_unicode(const char *src, const size_t srcl, char *result, size_t *resultl, size_t *traversed, const uchar maxlength)
+splchar3_unicode(const char *src, const size_t srcl, char *result, size_t *resultl, size_t *traversed, const uint8_t maxlength)
 {
   uint64_t val = splchar2_fromhex(src,srcl,traversed,maxlength);
   if (*traversed == 0) {
@@ -521,7 +521,7 @@ universal_number(const char *src, size_t *pos, const size_t size, void *result)
   uint64_t t_unsigned;
   int64_t t_signed;
   double t_floating;
-  uchar issigned = 0;
+  bool issigned = 0;
 
   if (src[i] == '-') {
     issigned = 1;

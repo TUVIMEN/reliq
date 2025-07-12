@@ -20,7 +20,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
 
 #include "ctype.h"
 #include "utils.h"
@@ -2231,7 +2230,7 @@ handle_number(const char *src, const size_t srcl, size_t *traversed, char *resul
     data = get_fromhex(src+i,MIN(DECODE_ENTITIES_MAX_XDIGITS,srcl-i),&trav);
   }
   i += trav;
-  uchar ended = (i < srcl && src[i] == ';');
+  bool ended = (i < srcl && src[i] == ';');
 
   data = enc32utf8(data);
 
@@ -2250,10 +2249,10 @@ handle_number(const char *src, const size_t srcl, size_t *traversed, char *resul
   return ret;
 }
 
-static inline uchar
+static inline bool
 find_special_in(struct htmlcode const **first, const char *name, const size_t len)
 {
-  uchar found = 0;
+  bool found = 0;
   struct htmlcode const *f = *first;
   for (; f-html_special_codes != LENGTH(html_special_codes) && f->name.s == len; f++) {
     if (memcmp(f->name.b,name,len) == 0) {
@@ -2319,14 +2318,14 @@ find_name(const char *name, const size_t maxnamel, size_t *len)
 }
 
 static int
-handle_name(const char *src, const size_t srcl, size_t *traversed, char *result, const size_t resultl, size_t *written, uchar *ignore, bool no_nbsp)
+handle_name(const char *src, const size_t srcl, size_t *traversed, char *result, const size_t resultl, size_t *written, bool *ignore, bool no_nbsp)
 {
   size_t i = *traversed;
   size_t j = *written;
   int ret = 0;
 
   i++;
-  uchar ended=0;
+  bool ended=0;
   size_t len;
 
   struct htmlcode const *first = find_name(src+i,srcl-i,&len);
@@ -2345,7 +2344,7 @@ handle_name(const char *src, const size_t srcl, size_t *traversed, char *result,
     goto END;
   }
 
-  if (no_nbsp && vall == 2 && ((uchar)val[0]) == 0xc2 && ((uchar)val[1]) == 0xa0) { // \u00a0
+  if (no_nbsp && vall == 2 && ((uint8_t)val[0]) == 0xc2 && ((uint8_t)val[1]) == 0xa0) { // \u00a0
     result[j] = ' ';
     j += 1;
   } else {
@@ -2371,7 +2370,7 @@ reliq_decode_entity(const char *src, const size_t srcl, size_t *traversed, char 
 
   if (src[0] == '&' && 2 < srcl) {
     if (isalpha(src[1]) && isalpha(src[2])) {
-      uchar ignore = 0;
+      bool ignore = 0;
       ret = handle_name(src,srcl,&i,result,resultl,&j,&ignore,no_nbsp);
       if (ignore)
         goto IGNORE;
@@ -2381,7 +2380,7 @@ reliq_decode_entity(const char *src, const size_t srcl, size_t *traversed, char 
       goto IGNORE;
   } else {
     IGNORE: ;
-    uchar c = src[i++];
+    uint8_t c = src[i++];
     result[j++] = c;
   }
 

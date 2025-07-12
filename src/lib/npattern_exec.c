@@ -37,7 +37,7 @@ typedef struct  {
 static int
 pattrib_match(const reliq *rq, const reliq_hnode *hnode, const struct pattrib *attrib)
 {
-  uchar found = 0;
+  bool found = 0;
   const reliq_cattrib *a = hnode->attribs;
   const uint32_t attribsl = hnode->attribsl;
 
@@ -82,7 +82,7 @@ match_hook(const nmatcher_state *st, const reliq_hook *hook)
   char const *src = NULL;
   size_t srcl = 0;
   uint16_t flags = hook->hook->flags;
-  const uchar invert = hook->invert;
+  const bool invert = hook->invert;
   const reliq *rq = st->rq;
   const reliq_chnode *chnode = st->chnode;
   const reliq_chnode *parent = st->parent;
@@ -133,9 +133,9 @@ nmatcher_match_type(const uint8_t hnode_type, const uint8_t type)
   if (type == NM_COMMENT)
     return (hnode_type == RELIQ_HNODE_TYPE_COMMENT);
 
-  uchar istext = (hnode_type == RELIQ_HNODE_TYPE_TEXT);
-  uchar istexterr = (hnode_type == RELIQ_HNODE_TYPE_TEXT_ERR);
-  uchar istextempty = (hnode_type == RELIQ_HNODE_TYPE_TEXT_EMPTY);
+  bool istext = (hnode_type == RELIQ_HNODE_TYPE_TEXT);
+  bool istexterr = (hnode_type == RELIQ_HNODE_TYPE_TEXT_ERR);
+  bool istextempty = (hnode_type == RELIQ_HNODE_TYPE_TEXT_EMPTY);
   if (type == NM_TEXT_ALL)
     return (istext || istexterr || istextempty);
 
