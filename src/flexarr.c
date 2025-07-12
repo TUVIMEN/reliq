@@ -33,11 +33,28 @@ flexarr_realloc(void *ptr, size_t size)
   return realloc(ptr,size);
 }
 
+static inline size_t
+grow_size(const flexarr *f)
+{
+  const int32_t inc_r = f->inc_r;
+  if (unlikely(inc_r > 0))
+    return inc_r;
+
+  if (unlikely(f->asize) == 0) {
+    if (unlikely(inc_r == 0))
+      return 1;
+    return inc_r*-1;
+  }
+
+  return f->asize;
+}
+
 void *
 flexarr_inc(flexarr *f)
 {
   if (unlikely(f->size >= f->asize)) {
-    f->v = flexarr_realloc(f->v,(f->asize+=f->inc_r)*f->elsize);
+    f->asize += grow_size(f);
+    f->v = flexarr_realloc(f->v,f->asize*f->elsize);
     if (unlikely(!f->v))
       return NULL;
   }
@@ -61,9 +78,11 @@ flexarr_append(flexarr *f, const void *v, const size_t count)
 
   size_t free_space = f->asize-f->size;
   if (unlikely(free_space < count)) {
-    const size_t needed=(count-free_space);
-    const size_t n=(needed/f->inc_r) + (needed%f->inc_r != 0);
-    f->asize += n*f->inc_r;
+    do {
+      size_t r = grow_size(f);
+      free_space += r;
+      f->asize += r;
+    } while (free_space < count);
     f->v = flexarr_realloc(f->v,f->asize*f->elsize);
     if (unlikely(f->v == NULL))
       return NULL;

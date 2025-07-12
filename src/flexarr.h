@@ -27,23 +27,26 @@ typedef struct {
   size_t asize; //allocated size
   size_t size; //used size
   uint32_t elsize; //size of a single element
-  uint32_t inc_r; //increase rate
+  int32_t inc_r; //increase rate
 } flexarr;
 
 //easier than an external inlined function
 #define flexarr_init(x,y) (flexarr){ .elsize = (x), .inc_r = (y) }
+// if .inc_r > 0 then .asize will increase by .inc_r at reallocation
+// if .inc_r <= 0 then .asize will double, negative numbers will
+//   represent the first size of allocation.
 
-void *flexarr_inc(flexarr *f);
+void *flexarr_inc(flexarr *f); //add new element and return pointer to it
 void *flexarr_incz(flexarr *f); //same as above but zeroes the memory
 void *flexarr_append(flexarr *f, const void *v, const size_t count); //append count amount of things from v
 void *flexarr_add(flexarr *dst, const flexarr *src); //append contents of src to dst
 
-void *flexarr_dec(flexarr *f);
+void *flexarr_dec(flexarr *f); //remove last element and return pointer to it
 
 void *flexarr_set(flexarr *f, const size_t s); //set number of allocated elements to s
 void *flexarr_alloc(flexarr *f, const size_t s); //allocate additional s amount of elements
 
-void *flexarr_clearb(flexarr *f); //clear buffer
+void *flexarr_clearb(flexarr *f); //clear buffer of unused elements
 void flexarr_conv(flexarr *f, void **v, size_t *s); //convert from flexarr to normal array
 void flexarr_free(flexarr *f);
 
