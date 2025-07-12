@@ -26,7 +26,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define SCHEME_INC 64
+#define SCHEME_INC -64
 
 static const reliq_expr *
 scheme_last_chainlink(const reliq_expr *expr)

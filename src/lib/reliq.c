@@ -28,8 +28,8 @@
 #include "npattern.h"
 #include "output.h"
 
-#define FROM_COMPRESSED_NODES_INC (1<<10)
-#define FROM_COMPRESSED_ATTRIBS_INC (1<<10)
+#define FROM_COMPRESSED_NODES_INC -(1<<10)
+#define FROM_COMPRESSED_ATTRIBS_INC -(1<<10)
 
 const uint8_t reliq_chnode_sz = sizeof(reliq_chnode);
 const uint8_t reliq_cattrib_sz = sizeof(reliq_cattrib);

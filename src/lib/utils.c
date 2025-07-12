@@ -25,7 +25,7 @@
 #include "utils.h"
 
 #define UINT_TO_STR_MAX 32
-#define QUOTE_INC 512
+#define QUOTE_INC -512
 
 void
 strnrev(char *v, const size_t size)

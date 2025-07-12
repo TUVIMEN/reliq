@@ -25,7 +25,7 @@
 #include "utils.h"
 #include "range.h"
 
-#define RANGES_INC (1<<4)
+#define RANGES_INC -(1<<4)
 
 static inline void
 match_relative_xinvert(uint32_t *x, uchar *inf, const uint8_t flags, const uint8_t val, const size_t last)

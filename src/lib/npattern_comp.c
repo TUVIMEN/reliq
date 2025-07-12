@@ -27,7 +27,7 @@
 #include "node_exec.h"
 #include "npattern_intr.h"
 
-#define NODE_MATCHES_INC 8
+#define NODE_MATCHES_INC -8
 
 #define XN(x) h_##x
 #define X(x) static void XN(x)(const UNUSED reliq *rq, const UNUSED reliq_chnode *chnode, const UNUSED reliq_hnode *hnode, const UNUSED reliq_chnode *parent, char UNUSED const **src, size_t UNUSED *srcl)

@@ -27,7 +27,7 @@
 
 typedef unsigned char uchar;
 
-#define ATTRS_INCR 32
+#define ATTRS_INC -32
 
 #define while_is(w,x,y,z) while ((y) < (z) && w((x)[(y)])) {(y)++;}
 #define while_isnt(w,x,y,z) while ((y) < (z) && !w((x)[(y)])) {(y)++;}
@@ -1073,7 +1073,7 @@ print_pretty(const reliq *rq, const struct pretty_settings *s, FILE *out)
     ? should_colorize(out)
     : (s->color == 2);
 
-  flexarr attr_buf = flexarr_init(sizeof(const reliq_cattrib),ATTRS_INCR);
+  flexarr attr_buf = flexarr_init(sizeof(const reliq_cattrib),ATTRS_INC);
   struct print_state p_st = {
     .lvl=0,
     .newline=1,

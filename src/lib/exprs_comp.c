@@ -32,9 +32,9 @@
 #include "exprs.h"
 #include "reliq.h"
 
-#define TOKEN_INC 1<<5
-#define TOKEN_TEXT_INC (1<<7)
-#define PATTERN_SIZE_INC (1<<5)
+#define TOKEN_INC -(1<<5)
+#define TOKEN_TEXT_INC -(1<<7)
+#define PATTERN_SIZE_INC -(1<<5)
 
 void reliq_efree_intr(reliq_expr *expr);
 

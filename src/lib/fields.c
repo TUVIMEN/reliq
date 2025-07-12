@@ -31,8 +31,8 @@
 char *strptime(const char *restrict s, const char *restrict f, struct tm *restrict tm);
 #endif
 
-#define OUTFIELD_ARGS_INC 8
-#define OUTFIELD_TYPE_INC 8
+#define OUTFIELD_ARGS_INC -8
+#define OUTFIELD_TYPE_INC -8
 
 static void outfields_value_print(const reliq *rq, SINK *out, const reliq_field_type *types, const size_t typesl, const char *value, const size_t valuel, const uchar notempty);
 

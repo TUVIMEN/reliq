@@ -28,7 +28,7 @@
 
 #include <assert.h>
 
-#define FORMAT_INC 8
+#define FORMAT_INC -8
 
 typedef reliq_error *(*ffunc_t)(reliq_str*,SINK*,const reliq_format_func*);
 

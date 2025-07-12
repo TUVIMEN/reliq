@@ -27,8 +27,8 @@
 #include "format.h"
 #include "exprs.h"
 
-#define FCOLLECTOR_OUT_INC (1<<4)
-#define OUTFIELDS_INC (1<<4)
+#define FCOLLECTOR_OUT_INC -(1<<4)
+#define OUTFIELDS_INC -(1<<4)
 
 typedef struct {
     const reliq *rq;

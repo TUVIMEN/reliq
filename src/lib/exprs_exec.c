@@ -33,9 +33,9 @@
 #include "exprs.h"
 #include "node_exec.h"
 
-#define PASSED_INC (1<<8) //!! if increased causes huge allocation
-#define NCOLLECTOR_INC (1<<8)
-#define FCOLLECTOR_INC (1<<5)
+#define PASSED_INC -(1<<8) //!! if increased causes huge allocation
+#define NCOLLECTOR_INC -(1<<8)
+#define FCOLLECTOR_INC -(1<<5)
 
 typedef struct {
   const reliq *rq;

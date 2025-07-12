@@ -28,7 +28,7 @@
 #include "format.h"
 #include "edit.h"
 
-#define SED_EXPRESSION_INC (1<<5)
+#define SED_EXPRESSION_INC -(1<<5)
 
 #define SED_MAX_PATTERN_SPACE (1<<20) //!! this causes huge memory allocation, should be replaced by reusing buffers for the whole expression when it's executed
 

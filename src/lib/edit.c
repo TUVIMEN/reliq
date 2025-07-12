@@ -28,7 +28,7 @@
 #include "entities.h"
 #include "ctype.h"
 
-#define LINE_EDIT_INC (1<<8)
+#define LINE_EDIT_INC -(1<<8)
 
 reliq_error *
 edit_missing_arg(const char *argv0)

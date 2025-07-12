@@ -26,8 +26,8 @@
 #include "npattern.h"
 #include "html.h"
 
-#define ATTRIB_INC (1<<13)
-#define NODES_INC (1<<13)
+#define ATTRIB_INC -(1<<13)
+#define NODES_INC -(1<<13)
 
 const cstr8 selfclosing_s[] = { //tags that don't end with </tag>
   {"br",2},{"img",3},{"input",5},{"link",4},

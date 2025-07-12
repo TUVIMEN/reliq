@@ -37,7 +37,7 @@
 #define SINK_TYPE_FLEXARR 1
 #define SINK_TYPE_FILE 2
 
-#define SINK_FLEXARR_INC (1<<15)
+#define SINK_FLEXARR_INC -(1<<15)
 
 struct sink_flexarr_t {
   flexarr fl; //char*
