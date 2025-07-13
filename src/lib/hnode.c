@@ -19,7 +19,7 @@
 #include "../ext.h"
 #include "reliq.h"
 
-uint32_t
+inline uint32_t
 reliq_chnode_attribsl(const reliq *rq, const reliq_chnode *hnode)
 {
   size_t nextindex = hnode-rq->nodes+1;
@@ -30,23 +30,22 @@ reliq_chnode_attribsl(const reliq *rq, const reliq_chnode *hnode)
   return next->attribs-hnode->attribs;
 }
 
-uint8_t
+inline uint8_t
 reliq_chnode_type(const reliq_chnode *c)
 {
-  if (c->tag == 0) {
-    if (c->endtag == 0) {
-      if (c->tagl == 1)
-        return RELIQ_HNODE_TYPE_TEXT_EMPTY;
-      if (c->tagl == 2)
-        return RELIQ_HNODE_TYPE_TEXT_ERR;
-      return RELIQ_HNODE_TYPE_TEXT;
-    } else
-      return RELIQ_HNODE_TYPE_COMMENT;
-  }
-  return RELIQ_HNODE_TYPE_TAG;
+  if (c->tag != 0)
+    return RELIQ_HNODE_TYPE_TAG;
+  if (c->endtag != 0)
+    return RELIQ_HNODE_TYPE_COMMENT;
+
+  if (c->tagl == 1)
+    return RELIQ_HNODE_TYPE_TEXT_EMPTY;
+  if (c->tagl == 2)
+    return RELIQ_HNODE_TYPE_TEXT_ERR;
+  return RELIQ_HNODE_TYPE_TEXT;
 }
 
-uint32_t
+inline uint32_t
 reliq_chnode_insides(const reliq *rq, const reliq_chnode *hnode, const uint8_t type)
 {
   if (type == RELIQ_HNODE_TYPE_COMMENT)
