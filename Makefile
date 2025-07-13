@@ -1,4 +1,4 @@
-VERSION = 2.10.0
+VERSION = 2.11
 CC = gcc -std=c18
 CFLAGS = -O3 -march=native -Wall -Wextra -Wno-implicit-fallthrough -Wpedantic
 LDFLAGS =
