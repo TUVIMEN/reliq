@@ -23,6 +23,8 @@
 #include "types.h"
 #include "ctype.h"
 
+#include <regex.h>
+
 #define MIN(x,y) ( ((x) < (y)) ? (x) : (y) )
 #define MAX(x,y) ( ((x) < (y)) ? (y) : (x) )
 
@@ -106,5 +108,8 @@ void *memrchr(void *restrict src, const int c, const size_t size);
 #if defined(__APPLE__)
 void *mempcpy(void *dest, void *src, const size_t n);
 #endif
+
+bool regexec_mem_pmatch(const regex_t *preg, const char *str, size_t strl, size_t nmatch, regmatch_t *pmatch);
+bool regexec_mem(const regex_t *preg, const char *str, size_t strl);
 
 #endif

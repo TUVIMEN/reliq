@@ -20,6 +20,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <regex.h>
 
 #include "ctype.h"
 #include "utils.h"
@@ -671,4 +672,38 @@ reliq_str_to_cstr(reliq_str str)
     .b = str.b,
     .s = str.s
   };
+}
+
+inline bool
+regexec_mem_pmatch(const regex_t *preg, const char *str, size_t strl, size_t nmatch, regmatch_t *pmatch)
+{
+  #ifdef REG_STARTEND_
+  regmatch_t pm;
+  if (pmatch == NULL || nmatch == 0) {
+    if (nmatch == 0)
+      nmatch = 1;
+    pmatch = &pm;
+  }
+
+  pmatch->rm_so = 0;
+  pmatch->rm_eo = (int)strl;
+
+  if (regexec(preg,str,nmatch,pmatch,REG_STARTEND) == 0)
+    return 1;
+  #else
+  char *tmp = alloca(strl+1);
+  memcpy(tmp,str,strl);
+  tmp[strl] = '\0';
+
+  if (regexec(preg,tmp,nmatch,pmatch,0) == 0)
+    return 1;
+  #endif
+
+  return 0;
+}
+
+bool
+regexec_mem(const regex_t *preg, const char *str, size_t strl)
+{
+  return regexec_mem_pmatch(preg,str,strl,0,NULL);
 }

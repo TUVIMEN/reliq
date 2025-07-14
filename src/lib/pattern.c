@@ -342,30 +342,12 @@ static int
 regexec_match_pattern(const reliq_pattern *pattern, reliq_cstr *str)
 {
   uint16_t type = pattern->flags&RELIQ_PATTERN_TYPE;
-  if (type == RELIQ_PATTERN_TYPE_STR) {
+  if (type == RELIQ_PATTERN_TYPE_STR)
     return regexec_match_str(pattern,str);
-  } else {
-    if (!str->s)
-      return 0;
 
-#ifdef REG_STARTEND
-    regmatch_t pmatch;
-    pmatch.rm_so = 0;
-    pmatch.rm_eo = (int)str->s;
-
-    if (regexec(&pattern->match.reg,str->b,1,&pmatch,REG_STARTEND) == 0)
-      return 1;
-#else
-    char *tmp = malloc(str->s + 1);
-    memcpy(tmp, str->b, str->s);
-    tmp[str->s] = '\0';
-    
-    int result = (regexec(&pattern->match.reg, tmp, 0, NULL, 0) == 0);
-    free(tmp);
-    return result;
-#endif
-  }
-  return 0;
+  if (!str->s)
+    return 0;
+  return regexec_mem(&pattern->match.reg,str->b,str->s);
 }
 
 static int
