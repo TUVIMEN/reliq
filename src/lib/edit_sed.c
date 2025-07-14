@@ -223,9 +223,17 @@ sed_address_exec(const char *src, const size_t size, const uint32_t line, const 
     if (range && flags&SED_A_FOUND1) {
       first = 1;
     } else {
+#ifdef REG_STARTEND
       pmatch.rm_so = 0;
       pmatch.rm_eo = (int)size;
       first = (regexec(&address->reg[0],src,1,&pmatch,REG_STARTEND) == 0);
+#else
+      char *tmp = malloc(size + 1);
+      memcpy(tmp, src, size);
+      tmp[size] = '\0';
+      first = (regexec(&address->reg[0], tmp, 0, NULL, 0) == 0);
+      free(tmp);
+#endif
       if (first) {
         address->flags |= SED_A_FOUND1;
         address->flags &= ~SED_A_FOUND2;
@@ -275,12 +283,25 @@ sed_address_exec(const char *src, const size_t size, const uint32_t line, const 
     if (flags&SED_A_FOUND2) {
       return rev;
     } else {
+#ifdef REG_STARTEND
       pmatch.rm_so = 0;
       pmatch.rm_eo = (int)size;
       if (!regexec(&address->reg[1],src,1,&pmatch,REG_STARTEND)) {
+#else
+      char *tmp = malloc(size + 1);
+      memcpy(tmp, src, size);
+      tmp[size] = '\0';
+      if (!regexec(&address->reg[1], tmp, 0, NULL, 0)) {
+        free(tmp);
+#endif
         address->flags |= SED_A_FOUND2;
         address->flags &= ~SED_A_FOUND1;
       }
+#ifndef REG_STARTEND
+      else {
+        free(tmp);
+      }
+#endif
       return first^rev;
     }
   }
@@ -881,10 +902,21 @@ sed_pre_edit(const char *src, const size_t size, SINK *output, char *buffers[3],
           size_t after = 0;
           do {
           regmatch_t pmatch[10];
+#ifdef REG_STARTEND
           pmatch[0].rm_so = 0;
           pmatch[0].rm_eo = (int)patternspl-after;
           if (regexec((regex_t*)scriptv[cycle].arg1,patternsp+after,10,pmatch,REG_STARTEND) != 0)
             break;
+#else
+          char *tmp = malloc(patternspl - after + 1);
+          memcpy(tmp, patternsp + after, patternspl - after);
+          tmp[patternspl - after] = '\0';
+          if (regexec((regex_t*)scriptv[cycle].arg1, tmp, 10, pmatch, 0) != 0) {
+            free(tmp);
+            break;
+          }
+          free(tmp);
+#endif
           successfulsub = 1;
           pmatch[0].rm_so += (int)after;
           pmatch[0].rm_eo += (int)after;
