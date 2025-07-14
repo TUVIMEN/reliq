@@ -1,27 +1,27 @@
-VERSION ?= 2.11
+VERSION := 2.11
 CC ?= gcc -std=c18
 CFLAGS ?= -O3 -march=native -Wall -Wextra -Wno-implicit-fallthrough -Wpedantic
-LDFLAGS ?=
-TARGET ?= reliq
+LDFLAGS :=
+TARGET := reliq
 
 HTML_SIZE = 1 #limit max size of html tag names, attrib names, attrib values etc. , set to O_HTML_SMALL
-O_HTML_FULL ?= 0
-O_HTML_SMALL ?= 0
-O_HTML_VERY_SMALL ?= 0
+O_HTML_FULL := 0
+O_HTML_SMALL := 0
+O_HTML_VERY_SMALL := 0
 
-O_SMALL_STACK ?= 0 # limits for small stack
-O_PHPTAGS ?= 1 # support for <?php ?>
-O_AUTOCLOSING ?= 1 # support for autoclosing tags (tag ommission https://html.spec.whatwg.org/multipage/syntax.html#optional-tags)
+O_SMALL_STACK := 0 # limits for small stack
+O_PHPTAGS := 1 # support for <?php ?>
+O_AUTOCLOSING := 1 # support for autoclosing tags (tag ommission https://html.spec.whatwg.org/multipage/syntax.html#optional-tags)
 
-D ?= 0 # debug mode
-S ?= 0 # build with sanitizer
+D := 0 # debug mode
+S := 0 # build with sanitizer
 
 PREFIX ?= /usr
-MANPREFIX ?= ${PREFIX}/share/man
-BINDIR ?= ${DESTDIR}${PREFIX}/bin
-MANDIR ?= $(DESTDIR)${MANPREFIX}/man1
-LD_LIBRARY_PATH ?= ${PREFIX}/lib
-INCLUDE_PATH ?= ${PREFIX}/include
+MANPREFIX := ${PREFIX}/share/man
+BINDIR := ${DESTDIR}${PREFIX}/bin
+MANDIR := $(DESTDIR)${MANPREFIX}/man1
+LD_LIBRARY_PATH := ${PREFIX}/lib
+INCLUDE_PATH := ${PREFIX}/include
 
 # all of the above variables can be changed from cli
 
