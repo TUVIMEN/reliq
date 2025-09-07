@@ -255,7 +255,7 @@ usage(const char *argv0, FILE *o)
   fputs("\t\t\tset indentation width",o);
   end_default("2");
   color_option(NULL,"cycle-indent","UINT");
-  fputs("\t\tif number of indentations is exceeded it's reset to 0 (\fIby default 0\fR)",o);
+  fputs("\t\tif number of indentations is exceeded it's reset to 0",o);
   end_default("0");
   fputc('\n',o);
 
