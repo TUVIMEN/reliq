@@ -677,7 +677,7 @@ reliq_str_to_cstr(reliq_str str)
 inline bool
 regexec_mem_pmatch(const regex_t *preg, const char *str, size_t strl, size_t nmatch, regmatch_t *pmatch)
 {
-  #ifdef REG_STARTEND_
+  #ifdef REG_STARTEND
   regmatch_t pm;
   if (pmatch == NULL || nmatch == 0) {
     if (nmatch == 0)
@@ -688,18 +688,19 @@ regexec_mem_pmatch(const regex_t *preg, const char *str, size_t strl, size_t nma
   pmatch->rm_so = 0;
   pmatch->rm_eo = (int)strl;
 
-  if (regexec(preg,str,nmatch,pmatch,REG_STARTEND) == 0)
-    return 1;
+  return (regexec(preg,str,nmatch,pmatch,REG_STARTEND) == 0);
   #else
-  char *tmp = alloca(strl+1);
+  const bool isbig = strl > 2*(1<<20);
+  char *tmp = isbig ? malloc(strl+1) : alloca(strl+1);
+
   memcpy(tmp,str,strl);
   tmp[strl] = '\0';
 
-  if (regexec(preg,tmp,nmatch,pmatch,0) == 0)
-    return 1;
+  bool ret = (regexec(preg,tmp,nmatch,pmatch,0) == 0);
+  if (isbig)
+    free(tmp);
+  return ret;
   #endif
-
-  return 0;
 }
 
 bool
