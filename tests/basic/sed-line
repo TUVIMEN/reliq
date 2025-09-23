@@ -1,0 +1,4 @@
+#!/bin/sh
+
+x="$(yes j | tr -d '\n' | dd if=/dev/stdin of=/dev/stdout bs=1048576 count=20 iflag=fullblock 2>/dev/null | $tested_program_path 'text@ * / sed "s/a/k/g"' | md5sum | cut -f1 -d ' ')"
+[ "$x" != "4c70141eae2c2c3c30b7ac84cc48b71a" ] && echo "sed: big line test failed" >&2
