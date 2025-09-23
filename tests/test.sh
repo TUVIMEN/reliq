@@ -17,6 +17,7 @@
 # @ a single name of a test file to be executed
 # % flags separated by spaces that have to be defined, if they're not exit
 # < FILE processed, only one can be given. It does the same as '$' but prints position relative to caller rather than just command at error
+# / shell command to be executed
 # md5 hash,middle arguments
 
 ### paths are relative to test file
@@ -35,6 +36,7 @@ to_update="$2"
 shift 2
 
 tested_program="reliq"
+export tested_program_path="$previousdir/$tested_program"
 lastargs=""
 firstargs=""
 used_file=""
@@ -55,7 +57,7 @@ do
     }
     first="$(echo "$i" | cut -b 1)"
 
-    if echo "$first" | grep -q '^[#@$!%<^]$'
+    if echo "$first" | grep -q '^[#@$!%<^/]$'
     then
         i_rest="$(echo "$i" | cut -b 2-)"
         case "$first" in
@@ -73,6 +75,7 @@ do
             '$') lastargs="$i_rest";;
             '!') echo "$i_rest";;
             '<') used_file="$i_rest";;
+            '/') eval "$i_rest";;
         esac
         [ -n "$output" ] && echo "$i" >> "$output"
         continue
