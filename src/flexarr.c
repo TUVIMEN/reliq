@@ -113,7 +113,7 @@ flexarr_set(flexarr *f, const size_t s)
 void *
 flexarr_alloc(flexarr *f, const size_t s)
 {
-  if (unlikely(s == 0) || f->asize-f->size >= s)
+  if (unlikely(s == 0) || f->asize >= s+f->size)
     return f->v;
   f->v = flexarr_realloc(f->v,(f->size+s)*f->elsize);
   f->asize = f->size+s;

@@ -30,7 +30,7 @@
 
 #define SED_EXPRESSION_INC -(1<<5)
 
-#define SED_MAX_PATTERN_SPACE (1<<20) //!! this causes huge memory allocation, should be replaced by reusing buffers for the whole expression when it's executed
+#define SED_PATTERN_SPACE_INC -(1<<14)
 
 #define SED_A_EMPTY 0x0
 #define SED_A_REVERSE 0x1
@@ -693,13 +693,22 @@ sed_script_comp(const char *src, const size_t size, int eflags, flexarr *script)
   return err;
 }
 
-static reliq_error *
-sed_pre_edit(const char *src, const size_t size, SINK *output, char *buffers[3], flexarr *script, const char linedelim, bool silent) //script: struct sed_expression
+static void
+_flexarr_replace(flexarr *dst, const flexarr * restrict src)
 {
-  char *patternsp = buffers[0],
-    *buffersp = buffers[1],
-    *holdsp = buffers[2];
-  size_t patternspl=0,bufferspl=0,holdspl=0;
+  if (src->size) {
+    flexarr_alloc(dst,src->size);
+    memcpy(dst->v,src->v,src->size*src->elsize);
+  }
+  dst->size = src->size;
+}
+
+static reliq_error *
+sed_pre_edit(const char *src, const size_t size, SINK *output, flexarr buffers[3], flexarr *script, const char linedelim, bool silent) //script: struct sed_expression
+{
+  flexarr *patternsp = buffers+0, // pattern space
+    *buffersp = buffers+1,
+    *holdsp = buffers+2;
 
   size_t line=0,lineend;
   bool islastline,appendnextline=0,successfulsub=0;
@@ -732,14 +741,11 @@ sed_pre_edit(const char *src, const size_t size, SINK *output, char *buffers[3],
       end = lineend;
 
       if (appendnextline)
-        offset = patternspl;
-      if ((end-start)+offset >= SED_MAX_PATTERN_SPACE) {
-        BIGLINE: ;
-        return script_err("sed: line too big to process");
-      }
-      patternspl = (end-start)+offset;
+        offset = patternsp->size;
+      flexarr_alloc(patternsp,(end-start)+offset);
+      patternsp->size = (end-start)+offset;
       if (end-start)
-        memcpy(patternsp+offset,src+start,end-start);
+        memcpy(((char*)patternsp->v)+offset,src+start,end-start);
     }
 
     if (lineend+1 >= size)
@@ -748,7 +754,7 @@ sed_pre_edit(const char *src, const size_t size, SINK *output, char *buffers[3],
     appendnextline = 0;
     const size_t scriptsize = script->size;
     for (; cycle < scriptsize; cycle++) {
-      if (!sed_address_exec(patternsp,patternspl,linenumber,islastline,&scriptv[cycle].address)) {
+      if (!sed_address_exec((char*)patternsp->v,patternsp->size,linenumber,islastline,&scriptv[cycle].address)) {
         if (scriptv[cycle].name == '{') {
           uint16_t lvl = scriptv[++cycle].lvl;
           while (cycle+1 < script->size && lvl <= scriptv[cycle+1].lvl)
@@ -763,56 +769,58 @@ sed_pre_edit(const char *src, const size_t size, SINK *output, char *buffers[3],
 
       switch (scriptv[cycle].name) {
         case 'H':
-          offset = holdspl+1;
-          if (offset+patternspl > SED_MAX_PATTERN_SPACE)
-            goto BIGLINE;
-          holdsp[holdspl] = linedelim;
+          offset = holdsp->size+1;
+          flexarr_alloc(holdsp,offset+patternsp->size);
+
+          ((char*)holdsp->v)[holdsp->size] = linedelim;
         case 'h':
-          memcpy(holdsp+offset,patternsp,patternspl);
-          holdspl = patternspl+offset;
+          flexarr_alloc(holdsp,(holdsp->size+offset+patternsp->size));
+          memcpy(((char*)holdsp->v)+offset,(char*)patternsp->v,patternsp->size);
+          holdsp->size = patternsp->size+offset;
           holdsp_delim = patternsp_delim;
           break;
         case 'G':
-          offset = patternspl+1;
-          if (offset+holdspl > SED_MAX_PATTERN_SPACE)
-            goto BIGLINE;
-          patternsp[patternspl] = linedelim;
+          offset = patternsp->size+1;
+          flexarr_alloc(patternsp,offset+holdsp->size);
+          ((char*)patternsp->v)[patternsp->size] = linedelim;
         case 'g':
-          memcpy(patternsp+offset,holdsp,holdspl);
-          patternspl = holdspl+offset;
+          flexarr_alloc(patternsp,holdsp->size);
+          memcpy(((char*)patternsp->v)+offset,(char*)holdsp->v,holdsp->size);
+          patternsp->size = holdsp->size+offset;
           patternsp_delim = holdsp_delim;
           break;
         case 'd':
-          patternspl = 0;
+          patternsp->size = 0;
           cycle = 0;
           goto NEXT;
           break;
         case 'D': {
             size_t i = 0;
-            while (i < patternspl && patternsp[i] != linedelim)
+            while (i < patternsp->size && ((char*)patternsp->v)[i] != linedelim)
               i++;
-            if (i >= patternspl || patternsp[i] != linedelim) {
-              patternspl = 0;
+            if (i >= patternsp->size || ((char*)patternsp->v)[i] != linedelim) {
+              patternsp->size = 0;
               cycle = 0;
               goto NEXT;
             }
             i++;
-            patternspl -= i;
-            memcpy(buffersp,patternsp+i,patternspl);
-            memcpy(patternsp,buffersp,patternspl);
+            patternsp->size -= i;
+            flexarr_alloc(buffersp,patternsp->size);
+            memcpy((char*)buffersp->v,((char*)patternsp->v)+i,patternsp->size);
+            memcpy((char*)patternsp->v,(char*)buffersp->v,patternsp->size);
           }
           break;
         case 'P':
           offset = 0;
-          while (offset < patternspl && patternsp[offset] != linedelim)
+          while (offset < patternsp->size && ((char*)patternsp->v)[offset] != linedelim)
             offset++;
         case 'p':
           if (scriptv[cycle].name == 'p') {
             COMMAND_PRINT: ;
-            offset = patternspl;
+            offset = patternsp->size;
           }
           if (offset)
-            sink_write(output,patternsp,offset);
+            sink_write(output,(char*)patternsp->v,offset);
           if (!silent || patternsp_delim)
             sink_put(output,linedelim);
           break;
@@ -826,15 +834,12 @@ sed_pre_edit(const char *src, const size_t size, SINK *output, char *buffers[3],
           goto NEXT_PRINT;
           break;
         case 'z':
-          patternspl = 0;
+          patternsp->size = 0;
           break;
         case 'x':
-          memcpy(buffersp,patternsp,patternspl);
-          memcpy(patternsp,holdsp,holdspl);
-          memcpy(holdsp,buffersp,patternspl);
-          bufferspl = patternspl;
-          patternspl = holdspl;
-          holdspl = bufferspl;
+          _flexarr_replace(buffersp,patternsp);
+          _flexarr_replace(patternsp,holdsp);
+          _flexarr_replace(holdsp,buffersp);
 
           buffersp_delim = patternsp_delim;
           patternsp_delim = holdsp_delim;
@@ -863,9 +868,9 @@ sed_pre_edit(const char *src, const size_t size, SINK *output, char *buffers[3],
               cycle = i;
           break;
         case 'y':
-          for (size_t i = 0; i < patternspl; i++)
-            patternsp[i] = (((uint8_t*)scriptv[cycle].arg2)[(uint8_t)patternsp[i]]) ?
-                ((char*)scriptv[cycle].arg1)[(uint8_t)patternsp[i]] : patternsp[i];
+          for (size_t i = 0; i < patternsp->size; i++)
+            ((char*)patternsp->v)[i] = (((uint8_t*)scriptv[cycle].arg2)[(uint8_t)((char*)patternsp->v)[i]]) ?
+                ((char*)scriptv[cycle].arg1)[(uint8_t)((char*)patternsp->v)[i]] : ((char*)patternsp->v)[i];
           break;
         case 's': {
           successfulsub = 0;
@@ -876,7 +881,7 @@ sed_pre_edit(const char *src, const size_t size, SINK *output, char *buffers[3],
           size_t after = 0;
           do {
           regmatch_t pmatch[10];
-          if (!regexec_mem_pmatch((regex_t*)scriptv[cycle].arg1,patternsp+after,patternspl-after,10,pmatch))
+          if (!regexec_mem_pmatch((regex_t*)scriptv[cycle].arg1,((char*)patternsp->v)+after,patternsp->size-after,10,pmatch))
             break;
 
           successfulsub = 1;
@@ -888,9 +893,11 @@ sed_pre_edit(const char *src, const size_t size, SINK *output, char *buffers[3],
             continue;
           }
 
-          bufferspl = pmatch[0].rm_so;
-          if (bufferspl)
-            memcpy(buffersp,patternsp,bufferspl);
+          buffersp->size = pmatch[0].rm_so;
+          if (buffersp->size) {
+            flexarr_alloc(buffersp,buffersp->size);
+            memcpy((char*)buffersp->v,(char*)patternsp->v,buffersp->size);
+          }
           if (scriptv[cycle].arg.s) {
             reliq_cstr arg = scriptv[cycle].arg;
             for (size_t i = 0; i < arg.s; i++) {
@@ -906,8 +913,7 @@ sed_pre_edit(const char *src, const size_t size, SINK *output, char *buffers[3],
                   if (resultl == 0) {
                     c = unchanged_c;
                   } else if (resultl > 1) {
-                    memcpy(buffersp+bufferspl,result,resultl);
-                    bufferspl += resultl;
+                    flexarr_append(buffersp,result,resultl);
                     continue;
                   } else
                     c = result[0];
@@ -917,34 +923,27 @@ sed_pre_edit(const char *src, const size_t size, SINK *output, char *buffers[3],
                   c = unchanged_c-'0';
                   if (pmatch[(uint8_t)c].rm_so == -1 || pmatch[(uint8_t)c].rm_eo == -1)
                     continue;
-                  if (bufferspl+(pmatch[(uint8_t)c].rm_eo-pmatch[(uint8_t)c].rm_so) >= SED_MAX_PATTERN_SPACE)
-                    goto BIGLINE;
+                  flexarr_alloc(buffersp,buffersp->size+(pmatch[(uint8_t)c].rm_eo-pmatch[(uint8_t)c].rm_so));
                   int loop_start=pmatch[(uint8_t)c].rm_so,loop_end=pmatch[(uint8_t)c].rm_eo;
                   if (c) { //shift by after if not \0
                     loop_start += after;
                     loop_end += after;
                   }
                   for (int j = loop_start; j < loop_end; j++)
-                    buffersp[bufferspl++] = patternsp[j];
+                    *(char*)flexarr_inc(buffersp) = ((char*)patternsp->v)[j];
                   continue;
                 }
               }
-              buffersp[bufferspl++] = c;
+              *(char*)flexarr_inc(buffersp) = c;
             }
           }
-          after = bufferspl;
-          if (patternspl-pmatch[0].rm_eo) {
-            if (bufferspl+(patternspl-pmatch[0].rm_eo) >= SED_MAX_PATTERN_SPACE)
-              goto BIGLINE;
-            memcpy(buffersp+bufferspl,patternsp+pmatch[0].rm_eo,patternspl-pmatch[0].rm_eo);
-            bufferspl += patternspl-pmatch[0].rm_eo;
-          }
-          patternspl = bufferspl;
-          if (bufferspl) {
-            memcpy(patternsp,buffersp,bufferspl);
-            bufferspl = 0;
-          }
-          } while((global || (matchnum && matchfound != matchnum)) && after < patternspl);
+          after = buffersp->size;
+          if (patternsp->size-pmatch[0].rm_eo)
+            flexarr_append(buffersp,((char*)patternsp->v)+pmatch[0].rm_eo,patternsp->size-pmatch[0].rm_eo);
+
+          _flexarr_replace(patternsp,buffersp);
+          buffersp->size = 0;
+          } while((global || (matchnum && matchfound != matchnum)) && after < patternsp->size);
           if (successfulsub && print)
             goto COMMAND_PRINT;
           }
@@ -960,16 +959,16 @@ sed_pre_edit(const char *src, const size_t size, SINK *output, char *buffers[3],
 
     NEXT_PRINT: ;
     if (appendnextline) {
-      if (patternsp_delim && patternspl < SED_MAX_PATTERN_SPACE)
-        patternsp[patternspl++] = linedelim;
+      if (patternsp_delim)
+        *(char*)flexarr_inc(patternsp) = linedelim;
     } else {
       if (!silent) {
-        if (patternspl)
-          sink_write(output,patternsp,patternspl);
+        if (patternsp->size)
+          sink_write(output,(char*)patternsp->v,patternsp->size);
         if (patternsp_delim)
           sink_put(output,linedelim);
       }
-      patternspl = 0;
+      patternsp->size = 0;
     }
     if (lineend >= size)
       break;
@@ -981,8 +980,8 @@ sed_pre_edit(const char *src, const size_t size, SINK *output, char *buffers[3],
   }
 
   END: ;
-  if (!silent && patternspl) {
-    sink_write(output,patternsp,patternspl);
+  if (!silent && patternsp->size) {
+    sink_write(output,(char*)patternsp->v,patternsp->size);
     if (patternsp_delim)
       sink_put(output,linedelim);
   }
@@ -1028,14 +1027,14 @@ sed_edit(const reliq_cstr *src, SINK *output, const edit_args *args)
   } else
     return edit_missing_arg(argv0);
 
-  char *buffers[3];
+  flexarr buffers[3];
   for (size_t i = 0; i < 3; i++)
-    buffers[i] = malloc(SED_MAX_PATTERN_SPACE);
+    buffers[i] = flexarr_init(sizeof(char),SED_PATTERN_SPACE_INC);
 
   err = sed_pre_edit(src->b,src->s,output,buffers,&script,linedelim,silent);
 
   for (size_t i = 0; i < 3; i++)
-    free(buffers[i]);
+    flexarr_free(buffers+i);
   sed_script_free(&script);
   return err;
 }
