@@ -879,6 +879,8 @@ sed_pre_edit(const char *src, const size_t size, SINK *output, flexarr buffers[3
           uint32_t matchnum = ((uint64_t)scriptv[cycle].arg2)&SED_EXPRESSION_S_NUMBER,
             matchfound = 0;
           size_t after = 0;
+          buffersp->size = 0;
+
           do {
           regmatch_t pmatch[10];
           if (!regexec_mem_pmatch((regex_t*)scriptv[cycle].arg1,((char*)patternsp->v)+after,patternsp->size-after,10,pmatch))
@@ -889,15 +891,11 @@ sed_pre_edit(const char *src, const size_t size, SINK *output, flexarr buffers[3
           pmatch[0].rm_eo += (int)after;
           matchfound++;
           if (matchnum && ((!global || matchfound < matchnum) && matchfound != matchnum)) {
-            after = pmatch[0].rm_so+(pmatch[0].rm_eo-pmatch[0].rm_so);
+            after = pmatch[0].rm_eo;
             continue;
           }
 
-          buffersp->size = pmatch[0].rm_so;
-          if (buffersp->size) {
-            flexarr_alloc(buffersp,buffersp->size);
-            memcpy((char*)buffersp->v,(char*)patternsp->v,buffersp->size);
-          }
+          flexarr_append(buffersp,((char*)patternsp->v)+after,pmatch[0].rm_so-after);
           if (scriptv[cycle].arg.s) {
             reliq_cstr arg = scriptv[cycle].arg;
             for (size_t i = 0; i < arg.s; i++) {
@@ -923,27 +921,25 @@ sed_pre_edit(const char *src, const size_t size, SINK *output, flexarr buffers[3
                   c = unchanged_c-'0';
                   if (pmatch[(uint8_t)c].rm_so == -1 || pmatch[(uint8_t)c].rm_eo == -1)
                     continue;
-                  flexarr_alloc(buffersp,buffersp->size+(pmatch[(uint8_t)c].rm_eo-pmatch[(uint8_t)c].rm_so));
                   int loop_start=pmatch[(uint8_t)c].rm_so,loop_end=pmatch[(uint8_t)c].rm_eo;
                   if (c) { //shift by after if not \0
                     loop_start += after;
                     loop_end += after;
                   }
-                  for (int j = loop_start; j < loop_end; j++)
-                    *(char*)flexarr_inc(buffersp) = ((char*)patternsp->v)[j];
+                  flexarr_append(buffersp,((char*)patternsp->v)+loop_start,loop_end-loop_start);
                   continue;
                 }
               }
               *(char*)flexarr_inc(buffersp) = c;
             }
           }
-          after = buffersp->size;
-          if (patternsp->size-pmatch[0].rm_eo)
-            flexarr_append(buffersp,((char*)patternsp->v)+pmatch[0].rm_eo,patternsp->size-pmatch[0].rm_eo);
+          after = pmatch[0].rm_eo;
+          } while((global || (matchnum && matchfound != matchnum)) && after < patternsp->size);
 
+          flexarr_append(buffersp,((char*)patternsp->v)+after,patternsp->size-after);
           _flexarr_replace(patternsp,buffersp);
           buffersp->size = 0;
-          } while((global || (matchnum && matchfound != matchnum)) && after < patternsp->size);
+
           if (successfulsub && print)
             goto COMMAND_PRINT;
           }
