@@ -140,7 +140,7 @@ test-advanced: all
 test-errors: all
 	@./tests/test.sh tests/errors.test . "${TEST_FLAGS}" || true
 
-test-afl: all
+test-afl: afl
 	@./tests/test.sh tests/afl.test . "${TEST_FLAGS}" || true
 
 test-pretty:
