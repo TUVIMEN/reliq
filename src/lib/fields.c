@@ -27,10 +27,6 @@
 #include <time.h>
 #include <assert.h>
 
-#if defined(__MINGW32__) || defined(__MINGW64__)
-char *strptime(const char *restrict s, const char *restrict f, struct tm *restrict tm);
-#endif
-
 #define OUTFIELD_ARGS_INC -8
 #define OUTFIELD_TYPE_INC -8
 
@@ -486,6 +482,12 @@ outfields_date_maxsize(const struct reliq_field_type_arg *args, const size_t arg
 static uint8_t
 outfields_date_match(const struct reliq_field_type_arg *args, const size_t argsl, char *matched, struct tm *date)
 {
+  #if defined(__MINGW32__) || defined(__MINGW64__)
+
+  return 1;
+
+  #else
+
   size_t max_sz = outfields_date_maxsize(args,argsl);
   bool found = 0;
   if (!max_sz)
@@ -504,6 +506,8 @@ outfields_date_match(const struct reliq_field_type_arg *args, const size_t argsl
     }
   }
   return found;
+
+  #endif
 }
 
 static uint8_t
