@@ -111,8 +111,8 @@ reliq 'a href=Ee>/[0-9]+\.html | "%(href)a\n"' index.html
 Get links that are not at 1 level, both are equivalent.
 
 ```shell
-reliq 'a href l@[!0] | "(href)v\n"' index.html
-reliq 'a href -l@[0] | "(href)v\n"' index.html
+reliq 'a href l@[!0] | "%(href)v\n"' index.html
+reliq 'a href -l@[0] | "%(href)v\n"' index.html
 ```
 
 Get `li` tags of which insides don't start with `Views:`, both are equivalent.
